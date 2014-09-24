@@ -54,6 +54,7 @@
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/almk.h>
+#include <linux/show_mem_notifier.h>
 
 #ifdef CONFIG_HIGHMEM
 #define _ZONE ZONE_HIGHMEM
@@ -905,6 +906,7 @@ kill:
 
 		if (lowmem_debug_level >= 2 && selected_oom_score_adj == 0) {
 			show_mem(SHOW_MEM_FILTER_NODES);
+			show_mem_call_notifiers();
 			dump_tasks(NULL, NULL);
 		}
 
