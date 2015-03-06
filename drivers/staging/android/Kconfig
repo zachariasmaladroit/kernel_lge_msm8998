@@ -85,6 +85,14 @@ config ANDROID_SIMPLE_LMK_OOM_TIMEOUT
 
 endif
 
+config ANDROID_LMK_ADJ_RBTREE
+	bool "Use RBTREE for Android Low Memory Killer"
+	depends on ANDROID_LOW_MEMORY_KILLER && !HSWAP
+	default N
+	---help---
+	    Use oom_score_adj rbtree to select the best proecss to kill
+	    when system in low memory status.
+
 config SYNC
 	bool "Synchronization framework"
 	default n
