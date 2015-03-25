@@ -809,7 +809,30 @@ static int is_client_alive(struct ion_client *client)
 static int ion_debug_client_show(struct seq_file *s, void *unused)
 {
 	struct ion_client *client = s->private;
-	struct rb_node *n;
+	struct rb_node *n, *cnode;
+	bool found = false;
+
+	down_write(&ion_dev->lock);
+
+	if (!client || (client->dev != ion_dev)) {
+		up_write(&ion_dev->lock);
+		return -EINVAL;
+	}
+
+	cnode = rb_first(&ion_dev->clients);
+	for ( ; cnode; cnode = rb_next(cnode)) {
+		struct ion_client *c = rb_entry(cnode,
+				struct ion_client, node);
+		if (client == c) {
+			found = true;
+			break;
+		}
+	}
+
+	if (!found) {
+		up_write(&ion_dev->lock);
+		return -EINVAL;
+	}
 
 	mutex_lock(&debugfs_mutex);
 	if (!is_client_alive(client)) {
@@ -838,6 +861,7 @@ static int ion_debug_client_show(struct seq_file *s, void *unused)
 	}
 	mutex_unlock(&client->lock);
 	mutex_unlock(&debugfs_mutex);
+	up_write(&ion_dev->lock);
 	return 0;
 }
 
@@ -2162,6 +2186,7 @@ debugfs_done:
 	idev->clients = RB_ROOT;
 	ion_root_client = &idev->clients;
 	mutex_init(&debugfs_mutex);
+	ion_dev = idev;
 	return idev;
 }
 EXPORT_SYMBOL(ion_device_create);

@@ -184,6 +184,8 @@ struct ion_handle {
 	int id;
 };
 
+static struct ion_device *ion_dev;
+
 /**
  * struct ion_heap_ops - ops to operate on a given heap
  * @allocate:		allocate memory
