@@ -676,7 +676,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	rcu_read_lock();
 #if defined(CONFIG_ANDROID_LMK_ADJ_RBTREE) && !defined(CONFIG_HSWAP)
 	for (tsk = pick_first_task();
-		tsk != pick_last_task();
+		tsk != pick_last_task() && tsk != NULL;
 		tsk = pick_next_from_adj_tree(tsk)) {
 #else
 	for_each_process(tsk) {
