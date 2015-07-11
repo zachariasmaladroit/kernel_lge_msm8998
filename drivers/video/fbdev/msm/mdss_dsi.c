@@ -34,6 +34,8 @@
 #include "mdss_debug.h"
 #include "mdss_dsi_phy.h"
 #include "mdss_dba_utils.h"
+#include "mdss_livedisplay.h"
+
 
 #define CMDLINE_DSI_CTL_NUM_STRING_LEN 2
 
@@ -3338,6 +3340,9 @@ static int mdss_dsi_event_handler(struct mdss_panel_data *pdata,
 		rc = lge_mdss_dsi_panel_reg_backup(ctrl_pdata);
 		break;
 #endif
+	case MDSS_EVENT_UPDATE_LIVEDISPLAY:
+		rc = mdss_livedisplay_update(ctrl_pdata, (int)(unsigned long) arg);
+		break;
 	default:
 		pr_debug("%s: unhandled event=%d\n", __func__, event);
 		break;
