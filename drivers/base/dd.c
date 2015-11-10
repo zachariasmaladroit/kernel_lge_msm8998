@@ -60,6 +60,13 @@ static struct workqueue_struct *deferred_wq;
 static atomic_t deferred_trigger_count = ATOMIC_INIT(0);
 
 /*
+ * In some cases, like suspend to RAM or hibernation, It might be reasonable
+ * to prohibit probing of devices as it could be unsafe.
+ * Once defer_all_probes is true all drivers probes will be forcibly deferred.
+ */
+static bool defer_all_probes;
+
+/*
  * deferred_probe_work_func() - Retry probing devices in the active list.
  */
 static void deferred_probe_work_func(struct work_struct *work)
@@ -185,6 +192,30 @@ static void enable_trigger_defer_cycle(void)
 	 * level
 	 */
 	flush_workqueue(deferred_wq);
+}
+
+/**
+ * device_block_probing() - Block/defere device's probes
+ *
+ *	It will disable probing of devices and defer their probes instead.
+ */
+void device_block_probing(void)
+{
+	defer_all_probes = true;
+	/* sync with probes to avoid races. */
+	wait_for_device_probe();
+}
+
+/**
+ * device_unblock_probing() - Unblock/enable device's probes
+ *
+ *	It will restore normal behavior and trigger re-probing of deferred
+ * devices.
+ */
+void device_unblock_probing(void)
+{
+	defer_all_probes = false;
+	driver_deferred_probe_trigger();
 }
 
 /**
@@ -333,7 +364,7 @@ static const struct file_operations probe_time_fops = {
 
 static int really_probe(struct device *dev, struct device_driver *drv)
 {
-	int ret = 0;
+	int ret = -EPROBE_DEFER;
 	int local_trigger_count = atomic_read(&deferred_trigger_count);
 
 #if defined(CONFIG_MACH_LGE)
@@ -349,6 +380,16 @@ static int really_probe(struct device *dev, struct device_driver *drv)
 		pos = 0;
 #endif
 
+	if (defer_all_probes) {
+		/*
+		 * Value of defer_all_probes can be set only by
+		 * device_defer_all_probes_enable() which, in turn, will call
+		 * wait_for_device_probe() right after that to avoid any races.
+		 */
+		dev_dbg(dev, "Driver %s force probe deferral\n", drv->name);
+		driver_deferred_probe_add(dev);
+		return ret;
+	}
 	atomic_inc(&probe_count);
 	pr_debug("bus: '%s': %s: probing driver %s with device %s\n",
 		 drv->bus->name, __func__, drv->name, dev_name(dev));
@@ -532,6 +573,10 @@ int driver_probe_done(void)
  */
 void wait_for_device_probe(void)
 {
+	/* wait for the deferred probe workqueue to finish */
+	if (driver_deferred_probe_enable)
+		flush_workqueue(deferred_wq);
+
 	/* wait for the known devices to complete their probing */
 	wait_event(probe_waitqueue, atomic_read(&probe_count) == 0);
 	async_synchronize_full();
