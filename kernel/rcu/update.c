@@ -67,6 +67,9 @@ static int rcu_normal_after_boot;
 module_param(rcu_normal_after_boot, int, 0);
 #endif /* #ifndef CONFIG_TINY_RCU */
 
+static int rcu_normal_after_boot;
+module_param(rcu_normal_after_boot, int, 0);
+
 #ifdef CONFIG_DEBUG_LOCK_ALLOC
 /**
  * rcu_read_lock_sched_held() - might we be in RCU-sched read-side critical section?
