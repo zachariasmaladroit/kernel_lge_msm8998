@@ -403,6 +403,9 @@ int mmc_add_card(struct mmc_card *card)
 			pr_err("%s: %s: failed to init wakeup: %d\n",
 			       mmc_hostname(card->host), __func__, ret);
 	}
+
+	device_enable_async_suspend(&card->dev);
+
 	ret = device_add(&card->dev);
 #ifdef CONFIG_MACH_LGE
 	/* LGE_CHANGE, 2015-09-23, H1-BSP-FS@lge.com
