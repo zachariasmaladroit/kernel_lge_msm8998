@@ -412,6 +412,10 @@ void lge_panic_handler_fb_cleanup(void)
 static int __init lge_panic_handler_early_init(void)
 {
 	struct device_node *np;
+#ifdef CONFIG_KEXEC_HARDBOOT
+	unsigned long kexec_hardboot_addr = 0;
+	unsigned long kexec_hardboot_size = SZ_1M;
+#endif
 
 	panic_handler = kzalloc(sizeof(*panic_handler), GFP_KERNEL);
 	if (!panic_handler) {
@@ -451,6 +455,16 @@ static int __init lge_panic_handler_early_init(void)
 
 	pr_info("%s: reserved[@0x%lx+@0x%lx)\n", PANIC_HANDLER_NAME,
 			panic_handler->fb_addr, panic_handler->fb_size);
+
+#ifdef CONFIG_KEXEC_HARDBOOT
+	// Reserve space for hardboot page, just before the ram_console
+	kexec_hardboot_addr = panic_handler->fb_addr - kexec_hardboot_size;
+
+	if(!memblock_remove(kexec_hardboot_addr, kexec_hardboot_size))
+		pr_info("Hardboot page reserved at 0x%lx\n", kexec_hardboot_addr);
+	else
+		pr_err("Failed to reserve space for hardboot page at 0x%lx!\n", kexec_hardboot_addr);
+#endif
 
 	lge_set_fb_addr(panic_handler->fb_addr);
 

@@ -40,6 +40,10 @@
 #include <soc/qcom/lge/lge_handle_panic.h>
 #endif
 
+#ifdef CONFIG_KEXEC_HARDBOOT
+#include <asm/kexec.h>
+#endif
+
 #define EMERGENCY_DLOAD_MAGIC1    0x322A4F99
 #define EMERGENCY_DLOAD_MAGIC2    0xC67E4350
 #define EMERGENCY_DLOAD_MAGIC3    0x77777777
@@ -63,16 +67,17 @@ static void __iomem *msm_ps_hold;
 static phys_addr_t tcsr_boot_misc_detect;
 static void scm_disable_sdi(void);
 
-#ifndef CONFIG_LGE_HANDLE_PANIC
+#if defined(CONFIG_LGE_HANDLE_PANIC) || defined(CONFIG_KEXEC_HARDBOOT)
+/* dload flag changed value once by bootcmd param. */
+static int download_mode = 0;
+#else
 /* Runtime could be only changed value once.
  * There is no API from TZ to re-enable the registers.
  * So the SDI cannot be re-enabled when it already by-passed.
 */
 static int download_mode = 1;
-#else
- /* dload flag changed value once by bootcmd param. */
-static int download_mode = 0;
 #endif
+
 static struct kobject dload_kobj;
 
 #ifdef CONFIG_QCOM_DLOAD_MODE
@@ -542,8 +547,12 @@ static void do_msm_poweroff(void)
 #ifdef CONFIG_LGE_HANDLE_PANIC
 static int __init lge_crash_handler(char *status)
 {
+#ifdef CONFIG_KEXEC_HARDBOOT
+	download_mode = 0;
+#else
 	if (!strcmp(status, "on"))
 		download_mode = 1;
+#endif
 
 	return 1;
 }
@@ -855,8 +864,18 @@ static struct platform_driver msm_restart_driver = {
 	},
 };
 
+#ifdef CONFIG_KEXEC_HARDBOOT
+static void msm_kexec_hardboot_hook(void)
+{
+	qpnp_pon_system_pwr_off(PON_POWER_OFF_WARM_RESET);
+}
+#endif
+
 static int __init msm_restart_init(void)
 {
+#ifdef CONFIG_KEXEC_HARDBOOT
+	kexec_hardboot_hook = msm_kexec_hardboot_hook;
+#endif
 	return platform_driver_register(&msm_restart_driver);
 }
 pure_initcall(msm_restart_init);
