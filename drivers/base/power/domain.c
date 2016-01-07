@@ -1191,6 +1191,8 @@ static struct generic_pm_domain_data *genpd_alloc_dev_data(struct device *dev,
 
 	spin_unlock_irq(&dev->power.lock);
 
+	dev_pm_domain_set(dev, &genpd->domain);
+
 	return gpd_data;
 
  err_free:
@@ -1204,6 +1206,8 @@ static struct generic_pm_domain_data *genpd_alloc_dev_data(struct device *dev,
 static void genpd_free_dev_data(struct device *dev,
 				struct generic_pm_domain_data *gpd_data)
 {
+	dev_pm_domain_set(dev, NULL);
+
 	spin_lock_irq(&dev->power.lock);
 
 	dev->power.subsys_data->domain_data = NULL;
