@@ -1180,7 +1180,7 @@ static void identify_cpu(struct cpuinfo_x86 *c)
 	x86_init_cache_qos(c);
 
 	/*
-	 * Clear/Set all flags overriden by options, need do it
+	 * Clear/Set all flags overridden by options, need do it
 	 * before following smp all cpus cap AND.
 	 */
 	apply_forced_caps(c);
