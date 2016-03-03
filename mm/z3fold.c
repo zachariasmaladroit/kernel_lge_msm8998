@@ -541,6 +541,7 @@ static int z3fold_alloc(struct z3fold_pool *pool, size_t size, gfp_t gfp,
 	struct page *page = NULL;
 	enum buddy bud;
 	bool can_sleep = gfpflags_allow_blocking(gfp);
+	int found = 0;
 
 	if (!size)
 		return -EINVAL;
@@ -623,6 +624,7 @@ lookup:
 				WARN_ON(1);
 				goto lookup;
 			}
+			found = 1;
 			goto found;
 		}
 		bud = FIRST;
@@ -694,6 +696,8 @@ headless:
 	list_add(&page->lru, &pool->lru);
 
 	*handle = encode_handle(zhdr, bud);
+	if ((gfp & __GFP_ZERO) && found)
+		memset((void *)*handle, 0, size);
 	spin_unlock(&pool->lock);
 	if (bud != HEADLESS)
 		z3fold_page_unlock(zhdr);
