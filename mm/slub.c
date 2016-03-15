@@ -276,6 +276,7 @@ static inline int slab_index(void *p, struct kmem_cache *s, void *addr)
 	return (p - addr) / s->size;
 }
 
+<<<<<<< HEAD
 static inline size_t slab_ksize(const struct kmem_cache *s)
 {
 #ifdef CONFIG_SLUB_DEBUG
@@ -303,6 +304,8 @@ static inline size_t slab_ksize(const struct kmem_cache *s)
 	return s->size;
 }
 
+=======
+>>>>>>> db1e2769e3ad... mm/slab: move SLUB alloc hooks to common mm/slab.h
 static inline int order_objects(int order, unsigned long size, int reserved)
 {
 	return ((PAGE_SIZE << order) - reserved) / size;
@@ -1331,36 +1334,6 @@ static inline void kfree_hook(const void *x)
 {
 	kmemleak_free(x);
 	kasan_kfree_large(x);
-}
-
-static inline struct kmem_cache *slab_pre_alloc_hook(struct kmem_cache *s,
-						     gfp_t flags)
-{
-	flags &= gfp_allowed_mask;
-	lockdep_trace_alloc(flags);
-	might_sleep_if(gfpflags_allow_blocking(flags));
-
-	if (should_failslab(s->object_size, flags, s->flags))
-		return NULL;
-
-	return memcg_kmem_get_cache(s, flags);
-}
-
-static inline void slab_post_alloc_hook(struct kmem_cache *s, gfp_t flags,
-					size_t size, void **p)
-{
-	size_t i;
-
-	flags &= gfp_allowed_mask;
-	for (i = 0; i < size; i++) {
-		void *object = p[i];
-
-		kmemcheck_slab_alloc(s, flags, object, slab_ksize(s));
-		kmemleak_alloc_recursive(object, s->object_size, 1,
-					 s->flags, flags);
-		kasan_slab_alloc(s, object, flags);
-	}
-	memcg_kmem_put_cache(s);
 }
 
 static inline void *slab_free_hook(struct kmem_cache *s, void *x)
