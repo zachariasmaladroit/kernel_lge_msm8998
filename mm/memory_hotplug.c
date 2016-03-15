@@ -495,6 +495,8 @@ int __ref __add_pages(int nid, struct zone *zone, unsigned long phys_start_pfn,
 	int start_sec, end_sec;
 	struct vmem_altmap *altmap;
 
+	clear_zone_contiguous(zone);
+
 	/* during initialize mem_map, align hot-added range to section */
 	start_sec = pfn_to_section_nr(phys_start_pfn);
 	end_sec = pfn_to_section_nr(phys_start_pfn + nr_pages - 1);
@@ -507,7 +509,8 @@ int __ref __add_pages(int nid, struct zone *zone, unsigned long phys_start_pfn,
 		if (altmap->base_pfn != phys_start_pfn
 				|| vmem_altmap_offset(altmap) > nr_pages) {
 			pr_warn_once("memory add fail, invalid altmap\n");
-			return -EINVAL;
+			err = -EINVAL;
+			goto out;
 		}
 		altmap->alloc = 0;
 	}
@@ -525,7 +528,8 @@ int __ref __add_pages(int nid, struct zone *zone, unsigned long phys_start_pfn,
 		err = 0;
 	}
 	vmemmap_populate_print_last();
-
+out:
+	set_zone_contiguous(zone);
 	return err;
 }
 EXPORT_SYMBOL_GPL(__add_pages);
@@ -797,6 +801,8 @@ int __remove_pages(struct zone *zone, unsigned long phys_start_pfn,
 		}
 	}
 
+	clear_zone_contiguous(zone);
+
 	/*
 	 * We can only remove entire sections
 	 */
@@ -812,6 +818,9 @@ int __remove_pages(struct zone *zone, unsigned long phys_start_pfn,
 		if (ret)
 			break;
 	}
+
+	set_zone_contiguous(zone);
+
 	return ret;
 }
 EXPORT_SYMBOL_GPL(__remove_pages);
