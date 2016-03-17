@@ -7333,7 +7333,6 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
 }
 #endif
 
-#ifdef CONFIG_MEMORY_FAILURE
 bool is_free_buddy_page(struct page *page)
 {
 	struct zone *zone = page_zone(page);
@@ -7352,4 +7351,3 @@ bool is_free_buddy_page(struct page *page)
 
 	return order < MAX_ORDER;
 }
-#endif
