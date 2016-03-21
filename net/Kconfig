@@ -416,7 +416,7 @@ config LWTUNNEL
 source "net/ipc_router/Kconfig"
 
 config DST_CACHE
-	bool "dst cache"
+	bool
 	default n
 
 endif   # if NET
