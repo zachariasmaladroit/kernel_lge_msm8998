@@ -1,4 +1,5 @@
 KASAN_SANITIZE := n
+KCOV_INSTRUMENT := n
 UBSAN_SANITIZE_kasan.o := n
 
 CFLAGS_REMOVE_kasan.o = -pg
