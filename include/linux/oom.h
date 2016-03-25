@@ -79,8 +79,17 @@ extern unsigned long oom_badness(struct task_struct *p,
 		struct mem_cgroup *memcg, const nodemask_t *nodemask,
 		unsigned long totalpages);
 
-extern int oom_kills_count(void);
-extern void note_oom_kill(void);
+extern void oom_kill_process(struct oom_control *oc, struct task_struct *p,
+			     unsigned int points, unsigned long totalpages,
+			     struct mem_cgroup *memcg, const char *message);
+
+extern void check_panic_on_oom(struct oom_control *oc,
+			       enum oom_constraint constraint,
+			       struct mem_cgroup *memcg);
+
+extern enum oom_scan_t oom_scan_process_thread(struct oom_control *oc,
+		struct task_struct *task, unsigned long totalpages);
+
 extern bool out_of_memory(struct oom_control *oc);
 
 extern void exit_oom_victim(void);
