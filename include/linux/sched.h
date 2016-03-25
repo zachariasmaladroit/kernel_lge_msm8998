@@ -2107,8 +2107,8 @@ struct task_struct {
 	unsigned long	task_state_change;
 #endif
 	int pagefault_disabled;
-#ifdef CONFIG_ANDROID_SIMPLE_LMK
-	bool lmk_sigkill_sent;
+#ifdef CONFIG_MMU
+	struct list_head oom_reaper_list;
 #endif
 /* CPU-specific state of this task */
 	struct thread_struct thread;
