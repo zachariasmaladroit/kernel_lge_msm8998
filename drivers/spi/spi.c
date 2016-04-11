@@ -1838,6 +1838,7 @@ struct spi_master *__spi_alloc_controller(struct device *dev,
 	else
 		master->dev.class = &spi_master_class;
 	master->dev.parent = dev;
+	pm_suspend_ignore_children(&master->dev, true);
 	spi_master_set_devdata(master, &master[1]);
 
 	return master;
