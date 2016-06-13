@@ -1705,7 +1705,7 @@ int kvm_mmu_init(void)
 	err = 	__create_hyp_mappings(boot_hyp_pgd,
 				      hyp_idmap_start, hyp_idmap_end,
 				      __phys_to_pfn(hyp_idmap_start),
-				      PAGE_HYP);
+				      PAGE_HYP_EXEC);
 
 	if (err) {
 		kvm_err("Failed to idmap %lx-%lx\n",
@@ -1728,7 +1728,7 @@ int kvm_mmu_init(void)
 	err = 	__create_hyp_mappings(boot_hyp_pgd,
 				      TRAMPOLINE_VA, TRAMPOLINE_VA + PAGE_SIZE,
 				      __phys_to_pfn(hyp_idmap_start),
-				      PAGE_HYP);
+				      PAGE_HYP_EXEC);
 	if (err) {
 		kvm_err("Failed to map trampoline @%lx into boot HYP pgd\n",
 			TRAMPOLINE_VA);
@@ -1739,7 +1739,7 @@ int kvm_mmu_init(void)
 	err = 	__create_hyp_mappings(hyp_pgd,
 				      TRAMPOLINE_VA, TRAMPOLINE_VA + PAGE_SIZE,
 				      __phys_to_pfn(hyp_idmap_start),
-				      PAGE_HYP);
+				      PAGE_HYP_EXEC);
 	if (err) {
 		kvm_err("Failed to map trampoline @%lx into runtime HYP pgd\n",
 			TRAMPOLINE_VA);
