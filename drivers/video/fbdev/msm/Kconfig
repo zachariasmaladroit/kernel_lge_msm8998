@@ -133,6 +133,14 @@ config LGE_MIPI_JOAN_ONCELL_QHD_CMD_PANEL
 	default n
 	help
 	  if you say yes here you get support for the Oncell Panel.
+
+config FB_MSM_MDSS_KCAL_CTRL
+	depends on FB_MSM_MDSS
+	bool "MDSS color control"
+	---help---
+	  Enable sysfs for post-processing control of mdss-mdp5 display
+	  controllers in MDSS.
+
 endif
 
 config LGE_DISPLAY_DYNAMIC_RESOLUTION_SWITCH
