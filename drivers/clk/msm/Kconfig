@@ -27,4 +27,9 @@ config MSM_VIRTCLK_FRONTEND_8996
 	   This is the virtual clock frontend driver for the QTI msm8996
 	   virtual platform.
 
+config PVS_LEVEL_INTERFACE
+	bool "Expose PVS level information in sys fs (Boeffla-Kernel)"
+	help
+		Allow PVS level to be shown in Boeffla-Config app
+
 source "drivers/clk/msm/mdss/Kconfig"

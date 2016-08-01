@@ -45,6 +45,11 @@
 
 #include "clock.h"
 
+#ifdef CONFIG_PVS_LEVEL_INTERFACE
+static char pvs_level[20] = {0};
+module_param_string(pvs_level, pvs_level, ARRAY_SIZE(pvs_level), S_IRUGO); 
+#endif
+
 enum clk_osm_bases {
 	OSM_BASE,
 	PLL_BASE,
@@ -3381,6 +3386,10 @@ static int cpu_clock_osm_driver_probe(struct platform_device *pdev)
 
 	dev_info(&pdev->dev, "using perfcl speed bin %u and pvs_ver %d\n",
 		 speedbin, pvs_ver);
+
+#ifdef CONFIG_PVS_LEVEL_INTERFACE
+	snprintf(pvs_level, ARRAY_SIZE(pvs_level), "%d", speedbin);
+#endif
 
 	rc = clk_osm_get_lut(pdev, &perfcl_clk, perfclspeedbinstr);
 	if (rc) {
