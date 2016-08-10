@@ -67,7 +67,7 @@ struct Qdisc {
 	u32			limit;
 	const struct Qdisc_ops	*ops;
 	struct qdisc_size_table	__rcu *stab;
-	struct list_head	list;
+	struct hlist_node       hash;
 	u32			handle;
 	u32			parent;
 	int			(*reshape_fail)(struct sk_buff *skb,
