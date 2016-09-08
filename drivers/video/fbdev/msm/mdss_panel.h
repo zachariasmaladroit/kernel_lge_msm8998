@@ -1006,6 +1006,8 @@ struct mdss_panel_info {
 	u16 ambient_ysft;
 	u8 ambient_sft_interval;
 #endif
+
+	u32 disp_on_check_val;
 };
 
 struct mdss_panel_timing {
