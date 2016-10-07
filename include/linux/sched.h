@@ -880,6 +880,8 @@ struct signal_struct {
 	long before_time;
 	long top_time;
 #endif
+	struct mm_struct *oom_mm;	/* recorded mm when the thread group got
+					 * killed by the oom killer */
 
 	struct mutex cred_guard_mutex;	/* guard against foreign influences on
 					 * credential calculations
