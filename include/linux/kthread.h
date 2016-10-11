@@ -158,6 +158,8 @@ void kthread_flush_worker(struct kthread_worker *worker);
 
 bool kthread_cancel_work_sync(struct kthread_work *work);
 
+void kthread_destroy_worker(struct kthread_worker *worker);
+
 /*
  * Returns true when the work could not be queued at the moment.
  * It happens when it is already pending in a worker list
