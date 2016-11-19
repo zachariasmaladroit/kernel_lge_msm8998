@@ -64,6 +64,9 @@
 #include <asm/efi.h>
 #include <asm/xen/hypervisor.h>
 #include <asm/mmu_context.h>
+#ifdef CONFIG_KEXEC_HARDBOOT
+#include <asm/kexec.h>
+#endif
 
 unsigned int boot_reason;
 EXPORT_SYMBOL(boot_reason);
@@ -447,11 +450,13 @@ static int __init register_kernel_offset_dumper(void)
 }
 __initcall(register_kernel_offset_dumper);
 
+#ifdef CONFIG_KEXEC_HARDBOOT
 static int __init dumphardboot(void) {
-	unsigned long *h = ioremap(0xaff00000, SZ_1M);
+	unsigned long *h = ioremap(KEXEC_HB_PAGE_ADDR, SZ_1M);
 	pr_info("Hardboot: %lx %lx %lx %lx %lx %lx %lx %lx\n",
 		h[0], h[1], h[2], h[3], h[4], h[5], h[6], h[7]);
 	iounmap(h);
 	return 0;
 }
 arch_initcall(dumphardboot);
+#endif

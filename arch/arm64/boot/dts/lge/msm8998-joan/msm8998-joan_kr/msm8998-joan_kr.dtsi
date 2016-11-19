@@ -27,10 +27,18 @@
 
 / {
 	reserved-memory {
+		/* Hardboot: reserve 1MB of space before ramoops */
+		hardboot_mem: hardboot_region@aff00000 {
+			compatible = "removed-dma-pool";
+			no-map;
+			reg = <0x0 0xaff00000 0x0 0x100000>;
+			label = "hardboot_mem";
+		};
+
 		ramoops_mem: ramoops_region@b0000000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0 0xaff00000 0 0x200000>;
+			reg = <0 0xb0000000 0 0x100000>;
 		};
 
 		crash_fb_mem: crash_fb_mem@b0100000 {
