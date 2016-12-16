@@ -278,7 +278,7 @@ static void mdss_xlog_dump_all(void)
 
 	while (__mdss_xlog_dump_calc_range()) {
 		mdss_xlog_dump_entry(xlog_buf, MDSS_XLOG_BUF_MAX);
-		pr_info("%s", xlog_buf);
+		pr_debug("%s", xlog_buf);
 	}
 }
 
@@ -328,7 +328,7 @@ static void mdss_dump_debug_bus(u32 bus_dump_flag,
 
 		if (*dump_mem) {
 			dump_addr = *dump_mem;
-			pr_info("%s: start_addr:0x%pK end_addr:0x%pK\n",
+			pr_debug("%s: start_addr:0x%pK end_addr:0x%pK\n",
 				__func__, dump_addr, dump_addr + list_size);
 		} else {
 			in_mem = false;
@@ -452,7 +452,7 @@ static void mdss_dump_vbif_debug_bus(u32 bus_dump_flag,
 
 		if (*dump_mem) {
 			dump_addr = *dump_mem;
-			pr_info("%s: start_addr:0x%pK end_addr:0x%pK\n",
+			pr_debug("%s: start_addr:0x%pK end_addr:0x%pK\n",
 				__func__, dump_addr, dump_addr + list_size);
 		} else {
 			in_mem = false;
@@ -513,11 +513,11 @@ void mdss_dump_reg(const char *dump_name, u32 reg_dump_flag, char *addr,
 		if (*dump_mem) {
 			dump_addr = *dump_mem;
 #if defined(CONFIG_LGE_DISPLAY_XLOG_ENABLED)
-			pr_info("%s: start_addr:0x%p end_addr:0x%p reg_addr=0x%p\n",
+			pr_debug("%s: start_addr:0x%p end_addr:0x%p reg_addr=0x%p\n",
 				dump_name, dump_addr, dump_addr + (u32)len * 16,
 				addr);
 #else
-			pr_info("%s: start_addr:0x%pK end_addr:0x%pK reg_addr=0x%pK\n",
+			pr_debug("%s: start_addr:0x%pK end_addr:0x%pK reg_addr=0x%pK\n",
 				dump_name, dump_addr, dump_addr + (u32)len * 16,
 				addr);
 #endif
@@ -596,11 +596,11 @@ static void mdss_dump_reg_by_ranges(struct mdss_debug_base *dbg,
 		}
 	} else {
 		/* If there is no list to dump ranges, dump all registers */
-		pr_info("Ranges not found, will dump full registers");
+		pr_debug("Ranges not found, will dump full registers");
 #if defined(CONFIG_LGE_DISPLAY_XLOG_ENABLED)
-		pr_info("base:0x%p len:%zu\n", dbg->base, dbg->max_offset);
+		pr_debug("base:0x%p len:%zu\n", dbg->base, dbg->max_offset);
 #else
-		pr_info("base:0x%pK len:%zu\n", dbg->base, dbg->max_offset);
+		pr_debug("base:0x%pK len:%zu\n", dbg->base, dbg->max_offset);
 #endif
 		addr = dbg->base;
 		len = dbg->max_offset;
