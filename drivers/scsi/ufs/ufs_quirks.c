@@ -95,11 +95,11 @@ void ufs_advertise_fixup_device(struct ufs_hba *hba)
 		    {
 			    /* update quirks */
 			    dev_err(hba->dev, "[LGE][UFS] update quirks, manufacturerid:%d, model:%s, quirk:0x%x\n", f->card.wmanufacturerid, f->card.model, f->quirk);
-			    hba->dev_quirks |= f->quirk;
+			    hba->dev_info.quirks |= f->quirk;
 		    }
 #else
 			/* update quirks */
-			hba->dev_quirks |= f->quirk;
+			hba->dev_info.quirks |= f->quirk;
 #endif
 	}
 out:
