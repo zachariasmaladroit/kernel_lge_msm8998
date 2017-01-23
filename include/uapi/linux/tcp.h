@@ -120,6 +120,9 @@ enum {
 #define MPTCP_SCHEDULER		43
 #define MPTCP_PATH_MANAGER	44
 #endif
+//#define TCP_REPAIR_WINDOW	29	/* Get/set window parameters */
+#define TCP_FASTOPEN_CONNECT	30	/* Attempt FastOpen with connect */
+
 struct tcp_repair_opt {
 	__u32	opt_code;
 	__u32	opt_val;
