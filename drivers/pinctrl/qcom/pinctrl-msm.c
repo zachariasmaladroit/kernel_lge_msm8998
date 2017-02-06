@@ -538,6 +538,9 @@ static void msm_gpio_dbg_show(struct seq_file *s, struct gpio_chip *chip)
 	unsigned i;
 
 	for (i = 0; i < chip->ngpio; i++, gpio++) {
+		/* Bypass GPIO pins owned by TZ */
+		switch (gpio)
+			case 81 ... 84: continue;
 #if defined(CONFIG_MACH_MSM8998_LUCY) || defined(CONFIG_MACH_MSM8998_JOAN)
 		if(msm_gpio_check_access(gpio) == true)
 		{
