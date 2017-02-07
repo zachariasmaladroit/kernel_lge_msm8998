@@ -1549,7 +1549,12 @@ static int lpm_cpuidle_select(struct cpuidle_driver *drv,
 	if (!cluster)
 		return 0;
 
-	return cpu_power_select(dev, cluster->cpu);
+	idx = cpu_power_select(dev, cluster->cpu);
+
+	if (idx < 0)
+		return 0;
+
+	return idx;
 }
 
 static void update_history(struct cpuidle_device *dev, int idx)
