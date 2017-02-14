@@ -55,6 +55,11 @@ config PAGE_TABLE_ISOLATION
 
 	  If you are unsure how to answer this question, answer Y.
 
+config SECURITY_WRITABLE_HOOKS
+	depends on SECURITY
+	bool
+	default n
+
 config SECURITYFS
 	bool "Enable the securityfs filesystem"
 	help
