@@ -163,7 +163,7 @@ static void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
 	else
 		irq_stack_ptr = 0;
 
-	pr_debug("%s(regs = %pP tsk = %pP)\n", __func__, regs, tsk);
+	pr_debug("%s(regs = %p tsk = %p)\n", __func__, regs, tsk);
 
 	if (!tsk)
 		tsk = current;
@@ -263,7 +263,7 @@ static int __die(const char *str, int err, struct thread_info *thread,
 	per_cpu(regs_before_stop, raw_smp_processor_id()) = *regs;
 #endif
 	__show_regs(regs);
-	pr_emerg("Process %.*s (pid: %d, stack limit = 0x%pP)\n",
+	pr_emerg("Process %.*s (pid: %d, stack limit = 0x%p)\n",
 		 TASK_COMM_LEN, tsk->comm, task_pid_nr(tsk), thread + 1);
 
 	if (!user_mode(regs) || in_interrupt()) {
