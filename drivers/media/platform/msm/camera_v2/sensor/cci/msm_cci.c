@@ -1714,7 +1714,6 @@ static int32_t msm_cci_config(struct v4l2_subdev *sd,
 
 	CDBG("%s line %d cmd %d\n", __func__, __LINE__,
 		cci_ctrl->cmd);
-	mutex_lock(&g_cci_mutex);
 	switch (cci_ctrl->cmd) {
 	case MSM_CCI_INIT:
 		rc = msm_cci_init(sd, cci_ctrl);
@@ -1772,7 +1771,6 @@ static int32_t msm_cci_config(struct v4l2_subdev *sd,
 	}
 	CDBG("%s line %d rc %d\n", __func__, __LINE__, rc);
 	cci_ctrl->status = rc;
-	mutex_unlock(&g_cci_mutex);
 	return rc;
 }
 
