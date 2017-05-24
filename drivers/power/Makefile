@@ -76,3 +76,7 @@ obj-$(CONFIG_AXP288_CHARGER)	+= axp288_charger.o
 obj-$(CONFIG_ARCH_QCOM)		+= qcom/
 obj-$(CONFIG_POWER_SUPPLY)	+= supply/
 obj-$(CONFIG_LGE_PM_BATT_MANAGER) += lge_battery_manager.o
+
+# TODO: remove me b/62057517
+subdir-ccflags-y += \
+	-Wno-tentative-definition-incomplete-type
