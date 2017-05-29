@@ -51,6 +51,7 @@ static struct gsi_inst_status {
 /* Deregister misc device and free instance structures */
 static void gsi_inst_clean(struct gsi_opts *opts);
 
+static void gsi_rndis_ipa_reset_trigger(struct gsi_data_port *d_port);
 static void ipa_disconnect_handler(struct gsi_data_port *d_port);
 static int gsi_ctrl_send_notification(struct f_gsi *gsi);
 static int gsi_alloc_trb_buffer(struct f_gsi *gsi);
