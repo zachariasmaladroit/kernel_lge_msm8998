@@ -322,6 +322,8 @@ struct ucred {
 #define SOL_CAIF	278
 #define SOL_ALG		279
 #define SOL_NFC		280
+//#define SOL_KCM		281
+#define SOL_TLS		282
 
 /* IPX options */
 #define IPX_TYPE	1
