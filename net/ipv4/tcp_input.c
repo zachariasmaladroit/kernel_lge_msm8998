@@ -6191,7 +6191,7 @@ int tcp_rcv_state_process(struct sock *sk, struct sk_buff *skb)
 			 * addresses, which can only be done after the third ack
 			 * of the 3-way handshake.
 			 */
-			mptcp_update_metasocket(sk, tp->meta_sk);
+			mptcp_update_metasocket(tp->meta_sk);
 		}
 #endif
 		if (queued >= 0)
@@ -6297,12 +6297,15 @@ int tcp_rcv_state_process(struct sock *sk, struct sk_buff *skb)
 		tcp_initialize_rcv_mss(sk);
 		tcp_fast_path_on(tp);
 #ifdef CONFIG_LGP_DATA_TCPIP_MPTCP
-		/* Send an ACK when establishing a new
-		 * MPTCP subflow, i.e. using an MP_JOIN
-		 * subtype.
+		/* Send an ACK when establishing a new  MPTCP subflow, i.e.
+		 * using an MP_JOIN subtype.
 		 */
-		if (mptcp(tp) && !is_master_tp(tp))
-			tcp_send_ack(sk);
+		if (mptcp(tp)) {
+			if (is_master_tp(tp))
+				mptcp_update_metasocket(mptcp_meta_sk(sk));
+			else
+				tcp_send_ack(sk);
+		}
 #endif
 		break;
 
