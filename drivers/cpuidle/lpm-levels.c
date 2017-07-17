@@ -720,7 +720,7 @@ static void update_history(struct cpuidle_device *dev, int idx);
 static int cpu_power_select(struct cpuidle_device *dev,
 		struct lpm_cpu *cpu)
 {
-	int best_level = -1;
+	int best_level = 0;
 	uint32_t latency_us = pm_qos_request_for_cpu(PM_QOS_CPU_DMA_LATENCY,
 							dev->cpu);
 	s64 sleep_us = ktime_to_us(tick_nohz_get_sleep_length());
@@ -733,9 +733,6 @@ static int cpu_power_select(struct cpuidle_device *dev,
 	uint32_t next_wakeup_us = (uint32_t)sleep_us;
 	uint32_t *min_residency = get_per_cpu_min_residency(dev->cpu);
 	uint32_t *max_residency = get_per_cpu_max_residency(dev->cpu);
-
-	if (!cpu)
-		return -EINVAL;
 
 	idx_restrict = cpu->nlevels + 1;
 
@@ -1561,12 +1558,7 @@ static int lpm_cpuidle_select(struct cpuidle_driver *drv,
 	if (!cluster)
 		return 0;
 
-	idx = cpu_power_select(dev, cluster->cpu);
-
-	if (idx < 0)
-		return -EPERM;
-
-	return idx;
+	return cpu_power_select(dev, cluster->cpu);
 }
 
 static void update_history(struct cpuidle_device *dev, int idx)
