@@ -2201,7 +2201,7 @@ static void mdss_dp_proprietary_dp_work(struct work_struct *work)
 
 	if (dp->hpd_irq_on) {
 	    pr_info("Proprietary dp adaptor processing irq. wait more.\n");
-	    queue_delayed_work(dp->workq, &dp->proprietary_dp_work, HZ / 2);
+	    queue_delayed_work(dp->workq, &dp->proprietary_dp_work, msecs_to_jiffies(500));
 	    return;
 	}
 
@@ -2267,7 +2267,7 @@ static bool mdss_dp_handle_dp_adaptor(struct mdss_dp_drv_pdata *dp,
 
 			pr_info("Proprietary dp adaptor connected.\n");
 			dp->dp_adaptor = DP_ADAPTOR_PROPRIETARY_UNSTABLE;
-			queue_delayed_work(dp->workq, &dp->proprietary_dp_work, HZ * 2);
+			queue_delayed_work(dp->workq, &dp->proprietary_dp_work, msecs_to_jiffies(2000));
 			break;
 		case DP_ADAPTOR_PROPRIETARY_UNSTABLE:
 			if (status != NOTIFY_DISCONNECT_IRQ_HPD)
@@ -2281,7 +2281,7 @@ static bool mdss_dp_handle_dp_adaptor(struct mdss_dp_drv_pdata *dp,
 					/* cable is unstable */
 					pr_info("Proprietary dp adaptor connected.\n");
 					dp->dp_adaptor = DP_ADAPTOR_PROPRIETARY_UNSTABLE;
-					queue_delayed_work(dp->workq, &dp->proprietary_dp_work, HZ * 2);
+					queue_delayed_work(dp->workq, &dp->proprietary_dp_work, msecs_to_jiffies(2000));
 					notify = false;
 				} else {
 					pr_info("Proprietary dp adaptor skip - DANGLE\n");
@@ -2290,7 +2290,7 @@ static bool mdss_dp_handle_dp_adaptor(struct mdss_dp_drv_pdata *dp,
 			break;
 		case DP_ADAPTOR_PROPRIETARY_DANGLE:
 			dp->dp_adaptor = DP_ADAPTOR_PROPRIETARY_UNSTABLE;
-			queue_delayed_work(dp->workq, &dp->proprietary_dp_work, HZ * 2);
+			queue_delayed_work(dp->workq, &dp->proprietary_dp_work, msecs_to_jiffies(2000));
 			break;
 		default:
 			break;
@@ -2345,6 +2345,7 @@ notify:
 static int mdss_dp_notify_clients(struct mdss_dp_drv_pdata *dp,
 	enum notification_status status)
 {
+	const int irq_comp_timeout = 2000;
 	int ret = 0;
 	bool notify = false;
 	bool connect;
@@ -2707,7 +2708,7 @@ static void mdss_dp_hdcp_cb(void *ptr, enum hdcp_states status)
 	dp->hdcp_status = status;
 
 	if (dp->alt_mode.dp_status.hpd_high)
-		queue_delayed_work(dp->workq, &dp->hdcp_cb_work, HZ/4);
+		queue_delayed_work(dp->workq, &dp->hdcp_cb_work, msecs_to_jiffies(250));
 }
 
 static int mdss_dp_hdcp_init(struct mdss_panel_data *pdata)
@@ -3342,7 +3343,7 @@ static void mdss_dp_mainlink_push_idle(struct mdss_panel_data *pdata)
 {
 	bool cable_connected;
 	struct mdss_dp_drv_pdata *dp_drv = NULL;
-	const int idle_pattern_completion_timeout_ms = 3 * HZ / 100;
+	const int idle_pattern_completion_timeout_ms = 30;
 
 	dp_drv = container_of(pdata, struct mdss_dp_drv_pdata,
 				panel_data);
@@ -3373,7 +3374,7 @@ static void mdss_dp_mainlink_push_idle(struct mdss_panel_data *pdata)
 	reinit_completion(&dp_drv->idle_comp);
 	mdss_dp_state_ctrl(&dp_drv->ctrl_io, ST_PUSH_IDLE);
 	if (!wait_for_completion_timeout(&dp_drv->idle_comp,
-			idle_pattern_completion_timeout_ms))
+			msecs_to_jiffies(idle_pattern_completion_timeout_ms)))
 		pr_warn("PUSH_IDLE pattern timedout\n");
 
 	mutex_unlock(&dp_drv->train_mutex);
@@ -3474,17 +3475,17 @@ static int mdss_dp_event_handler(struct mdss_panel_data *pdata,
 #ifdef CONFIG_LGE_DISPLAY_COMMON
 			if(dp->dpcd.max_lane_count == 2 ){
 				queue_delayed_work(dp->workq,
-						&dp->hdcp_cb_work, HZ / 2);
+						&dp->hdcp_cb_work, msecs_to_jiffies(500));
 				pr_info("hdcp_check lane_count = %d, 0.5s\n",dp->dpcd.max_lane_count);
 			}
 			else{
 				queue_delayed_work(dp->workq,
-						&dp->hdcp_cb_work, 3 * HZ);
+						&dp->hdcp_cb_work, msecs_to_jiffies(3000));
 				pr_info("hdcp_check lane_count = %d, 3s\n",dp->dpcd.max_lane_count);
 			}
 #else
   			queue_delayed_work(dp->workq,
-					&dp->hdcp_cb_work, HZ / 2);
+					&dp->hdcp_cb_work, msecs_to_jiffies(500));
 #endif
 		}
 		break;
@@ -3925,7 +3926,7 @@ static void mdss_dp_reset_sw_state(struct mdss_dp_drv_pdata *dp)
 	 */
 	if (atomic_read(&dp->notification_pending)) {
 		pr_debug("waiting for the pending notitfication\n");
-		ret = wait_for_completion_timeout(&dp->notification_comp, HZ);
+		ret = wait_for_completion_timeout(&dp->notification_comp, msecs_to_jiffies(1000));
 		if (ret <= 0) {
 			pr_err("%s timed out\n",
 				mdss_dp_notification_status_to_string(
@@ -4080,7 +4081,7 @@ static inline void mdss_dp_link_maintenance(struct mdss_dp_drv_pdata *dp,
 		int ret;
 
 		pr_debug("waiting for the disconnect to finish\n");
-		ret = wait_for_completion_timeout(&dp->notification_comp, HZ);
+		ret = wait_for_completion_timeout(&dp->notification_comp, msecs_to_jiffies(1000));
 		if (ret <= 0) {
 			pr_warn("NOTIFY_DISCONNECT_IRQ_HPD timed out\n");
 			return;
@@ -4311,7 +4312,7 @@ static int mdss_dp_process_downstream_port_status_change(
 		int ret;
 
 		pr_debug("waiting for the disconnect to finish\n");
-		ret = wait_for_completion_timeout(&dp->notification_comp, HZ);
+		ret = wait_for_completion_timeout(&dp->notification_comp, msecs_to_jiffies(1000));
 		if (ret <= 0) {
 			pr_warn("NOTIFY_DISCONNECT_IRQ_HPD timed out\n");
 			return -ETIMEDOUT;
