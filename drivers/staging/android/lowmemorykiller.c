@@ -895,9 +895,9 @@ kill:
 		free = other_free * (long)(PAGE_SIZE / 1024);
 		trace_lowmemory_kill(selected, cache_size, cache_limit, free);
 #ifndef CONFIG_HSWAP
-		lowmem_print(1, "Killing '%s' (%d), adj %hd,\n"
+		lowmem_print(1, "Killing '%s' (%d) (tgid %d), adj %hd,\n"
 #else
-		lowmem_print(1, "Killing '%s' (%d), adj %hd, reclaimable cnt %d\n"
+		lowmem_print(1, "Killing '%s' (%d) (tgid %d), adj %hd, reclaimable cnt %d\n"
 #endif
 			        "   to free %ldkB on behalf of '%s' (%d) because\n" \
 			        "   cache %ldkB is below limit %ldkB for oom_score_adj %hd\n" \
@@ -908,7 +908,7 @@ kill:
 				"   Total file cache is %ldkB\n" \
 				"   Total zcache is %ldkB\n" \
 				"   GFP mask is 0x%x\n",
-			     selected->comm, selected->pid,
+			     selected->comm, selected->pid, selected->tgid,
 			     selected_oom_score_adj,
 #ifdef CONFIG_HSWAP
 				 reclaim_cnt,
