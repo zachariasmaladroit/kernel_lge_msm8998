@@ -46,6 +46,7 @@
 #include "msm-ds2-dap-config.h"
 #include "q6voice.h"
 #include "sound/q6lsm.h"
+#include <linux/delay.h>
 
 #if defined(CONFIG_SND_LGE_TX_NXP_LIB)
 #include "lge_dsp_nxp_lib.h"
@@ -1580,6 +1581,14 @@ void msm_pcm_routing_dereg_phy_stream(int fedai_id, int stream_type)
 			}
 			topology = adm_get_topology_for_port_copp_idx(
 					msm_bedais[i].port_id, idx);
+
+			/* Check if backend is connected to USB RX, if so
+			 * give sufficient time for data to be drained from
+			 * ADM before closing
+			 */
+			if (msm_bedais[i].port_id == AFE_PORT_ID_USB_RX)
+				usleep_range(10000, 10010);
+
 			adm_close(msm_bedais[i].port_id, fdai->perf_mode, idx);
 			pr_debug("%s:copp:%ld,idx bit fe:%d,type:%d,be:%d\n",
 				 __func__, copp, fedai_id, session_type, i);
