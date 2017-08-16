@@ -1258,7 +1258,7 @@ static unsigned int ipv4_mtu(const struct dst_entry *dst)
 	if (mtu)
 		return mtu;
 
-	mtu = dst->dev->mtu;
+	mtu = READ_ONCE(dst->dev->mtu);
 
 /* 2016-12-23 hyoseab.song@lge.com LGP_DATA_ENABLE_MODEM_CLAT [START] */
     if(strncmp(dst->dev->name,"rmnet",strlen("rmnet")) == 0 && (rt->rt_gateway & 0x00FFFFFF) == 0x000000C0) {
