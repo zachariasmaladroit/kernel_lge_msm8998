@@ -474,6 +474,8 @@ int __must_check tcp_queue_rcv(struct sock *sk, struct sk_buff *skb, int hdrlen,
 			       bool *fragstolen);
 bool tcp_try_coalesce(struct sock *sk, struct sk_buff *to,
 		      struct sk_buff *from, bool *fragstolen);
+void tcp_ofo_queue(struct sock *sk);
+void tcp_data_queue_ofo(struct sock *sk, struct sk_buff *skb);
 void tcp_copy_sk(struct sock *nsk, const struct sock *osk);
 /**** END - Exports needed for MPTCP ****/
 #endif
@@ -740,7 +742,6 @@ void tcp_skb_mark_lost_uncond_verify(struct tcp_sock *tp, struct sk_buff *skb);
 #ifdef CONFIG_LGP_DATA_TCPIP_MPTCP
 void tcp_set_rto(struct sock *sk);
 bool tcp_should_expand_sndbuf(const struct sock *sk);
-bool tcp_prune_ofo_queue(struct sock *sk);
 #endif
 
 /* tcp_timer.c */
@@ -1943,7 +1944,6 @@ struct tcp_sock_ops {
 			   int push_one, gfp_t gfp);
 	void (*send_active_reset)(struct sock *sk, gfp_t priority);
 	int (*write_wakeup)(struct sock *sk, int mib);
-	bool (*prune_ofo_queue)(struct sock *sk);
 	void (*retransmit_timer)(struct sock *sk);
 	void (*time_wait)(struct sock *sk, int state, int timeo);
 	void (*cleanup_rbuf)(struct sock *sk, int copied);
