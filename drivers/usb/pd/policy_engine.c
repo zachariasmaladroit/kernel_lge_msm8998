@@ -3739,7 +3739,6 @@ static int usbpd_dr_prop_writeable(struct dual_role_phy_instance *dual_role,
 	case DUAL_ROLE_PROP_MOISTURE_EN:
 	case DUAL_ROLE_PROP_MOISTURE:
 #endif
-		return 1;
 	case DUAL_ROLE_PROP_DR:
 	case DUAL_ROLE_PROP_PR:
 		if (pd)
