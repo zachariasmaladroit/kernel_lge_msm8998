@@ -781,6 +781,7 @@ struct rq {
 	struct hmp_sched_stats hmp_stats;
 
 	int cstate, wakeup_latency, wakeup_energy;
+	u64 cumulative_runnable_avg;
 	u64 window_start;
 	unsigned long hmp_flags;
 
