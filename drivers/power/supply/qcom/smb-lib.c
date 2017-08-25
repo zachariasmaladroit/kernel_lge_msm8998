@@ -4432,8 +4432,7 @@ int smblib_set_prop_pd_voltage_max(struct smb_charger *chg,
 	return rc;
 }
 
-int smblib_set_prop_pd_active(struct smb_charger *chg,
-			      const union power_supply_propval *val)
+static int __smblib_set_prop_pd_active(struct smb_charger *chg, bool pd_active)
 {
 	int rc;
 	bool orientation, sink_attached, hvdcp;
@@ -4442,14 +4441,6 @@ int smblib_set_prop_pd_active(struct smb_charger *chg,
 #ifdef CONFIG_LGE_PM
 	if (val->intval)
 		chg->checking_pd_active = true;
-
-	if (!get_effective_result(chg->pd_allowed_votable)) {
-		smblib_dbg(chg, PR_LGE, "disabled pd. pd_active(%d).\n", val->intval);
-		return -EINVAL;
-	}
-#else
-	if (!get_effective_result(chg->pd_allowed_votable))
-		return -EINVAL;
 #endif
 
 #ifdef CONFIG_LGE_PM
@@ -4460,7 +4451,7 @@ int smblib_set_prop_pd_active(struct smb_charger *chg,
 		goto skip_pd_active;
 #endif
 
-	chg->pd_active = val->intval;
+	chg->pd_active = pd_active;
 	if (chg->pd_active) {
 		vote(chg->apsd_disable_votable, PD_VOTER, true, 0);
 		vote(chg->pd_allowed_votable, PD_VOTER, true, 0);
@@ -4565,6 +4556,14 @@ skip_pd_active:
 	smblib_update_usb_type(chg);
 	power_supply_changed(chg->usb_psy);
 	return rc;
+}
+
+int smblib_set_prop_pd_active(struct smb_charger *chg,
+			      const union power_supply_propval *val)
+{
+	if (!get_effective_result(chg->pd_allowed_votable))
+		return -EINVAL;
+	return __smblib_set_prop_pd_active(chg, val->intval);
 }
 
 int smblib_set_prop_ship_mode(struct smb_charger *chg,
@@ -5739,14 +5738,20 @@ static void smblib_handle_hvdcp_check_timeout(struct smb_charger *chg,
 			vote(chg->usb_icl_votable, DCP_VOTER,
 				(chg->dcp_icl_ua != -EINVAL && chg->typec_mode != POWER_SUPPLY_TYPEC_SOURCE_HIGH),
 				chg->dcp_icl_ua);
-		if (!qc_charger && (apsd_result->bit & DCP_CHARGER_BIT)) {
+		if (!qc_charger && (apsd_result->bit & DCP_CHARGER_BIT))
 			smblib_set_aicl_rerun(chg, true);
-		}
 #else
 			/* enforce DCP ICL if specified */
 			vote(chg->usb_icl_votable, DCP_VOTER,
 				chg->dcp_icl_ua != -EINVAL, chg->dcp_icl_ua);
 #endif
+
+		/*
+		 * if pd is not allowed, then set pd_active = false right here,
+		 * so that it starts the hvdcp engine
+		 */
+		if (!get_effective_result(chg->pd_allowed_votable))
+			__smblib_set_prop_pd_active(chg, 0);
 	}
 #ifdef CONFIG_LGE_PM
 	chg->is_hvdcp_timeout = rising;
@@ -7569,7 +7574,9 @@ static void smblib_legacy_detection_work(struct work_struct *work)
 		smblib_err(chg, "Couldn't disable type-c rc=%d\n", rc);
 
 	/* wait for the adapter to turn off VBUS */
-	msleep(500);
+	msleep(1000);
+
+	smblib_dbg(chg, PR_MISC, "legacy workaround enabling typec\n");
 
 	rc = smblib_masked_write(chg,
 				TYPE_C_INTRPT_ENB_SOFTWARE_CTRL_REG,
@@ -7578,7 +7585,7 @@ static void smblib_legacy_detection_work(struct work_struct *work)
 		smblib_err(chg, "Couldn't enable type-c rc=%d\n", rc);
 
 	/* wait for type-c detection to complete */
-	msleep(100);
+	msleep(400);
 
 	rc = smblib_read(chg, TYPE_C_STATUS_5_REG, &stat);
 	if (rc < 0) {
@@ -7592,6 +7599,8 @@ static void smblib_legacy_detection_work(struct work_struct *work)
 #endif
 	legacy = stat & TYPEC_LEGACY_CABLE_STATUS_BIT;
 	rp_high = chg->typec_mode == POWER_SUPPLY_TYPEC_SOURCE_HIGH;
+	smblib_dbg(chg, PR_MISC, "legacy workaround done legacy = %d rp_high = %d\n",
+			legacy, rp_high);
 #ifdef CONFIG_LGE_PM
 	if ((!legacy && smblib_get_prop_ufp_mode(chg) == POWER_SUPPLY_TYPEC_SOURCE_HIGH)
 			|| smblib_get_prop_ufp_mode(chg) == POWER_SUPPLY_TYPEC_SOURCE_DEFAULT
