@@ -1100,6 +1100,9 @@ int gether_set_dev_addr(struct net_device *net, const char *dev_addr)
 	struct eth_dev *dev;
 	u8 new_addr[ETH_ALEN];
 
+	if (!net)
+		return -ENODEV;
+
 	dev = netdev_priv(net);
 	if (get_ether_addr(dev_addr, new_addr))
 		return -EINVAL;
@@ -1125,6 +1128,9 @@ int gether_set_host_addr(struct net_device *net, const char *host_addr)
 {
 	struct eth_dev *dev;
 	u8 new_addr[ETH_ALEN];
+
+	if (!net)
+		return -ENODEV;
 
 	dev = netdev_priv(net);
 	if (get_ether_addr(host_addr, new_addr))
