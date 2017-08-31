@@ -6264,6 +6264,12 @@ static int fg_parse_dt(struct fg_chip *chip)
 
 static void fg_cleanup(struct fg_chip *chip)
 {
+	int i;
+
+	for (i = 0; i < FG_IRQ_MAX; i++) {
+		if (fg_irqs[i].irq)
+			devm_free_irq(chip->dev, fg_irqs[i].irq, chip);
+	}
 #ifdef CONFIG_LGE_PM
 	alarm_try_to_cancel(&chip->esr_filter_alarm);
 #endif
