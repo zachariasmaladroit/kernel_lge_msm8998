@@ -852,6 +852,7 @@ struct dwc3_scratchpad_array {
  * @vbus_draw: current to be drawn from USB
  * @imod_interval: set the interrupt moderation interval in 250ns
  *			increments or 0 to disable.
+ * @create_reg_debugfs: create debugfs entry to allow dwc3 register dump
  */
 struct dwc3 {
 	struct usb_ctrlrequest	*ctrl_req;
@@ -1050,6 +1051,7 @@ struct dwc3 {
 	wait_queue_head_t	wait_linkstate;
 	unsigned int		index;
 	int			last_fifo_depth;
+	bool			create_reg_debugfs;
 };
 
 /* -------------------------------------------------------------------------- */
