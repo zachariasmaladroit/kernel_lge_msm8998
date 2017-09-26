@@ -218,7 +218,7 @@ static inline bool queuing_blocked(struct kthread_worker *worker,
         return !list_empty(&work->node) || work->canceling;
 }
 
-#ifdef CONFIG_CGROUPS
+#ifdef CONFIG_BLK_CGROUP
 void kthread_associate_blkcg(struct cgroup_subsys_state *css);
 struct cgroup_subsys_state *kthread_blkcg(void);
 #else
