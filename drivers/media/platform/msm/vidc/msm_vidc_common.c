@@ -3225,7 +3225,7 @@ static int set_output_buffers(struct msm_vidc_inst *inst,
 fail_set_buffers:
 	msm_comm_smem_free(inst, handle);
 err_no_mem:
-    kfree(binfo);
+	kfree(binfo);
 fail_kzalloc:
 	return rc;
 }
