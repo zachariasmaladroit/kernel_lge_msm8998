@@ -599,6 +599,7 @@ static inline int atomic_fetch_or(int mask, atomic_t *p)
 })
 #endif
 
+#define atomic_cond_read_acquire(v, c)	smp_cond_load_acquire(&(v)->counter, (c))
 
 #ifdef CONFIG_GENERIC_ATOMIC64
 #include <asm-generic/atomic64.h>
@@ -610,6 +611,8 @@ static inline void atomic64_andnot(long long i, atomic64_t *v)
 	atomic64_and(~i, v);
 }
 #endif
+
+#define atomic64_cond_read_acquire(v, c)	smp_cond_load_acquire(&(v)->counter, (c))
 
 #include <asm-generic/atomic-long.h>
 
