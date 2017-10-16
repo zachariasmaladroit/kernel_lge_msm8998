@@ -419,7 +419,6 @@ struct related_thread_group {
 };
 
 extern struct list_head cluster_head;
-extern int num_clusters;
 extern struct sched_cluster *sched_cluster[NR_CPUS];
 
 struct cpu_cycle {
