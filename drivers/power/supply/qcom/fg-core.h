@@ -437,6 +437,7 @@ struct fg_chip {
 #ifdef CONFIG_LGE_PM
 	struct mutex		qnovo_esr_ctrl_lock;
 #endif
+	spinlock_t		suspend_lock;
 	u32			batt_soc_base;
 	u32			batt_info_base;
 	u32			mem_if_base;
@@ -481,6 +482,7 @@ struct fg_chip {
 #ifdef CONFIG_LGE_PM
 	bool			qnovo_enable;
 #endif
+	bool			suspended;
 	struct completion	soc_update;
 	struct completion	soc_ready;
 	struct delayed_work	profile_load_work;

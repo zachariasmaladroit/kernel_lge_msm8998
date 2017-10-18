@@ -5040,6 +5040,14 @@ static int fg_notifier_cb(struct notifier_block *nb,
 	struct power_supply *psy = data;
 	struct fg_chip *chip = container_of(nb, struct fg_chip, nb);
 
+	spin_lock(&chip->suspend_lock);
+	if (chip->suspended) {
+		/* Return if we are still suspended */
+		spin_unlock(&chip->suspend_lock);
+		return NOTIFY_OK;
+	}
+	spin_unlock(&chip->suspend_lock);
+
 	if (event != PSY_EVENT_PROP_CHANGED)
 		return NOTIFY_OK;
 
@@ -6681,6 +6689,7 @@ static int fg_gen3_probe(struct platform_device *pdev)
 #ifdef CONFIG_LGE_PM
 	mutex_init(&chip->qnovo_esr_ctrl_lock);
 #endif
+	spin_lock_init(&chip->suspend_lock);
 	init_completion(&chip->soc_update);
 	init_completion(&chip->soc_ready);
 	INIT_DELAYED_WORK(&chip->profile_load_work, profile_load_work);
@@ -6833,6 +6842,10 @@ static int fg_gen3_suspend(struct device *dev)
 	struct fg_chip *chip = dev_get_drvdata(dev);
 	int rc;
 
+	spin_lock(&chip->suspend_lock);
+	chip->suspended = true;
+	spin_unlock(&chip->suspend_lock);
+
 	rc = fg_esr_timer_config(chip, true);
 	if (rc < 0)
 		pr_err("Error in configuring ESR timer, rc=%d\n", rc);
@@ -6866,6 +6879,16 @@ static int fg_gen3_resume(struct device *dev)
 				&chip->fg_inform_work,
 		round_jiffies_relative(msecs_to_jiffies(FG_INFORM_NORMAL_TIME)));
 #endif
+
+	if (!work_pending(&chip->status_change_work)) {
+		pm_stay_awake(chip->dev);
+		schedule_work(&chip->status_change_work);
+	}
+
+	spin_lock(&chip->suspend_lock);
+	chip->suspended = false;
+	spin_unlock(&chip->suspend_lock);
+
 	return 0;
 }
 
