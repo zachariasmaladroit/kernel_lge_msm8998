@@ -3019,7 +3019,7 @@ static int tavil_codec_enable_asrc(struct snd_soc_codec *codec,
 				   int asrc_in, int event)
 {
 	struct tavil_priv *tavil = snd_soc_codec_get_drvdata(codec);
-	u16 cfg_reg, ctl_reg, clk_reg, asrc_ctl, mix_ctl_reg;
+	u16 cfg_reg, ctl_reg, clk_reg, asrc_ctl, mix_ctl_reg, paired_reg;
 	int asrc, ret = 0;
 	u8 main_sr, mix_sr, asrc_mode = 0;
 
@@ -3028,6 +3028,7 @@ static int tavil_codec_enable_asrc(struct snd_soc_codec *codec,
 		cfg_reg = WCD934X_CDC_RX1_RX_PATH_CFG0;
 		ctl_reg = WCD934X_CDC_RX1_RX_PATH_CTL;
 		clk_reg = WCD934X_MIXING_ASRC0_CLK_RST_CTL;
+		paired_reg = WCD934X_MIXING_ASRC1_CLK_RST_CTL;
 		asrc_ctl = WCD934X_MIXING_ASRC0_CTL1;
 		asrc = ASRC0;
 		break;
@@ -3035,6 +3036,7 @@ static int tavil_codec_enable_asrc(struct snd_soc_codec *codec,
 		cfg_reg = WCD934X_CDC_RX3_RX_PATH_CFG0;
 		ctl_reg = WCD934X_CDC_RX3_RX_PATH_CTL;
 		clk_reg = WCD934X_MIXING_ASRC0_CLK_RST_CTL;
+		paired_reg = WCD934X_MIXING_ASRC1_CLK_RST_CTL;
 		asrc_ctl = WCD934X_MIXING_ASRC0_CTL1;
 		asrc = ASRC0;
 		break;
@@ -3042,6 +3044,7 @@ static int tavil_codec_enable_asrc(struct snd_soc_codec *codec,
 		cfg_reg = WCD934X_CDC_RX2_RX_PATH_CFG0;
 		ctl_reg = WCD934X_CDC_RX2_RX_PATH_CTL;
 		clk_reg = WCD934X_MIXING_ASRC1_CLK_RST_CTL;
+		paired_reg = WCD934X_MIXING_ASRC0_CLK_RST_CTL;
 		asrc_ctl = WCD934X_MIXING_ASRC1_CTL1;
 		asrc = ASRC1;
 		break;
@@ -3049,6 +3052,7 @@ static int tavil_codec_enable_asrc(struct snd_soc_codec *codec,
 		cfg_reg = WCD934X_CDC_RX4_RX_PATH_CFG0;
 		ctl_reg = WCD934X_CDC_RX4_RX_PATH_CTL;
 		clk_reg = WCD934X_MIXING_ASRC1_CLK_RST_CTL;
+		paired_reg = WCD934X_MIXING_ASRC0_CLK_RST_CTL;
 		asrc_ctl = WCD934X_MIXING_ASRC1_CTL1;
 		asrc = ASRC1;
 		break;
@@ -3056,6 +3060,7 @@ static int tavil_codec_enable_asrc(struct snd_soc_codec *codec,
 		cfg_reg = WCD934X_CDC_RX7_RX_PATH_CFG0;
 		ctl_reg = WCD934X_CDC_RX7_RX_PATH_CTL;
 		clk_reg = WCD934X_MIXING_ASRC2_CLK_RST_CTL;
+		paired_reg = WCD934X_MIXING_ASRC3_CLK_RST_CTL;
 		asrc_ctl = WCD934X_MIXING_ASRC2_CTL1;
 		asrc = ASRC2;
 		break;
@@ -3063,6 +3068,7 @@ static int tavil_codec_enable_asrc(struct snd_soc_codec *codec,
 		cfg_reg = WCD934X_CDC_RX8_RX_PATH_CFG0;
 		ctl_reg = WCD934X_CDC_RX8_RX_PATH_CTL;
 		clk_reg = WCD934X_MIXING_ASRC3_CLK_RST_CTL;
+		paired_reg = WCD934X_MIXING_ASRC2_CLK_RST_CTL;
 		asrc_ctl = WCD934X_MIXING_ASRC3_CTL1;
 		asrc = ASRC3;
 		break;
@@ -3076,6 +3082,13 @@ static int tavil_codec_enable_asrc(struct snd_soc_codec *codec,
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
 		if (tavil->asrc_users[asrc] == 0) {
+			if ((snd_soc_read(codec, clk_reg) & 0x02) ||
+			    (snd_soc_read(codec, paired_reg) & 0x02)) {
+				snd_soc_update_bits(codec, clk_reg,
+						    0x02, 0x00);
+				snd_soc_update_bits(codec, paired_reg,
+						    0x02, 0x00);
+			}
 			snd_soc_update_bits(codec, cfg_reg, 0x80, 0x80);
 			snd_soc_update_bits(codec, clk_reg, 0x01, 0x01);
 			main_sr = snd_soc_read(codec, ctl_reg) & 0x0F;
@@ -3095,7 +3108,7 @@ static int tavil_codec_enable_asrc(struct snd_soc_codec *codec,
 			tavil->asrc_users[asrc] = 0;
 			snd_soc_update_bits(codec, asrc_ctl, 0x07, 0x00);
 			snd_soc_update_bits(codec, cfg_reg, 0x80, 0x00);
-			snd_soc_update_bits(codec, clk_reg, 0x01, 0x00);
+			snd_soc_update_bits(codec, clk_reg, 0x03, 0x02);
 		}
 		break;
 	};
