@@ -355,7 +355,6 @@ static int unregister_gadget(struct gadget_info *gi)
 	ret = usb_gadget_unregister_driver(&gi->composite.gadget_driver);
 	if (ret)
 		return ret;
-
 	gi->unbinding = false;
 	kfree(gi->udc_name);
 	gi->udc_name = NULL;
