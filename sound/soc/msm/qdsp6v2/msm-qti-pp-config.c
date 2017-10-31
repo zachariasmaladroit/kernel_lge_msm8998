@@ -302,7 +302,8 @@ int msm_qti_pp_send_stereo_to_custom_stereo_cmd(int port_id, int copp_idx,
 						copp_idx,
 						session_id,
 						params_value,
-						params_length);
+						params_length,
+						ADM_MATRIX_ID_AUDIO_RX);
 		if (rc) {
 			pr_err("%s: send params failed rc=%d\n", __func__, rc);
 			kfree(params_value);

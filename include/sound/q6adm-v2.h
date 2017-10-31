@@ -87,6 +87,11 @@ struct msm_pcm_channel_mixer {
 	bool enable;
 	int rule;
 	int channel_weight[ADM_MAX_CHANNELS][ADM_MAX_CHANNELS];
+	int port_idx;
+	int input_channel;
+	uint16_t in_ch_map[ADM_MAX_CHANNELS];
+	uint16_t out_ch_map[ADM_MAX_CHANNELS];
+	int override_cfg;
 };
 
 int srs_trumedia_open(int port_id, int copp_idx, __s32 srs_tech_id,
@@ -150,7 +155,8 @@ int adm_get_indexes_from_copp_id(int copp_id, int *port_idx, int *copp_idx);
 
 int adm_set_pspd_matrix_params(int port_id, int copp_idx,
 				unsigned int session_id,
-				char *params, uint32_t params_length);
+				char *params, uint32_t params_length,
+				int session_type);
 
 int adm_set_downmix_params(int port_id, int copp_idx,
 				unsigned int session_id, char *params,
