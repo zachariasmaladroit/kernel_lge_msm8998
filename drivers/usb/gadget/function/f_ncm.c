@@ -1487,7 +1487,7 @@ static int ncm_bind(struct usb_configuration *c, struct usb_function *f)
 				      sizeof(ncm->ethaddr));
 #endif
 
-	if (status < 12) { /* strlen("01234567890a") */
+	if (status < 12) { /* DSTRLEN("01234567890a") */
 		ERROR(cdev, "%s: failed to get host eth addr, err %d\n",
 		__func__, status);
 		status = -EINVAL;
