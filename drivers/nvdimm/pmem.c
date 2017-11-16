@@ -27,6 +27,7 @@
 #include <linux/slab.h>
 #include <linux/pmem.h>
 #include <linux/nd.h>
+#include <linux/backing-dev.h>
 #include "pfn.h"
 #include "nd.h"
 
@@ -299,9 +300,23 @@ static int nvdimm_namespace_detach_pfn(struct nd_namespace_common *ndns)
 	pmem = dev_get_drvdata(&nd_pfn->dev);
 	pmem_detach_disk(pmem);
 
+<<<<<<< HEAD
 	/* release nd_pfn resources */
 	kfree(nd_pfn->pfn_sb);
 	nd_pfn->pfn_sb = NULL;
+=======
+	disk->fops		= &pmem_fops;
+	disk->queue		= q;
+	disk->flags		= GENHD_FL_EXT_DEVT;
+	disk->queue->backing_dev_info->capabilities |= BDI_CAP_SYNCHRONOUS_IO;
+	nvdimm_namespace_disk_name(ndns, disk->disk_name);
+	set_capacity(disk, (pmem->size - pmem->pfn_pad - pmem->data_offset)
+			/ 512);
+	if (devm_init_badblocks(dev, &pmem->bb))
+		return -ENOMEM;
+	nvdimm_badblocks_populate(nd_region, &pmem->bb, res);
+	disk->bb = &pmem->bb;
+>>>>>>> 23c47d2ada9f... bdi: introduce BDI_CAP_SYNCHRONOUS_IO
 
 	return 0;
 }
