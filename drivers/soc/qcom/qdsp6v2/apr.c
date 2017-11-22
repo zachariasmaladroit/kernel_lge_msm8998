@@ -682,7 +682,8 @@ void apr_cb_func(void *buf, int len, void *priv)
 	pr_debug("port = %d t_port = %d\n", data.src_port, temp_port);
 	if (((temp_port >= 0) && (temp_port < APR_MAX_PORTS))
 		&& (c_svc->port_cnt && c_svc->port_fn[temp_port]))
-		c_svc->port_fn[temp_port](&data,  c_svc->port_priv[temp_port]);
+		c_svc->port_fn[temp_port](&data,
+			c_svc->port_priv[temp_port]);
 	else if (c_svc->fn)
 		c_svc->fn(&data, c_svc->priv);
 	else
