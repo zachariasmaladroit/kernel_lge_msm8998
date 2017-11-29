@@ -195,7 +195,7 @@ static int hmac_create(struct crypto_template *tmpl, struct rtattr **tb)
 	if (IS_ERR(salg))
 		return PTR_ERR(salg);
 	alg = &salg->base;
- 
+
 	/* The underlying hash algorithm must be unkeyed */
 	err = -EINVAL;
 	if (crypto_shash_alg_has_setkey(salg))
