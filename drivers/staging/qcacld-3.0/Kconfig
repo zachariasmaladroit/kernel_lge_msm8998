@@ -132,11 +132,16 @@ config ICMP_DISABLE_PS
 	bool "Enable ICMP packet disable powersave feature"
 	default n
 
-config CONFIG_BUILD_TIMESTAMP
+config BUILD_TIMESTAMP
 	bool "Embed timestamp in wlan version"
 	default n
 
 config WLAN_FEATURE_FILS
 	bool "Enable FILS Feature (11ai)"
 	default n
+
+  config WLAN_FEATURE_FILS
+	bool "Enable FILS_SK feature"
+	default n
+
 endif # QCA_CLD_WLAN
