@@ -2463,7 +2463,6 @@ static int adv7481_remove(struct platform_device *pdev)
 	return 0;
 }
 
-#ifdef CONFIG_PM_SLEEP
 static int adv7481_suspend(struct device *dev)
 {
 	struct adv7481_state *state;
@@ -2500,10 +2499,6 @@ static int adv7481_resume(struct device *dev)
 
 static SIMPLE_DEV_PM_OPS(adv7481_pm_ops, adv7481_suspend, adv7481_resume);
 #define ADV7481_PM_OPS (&adv7481_pm_ops)
-
-#else
-#define ADV7481_PM_OPS NULL
-#endif
 
 static struct platform_driver adv7481_driver = {
 	.driver = {
