@@ -510,7 +510,6 @@ static int raw_sendmsg(struct sock *sk, struct msghdr *msg, size_t len)
 	 * but READ_ONCE() doesn't work with bit fields
 	 */
 	hdrincl = inet->hdrincl;
-
 	/*
 	 *	Check the flags.
 	 */
