@@ -847,6 +847,7 @@ static void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 #if defined (CONFIG_MACH_LGE) && (CONFIG_LGE_TOUCH_CORE)
 		touch_notify_earjack(0);
 #endif
+		mbhc->force_linein = false;
 	} else {
 		/*
 		 * Report removal of current jack type.
@@ -924,6 +925,7 @@ static void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 						SND_JACK_LINEOUT |
 						SND_JACK_ANC_HEADPHONE |
 						SND_JACK_UNSUPPORTED);
+			mbhc->force_linein = false;
 		}
 
 		if (mbhc->current_plug == MBHC_PLUG_TYPE_HEADSET &&
@@ -966,6 +968,7 @@ static void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 				 mbhc->zr < MAX_IMPED) &&
 				(jack_type == SND_JACK_HEADPHONE)) {
 				jack_type = SND_JACK_LINEOUT;
+				mbhc->force_linein = true;
 				mbhc->current_plug = MBHC_PLUG_TYPE_HIGH_HPH;
 				if (mbhc->hph_status) {
 					mbhc->hph_status &= ~(SND_JACK_HEADSET |
@@ -1794,13 +1797,21 @@ correct_plug_type:
 #ifndef CONFIG_MACH_LGE
 		pr_debug("%s: Can be slow insertion of headphone\n", __func__);
 		wcd_cancel_btn_work(mbhc);
-		plug_type = MBHC_PLUG_TYPE_HEADPHONE;
+		/* Report as headphone only if previously
+		 * not reported as lineout
+		 */
+		if (!mbhc->force_linein)
+			plug_type = MBHC_PLUG_TYPE_HEADPHONE;
 #else
 		if (wcd_mbhc_get_button_mask(mbhc) & SND_JACK_BTN_0) {
 			pr_info("[LGE MBHC] %s: Can be slow insertion of headphone\n",
 				 __func__);
 			wcd_cancel_btn_work(mbhc);
-			plug_type = MBHC_PLUG_TYPE_HEADPHONE;
+			/* Report as headphone only if previously
+			 * not reported as lineout
+			 */
+			if (!mbhc->force_linein)
+				plug_type = MBHC_PLUG_TYPE_HEADPHONE;
 #ifdef CONFIG_SND_USE_MBHC_EXTN_CABLE
 			if(extn_cable) {
 				pr_info("[LGE MBHC] %s: Gender + Headphone(3 pole) later.\n", __func__);
@@ -1811,7 +1822,11 @@ correct_plug_type:
 			pr_info("[LGE MBHC] %s: non-zero button pressed during detection\n",
 				 __func__);
 			if (mbhc->current_plug != MBHC_PLUG_TYPE_HEADSET) {
-				plug_type = MBHC_PLUG_TYPE_HEADSET;
+				/* Report as headphone only if previously
+				 * not reported as lineout
+				 */
+				if (!mbhc->force_linein)
+					plug_type = MBHC_PLUG_TYPE_HEADPHONE;
 				goto report;
 			}
 		}
