@@ -139,4 +139,8 @@ config CONFIG_BUILD_TIMESTAMP
 config WLAN_FEATURE_SARV1_TO_SARV2
 	bool "Enable conversion of SAR v1 to v2 feature"
 	default n
+
+config WLAN_FEATURE_FILS
+	bool "Enable FILS Feature (11ai)"
+	default y
 endif # QCA_CLD_WLAN
