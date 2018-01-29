@@ -874,19 +874,19 @@ kill:
 		boost_dying_task_prio(selected);
 #endif
 		send_sig(SIGKILL, selected, 0);
-		if (selected->mm)
+		if (selected->mm) {
 			task_set_lmk_waiting(selected);
-		if (oom_reaper)
-			mark_lmk_victim(selected);
+			if (!test_bit(MMF_OOM_SKIP, &selected->mm->flags) &&
+			    oom_reaper) {
+				mark_lmk_victim(selected);
+				wake_oom_reaper(selected);
+			}
+		}
 		task_unlock(selected);
 // eval
 //#ifdef CONFIG_HSWAP
 		++lmk_kill_cnt;
 //#endif
-
-		if (oom_reaper) {
-			wake_oom_reaper(selected);
-		}
 
 		cache_size = other_file * (long)(PAGE_SIZE / 1024);
 		cache_limit = minfree * (long)(PAGE_SIZE / 1024);
