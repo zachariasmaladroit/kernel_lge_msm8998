@@ -77,7 +77,7 @@
 #include <linux/compiler.h>
 #include <linux/irq.h>
 #include <linux/sched/core_ctl.h>
-//#include <linux/cpufreq_times.h>
+#include <linux/cpufreq_times.h>
 #include <linux/prefetch.h>
 
 #include <asm/switch_to.h>
@@ -2435,6 +2435,10 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
 #ifdef CONFIG_SCHEDSTATS
 	/* Even if schedstat is disabled, there should not be garbage */
 	memset(&p->se.statistics, 0, sizeof(p->se.statistics));
+#endif
+
+#ifdef CONFIG_CPU_FREQ_TIMES
+	cpufreq_task_times_init(p);
 #endif
 
 	RB_CLEAR_NODE(&p->dl.rb_node);
