@@ -1,4 +1,4 @@
-/* Copyright (c) 2016-2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2016-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -36,6 +36,11 @@ static const struct drm_prop_enum_list e_topology_control[] = {
 	{SDE_RM_TOPCTL_DSPP,		"dspp"},
 	{SDE_RM_TOPCTL_FORCE_TILING,	"force_tiling"},
 	{SDE_RM_TOPCTL_PPSPLIT,		"ppsplit"}
+};
+
+static const struct drm_prop_enum_list hpd_clock_state[] = {
+	{SDE_MODE_HPD_ON,      "ON"},
+	{SDE_MODE_HPD_OFF,     "OFF"},
 };
 
 int sde_connector_get_info(struct drm_connector *connector,
@@ -380,7 +385,8 @@ static int sde_connector_atomic_set_property(struct drm_connector *connector,
 	/* connector-specific property handling */
 	idx = msm_property_index(&c_conn->property_info, property);
 
-	if (idx == CONNECTOR_PROP_OUT_FB) {
+	switch (idx) {
+	case CONNECTOR_PROP_OUT_FB:
 		/* clear old fb, if present */
 		if (c_state->out_fb)
 			_sde_connector_destroy_fb(c_conn, c_state);
@@ -404,12 +410,17 @@ static int sde_connector_atomic_set_property(struct drm_connector *connector,
 			if (rc)
 				SDE_ERROR("prep fb failed, %d\n", rc);
 		}
-	}
-
-	if (idx == CONNECTOR_PROP_TOPOLOGY_CONTROL) {
+		break;
+	case CONNECTOR_PROP_TOPOLOGY_CONTROL:
 		rc = sde_rm_check_property_topctl(val);
 		if (rc)
 			SDE_ERROR("invalid topology_control: 0x%llX\n", val);
+		break;
+	case CONNECTOR_PROP_HPD_OFF:
+		c_conn->hpd_mode = val;
+		break;
+	default:
+		break;
 	}
 
 	if (idx == CONNECTOR_PROP_HDR_CONTROL) {
@@ -680,6 +691,7 @@ struct drm_connector *sde_connector_init(struct drm_device *dev,
 	c_conn->encoder = encoder;
 	c_conn->panel = panel;
 	c_conn->display = display;
+	c_conn->hpd_mode = SDE_MODE_HPD_ON;
 
 	sde_kms = to_sde_kms(priv->kms);
 	if (sde_kms->vbif[VBIF_NRT]) {
@@ -797,6 +809,10 @@ struct drm_connector *sde_connector_init(struct drm_device *dev,
 			ARRAY_SIZE(e_topology_control),
 			CONNECTOR_PROP_TOPOLOGY_CONTROL, 0);
 
+	msm_property_install_enum(&c_conn->property_info, "HPD_OFF",
+			DRM_MODE_PROP_ATOMIC, 0, hpd_clock_state,
+			ARRAY_SIZE(hpd_clock_state),
+			CONNECTOR_PROP_HPD_OFF, 0);
 	rc = msm_property_install_get_status(&c_conn->property_info);
 	if (rc) {
 		SDE_ERROR("failed to create one or more properties\n");
