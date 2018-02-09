@@ -214,7 +214,8 @@ static unsigned long zone_reclaimable_pages(struct zone *zone)
 	     zone_page_state_snapshot(zone, NR_INACTIVE_FILE) +
 	     zone_page_state_snapshot(zone, NR_ISOLATED_FILE);
 
-	if (get_nr_swap_pages() > 0)
+	if (get_nr_swap_pages() > 0
+			|| IS_ENABLED(CONFIG_ANDROID_LOW_MEMORY_KILLER))
 		nr += zone_page_state_snapshot(zone, NR_ACTIVE_ANON) +
 		      zone_page_state_snapshot(zone, NR_INACTIVE_ANON) +
 		      zone_page_state_snapshot(zone, NR_ISOLATED_ANON);
