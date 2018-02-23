@@ -120,3 +120,8 @@ config SDFAT_STATISTICS
 	bool "Enable statistics for bigdata"
 	depends on SDFAT_FS
 	default y
+
+config SDFAT_DFR
+	bool "enable sdfat defragger"
+	depends on SDFAT_FS
+	default n
