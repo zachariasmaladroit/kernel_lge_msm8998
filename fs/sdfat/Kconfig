@@ -125,3 +125,13 @@ config SDFAT_DFR
 	bool "enable sdfat defragger"
 	depends on SDFAT_FS
 	default n
+
+config SDFAT_DELAY_ALLOC
+	bool "always enable delay allocation improvement"
+	depends on SDFAT_FS
+	default n
+
+config SDFAT_SMART_ALLOC
+	bool "always enable smart allocation improvement"
+	depends on SDFAT_FS
+	default n
