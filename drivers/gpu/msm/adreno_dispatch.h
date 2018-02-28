@@ -115,7 +115,6 @@ enum adreno_dispatcher_flags {
 void adreno_dispatcher_start(struct kgsl_device *device);
 void adreno_dispatcher_halt(struct kgsl_device *device);
 void adreno_dispatcher_unhalt(struct kgsl_device *device);
-
 int adreno_dispatcher_init(struct adreno_device *adreno_dev);
 void adreno_dispatcher_close(struct adreno_device *adreno_dev);
 int adreno_dispatcher_idle(struct adreno_device *adreno_dev);
