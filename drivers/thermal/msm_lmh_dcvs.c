@@ -38,6 +38,8 @@
 #define CREATE_TRACE_POINTS
 #define LMH_DCVS_TRACE
 #include <trace/trace_thermal.h>
+#undef CREATE_TRACE_POINTS
+#include <trace/events/power.h>
 
 #define MSM_LIMITS_DCVSH		0x10
 #define MSM_LIMITS_NODE_DCVS		0x44435653
@@ -156,6 +158,9 @@ static uint32_t msm_lmh_mitigation_notify(struct msm_lmh_dcvs_hw *hw)
 
 	sched_update_cpu_freq_min_max(&hw->core_map, 0, max_limit);
 	trace_lmh_dcvs_freq(cpumask_first(&hw->core_map), max_limit);
+	trace_clock_set_rate(hw->sensor_name,
+			max_limit,
+			cpumask_first(&hw->core_map));
 
 notify_exit:
 	hw->hw_freq_limit = max_limit;
