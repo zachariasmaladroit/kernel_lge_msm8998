@@ -432,6 +432,7 @@ schedtune_boostgroup_update(int idx, int boost)
 		/* Update the boost value of this boost group */
 		bg->group[idx].boost = boost;
 
+		/* Check if this update increase current max */
 		now = sched_clock_cpu(cpu);
 		if (boost > cur_boost_max &&
 			schedtune_boost_group_active(idx, bg, now)) {
@@ -475,9 +476,11 @@ schedtune_tasks_update(struct task_struct *p, int cpu, int idx, int task_count)
 
 	/* Update boosted tasks count while avoiding to make it negative */
 	bg->group[idx].tasks = max(0, tasks);
+
 	/* Update timeout on enqueue */
 	if (task_count > 0) {
 		u64 now = sched_clock_cpu(cpu);
+
 		if (schedtune_update_timestamp(p))
 			bg->group[idx].ts = now;
 
@@ -597,6 +600,7 @@ int schedtune_can_attach(struct cgroup_taskset *tset)
 		tasks = bg->group[src_bg].tasks - 1;
 		bg->group[src_bg].tasks = max(0, tasks);
 		bg->group[dst_bg].tasks += 1;
+
 		/* Update boost hold start for this group */
 		now = sched_clock_cpu(cpu);
 		bg->group[dst_bg].ts = now;
