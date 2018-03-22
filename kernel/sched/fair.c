@@ -6707,6 +6707,8 @@ select_energy_cpu_brute(struct task_struct *p, int prev_cpu, int sync)
 	int target_cpu;
 	int backup_cpu;
 	int next_cpu;
+	int delta = 0;
+	struct energy_env eenv;
 
 	schedstat_inc(p, se.statistics.nr_wakeups_secb_attempts);
 	schedstat_inc(this_rq(), eas_stats.secb_attempts);
@@ -6755,62 +6757,56 @@ select_energy_cpu_brute(struct task_struct *p, int prev_cpu, int sync)
 	}
 
 	target_cpu = prev_cpu;
-	if (next_cpu != prev_cpu) {
-		int delta = 0;
-		struct energy_env eenv = {
-			.p              = p,
-			.util_delta     = task_util(p),
-			/* Task's previous CPU candidate */
-			.cpu[EAS_CPU_PRV] = {
-				.cpu_id = prev_cpu,
-			},
-			/* Main alternative CPU candidate */
-			.cpu[EAS_CPU_NXT] = {
-				.cpu_id = next_cpu,
-			},
-			/* Backup alternative CPU candidate */
-			.cpu[EAS_CPU_BKP] = {
-				.cpu_id = backup_cpu,
-			},
-		};
+	if (next_cpu == prev_cpu) {
+		schedstat_inc(p->se.statistics.nr_wakeups_secb_count);
+		schedstat_inc(this_rq()->eas_stats.secb_count);
+		goto unlock;
+	}
+
+	eenv.p              = p;
+	eenv.util_delta     = task_util(p);
+	/* Task's previous CPU candidate */
+	eenv.cpu[EAS_CPU_PRV].cpu_id = prev_cpu;
+	/* Main alternative CPU candidate */
+	eenv.cpu[EAS_CPU_NXT].cpu_id = next_cpu;
+	/* Backup alternative CPU candidate */
+	eenv.cpu[EAS_CPU_BKP].cpu_id = backup_cpu;
+ 
 
 #ifdef CONFIG_SCHED_WALT
-		if (!walt_disabled && sysctl_sched_use_walt_cpu_util &&
-			p->state == TASK_WAKING)
-			delta = task_util(p);
+	if (!walt_disabled && sysctl_sched_use_walt_cpu_util &&
+		p->state == TASK_WAKING)
+		delta = task_util(p);
 #endif
-		/* Not enough spare capacity on previous cpu */
-		if (__cpu_overutilized(prev_cpu, delta)) {
-			schedstat_inc(p, se.statistics.nr_wakeups_secb_insuff_cap);
-			schedstat_inc(this_rq(), eas_stats.secb_insuff_cap);
-			target_cpu = next_cpu;
-			goto unlock;
-		}
-
-		cpumask_clear(&eenv.cpus_mask);
-		if (prev_cpu >= 0)
-			cpumask_set_cpu(prev_cpu, &eenv.cpus_mask);
-		if (next_cpu >= 0)
-			cpumask_set_cpu(next_cpu, &eenv.cpus_mask);
-		if (backup_cpu >= 0)
-			cpumask_set_cpu(backup_cpu, &eenv.cpus_mask);
-
-        select_energy_cpu_idx(&eenv);
-
-		/* Check if EAS_CPU_NXT is a more energy efficient CPU */
-        if (eenv.next_idx != EAS_CPU_PRV) {
-			schedstat_inc(p, se.statistics.nr_wakeups_secb_nrg_sav);
-			schedstat_inc(this_rq(), eas_stats.secb_nrg_sav);
-			goto unlock;
-		} else {
-    		schedstat_inc(p->se.statistics.nr_wakeups_secb_no_nrg_sav);
-    		schedstat_inc(this_rq()->eas_stats.secb_no_nrg_sav);
+	/* Not enough spare capacity on previous cpu */
+	if (__cpu_overutilized(prev_cpu, delta)) {
+		schedstat_inc(p->se.statistics.nr_wakeups_secb_insuff_cap);
+		schedstat_inc(this_rq()->eas_stats.secb_insuff_cap);
+		target_cpu = next_cpu;
+		goto unlock;
 	}
-    target_cpu = eenv.cpu[eenv.next_idx].cpu_id;
-	schedstat_inc(p, se.statistics.nr_wakeups_secb_count);
-	schedstat_inc(this_rq(), eas_stats.secb_count);
-    goto unlock;
 
+	cpumask_clear(&eenv.cpus_mask);
+	if (prev_cpu >= 0)
+		cpumask_set_cpu(prev_cpu, &eenv.cpus_mask);
+	if (next_cpu >= 0)
+		cpumask_set_cpu(next_cpu, &eenv.cpus_mask);
+	if (backup_cpu >= 0)
+		cpumask_set_cpu(backup_cpu, &eenv.cpus_mask);
+
+	select_energy_cpu_idx(&eenv);
+
+	/* Check if EAS_CPU_NXT is a more energy efficient CPU */
+	if (eenv.next_idx != EAS_CPU_PRV) {
+		schedstat_inc(p->se.statistics.nr_wakeups_secb_nrg_sav);
+		schedstat_inc(this_rq()->eas_stats.secb_nrg_sav);
+	} else {
+		schedstat_inc(p->se.statistics.nr_wakeups_secb_no_nrg_sav);
+		schedstat_inc(this_rq()->eas_stats.secb_no_nrg_sav);
+    }
+    
+    target_cpu = eenv.cpu[eenv.next_idx].cpu_id;
+ 
 unlock:
 	rcu_read_unlock();
 
