@@ -5360,7 +5360,7 @@ struct energy_env {
 
 	/*
 	 * Index (into energy_env::cpu) of the morst energy efficient CPU for
-	 * the specified energy_env::task
+	 * the specified energy_env::p
 	 */
 	int			next_idx;
 
