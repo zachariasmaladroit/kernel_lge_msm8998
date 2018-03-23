@@ -5678,6 +5678,37 @@ next_cpu:
 	return 0;
 }
 
+/*
+ * compute_task_energy(): Computes the energy consumption for
+ * waken task on one specified candidate CPU.
+ */
+static int compute_task_energy(struct energy_env *eenv, int cpu)
+{
+	struct sched_domain *sd;
+	struct sched_group *sg;
+
+	sd = rcu_dereference(per_cpu(sd_ea, cpu));
+	if (!sd)
+		return -1; /* Error */
+
+	sg = sd->groups;
+	do {
+		/* Skip SGs which do not contains a candidate CPU */
+		if (!cpumask_intersects(&eenv->cpus_mask, sched_group_cpus(sg)))
+			continue;
+
+		eenv->sg_top = sg;
+		/* energy is unscaled to reduce rounding errors */
+		if (compute_energy(eenv, cpu) == -EINVAL) {
+			eenv->next_cpu = eenv->prev_cpu;
+			return -EINVAL;
+		}
+
+	} while (sg = sg->next, sg != sd->groups);
+
+	return 0;
+}
+
 static inline bool cpu_in_sg(struct sched_group *sg, int cpu)
 {
 	return cpu != -1 && cpumask_test_cpu(cpu, sched_group_cpus(sg));
@@ -5695,33 +5726,14 @@ static inline bool cpu_in_sg(struct sched_group *sg, int cpu)
  */
 static inline int select_energy_cpu_idx(struct energy_env *eenv)
 {
-	struct sched_domain *sd;
-	struct sched_group *sg;
 	int cpu;
 	int margin;
 
-	cpu = cpumask_first(&eenv->cpus_mask);
-	sd = rcu_dereference(per_cpu(sd_ea, cpu));
-	if (!sd) {
-		eenv->next_cpu = eenv->prev_cpu;
-		return -1;
-	}
-
 	for_each_cpu(cpu, &eenv->cpus_mask) {
-		sg = sd->groups;
-		do {
-			/* Skip SGs which do not contains a candidate CPU */
-			if (!cpumask_intersects(&eenv->cpus_mask, sched_group_cpus(sg)))
-				continue;
-
-			eenv->sg_top = sg;
-			/* energy is unscaled to reduce rounding errors */
-			if (compute_energy(eenv, cpu) == -EINVAL) {
-				eenv->next_cpu = eenv->prev_cpu;
-				return -EINVAL;
-			}
-
-		} while (sg = sg->next, sg != sd->groups);
+		if (compute_task_energy(eenv, cpu) < 0) {
+			eenv->next_cpu = eenv->prev_cpu;
+			return -EINVAL;
+		}
 	}
 
 	/* Scale energy before comparisons */
