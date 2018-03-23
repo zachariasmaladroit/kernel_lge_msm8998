@@ -5338,7 +5338,7 @@ struct energy_env {
 		/* Estimated energy variation wrt previous CPU */
 		int	nrg_delta;
 
-	} cpu[NR_CPUS];
+	} cpu[NR_CPUS*2];
 
 	/* The morst energy efficient CPU for the specified energy_env::p */
 	int			next_cpu;
@@ -5655,45 +5655,55 @@ static int compute_energy(struct energy_env *eenv, int candidate)
  */
 static int compute_task_energy(struct energy_env *eenv, int cpu)
 {
-	struct sched_domain *sd, *sd_cap;
-	struct sched_group *sg;
-	int first_cpu;
+	struct sched_domain *sd;
+	unsigned int prev_cap_idx, next_cap_idx;
+	int cmp_idx, ret;
 
-	sd = rcu_dereference(per_cpu(sd_ea, cpu));
+	sd = rcu_dereference(per_cpu(sd_scs, cpu));
 	if (!sd)
 		return -1; /* Error */
 
-	sg = sd->groups;
-	do {
-		/* Skip SGs which do not contains a candidate CPU */
-		if (!cpumask_intersects(&eenv->cpus_mask, sched_group_cpus(sg)))
-			continue;
+	/*
+	 * The CPU capacity sharing attribution is decided by hardhware
+	 * design so we can decide the sg_cp value at the beginning
+	 * for specific CPU.
+	 */
+	if (sd && sd->parent)
+		eenv->sg_cap = sd->parent->groups;
+	else
+		eenv->sg_cap = sd->groups;
 
-		eenv->sg_top = sg;
+	/* Estimate capacity index before task placement */
+	cmp_idx = NR_CPUS + cpu;
+	prev_cap_idx = find_new_capacity(eenv, cmp_idx);
+	next_cap_idx = find_new_capacity(eenv, cpu);
 
-		first_cpu = cpumask_first(sched_group_cpus(sg));
+	/*
+	 * Computation is iteration sched_group from bottom to up level for
+	 * energy accumulation, 'sg_top' is top most sched_group:
+	 * - If the CPU frequency has no change before and after task placed
+	 *   onto the target CPU, set 'sg_top' to sched_group for the target
+	 *   CPU; this means only to calculate the energy for this single CPU
+	 *   and ignore other CPUs in the same clock domain.
+	 * - If found the OPP frequency is changed after task placement then
+	 *   need to calculate all CPUs who bound in the same clock domain,
+	 *   so set 'sg_top' to shared capacity scheduling group.
+	 */
+	if (prev_cap_idx != next_cap_idx)
+		eenv->sg_top = eenv->sg_cap;
+	else
+		eenv->sg_top = sd->groups;
 
-		/*
-		 * The CPU capacity sharing attribution is decided by hardhware
-		 * design so we can decide the sg_cp value at the beginning
-		 * for specific CPU.
-		 */
-		sd_cap = rcu_dereference(per_cpu(sd_scs, first_cpu));
-		if (sd_cap && sd_cap->parent)
-			eenv->sg_cap = sd_cap->parent->groups;
-		else
-			eenv->sg_cap = sd_cap->groups;
+	/* energy is unscaled to reduce rounding errors */
+	ret = compute_energy(eenv, cmp_idx);
+	if (ret < 0)
+		return ret;
 
-		find_new_capacity(eenv, cpu);
+	ret = compute_energy(eenv, cpu);
+	if (ret < 0)
+		return ret;
 
-		/* energy is unscaled to reduce rounding errors */
-		if (compute_energy(eenv, cpu) == -EINVAL) {
-			eenv->next_cpu = eenv->prev_cpu;
-			return -EINVAL;
-		}
-
-	} while (sg = sg->next, sg != sd->groups);
-
+	eenv->cpu[cpu].energy -= eenv->cpu[cmp_idx].energy;
 	return 0;
 }
 
