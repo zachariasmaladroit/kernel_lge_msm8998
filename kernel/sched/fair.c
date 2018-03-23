@@ -5446,7 +5446,7 @@ long group_norm_util(struct energy_env *eenv, int cpu_id)
 
 static int find_new_capacity(struct energy_env *eenv, int cpu_id)
 {
-	const struct sched_group_energy *sge = eenv->sg->sge;
+	const struct sched_group_energy *sge = eenv->sg_cap->sge;
 	int idx, max_idx = sge->nr_cap_states - 1;
 	unsigned long util = group_max_util(eenv, cpu_id);
 
