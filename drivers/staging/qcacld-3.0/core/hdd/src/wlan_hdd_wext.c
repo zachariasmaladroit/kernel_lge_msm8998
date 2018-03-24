@@ -3053,6 +3053,10 @@ int hdd_wlan_dump_stats(hdd_adapter_t *adapter, int value)
 			ret = EFAULT;
 		}
 		break;
+	case WLAN_DISCONNECT_STATS:
+		sme_display_disconnect_stats(WLAN_HDD_GET_HAL_CTX(adapter),
+						adapter->sessionId);
+		break;
 	default:
 		status = ol_txrx_display_stats(value);
 		if (status == QDF_STATUS_E_INVAL) {
@@ -8468,6 +8472,14 @@ static int __iw_setint_getnone(struct net_device *dev,
 		ret = wma_cli_set_command(pAdapter->sessionId,
 					  WMA_VDEV_TXRX_FWSTATS_ENABLE_CMDID,
 					  set_value, VDEV_CMD);
+#ifdef FEATURE_SUPPORT_LGE
+// [LGE_CHANGE_S] 2017.04.26, neo-wifi@lge.com, Add Reset Command for KPI log
+        hdd_debug("WE_TXRX_FWSTATS_RESET val %d", set_value);
+        ret = wma_cli_set_command(pAdapter->sessionId,
+                      WMA_VDEV_TXRX_FWSTATS_RESET_CMDID,
+                      set_value, VDEV_CMD);
+// [LGE_CHANGE_E] 2017.04.26, neo-wifi@lge.com, Add Reset Command for KPI log
+#endif
 		break;
 	}
 
@@ -12315,8 +12327,8 @@ int hdd_set_band(struct net_device *dev, u8 ui_band)
 	}
 
 	if ((band == eCSR_BAND_24 && pHddCtx->config->nBandCapability == 2) ||
-	    (band == eCSR_BAND_5G && pHddCtx->config->nBandCapability == 1) ||
-	    (band == eCSR_BAND_ALL && pHddCtx->config->nBandCapability != 0)) {
+	    (band == eCSR_BAND_5G && pHddCtx->config->nBandCapability == 1)/* ||
+	    (band == eCSR_BAND_ALL && pHddCtx->config->nBandCapability != 0)*/) {       // LGE_PATCH
 		hdd_err("band value %u violate INI settings %u",
 			  band, pHddCtx->config->nBandCapability);
 		return -EIO;

@@ -165,6 +165,10 @@ static bool hdmi_edid_is_mode_supported(struct hdmi_edid_ctrl *edid_ctrl,
 		pclk > edid_ctrl->init_data.max_pclk_khz)
 		return false;
 
+	if ((out_format == MDP_Y_CBCR_H2V2) &&
+			!edid_ctrl->init_data.yc420_support)
+		return false;
+
 	return true;
 }
 
@@ -204,6 +208,7 @@ static int hdmi_edid_reset_parser(struct hdmi_edid_ctrl *edid_ctrl)
 		sizeof(edid_ctrl->spkr_alloc_data_block));
 	edid_ctrl->adb_size = 0;
 	edid_ctrl->sadb_size = 0;
+	edid_ctrl->basic_audio_supp = false;
 
 	hdmi_edid_set_video_resolution(edid_ctrl, edid_ctrl->default_vic, true);
 
@@ -1548,17 +1553,6 @@ static void hdmi_edid_detail_desc(struct hdmi_edid_ctrl *edid_ctrl,
 	 */
 	active_h = ((((u32)data_buf[0x4] >> 0x4) & 0xF) << 8)
 		| data_buf[0x2];
-	/*
-	 * It is possible that a sink might try to fit in the resolution
-	 * which has an active_h of 4096 into a DTD. However, DTD has only
-	 * 12 bit to represent active_h which would limit the maximum value
-	 * to 4095. If such a case is detected, set the active_h explicitly
-	 * to 4096.
-	 */
-	if (active_h == 0xFFF) {
-		pr_debug("overriding h_active to 4096\n");
-		active_h++;
-	}
 
 	/*
 	 * EDID_TIMING_DESC_H_BLANK[0x3]: Relative Offset to the EDID detailed

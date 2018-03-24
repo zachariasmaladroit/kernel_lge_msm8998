@@ -38,7 +38,7 @@ do {                                                                    \
 
 
 bool msm_audio_effects_is_effmodule_supp_in_top(int effect_module,
-						int topology)
+                                                int topology)
 {
 	switch (effect_module) {
 	case VIRTUALIZER_MODULE:
@@ -46,12 +46,22 @@ bool msm_audio_effects_is_effmodule_supp_in_top(int effect_module,
 	case BASS_BOOST_MODULE:
 	case PBE_MODULE:
 	case EQ_MODULE:
-		switch (topology) {
-		case ASM_STREAM_POSTPROC_TOPO_ID_SA_PLUS:
-			return true;
-		default:
-			return false;
-		}
+        case LGMQA_MODULE:
+                switch (topology) {
+                case ASM_STREAM_POSTPROC_TOPO_ID_SA_PLUS:
+                case ASM_STREAM_POSTPROC_TOPO_ID_HPX_PLUS:
+                case ASM_STREAM_POSTPROC_TOPO_ID_HPX_MASTER:
+#if defined(CONFIG_SND_LGE_EFFECT) || defined(CONFIG_SND_LGE_NORMALIZER) || defined(CONFIG_SND_LGE_MABL)
+                case ASM_STREAM_POSTPROC_TOPO_ID_OFFLOAD_LGE:
+                case ASM_STREAM_POSTPROC_TOPO_ID_OFFLOAD_LGE_TEST:
+#endif
+            pr_info("%s, line %d return true",__func__,__LINE__);
+                        return true;
+                default:
+                    pr_info("%s, line %d return false",__func__,__LINE__);
+                        return false;
+                }
+
 	default:
 		return false;
 	}
@@ -871,6 +881,55 @@ invalid_config:
 	kfree(params);
 	return rc;
 }
+
+int msm_audio_effects_lgmqa_handler(struct audio_client *ac,
+                    struct lgmqa_params *lgmqa,
+                    long *values)
+{
+    long *temp = values;
+    long numberOfCommand = 0;
+    long command = 0;
+    long commandVal = 0;
+
+    ++temp;
+    numberOfCommand = *temp;
+    ++temp;
+    command = *temp;
+    ++temp;
+    commandVal = *temp;
+
+
+    switch(command)
+    {
+        case LGMQA_ENABLE:
+                pr_info("%s LGMQA_ENABLE, val %ld\n",__func__,commandVal);
+                q6asm_set_lgmqa_param_one(ac, 0x1000D041,commandVal);
+            break;
+        case LGMQA_POWERMODE:
+                pr_info("%s LGMQA_POWERMODE, val %ld\n",__func__,commandVal);
+                q6asm_set_lgmqa_param_one(ac, 0x1000D042,commandVal);
+            break;
+        case LGMQA_MULTIPLERATE:
+                pr_info("%s LGMQA_MULTIPLERATE, val %ld\n",__func__,commandVal);
+                q6asm_set_lgmqa_param_one(ac, 0x1000D043,commandVal);
+            break;
+        case LGMQA_OUTPUTMODE:
+                pr_info("%s LGMQA_OUTPUTMODE, val %ld\n",__func__,commandVal);
+                q6asm_set_lgmqa_param_one(ac, 0x1000D044,commandVal);
+            break;
+        case LGMQA_PROPERTIES:
+                pr_info("%s LGMQA_PROPERTIES\n",__func__);
+                q6asm_set_lgmqa_param_properties(ac,temp);
+            break;
+        default:
+                pr_err("%s, INVALID COMMAND %d\n",__func__,(int)command);
+            break;
+    }
+
+    return 0;
+
+}
+
 
 int msm_audio_effects_pbe_handler(struct audio_client *ac,
 					struct pbe_params *pbe,

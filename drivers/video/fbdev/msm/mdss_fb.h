@@ -235,13 +235,28 @@ struct msm_mdp_interface {
 	void (*footswitch_ctrl)(bool on);
 	int (*pp_release_fnc)(struct msm_fb_data_type *mfd);
 	void *private1;
+#if defined(CONFIG_LGE_DISPLAY_COMMON)
+	void (*panel_reg_backup)(struct msm_fb_data_type *mfd);
+#endif
 };
 
 #define IS_CALIB_MODE_BL(mfd) (((mfd)->calib_mode) & MDSS_CALIB_MODE_BL)
+#ifdef CONFIG_LGE_DISPLAY_COMMON
+/* TODO: fix it: using local variable mfd in macro function */
+#define MDSS_BRIGHT_TO_BL(out, v, bl_max, max_bright) do {\
+				out = lge_br_to_bl(mfd, v);\
+				} while (0)
+#if defined(CONFIG_LGE_DISPLAY_AMBIENT_SUPPORTED)
+#define MDSS_BRIGHT_TO_BL_EX(out, v, bl_max, max_bright) do {\
+				out = lge_br_to_bl_ex(mfd, v);\
+				} while (0)
+#endif
+#else /* qct original */
 #define MDSS_BRIGHT_TO_BL(out, v, bl_max, max_bright) do {\
 				out = (2 * (v) * (bl_max) + max_bright);\
 				do_div(out, 2 * max_bright);\
 				} while (0)
+#endif
 #define MDSS_BL_TO_BRIGHT(out, v, bl_max, max_bright) do {\
 				out = (2 * ((v) * (max_bright)) + (bl_max));\
 				do_div(out, 2 * bl_max);\
@@ -313,6 +328,10 @@ struct msm_fb_data_type {
 	int bl_extn_level;
 	u32 bl_scale;
 	u32 unset_bl_level;
+#if defined(CONFIG_LGE_DISPLAY_AMBIENT_SUPPORTED)
+	u32 unset_bl_level_ex;
+	bool allow_bl_update_ex;
+#endif
 	bool allow_bl_update;
 	u32 bl_level_scaled;
 	u32 bl_level_usr;
@@ -320,6 +339,10 @@ struct msm_fb_data_type {
 	struct mutex mdss_sysfs_lock;
 	bool ipc_resume;
 
+#if defined(CONFIG_LGE_DISPLAY_COMMON)
+	bool recovery;
+	bool need_panel_reg_backup;
+#endif
 	struct platform_device *pdev;
 
 	u32 mdp_fb_page_protection;
@@ -372,6 +395,16 @@ struct msm_fb_data_type {
 	bool pending_switch;
 	struct mutex switch_lock;
 	struct input_handler *input_handler;
+#if defined(CONFIG_LGE_DISPLAY_AMBIENT_SUPPORTED)
+#if defined(CONFIG_LGE_DISPLAY_CHANGE_PARTIAL_AREA_IN_KICKOFF)
+#if defined(CONFIG_LGE_DISPLAY_BIST_MODE)
+#if defined(CONFIG_LGE_DISPLAY_DYNAMIC_RESOLUTION_SWITCH)
+	bool allow_bist_verify;
+#endif
+#endif
+#endif
+#endif
+
 };
 
 static inline void mdss_fb_update_notify_update(struct msm_fb_data_type *mfd)

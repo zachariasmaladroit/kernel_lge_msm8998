@@ -4008,6 +4008,8 @@ static int voice_send_cvp_media_fmt_info_cmd(struct voice_data *v)
 
 		if (common.ec_ref_ext)
 			ret = voice_send_cvp_media_format_cmd(v, EC_REF_PATH);
+//	} else {
+//		ret = voice_send_cvp_device_channels_cmd(v);
 	}
 
 done:
@@ -5977,6 +5979,7 @@ int voc_set_device_config(uint32_t session_id, uint8_t path_dir,
 		       VSS_CHANNEL_MAPPING_SIZE);
 		break;
 	default:
+		mutex_unlock(&v->lock);
 		pr_err("%s: Invalid path_dir %d\n", __func__, path_dir);
 		return -EINVAL;
 	}

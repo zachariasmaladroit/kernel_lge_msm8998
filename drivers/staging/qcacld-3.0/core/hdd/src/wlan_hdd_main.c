@@ -161,6 +161,12 @@ static struct attribute *attrs[] = {
 #define MODULE_INITIALIZED 1
 #endif
 
+#define HDD_OPS_INACTIVITY_TIMEOUT (120000)
+#define MAX_OPS_NAME_STRING_SIZE 20
+
+static qdf_timer_t hdd_drv_ops_inactivity_timer;
+static char drv_ops_string[MAX_OPS_NAME_STRING_SIZE];
+
 /* the Android framework expects this param even though we don't use it */
 #define BUF_LEN 20
 static char fwpath_buffer[BUF_LEN];
@@ -193,7 +199,7 @@ static qdf_wake_lock_t wlan_wake_lock;
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 11, 0))
 static const struct wiphy_wowlan_support wowlan_support_reg_init = {
 	.flags = WIPHY_WOWLAN_ANY |
-		 WIPHY_WOWLAN_MAGIC_PKT |
+	         WIPHY_WOWLAN_MAGIC_PKT |
 		 WIPHY_WOWLAN_DISCONNECT |
 		 WIPHY_WOWLAN_SUPPORTS_GTK_REKEY |
 		 WIPHY_WOWLAN_GTK_REKEY_FAILURE |
@@ -380,6 +386,40 @@ int hdd_validate_channel_and_bandwidth(hdd_adapter_t *adapter,
 	}
 
 	return 0;
+}
+
+/**
+ * hdd_wait_for_recovery_completion() - Wait for cds recovery completion
+ *
+ * Block the unloading of the driver (or) interface up until the
+ * cds recovery is completed
+ *
+ * Return: true for recovery completion else false
+ */
+static bool hdd_wait_for_recovery_completion(void)
+{
+	int retry = 0;
+
+	/* Wait for recovery to complete */
+	while (cds_is_driver_recovering()) {
+		if (retry == HDD_MOD_EXIT_SSR_MAX_RETRIES/2)
+			hdd_err("Recovery in progress; wait here!!!");
+		msleep(1000);
+		if (retry++ == HDD_MOD_EXIT_SSR_MAX_RETRIES) {
+			hdd_err("SSR never completed, error");
+			/*
+			 * Trigger the bug_on in the internal builds, in the
+			 * customer builds self-recovery will be enabled
+			 * in those cases just return error.
+			 */
+			if (cds_is_self_recovery_enabled())
+				return false;
+			QDF_BUG(0);
+		}
+	}
+
+	hdd_info("Recovery completed successfully!");
+	return true;
 }
 
 static int __hdd_netdev_notifier_call(struct notifier_block *nb,
@@ -1944,6 +1984,10 @@ static void hdd_update_hw_sw_info(hdd_context_t *hdd_ctx)
 			&target_hw_name);
 
 	target_hw_name_len = strlen(target_hw_name) + 1;
+
+	if (hdd_ctx->target_hw_name)
+		qdf_mem_free(hdd_ctx->target_hw_name);
+
 	hdd_ctx->target_hw_name = qdf_mem_malloc(target_hw_name_len);
 
 	if (hdd_ctx->target_hw_name)
@@ -1996,15 +2040,22 @@ int hdd_wlan_start_modules(hdd_context_t *hdd_ctx, hdd_adapter_t *adapter,
 		return -EINVAL;
 	}
 
-	mutex_lock(&hdd_ctx->iface_change_lock);
-	hdd_ctx->start_modules_in_progress = true;
-
 	if (QDF_TIMER_STATE_RUNNING ==
 	    qdf_mc_timer_get_current_state(&hdd_ctx->iface_change_timer)) {
 
 		hdd_debug("Interface change Timer running Stop timer");
 		qdf_mc_timer_stop(&hdd_ctx->iface_change_timer);
 	}
+
+	mutex_lock(&hdd_ctx->iface_change_lock);
+	if (hdd_ctx->driver_status == DRIVER_MODULES_ENABLED) {
+		mutex_unlock(&hdd_ctx->iface_change_lock);
+		hdd_info("Driver modules already Enabled");
+		EXIT();
+		return 0;
+	}
+
+	hdd_ctx->start_modules_in_progress = true;
 
 	switch (hdd_ctx->driver_status) {
 	case DRIVER_MODULES_UNINITIALIZED:
@@ -2101,9 +2152,6 @@ int hdd_wlan_start_modules(hdd_context_t *hdd_ctx, hdd_adapter_t *adapter,
 		hdd_info("Driver Modules Successfully Enabled");
 		hdd_ctx->driver_status = DRIVER_MODULES_ENABLED;
 		break;
-	case DRIVER_MODULES_ENABLED:
-		hdd_info("Driver modules already Enabled");
-		break;
 	default:
 		hdd_err("WLAN start invoked in wrong state! :%d\n",
 				hdd_ctx->driver_status);
@@ -2161,6 +2209,10 @@ static int __hdd_open(struct net_device *dev)
 		return -EBUSY;
 	}
 
+	if (!hdd_wait_for_recovery_completion()) {
+		hdd_err("Recovery failed");
+		return -EIO;
+	}
 	mutex_lock(&hdd_init_deinit_lock);
 
 	/*
@@ -4287,7 +4339,10 @@ QDF_STATUS hdd_reset_all_adapters(hdd_context_t *hdd_ctx)
 
 		hdd_deinit_tx_rx(adapter);
 		hdd_lro_disable(hdd_ctx, adapter);
-		hdd_clear_fils_connection_info(adapter);
+
+		if (adapter->device_mode == QDF_STA_MODE)
+			hdd_clear_fils_connection_info(adapter);
+
 		cds_decr_session_set_pcl(adapter->device_mode,
 						adapter->sessionId);
 		if (test_bit(WMM_INIT_DONE, &adapter->event_flags)) {
@@ -4342,16 +4397,7 @@ bool hdd_check_for_opened_interfaces(hdd_context_t *hdd_ctx)
 	return close_modules;
 }
 
-/**
- * hdd_is_interface_up()- Checkfor interface up before ssr
- * @hdd_ctx: HDD context
- *
- * check  if there are any wlan interfaces before SSR accordingly start
- * the interface.
- *
- * Return: 0 if interface was opened else false
- */
-static bool hdd_is_interface_up(hdd_adapter_t *adapter)
+bool hdd_is_interface_up(hdd_adapter_t *adapter)
 {
 	if (test_bit(DEVICE_IFACE_OPENED, &adapter->event_flags))
 		return true;
@@ -9287,6 +9333,7 @@ int hdd_configure_cds(hdd_context_t *hdd_ctx, hdd_adapter_t *adapter)
 	dp_cbacks.hdd_set_rx_mode_rps_cb = hdd_set_rx_mode_rps;
 
 	dp_cbacks.ol_txrx_update_mac_id_cb = ol_txrx_update_mac_id;
+	dp_cbacks.hdd_ipa_set_mcc_mode_cb = hdd_ipa_set_mcc_mode;
 	if (cds_register_dp_cb(&dp_cbacks) != QDF_STATUS_SUCCESS)
 		hdd_err("Unable to register datapath callbacks in CDS");
 
@@ -9390,6 +9437,8 @@ int hdd_wlan_stop_modules(hdd_context_t *hdd_ctx, bool ftm_mode)
 	int active_threads;
 
 	ENTER();
+	hdd_alert("stop WLAN module: entering driver status=%d",
+		  hdd_ctx->driver_status);
 
 	qdf_ctx = cds_get_context(QDF_MODULE_ID_QDF_DEVICE);
 	if (!qdf_ctx) {
@@ -9493,6 +9542,8 @@ done:
 	hdd_ctx->stop_modules_in_progress = false;
 	cds_set_module_stop_in_progress(false);
 	mutex_unlock(&hdd_ctx->iface_change_lock);
+	hdd_alert("stop WLAN module: exit driver status=%d",
+		  hdd_ctx->driver_status);
 	EXIT();
 
 	return ret;
@@ -9519,9 +9570,12 @@ static void hdd_iface_change_callback(void *priv)
 
 	ENTER();
 	hdd_debug("Interface change timer expired close the modules!");
+    // 2018.01.16 Add synchronization for hdd_iface_change_callback and wlan_hdd_pld_remove, QCT Case 03298903
+    mutex_lock(&hdd_init_deinit_lock);
 	ret = hdd_wlan_stop_modules(hdd_ctx, false);
 	if (ret)
 		hdd_err("Failed to stop modules");
+    mutex_unlock(&hdd_init_deinit_lock);
 	EXIT();
 }
 
@@ -9789,6 +9843,12 @@ int hdd_wlan_startup(struct device *dev)
 
 	if (hdd_ctx->config->fIsImpsEnabled)
 		hdd_set_idle_ps_config(hdd_ctx, true);
+// LGE_PATCH_S : set IMPS according to INI (CN03163379)
+#ifdef FEATURE_SUPPORT_LGE
+	else
+		hdd_set_idle_ps_config(hdd_ctx, false);
+#endif
+// LGE_PATCH_E : set IMPS according to INI (CN03163379)
 
 	if (hdd_ctx->config->sifs_burst_duration) {
 		set_value = (SIFS_BURST_DUR_MULTIPLIER) *
@@ -10945,6 +11005,10 @@ int hdd_init(void)
 		goto err_out;
 	}
 
+	qdf_timer_init(NULL, &hdd_drv_ops_inactivity_timer,
+		(void *)hdd_drv_ops_inactivity_handler, NULL,
+		QDF_TIMER_TYPE_SW);
+
 	hdd_trace_init();
 	hdd_register_debug_callback();
 
@@ -10967,6 +11031,7 @@ void hdd_deinit(void)
 	wlan_logging_sock_deinit_svc();
 #endif
 
+	qdf_timer_free(&hdd_drv_ops_inactivity_timer);
 	wlan_destroy_bug_report_lock();
 	cds_deinit();
 }
@@ -11006,17 +11071,22 @@ static ssize_t wlan_hdd_state_ctrl_param_write(struct file *filp,
 	}
 
 	if (!cds_is_driver_loaded()) {
+#ifdef MODULE
 		init_completion(&wlan_start_comp);
+#endif
 		rc = wait_for_completion_timeout(&wlan_start_comp,
 				msecs_to_jiffies(HDD_WLAN_START_WAIT_TIME));
 		if (!rc) {
 			hdd_alert("Timed-out waiting in wlan_hdd_state_ctrl_param_write");
 			ret = -EINVAL;
+#ifdef MODULE
 			hdd_start_complete(ret);
+#endif
 			return ret;
 		}
-
+#ifdef MODULE
 		hdd_start_complete(0);
+#endif
 	}
 
 exit:
@@ -11172,27 +11242,6 @@ err_dev_state:
 	return ret;
 }
 
-/**
- * hdd_wait_for_recovery_completion() - Wait for cds recovery completion
- *
- * Block the unloading of the driver until the cds recovery is completed
- *
- * Return: None
- */
-static void hdd_wait_for_recovery_completion(void)
-{
-	int retry = 0;
-
-	/* Wait for recovery to complete */
-	while (cds_is_driver_recovering()) {
-		hdd_err("Recovery in progress; wait here!!!");
-		msleep(1000);
-		if (retry++ == HDD_MOD_EXIT_SSR_MAX_RETRIES) {
-			hdd_err("SSR never completed, error");
-			QDF_BUG(0);
-		}
-	}
-}
 
 /**
  * __hdd_module_exit - Module exit helper
@@ -12006,6 +12055,75 @@ int hdd_set_limit_off_chan_for_tos(hdd_adapter_t *adapter, enum tos tos,
 		qdf_mem_free(cmd);
 
 	return ret;
+}
+
+/**
+ * hdd_start_driver_ops_timer() - Starts driver ops inactivity timer
+ * @drv_op: Enum indicating driver op
+ *
+ * Return: none
+ */
+void hdd_start_driver_ops_timer(int drv_op)
+{
+	memset(drv_ops_string, 0, MAX_OPS_NAME_STRING_SIZE);
+	switch (drv_op) {
+	case eHDD_DRV_OP_PROBE:
+		memcpy(drv_ops_string, "probe", sizeof("probe"));
+		break;
+	case eHDD_DRV_OP_REMOVE:
+		memcpy(drv_ops_string, "remove", sizeof("remove"));
+		break;
+	case eHDD_DRV_OP_SHUTDOWN:
+		memcpy(drv_ops_string, "shutdown", sizeof("shutdown"));
+		break;
+	case eHDD_DRV_OP_REINIT:
+		memcpy(drv_ops_string, "reinit", sizeof("reinit"));
+		break;
+	}
+
+	qdf_timer_start(&hdd_drv_ops_inactivity_timer,
+		HDD_OPS_INACTIVITY_TIMEOUT);
+}
+
+/**
+ * hdd_stop_driver_ops_timer() - Stops driver ops inactivity timer
+ *
+ * Return: none
+ */
+void hdd_stop_driver_ops_timer(void)
+{
+	qdf_timer_sync_cancel(&hdd_drv_ops_inactivity_timer);
+}
+
+/**
+ * hdd_drv_ops_inactivity_handler() - Timeout handler for driver ops
+ * inactivity timer
+ *
+ * Return: None
+ */
+void hdd_drv_ops_inactivity_handler(void)
+{
+	hdd_err("%s: %d Sec timer expired while in .%s",
+		__func__, HDD_OPS_INACTIVITY_TIMEOUT/1000, drv_ops_string);
+
+	/* Driver shutdown is stuck, no recovery possible at this point */
+	if (0 == qdf_mem_cmp(&drv_ops_string[0], "shutdown",
+		sizeof("shutdown")))
+		QDF_BUG(0);
+
+	if (cds_is_self_recovery_enabled())
+		cds_trigger_recovery(false);
+	else
+		QDF_BUG(0);
+}
+
+void hdd_pld_ipa_uc_shutdown_pipes(void)
+{
+	hdd_context_t *hdd_ctx = cds_get_context(QDF_MODULE_ID_HDD);
+	if (!hdd_ctx)
+		return;
+
+	hdd_ipa_uc_force_pipe_shutdown(hdd_ctx);
 }
 
 /* Register the module init/exit functions */

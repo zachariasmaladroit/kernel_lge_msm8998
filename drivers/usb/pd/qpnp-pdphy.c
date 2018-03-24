@@ -108,7 +108,9 @@ struct usb_pdphy {
 	int tx_status;
 	u8 frame_filter_val;
 	bool in_test_data_mode;
+#ifndef CONFIG_LGE_USB
 	bool rx_busy;
+#endif
 
 	enum data_role data_role;
 	enum power_role power_role;
@@ -487,7 +489,11 @@ int pd_phy_write(u16 hdr, const u8 *data, size_t data_len,
 	}
 
 	ret = pdphy_reg_read(pdphy, &val, USB_PDPHY_RX_ACKNOWLEDGE, 1);
+#ifdef CONFIG_LGE_USB
+	if (ret || val) {
+#else
 	if (ret || val || pdphy->rx_busy) {
+#endif
 		dev_err(pdphy->dev, "%s: RX message pending\n", __func__);
 		return -EBUSY;
 	}
@@ -664,6 +670,7 @@ static int pd_phy_bist_mode(u8 bist_mode)
 			BIST_MODE_MASK | BIST_ENABLE, bist_mode | BIST_ENABLE);
 }
 
+#ifndef CONFIG_LGE_USB
 static irqreturn_t pdphy_msg_rx_irq(int irq, void *data)
 {
 	struct usb_pdphy *pdphy = data;
@@ -672,6 +679,7 @@ static irqreturn_t pdphy_msg_rx_irq(int irq, void *data)
 
 	return IRQ_WAKE_THREAD;
 }
+#endif
 
 static irqreturn_t pdphy_msg_rx_irq_thread(int irq, void *data)
 {
@@ -696,7 +704,11 @@ static irqreturn_t pdphy_msg_rx_irq_thread(int irq, void *data)
 		goto done;
 
 	frame_type = rx_status & RX_FRAME_TYPE;
+#ifdef CONFIG_LGE_USB_COMPLIANCE_TEST
+	if (frame_type != SOP_MSG && frame_type != SOPI_MSG) {
+#else
 	if (frame_type != SOP_MSG) {
+#endif
 		dev_err(pdphy->dev, "%s:unsupported frame type %d\n",
 			__func__, frame_type);
 		goto done;
@@ -729,7 +741,9 @@ static irqreturn_t pdphy_msg_rx_irq_thread(int irq, void *data)
 		false);
 	pdphy->rx_bytes += size + 1;
 done:
+#ifndef CONFIG_LGE_USB
 	pdphy->rx_busy = false;
+#endif
 	return IRQ_HANDLED;
 }
 
@@ -814,9 +828,15 @@ static int pdphy_probe(struct platform_device *pdev)
 	if (ret < 0)
 		return ret;
 
+#ifdef CONFIG_LGE_USB
+	ret = pdphy_request_irq(pdphy, pdev->dev.of_node,
+		&pdphy->msg_rx_irq, "msg-rx", NULL,
+		pdphy_msg_rx_irq_thread, (IRQF_TRIGGER_RISING | IRQF_ONESHOT));
+#else
 	ret = pdphy_request_irq(pdphy, pdev->dev.of_node,
 		&pdphy->msg_rx_irq, "msg-rx", pdphy_msg_rx_irq,
 		pdphy_msg_rx_irq_thread, (IRQF_TRIGGER_RISING | IRQF_ONESHOT));
+#endif
 	if (ret < 0)
 		return ret;
 

@@ -1,0 +1,231 @@
+/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+&pm8998_l28 {
+	regulator-min-microvolt = <1800000>;
+	regulator-max-microvolt = <1800000>;
+	qcom,init-voltage = <1800000>;
+	status = "ok";
+};
+
+/ {
+	aliases {
+		i2c2 = &i2c_2;
+	};
+
+	soc {
+		i2c_2:i2c@c176000 {   // // [Modified] QUP_BASE address for BLSP# QUP# (ref. AP datasheet, This model use BLSP-1 QUP1)
+			status = "ok";
+            
+			/* [Modified] If use spi interface, Should be "qcom,spi-qup-v2".
+			          If use i2c interface, Should be "qcom,i2c-msm-v2". */            
+			compatible = "qcom,i2c-msm-v2";
+            
+			// [Fixed] Address, size for slave chips.
+			#address-cells = <1>;
+			#size-cells = <0>;
+	    
+            
+			/* [Fixed] Resister region names referenced in reg.
+				"qup_phys_addr"     : Physical address of QUP register space.
+				Keep the same names. */
+			reg-names = "qup_phys_addr";
+
+			/* [Modified] Modify the reg field as below to add BLSP base address (ref. AP datasheet)
+				First Row is BLSP_QUP base address, size */            
+			reg = <0xC176000 0x600>;
+            
+			/* [Fixed] Interrupt resource names referenced in interrupts.
+				"spi_irq"     : QUP-core interrupt
+			interrupt-names = "qup_irq";
+            
+			/* [Modified] Replace the interrupt filed. (ref. AP datasheet)
+				First Field  : SPI interrupt, keep 0
+				Second Field : Interrupt #
+				Third Field  : Trigger type, keep 0
+				First Row is BLSP_QUP base. */
+			interrupts = <0 96 0>;
+
+			// [Fixed] Output clock frequency (can be up to 3400000)
+			qcom,clk-freq-out = <100000>;
+			// [Fixed] Source clock frequency
+			qcom,clk-freq-in = <50000000>;
+			
+			/* [Fixed] Noise rejection levels could set for SDA and SCL lines Accepted levels are 0~3
+				When missing default to 0. */
+			qcom,noise-rjct-scl = <0>;
+			qcom,noise-rjct-sda = <0>;
+
+			// [Modified] BLSP bus master ID. (ref. AP datasheet)
+			qcom,master-id = <86>;
+
+			// [Fixed] Set up the clocks, Keep the same names.
+			clock-names = "iface_clk", "core_clk";
+			/* [Modified]
+				Add node to BLSP# AHB clock,
+				Add node to QUP Core clock (BLSP# QUP#)
+				Note : In clock QUP Core is label #1 to X. So QUP0 would be label as QUP1. */
+			clocks = <&clock_gcc clk_gcc_blsp1_ahb_clk>, <&clock_gcc clk_gcc_blsp1_qup2_i2c_apps_clk>;
+            
+			// [Fixed] Must contain "i2c_active" and "i2c_sleep" if pinctrl is to be used. Keep the same names.
+			pinctrl-names = "i2c_active", "i2c_sleep"; // pin functions
+			/* [Fixed] List of phandles, each pointing at a pin configuration node within a pin controller.
+				The list of names to assign states, List entry 0 defines the name for integer state ID 0... */
+			pinctrl-0 = <&i2c_isdbt_active>;
+			pinctrl-1 = <&i2c_isdbt_sleep>;
+
+			// [Moidfied] If use DMA, disable "qcom,disable-dma" and enbale "dmas", "dma-names"
+			qcom,disable-dma; // Disabled DMA
+			/* [Modified] dmas - DMA engine API's parameters for blsp. (ref. AP datasheet)
+				First Field : phandle of the dma controller
+				Scond Field : pipe index
+				Third Field : number of descriptors
+				Fourth Field : sps_connect flags
+				Fifth Filed : sps_register_event flags */
+			//dmas = <&dma_blsp1 8 64 0x20000020 0x20>, <&dma_blsp1 9 32 0x20000020 0x20>;
+			// [Fixed] dma-names - dma channel names
+			//dma-names = "tx", "rx";
+		};
+
+		tspp: msm_tspp@0c1e7000 {
+			compatible = "qcom,msm_tspp";
+			reg = <0x0c1e7000 0x200>, /* MSM_TSIF0_PHYS */
+			      <0x0c1e8000 0x200>, /* MSM_TSIF1_PHYS */
+			      <0x0c1e9000 0x1000>, /* MSM_TSPP_PHYS  */
+			      <0x0c1c4000 0x23000>; /* MSM_TSPP_BAM_PHYS */
+			reg-names = "MSM_TSIF0_PHYS",
+					"MSM_TSIF1_PHYS",
+					"MSM_TSPP_PHYS",
+					"MSM_TSPP_BAM_PHYS";
+			interrupts = <0 121 0>, /* TSIF_TSPP_IRQ */
+					<0 119 0>, /* TSIF0_IRQ */
+					<0 120 0>, /* TSIF1_IRQ */
+					<0 122 0>; /* TSIF_BAM_IRQ */
+			interrupt-names = "TSIF_TSPP_IRQ",
+					"TSIF0_IRQ",
+					"TSIF1_IRQ",
+					"TSIF_BAM_IRQ";
+		
+			clock-names = "iface_clk", "ref_clk";
+			clocks = <&clock_gcc clk_gcc_tsif_ahb_clk>, <&clock_gcc clk_gcc_tsif_ref_clk>;
+		
+			qcom,msm-bus,name = "tsif";
+			qcom,msm-bus,num-cases = <2>;
+			qcom,msm-bus,num-paths = <1>;
+			qcom,msm-bus,vectors-KBps =
+					<82 512 0 0>, /* No vote */
+					<82 512 12288 24576>;
+					/* Max. bandwidth, 2xTSIF, each max of 96Mbps */
+		
+			pinctrl-names = "disabled",
+					"tsif0-mode1", "tsif0-mode2",
+					"tsif1-mode1", "tsif1-mode2",
+					"dual-tsif-mode1", "dual-tsif-mode2";
+		
+			pinctrl-0 = <>;				/* disabled */
+			pinctrl-1 = <&tsif0_signals_active>;	/* tsif0-mode1 */
+			pinctrl-2 = <&tsif0_signals_active
+					&tsif0_sync_active>;		/* tsif0-mode2 */
+			pinctrl-3 = <&tsif1_signals_active>;	/* tsif1-mode1 */
+			pinctrl-4 = <&tsif1_signals_active
+					&tsif1_sync_active>;		/* tsif1-mode2 */
+			pinctrl-5 = <&tsif0_signals_active
+					&tsif1_signals_active>;		/* dual-tsif-mode1 */
+			pinctrl-6 = <&tsif0_signals_active
+					&tsif0_sync_active
+					&tsif1_signals_active
+					&tsif1_sync_active>;		/* dual-tsif-mode2 */
+		};
+
+		tlmm: pinctrl@03400000 {
+		pmx_i2c_isdbt {
+			i2c_isdbt_default: i2c_isdbt_default {
+				mux {
+					pins = "gpio32", "gpio33"; // SDA, SCL
+					function = "blsp_i2c2";
+				};
+
+				config {
+					pins = "gpio32", "gpio33";
+					drive-strength = <2>;   // 2MA
+					bias-disable;
+				};
+			};
+                
+			i2c_isdbt_active: i2c_isdbt_active {
+				mux {
+					pins = "gpio32", "gpio33"; // SDA, SCL
+					function = "blsp_i2c2";
+				};
+
+				config {
+					pins = "gpio32", "gpio33";
+					drive-strength = <2>;   // 2MA
+					bias-disable;
+				};
+			};
+
+			i2c_isdbt_sleep: i2c_isdbt_sleep {
+				mux {
+					pins = "gpio32", "gpio33";
+					function = "blsp_i2c2";
+				};
+
+				config {
+					pins = "gpio32", "gpio33";
+					drive-strength = <2>;   // 2MA
+					bias-pull-up;
+				};
+			};
+		};
+                
+		pmx_isdbt_ctrl_pin {
+			isdbt_ctrl_pin: isdbt_ctrl_pin {
+				mux {
+					pins = "gpio31", "gpio34";
+					function = "gpio";
+				};
+
+				config {
+					pins = "gpio31", "gpio34";
+					drive-strength = <8>;   // 8MA
+					bias-disable;
+				};
+			};
+		};
+	};
+	};
+};
+
+&i2c_2 {
+	tcc3535_i2c@58 {
+	compatible = "telechips,tcc3535-i2c";
+	reg = <0x58>;
+
+	/* [Modified] when using clock buffer,
+		you should check which clock buffer used for dmb device */
+	clock-names = "isdbt_xo";
+	clocks = <&clock_gcc clk_ln_bb_clk3>;
+	isdbt_vdd_io-supply = <&pm8998_l28>;
+
+	// [Fixed] Must contain "isdbt_gpio" if pinctrl is to be used. Keep the same names.
+	pinctrl-names = "isdbt_gpio";	// defined in msm8996-h1_kddi_jp-pinctrl.dtsi
+	/* [Modified] List of phandles, each pointing at a pin configuration node within a pin controller.
+				The list of names to assign states, List entry 0 defines the name for integer state ID 0...
+				Ex. control cases are isdbt_ctrl_pin */
+	pinctrl-0 = <&isdbt_ctrl_pin>;
+	/* [Modified] Set reset, en GPIO
+		tlmm is the parent, second # is gpio #, third flag keep it 0. */
+	isdbt-fc8300,reset-gpio = <&tlmm 34 0x00>;
+	isdbt-fc8300,en-gpio = <&tlmm 31 0x00>;
+    };
+};

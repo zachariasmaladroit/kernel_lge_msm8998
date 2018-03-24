@@ -11,7 +11,12 @@
  *
  */
 
-#define pr_fmt(fmt)	"%s: " fmt, __func__
+#if defined(CONFIG_LGE_DISPLAY_COMMON)
+#define pr_fmt(fmt)     "[DisplayPort] %s: " fmt, __func__
+#else
+#define pr_fmt(fmt)     " %s: " fmt, __func__
+#endif
+
 
 #include <linux/io.h>
 #include <linux/delay.h>
@@ -745,11 +750,11 @@ void mdss_dp_timing_cfg(struct dss_io_data *ctrl_io,
 	u32 total_ver, total_hor;
 	u32 data;
 
-	pr_debug("width=%d hporch= %d %d %d\n",
+	pr_info("width=%d hporch= %d %d %d\n",
 		pinfo->xres, pinfo->lcdc.h_back_porch,
 		pinfo->lcdc.h_front_porch, pinfo->lcdc.h_pulse_width);
 
-	pr_debug("height=%d vporch= %d %d %d\n",
+	pr_info("height=%d vporch= %d %d %d\n",
 		pinfo->yres, pinfo->lcdc.v_back_porch,
 		pinfo->lcdc.v_front_porch, pinfo->lcdc.v_pulse_width);
 
@@ -1231,6 +1236,7 @@ static void mdss_dp_audio_setup_audio_stream_sdp(struct dss_io_data *ctrl_io,
 
 	/* Config header and parity byte 1 */
 	value = readl_relaxed(ctrl_io->base + MMSS_DP_AUDIO_STREAM_0);
+	value &= 0x0000ffff;
 	new_value = 0x02;
 	parity_byte = mdss_dp_calculate_parity_byte(new_value);
 	value |= ((new_value << HEADER_BYTE_1_BIT)
@@ -1241,7 +1247,8 @@ static void mdss_dp_audio_setup_audio_stream_sdp(struct dss_io_data *ctrl_io,
 
 	/* Config header and parity byte 2 */
 	value = readl_relaxed(ctrl_io->base + MMSS_DP_AUDIO_STREAM_1);
-	new_value = value;
+	value &= 0xffff0000;
+	new_value = 0x00;
 	parity_byte = mdss_dp_calculate_parity_byte(new_value);
 	value |= ((new_value << HEADER_BYTE_2_BIT)
 			| (parity_byte << PARITY_BYTE_2_BIT));
@@ -1251,6 +1258,7 @@ static void mdss_dp_audio_setup_audio_stream_sdp(struct dss_io_data *ctrl_io,
 
 	/* Config header and parity byte 3 */
 	value = readl_relaxed(ctrl_io->base + MMSS_DP_AUDIO_STREAM_1);
+	value &= 0x0000ffff;
 	new_value = num_of_channels - 1;
 	parity_byte = mdss_dp_calculate_parity_byte(new_value);
 	value |= ((new_value << HEADER_BYTE_3_BIT)
@@ -1269,6 +1277,7 @@ static void mdss_dp_audio_setup_audio_timestamp_sdp(struct dss_io_data *ctrl_io)
 
 	/* Config header and parity byte 1 */
 	value = readl_relaxed(ctrl_io->base + MMSS_DP_AUDIO_TIMESTAMP_0);
+	value &= 0x0000ffff;
 	new_value = 0x1;
 	parity_byte = mdss_dp_calculate_parity_byte(new_value);
 	value |= ((new_value << HEADER_BYTE_1_BIT)
@@ -1279,6 +1288,7 @@ static void mdss_dp_audio_setup_audio_timestamp_sdp(struct dss_io_data *ctrl_io)
 
 	/* Config header and parity byte 2 */
 	value = readl_relaxed(ctrl_io->base + MMSS_DP_AUDIO_TIMESTAMP_1);
+	value &= 0xffff0000;
 	new_value = 0x17;
 	parity_byte = mdss_dp_calculate_parity_byte(new_value);
 	value |= ((new_value << HEADER_BYTE_2_BIT)
@@ -1289,6 +1299,7 @@ static void mdss_dp_audio_setup_audio_timestamp_sdp(struct dss_io_data *ctrl_io)
 
 	/* Config header and parity byte 3 */
 	value = readl_relaxed(ctrl_io->base + MMSS_DP_AUDIO_TIMESTAMP_1);
+	value &= 0x0000ffff;
 	new_value = (0x0 | (0x11 << 2));
 	parity_byte = mdss_dp_calculate_parity_byte(new_value);
 	value |= ((new_value << HEADER_BYTE_3_BIT)
@@ -1306,6 +1317,7 @@ static void mdss_dp_audio_setup_audio_infoframe_sdp(struct dss_io_data *ctrl_io)
 
 	/* Config header and parity byte 1 */
 	value = readl_relaxed(ctrl_io->base + MMSS_DP_AUDIO_INFOFRAME_0);
+	value &= 0x0000ffff;
 	new_value = 0x84;
 	parity_byte = mdss_dp_calculate_parity_byte(new_value);
 	value |= ((new_value << HEADER_BYTE_1_BIT)
@@ -1316,6 +1328,7 @@ static void mdss_dp_audio_setup_audio_infoframe_sdp(struct dss_io_data *ctrl_io)
 
 	/* Config header and parity byte 2 */
 	value = readl_relaxed(ctrl_io->base + MMSS_DP_AUDIO_INFOFRAME_1);
+	value &= 0xffff0000;
 	new_value = 0x1b;
 	parity_byte = mdss_dp_calculate_parity_byte(new_value);
 	value |= ((new_value << HEADER_BYTE_2_BIT)
@@ -1326,6 +1339,7 @@ static void mdss_dp_audio_setup_audio_infoframe_sdp(struct dss_io_data *ctrl_io)
 
 	/* Config header and parity byte 3 */
 	value = readl_relaxed(ctrl_io->base + MMSS_DP_AUDIO_INFOFRAME_1);
+	value &= 0x0000ffff;
 	new_value = (0x0 | (0x11 << 2));
 	parity_byte = mdss_dp_calculate_parity_byte(new_value);
 	value |= ((new_value << HEADER_BYTE_3_BIT)
@@ -1347,6 +1361,7 @@ static void mdss_dp_audio_setup_copy_management_sdp(struct dss_io_data *ctrl_io)
 	/* Config header and parity byte 1 */
 	value = readl_relaxed(ctrl_io->base +
 					MMSS_DP_AUDIO_COPYMANAGEMENT_0);
+	value &= 0x0000ffff;
 	new_value = 0x05;
 	parity_byte = mdss_dp_calculate_parity_byte(new_value);
 	value |= ((new_value << HEADER_BYTE_1_BIT)
@@ -1359,6 +1374,7 @@ static void mdss_dp_audio_setup_copy_management_sdp(struct dss_io_data *ctrl_io)
 	/* Config header and parity byte 2 */
 	value = readl_relaxed(ctrl_io->base +
 					MMSS_DP_AUDIO_COPYMANAGEMENT_1);
+	value &= 0xffff0000;
 	new_value = 0x0F;
 	parity_byte = mdss_dp_calculate_parity_byte(new_value);
 	value |= ((new_value << HEADER_BYTE_2_BIT)
@@ -1371,6 +1387,7 @@ static void mdss_dp_audio_setup_copy_management_sdp(struct dss_io_data *ctrl_io)
 	/* Config header and parity byte 3 */
 	value = readl_relaxed(ctrl_io->base +
 					MMSS_DP_AUDIO_COPYMANAGEMENT_1);
+	value &= 0x0000ffff;
 	new_value = 0x0;
 	parity_byte = mdss_dp_calculate_parity_byte(new_value);
 	value |= ((new_value << HEADER_BYTE_3_BIT)
@@ -1396,6 +1413,7 @@ static void mdss_dp_audio_setup_isrc_sdp(struct dss_io_data *ctrl_io)
 
 	/* Config header and parity byte 1 */
 	value = readl_relaxed(ctrl_io->base + MMSS_DP_AUDIO_ISRC_0);
+	value &= 0x0000ffff;
 	new_value = 0x06;
 	parity_byte = mdss_dp_calculate_parity_byte(new_value);
 	value |= ((new_value << HEADER_BYTE_1_BIT)
@@ -1406,6 +1424,7 @@ static void mdss_dp_audio_setup_isrc_sdp(struct dss_io_data *ctrl_io)
 
 	/* Config header and parity byte 2 */
 	value = readl_relaxed(ctrl_io->base + MMSS_DP_AUDIO_ISRC_1);
+	value &= 0xffff0000;
 	new_value = 0x0F;
 	parity_byte = mdss_dp_calculate_parity_byte(new_value);
 	value |= ((new_value << HEADER_BYTE_2_BIT)

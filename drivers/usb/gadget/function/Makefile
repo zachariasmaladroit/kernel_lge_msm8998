@@ -16,8 +16,13 @@ obj-$(CONFIG_USB_F_SERIAL)	+= usb_f_serial.o
 usb_f_obex-y			:= f_obex.o
 obj-$(CONFIG_USB_F_OBEX)	+= usb_f_obex.o
 obj-$(CONFIG_USB_U_ETHER)	+= u_ether.o
-usb_f_ncm-y			:= f_ncm.o
-obj-$(CONFIG_USB_F_NCM)		+= usb_f_ncm.o
+ifeq ($(CONFIG_LGE_USB_GADGET),y)
+    usb_f_ncm_lge-y			:= f_ncm_lge.o
+    obj-$(CONFIG_USB_F_NCM)		+= usb_f_ncm_lge.o
+else
+    usb_f_ncm-y				:= f_ncm.o
+    obj-$(CONFIG_USB_F_NCM)		+= usb_f_ncm.o
+endif
 usb_f_ecm-y			:= f_ecm.o
 obj-$(CONFIG_USB_F_ECM)		+= usb_f_ecm.o
 usb_f_phonet-y			:= f_phonet.o
@@ -26,7 +31,11 @@ usb_f_eem-y			:= f_eem.o
 obj-$(CONFIG_USB_F_EEM)		+= usb_f_eem.o
 usb_f_ecm_subset-y		:= f_subset.o
 obj-$(CONFIG_USB_F_SUBSET)	+= usb_f_ecm_subset.o
+ifeq ($(CONFIG_LGE_USB_GADGET),y)
+usb_f_rndis-y			:= f_rndis.o
+else
 usb_f_rndis-y			:= f_rndis.o rndis.o
+endif
 obj-$(CONFIG_USB_F_RNDIS)	+= usb_f_rndis.o
 usb_f_mass_storage-y		:= f_mass_storage.o storage_common.o
 obj-$(CONFIG_USB_F_MASS_STORAGE)+= usb_f_mass_storage.o
@@ -64,5 +73,7 @@ usb_f_qcrndis-y			:= f_qc_rndis.o rndis.o u_data_ipa.o
 obj-$(CONFIG_USB_F_QCRNDIS)	+= usb_f_qcrndis.o
 usb_f_rmnet_bam-y		:= f_rmnet.o u_ctrl_qti.o
 obj-$(CONFIG_USB_F_RMNET_BAM)   += usb_f_rmnet_bam.o
+usb_f_laf-y                     := f_laf.o
+obj-$(CONFIG_LGE_USB_F_LAF)     += usb_f_laf.o
 usb_f_ccid-y			:= f_ccid.o
 obj-$(CONFIG_USB_F_CCID)   	+= usb_f_ccid.o

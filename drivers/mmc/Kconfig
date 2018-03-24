@@ -27,6 +27,26 @@ config MMC_PERF_PROFILING
 	  If you say Y here, support will be added for collecting
 	  performance numbers at the MMC Queue and Host layers.
 
+config LGE_MMC_CLK_SCALE_DISABLE
+	bool "disable clock scaling for mmc"
+	default y
+	help
+	  If you say Y here, clock scaling for mmc device will be disabled.
+	  Set Y in kernel/arch/arm/configs/XXXX_defconfig file.
+
+config LGE_SHOW_SDCARD_DETECT_PIN_STATUS
+    bool "Show SD Card Detect pin status"
+    default n
+    help
+        Show SD Card Detect pin status at /sys/devices/soc.0/7864900.sdhci/mmc_host/mmc1/cd_status
+
+config LGE_TRAY_EVENT
+    bool "Show SD Card Detect pin status"
+    depends on MACH_LGE && LGE_SHOW_SDCARD_DETECT_PIN_STATUS
+    default y
+    help
+        Support the uevent for SD Card TRAY status.
+
 if MMC
 
 source "drivers/mmc/core/Kconfig"

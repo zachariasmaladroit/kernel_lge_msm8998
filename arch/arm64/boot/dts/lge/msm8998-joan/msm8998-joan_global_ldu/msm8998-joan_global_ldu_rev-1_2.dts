@@ -1,0 +1,64 @@
+/* Copyright (c) 2016, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+
+/dts-v1/;
+
+#include "../../../qcom/msm8998-v2.1.dtsi"
+#include "msm8998-joan_global_ldu.dtsi"
+
+/ {
+	model = "Qualcomm Technologies, Inc. MSM8998 v2.1 MTP";
+	compatible = "qcom,msm8998-mtp", "qcom,msm8998", "qcom,mtp";
+	qcom,board-id = <0xe08 0>;
+};
+
+&pm8998_vadc {
+	lge,gpio-sbu-sel = <&tlmm 11 0>;
+	chan@83 {
+		label = "vph_pwr";
+		reg = <0x83>;
+		qcom,decimation = <2>;
+		qcom,pre-div-channel-scaling = <1>;
+		qcom,calibration-type = "absolute";
+		qcom,scale-function = <0>;
+		qcom,hw-settle-time = <0>;
+		qcom,fast-avg-setup = <0>;
+    };
+};
+
+
+&soc {
+    i2c_1: i2c@c175000 {
+        es9218-codec@48 {
+            dac,use-internal-ldo;
+        };
+    };
+
+    lge,cable_detect {
+        lge,no-init-cable     = <     0       0    0    0    0>;
+        lge,cable-mhl-1k      = <     1    3000  500  500  500>;
+        lge,cable-u-28p7k     = <  3001    6000 1800  500 1500>;
+        lge,cable-28p7k       = <  6001  138000 1800  500 1500>;
+        lge,cable-56k         = <138001  330000  900  900  500>;
+        lge,cable-100k        = <330001  341000 1800  500 1500>;
+        lge,cable-130k        = <341001  429000  900  900  500>;
+        lge,cable-180k        = <429001  479000 1800  500 1500>;
+        lge,cable-200k        = <479001  501000 1800  500 1500>;
+        lge,cable-220k        = <501001  528000 1800  500 1500>;
+        lge,cable-270k        = <528001  578000 1800  500 1500>;
+        lge,cable-330k        = <578001  633000 1800  500 1500>;
+        lge,cable-620k        = <633001  759000 1800  500 1500>;
+        lge,cable-910k        = <759001  897000  900  900  500>;
+        lge,cable-none        = <897001 1045000 2000  500 2000>;
+    };
+};

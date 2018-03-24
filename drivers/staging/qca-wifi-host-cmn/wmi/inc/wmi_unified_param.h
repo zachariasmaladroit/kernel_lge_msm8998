@@ -1620,6 +1620,11 @@ struct wmi_probe_resp_params {
 	uint32_t ucProxyProbeReqValidIEBmap[8];
 };
 
+struct key_seq_counter {
+    uint32_t key_seq_counter_l;
+    uint32_t key_seq_counter_h;
+};
+
 /* struct set_key_params: structure containing
  *                        installation key parameters
  * @vdev_id: vdev id
@@ -1632,6 +1637,7 @@ struct wmi_probe_resp_params {
  * @key_rxmic_len: rx mic length
  * @rx_iv: receive IV, applicable only in case of WAPI
  * @tx_iv: transmit IV, applicable only in case of WAPI
+ * @key_rsc_counter: RSC key counter
  * @key_data: key data
  */
 struct set_key_params {
@@ -1648,6 +1654,7 @@ struct set_key_params {
 	uint8_t tx_iv[16];
 #endif
 	uint8_t key_data[WMI_MAC_MAX_KEY_LENGTH];
+	struct key_seq_counter key_rsc_counter;
 };
 
 /**
@@ -2266,24 +2273,6 @@ struct pno_scan_req_params {
 	uint32_t oui_field_len;
 	uint8_t *voui;
 };
-
-/**
- * struct nlo_mawc_params - Motion Aided Wireless Connectivity based
- *                          Network List Offload configuration
- * @vdev_id: VDEV ID on which the configuration needs to be applied
- * @enable: flag to enable or disable
- * @exp_backoff_ratio: ratio of exponential backoff
- * @init_scan_interval: initial scan interval(msec)
- * @max_scan_interval:  max scan interval(msec)
- */
-struct nlo_mawc_params {
-	uint8_t vdev_id;
-	bool enable;
-	uint32_t exp_backoff_ratio;
-	uint32_t init_scan_interval;
-	uint32_t max_scan_interval;
-};
-
 
 #define WMI_WLAN_EXTSCAN_MAX_CHANNELS                 36
 #define WMI_WLAN_EXTSCAN_MAX_BUCKETS                  16
@@ -3156,10 +3145,11 @@ struct periodic_tx_pattern {
 	uint8_t ucPattern[WMI_PERIODIC_TX_PTRN_MAX_SIZE];
 };
 
-#define WMI_GTK_OFFLOAD_KEK_BYTES       64
-#define WMI_GTK_OFFLOAD_KCK_BYTES       16
-#define WMI_GTK_OFFLOAD_ENABLE          0
-#define WMI_GTK_OFFLOAD_DISABLE         1
+#define WMI_GTK_OFFLOAD_KEK_BYTES_LEGACY 16
+#define WMI_GTK_OFFLOAD_KEK_BYTES        64
+#define WMI_GTK_OFFLOAD_KCK_BYTES        16
+#define WMI_GTK_OFFLOAD_ENABLE            0
+#define WMI_GTK_OFFLOAD_DISABLE           1
 
 /**
  * struct gtk_offload_params - gtk offload parameters
@@ -3177,6 +3167,18 @@ struct gtk_offload_params {
 	uint32_t kek_len;
 	uint64_t ullKeyReplayCounter;
 	struct qdf_mac_addr bssid;
+};
+
+/**
+ * struct mcast_filter_params - mcast filter parameters
+ * @multicast_addr_cnt: num of addresses
+ * @multicast_addr: address array
+ * @action: operation to perform
+ */
+struct mcast_filter_params {
+	uint32_t multicast_addr_cnt;
+	struct qdf_mac_addr multicast_addr[WMI_MAX_NUM_MULTICAST_ADDRESS];
+	uint8_t action;
 };
 
 /**
@@ -7096,24 +7098,5 @@ struct wmi_limit_off_chan_param {
 	uint32_t rest_time;
 	bool skip_dfs_chans;
 };
-
-/**
- * struct wmi_mawc_roam_params - Motion Aided wireless connectivity params
- * @vdev_id: VDEV on which the parameters should be applied
- * @enable: MAWC roaming feature enable/disable
- * @traffic_load_threshold: Traffic threshold in kBps for MAWC roaming
- * @best_ap_rssi_threshold: AP RSSI Threshold for MAWC roaming
- * @rssi_stationary_high_adjust: High RSSI adjustment value to supress scan
- * @rssi_stationary_low_adjust: Low RSSI adjustment value to supress scan
- */
-struct wmi_mawc_roam_params {
-	uint8_t vdev_id;
-	bool enable;
-	uint32_t traffic_load_threshold;
-	uint32_t best_ap_rssi_threshold;
-	uint8_t rssi_stationary_high_adjust;
-	uint8_t rssi_stationary_low_adjust;
-};
-
 #endif /* _WMI_UNIFIED_PARAM_H_ */
 

@@ -46,8 +46,12 @@ static ssize_t power_supply_show_property(struct device *dev,
 	static char *type_text[] = {
 		"Unknown", "Battery", "UPS", "Mains", "USB", "USB_DCP",
 		"USB_CDP", "USB_ACA", "USB_HVDCP", "USB_HVDCP_3", "USB_PD",
+#ifdef CONFIG_LGE_PM
+		"Wireless", "USB", "BMS", "Parallel", "Main", "Wipower",
+#else
 		"Wireless", "USB_FLOAT", "BMS", "Parallel", "Main", "Wipower",
-		"TYPEC", "TYPEC_UFP", "TYPEC_DFP"
+#endif
+		"TYPEC", "TYPEC_UFP", "TYPEC_DFP",
 	};
 	static char *status_text[] = {
 		"Unknown", "Charging", "Discharging", "Not charging", "Full"
@@ -106,6 +110,12 @@ static ssize_t power_supply_show_property(struct device *dev,
 
 	if (off == POWER_SUPPLY_PROP_STATUS)
 		return sprintf(buf, "%s\n", status_text[value.intval]);
+  #ifdef CONFIG_LGE_PM
+	else if (off == POWER_SUPPLY_PROP_STATUS_RAW)
+		return sprintf(buf, "%s\n", status_text[value.intval]);
+	else if (off == POWER_SUPPLY_PROP_PARALLEL_STATUS)
+		return sprintf(buf, "%s\n", status_text[value.intval]);
+  #endif
 	else if (off == POWER_SUPPLY_PROP_CHARGE_TYPE)
 		return sprintf(buf, "%s\n", charge_type[value.intval]);
 	else if (off == POWER_SUPPLY_PROP_HEALTH)
@@ -283,7 +293,63 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(pd_usb_suspend_supported),
 	POWER_SUPPLY_ATTR(charger_temp),
 	POWER_SUPPLY_ATTR(charger_temp_max),
+#ifdef CONFIG_LGE_PM_INOV_GEN3_SYSFS_SUPPORT
+	POWER_SUPPLY_ATTR(charger_temp_hot_max),
+	POWER_SUPPLY_ATTR(skin_temp),
+	POWER_SUPPLY_ATTR(skin_temp_max),
+	POWER_SUPPLY_ATTR(skin_temp_hot_max),
+#endif
 	POWER_SUPPLY_ATTR(parallel_disable),
+#ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_PARALLEL_CONTROLLER
+	POWER_SUPPLY_ATTR(fcc_max),
+#endif
+#ifdef CONFIG_LGE_PM
+	POWER_SUPPLY_ATTR(status_raw),
+	POWER_SUPPLY_ATTR(parallel_status),
+	POWER_SUPPLY_ATTR(fastchg),
+	POWER_SUPPLY_ATTR(incompatible_chg),
+	POWER_SUPPLY_ATTR(parallel_batfet_en),
+	POWER_SUPPLY_ATTR(fast_parallel_enable),
+	POWER_SUPPLY_ATTR(raw_capacity),
+#endif
+#ifdef CONFIG_LGE_PM_FG_AGE
+	POWER_SUPPLY_ATTR(battery_condition),
+#endif
+#ifdef CONFIG_LGE_PM
+	POWER_SUPPLY_ATTR(battery_condition_ldb),
+#endif
+#ifdef CONFIG_LGE_PM_FG_AGE
+	POWER_SUPPLY_ATTR(battery_age_level),
+#endif
+#ifdef CONFIG_IDTP9223_CHARGER
+	POWER_SUPPLY_ATTR(qipma_on),
+	POWER_SUPPLY_ATTR(connection_type),
+	POWER_SUPPLY_ATTR(qipma_on_status),
+#endif
+#ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_VZW_REQ
+	POWER_SUPPLY_ATTR(vzw_chg),
+	POWER_SUPPLY_ATTR(icl_change),
+#endif
+#ifdef CONFIG_LGE_PM_CHARGERLOGO_WAIT_FOR_FG_INIT
+	POWER_SUPPLY_ATTR(first_soc_est_done),
+#endif
+#ifdef CONFIG_LGE_PM_CYCLE_BASED_CHG_VOLTAGE
+	POWER_SUPPLY_ATTR(lge_cycle_enable),
+	POWER_SUPPLY_ATTR(battery_cycle),
+	POWER_SUPPLY_ATTR(voltage_cbc),
+#endif
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECTION
+	POWER_SUPPLY_ATTR(moisture_detection),
+	POWER_SUPPLY_ATTR(typec_cc_disable),
+	POWER_SUPPLY_ATTR(typec_is_ocp),
+#endif
+#ifdef CONFIG_LGE_PM_TIME_TO_FULL
+	POWER_SUPPLY_ATTR(time_to_full_capacity),
+	POWER_SUPPLY_ATTR(aicl_done),
+#endif
+#ifdef CONFIG_LGE_PM_STEP_CHARGING
+	POWER_SUPPLY_ATTR(lge_step_charging_enable),
+#endif
 	POWER_SUPPLY_ATTR(pe_start),
 	POWER_SUPPLY_ATTR(set_ship_mode),
 	POWER_SUPPLY_ATTR(soc_reporting_ready),

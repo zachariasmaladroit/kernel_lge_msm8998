@@ -55,6 +55,8 @@ int hdmi_panel_get_vic(struct mdss_panel_info *pinfo,
 		u32 ret = hdmi_get_supported_mode(&info, ds_data, pinfo->vic);
 		u32 supported = info.supported;
 
+		pr_warn("pinfo.pixel_formats = %d\n", info.pixel_formats);
+
 		if (!ret && supported) {
 			new_vic = pinfo->vic;
 		} else {
@@ -630,6 +632,12 @@ const char *msm_hdmi_mode_2string(u32 mode)
 		break;
 	case HDMI_RES_AR_16_10:
 		aspect_ratio = "16/10";
+		break;
+	case HDMI_RES_AR_64_27:
+		aspect_ratio = "64/27";
+		break;
+	case HDMI_RES_AR_256_135:
+		aspect_ratio = "256/135";
 		break;
 	default:
 		aspect_ratio = "???";

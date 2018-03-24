@@ -27,7 +27,7 @@
 #include <linux/sizes.h>
 #include <soc/qcom/scm.h>
 #include <soc/qcom/secure_buffer.h>
-#include <msm_camera_tz_util.h>
+#include "msm_camera_tz_util.h"
 #include "cam_smmu_api.h"
 
 #define SCRATCH_ALLOC_START SZ_128K
@@ -1399,7 +1399,13 @@ int cam_smmu_ops(int handle, enum cam_smmu_ops_param ops)
 		break;
 	}
 	case CAM_SMMU_DETACH: {
+/*LGE_CHANGE S, fix the kernel memory leak issue in CAM_SMMU, 2017-04-28, Camera-Stability@lge.com*/
+#if 0
 		ret = cam_smmu_detach_device(idx);
+#else
+		ret = 0;	//we call cam_smmu_attach() once instead of calling attach&detach everytime.
+#endif
+/*LGE_CHANGE E, fix the kernel memory leak issue in CAM_SMMU, 2017-04-28, Camera-Stability@lge.com*/
 		break;
 	}
 	case CAM_SMMU_ATTACH_SEC_VFE_NS_STATS: {

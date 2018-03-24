@@ -1716,6 +1716,7 @@ static void diag_msg_mask_exit(void)
 {
 	int i;
 	struct diag_msg_mask_t *mask = NULL;
+
 	mutex_lock(&driver->msg_mask_lock);
 	mask = (struct diag_msg_mask_t *)(msg_mask.ptr);
 	if (mask) {

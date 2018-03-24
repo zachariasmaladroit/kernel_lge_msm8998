@@ -3021,7 +3021,7 @@ static void wlan_hdd_fill_summary_stats(tCsrSummaryStatsInfo *stats,
  *
  * Return: errno
  */
-static int
+int
 wlan_hdd_get_sap_stats(hdd_adapter_t *adapter, struct station_info *info)
 {
 	QDF_STATUS status;

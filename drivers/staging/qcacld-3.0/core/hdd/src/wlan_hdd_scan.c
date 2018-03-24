@@ -55,6 +55,11 @@
 #define SCAN_DONE_EVENT_BUF_SIZE 4096
 #define RATE_MASK 0x7f
 
+/*
+ * Count to ratelimit the HDD logs during Scan and connect
+ */
+#define HDD_SCAN_REJECT_RATE_LIMIT 5
+
 /**
  * enum essid_bcast_type - SSID broadcast type
  * @eBCAST_UNKNOWN: Broadcast unknown
@@ -81,6 +86,12 @@ struct hdd_scan_info {
 	char *start;
 	char *end;
 };
+
+#ifdef FEATURE_SUPPORT_LGE
+/*LGE_CHNAGE_S, DRIVER scan_suppress command, 2017-07-12, moon-wifi@lge.com*/
+unsigned long static g_scansuppress_mode = 0;
+/*LGE_CHNAGE_E, DRIVER scan_suppress command, 2017-07-12, moon-wifi@lge.com*/
+#endif
 
 static const
 struct nla_policy scan_policy[QCA_WLAN_VENDOR_ATTR_SCAN_MAX + 1] = {
@@ -743,7 +754,7 @@ static void hdd_scan_inactivity_timer_handler(void *scan_req)
 		hdd_err("%s: Module in bad state; Ignore hdd scan req timeout",
 			 __func__);
 	else if (cds_is_self_recovery_enabled())
-		cds_trigger_recovery();
+		cds_trigger_recovery(CDS_SCAN_REQ_EXPIRED);
 	else
 		QDF_BUG(0);
 
@@ -1852,6 +1863,9 @@ static void wlan_hdd_free_voui(tCsrScanRequest *scan_req)
 		qdf_mem_free(scan_req->voui);
 }
 
+/* Define short name to use in cds_trigger_recovery */
+#define SCAN_FAILURE CDS_SCAN_ATTEMPT_FAILURES
+
 /**
  * __wlan_hdd_cfg80211_scan() - API to process cfg80211 scan request
  * @wiphy: Pointer to wiphy
@@ -1905,6 +1919,15 @@ static int __wlan_hdd_cfg80211_scan(struct wiphy *wiphy,
 
 	if (0 != status)
 		return status;
+
+#ifdef FEATURE_SUPPORT_LGE
+/*LGE_CHNAGE_S, DRIVER scan_suppress command, 2017-07-12, moon-wifi@lge.com*/
+	if ((g_scansuppress_mode == 1) && (request->wdev->iftype != NL80211_IFTYPE_AP)) {
+		hdd_err("lge priv-command scansuppress is enabled, scan is not allowed");
+		return -EPERM;
+	}
+/*LGE_CHNAGE_E, DRIVER scan_suppress command, 2017-07-12, moon-wifi@lge.com*/
+#endif
 
 	if ((eConnectionState_Associated ==
 			WLAN_HDD_GET_STATION_CTX_PTR(pAdapter)->
@@ -2015,7 +2038,9 @@ static int __wlan_hdd_cfg80211_scan(struct wiphy *wiphy,
 	/* Check if scan is allowed at this point of time */
 	if (cds_is_connection_in_progress(&curr_session_id, &curr_reason)) {
 		scan_ebusy_cnt++;
-		hdd_err("Scan not allowed. scan_ebusy_cnt: %d", scan_ebusy_cnt);
+		hdd_err_ratelimited(HDD_SCAN_REJECT_RATE_LIMIT,
+			"Scan not allowed. scan_ebusy_cnt: %d Session %d Reason %d",
+			scan_ebusy_cnt, curr_session_id, curr_reason);
 		if (pHddCtx->last_scan_reject_session_id != curr_session_id ||
 		    pHddCtx->last_scan_reject_reason != curr_reason ||
 		    !pHddCtx->last_scan_reject_timestamp) {
@@ -2027,14 +2052,13 @@ static int __wlan_hdd_cfg80211_scan(struct wiphy *wiphy,
 			pHddCtx->scan_reject_cnt = 0;
 		} else {
 			pHddCtx->scan_reject_cnt++;
-			hdd_debug("curr_session id %d curr_reason %d count %d threshold time has elapsed? %d",
-				curr_session_id, curr_reason, pHddCtx->scan_reject_cnt,
-				qdf_system_time_after(jiffies_to_msecs(jiffies),
-				pHddCtx->last_scan_reject_timestamp));
 			if ((pHddCtx->scan_reject_cnt >=
 			   SCAN_REJECT_THRESHOLD) &&
 			   qdf_system_time_after(jiffies_to_msecs(jiffies),
 			   pHddCtx->last_scan_reject_timestamp)) {
+				hdd_err("scan reject threshold reached Session %d Reason %d count %d",
+					curr_session_id, curr_reason,
+					pHddCtx->scan_reject_cnt);
 				pHddCtx->last_scan_reject_timestamp = 0;
 				pHddCtx->scan_reject_cnt = 0;
 				if (pHddCtx->config->enable_fatal_event) {
@@ -2046,7 +2070,7 @@ static int __wlan_hdd_cfg80211_scan(struct wiphy *wiphy,
 				} else if (pHddCtx->config->
 					   enableSelfRecovery) {
 					hdd_err("Triggering SSR due to scan stuck");
-					cds_trigger_recovery();
+					cds_trigger_recovery(SCAN_FAILURE);
 				} else {
 					hdd_err("QDF_BUG due to scan stuck");
 					QDF_BUG(0);
@@ -2361,6 +2385,7 @@ free_mem:
 	EXIT();
 	return status;
 }
+#undef SCAN_FAILURE
 
 /**
  * wlan_hdd_cfg80211_scan() - API to process cfg80211 scan request
@@ -3389,21 +3414,6 @@ static int __wlan_hdd_cfg80211_sched_scan_start(struct wiphy *wiphy,
 	hdd_config_sched_scan_plan(pPnoRequest, request, pHddCtx);
 	pPnoRequest->scan_backoff_multiplier =
 		pHddCtx->config->scan_backoff_multiplier;
-	pPnoRequest->mawc_params.mawc_nlo_enabled =
-		pHddCtx->config->mawc_nlo_enabled &&
-		pHddCtx->config->MAWCEnabled;
-	pPnoRequest->mawc_params.exp_backoff_ratio =
-		pHddCtx->config->mawc_nlo_exp_backoff_ratio;
-	pPnoRequest->mawc_params.init_scan_interval =
-		pHddCtx->config->mawc_nlo_init_scan_interval;
-	pPnoRequest->mawc_params.max_scan_interval =
-		pHddCtx->config->mawc_nlo_max_scan_interval;
-	hdd_debug("MAWC NLO global:%d, en:%d, exp:%d, init:%d, max:%d",
-			pHddCtx->config->MAWCEnabled,
-			pHddCtx->config->mawc_nlo_enabled,
-			pPnoRequest->mawc_params.exp_backoff_ratio,
-			pPnoRequest->mawc_params.init_scan_interval,
-			pPnoRequest->mawc_params.max_scan_interval);
 	pPnoRequest->delay_start_time =
 		hdd_config_sched_scan_start_delay(request);
 	wlan_hdd_sched_scan_update_relative_rssi(pPnoRequest, request);
@@ -3778,3 +3788,17 @@ void wlan_hdd_fill_whitelist_ie_attrs(bool *ie_whitelist,
 	for (i = 0; i < hdd_ctx->no_of_probe_req_ouis; i++)
 		voui[i] = hdd_ctx->probe_req_voui[i];
 }
+
+#ifdef FEATURE_SUPPORT_LGE
+/*LGE_CHNAGE_S, DRIVER scan_suppress command, 2017-07-12, moon-wifi@lge.com*/
+void wlan_hdd_set_scan_suppress(unsigned long on_off);
+void wlan_hdd_set_scan_suppress(unsigned long on_off) {
+	if (on_off == 1) {
+		g_scansuppress_mode = 1;
+	}
+	else {
+		g_scansuppress_mode = 0;
+	}
+}
+/*LGE_CHNAGE_E, DRIVER scan_suppress command, 2017-07-12, moon-wifi@lge.com*/
+#endif

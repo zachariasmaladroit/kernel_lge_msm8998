@@ -17,6 +17,12 @@
 
 static struct ufs_card_fix ufs_fixups[] = {
 	/* UFS cards deviations table */
+#ifdef CONFIG_MACH_LGE
+	/* LGE_CHANGE, BSP-FS@lge.com
+	 * Toshiba recommend that we should not use FASTAUTO in Toshiba-UFS-Gen3.
+	 */
+	UFS_FIX(UFS_VENDOR_TOSHIBA, "THGLF2G8J4LBATR", UFS_DEVICE_NO_FASTAUTO),
+#endif
 	UFS_FIX(UFS_VENDOR_SAMSUNG, UFS_ANY_MODEL, UFS_DEVICE_NO_VCCQ),
 	UFS_FIX(UFS_VENDOR_SAMSUNG, UFS_ANY_MODEL,
 		UFS_DEVICE_QUIRK_RECOVERY_FROM_DL_NAC_ERRORS),
@@ -28,8 +34,13 @@ static struct ufs_card_fix ufs_fixups[] = {
 		UFS_DEVICE_QUIRK_PA_TACTIVATE),
 	UFS_FIX(UFS_VENDOR_SAMSUNG, UFS_ANY_MODEL,
 		UFS_DEVICE_QUIRK_HOST_PA_TACTIVATE),
+#ifdef CONFIG_MACH_LGE
+	UFS_FIX(UFS_ANY_VENDOR, UFS_ANY_MODEL,
+		UFS_DEVICE_QUIRK_HOST_PA_SAVECONFIGTIME),
+#else
 	UFS_FIX(UFS_VENDOR_HYNIX, UFS_ANY_MODEL,
 		UFS_DEVICE_QUIRK_HOST_PA_SAVECONFIGTIME),
+#endif
 	UFS_FIX(UFS_VENDOR_HYNIX, "hB8aL1",
 		UFS_DEVICE_QUIRK_HS_G1_TO_HS_G3_SWITCH),
 	UFS_FIX(UFS_VENDOR_HYNIX, "hC8aL1",
@@ -112,8 +123,16 @@ void ufs_advertise_fixup_device(struct ufs_hba *hba)
 		    /* and same model */
 		    (STR_PRFX_EQUAL(f->card.model, card_data.model) ||
 		     !strcmp(f->card.model, UFS_ANY_MODEL)))
+#ifdef CONFIG_MACH_LGE
+		    {
+			    /* update quirks */
+			    dev_err(hba->dev, "[LGE][UFS] update quirks, manufacturerid:%d, model:%s, quirk:0x%x\n", f->card.wmanufacturerid, f->card.model, f->quirk);
+			    hba->dev_quirks |= f->quirk;
+		    }
+#else
 			/* update quirks */
 			hba->dev_quirks |= f->quirk;
+#endif
 	}
 out:
 	kfree(card_data.model);

@@ -218,10 +218,6 @@ struct dp_alt_mode {
 #define ST_SEND_VIDEO			BIT(7)
 #define ST_PUSH_IDLE			BIT(8)
 
-/* sink power state  */
-#define SINK_POWER_ON		1
-#define SINK_POWER_OFF		2
-
 #define DP_LINK_RATE_162	6	/* 1.62G = 270M * 6 */
 #define DP_LINK_RATE_270	10	/* 2.70G = 270M * 10 */
 #define DP_LINK_RATE_540	20	/* 5.40G = 270M * 20 */
@@ -551,6 +547,15 @@ static inline char *mdss_dp_aux_transaction_to_string(u32 transaction)
 	}
 }
 
+#if defined (CONFIG_LGE_DISPLAY_DISPLAYPORT_PROPRIETARY)
+enum dp_adaptor_type {
+	DP_ADAPTOR_NORMAL,
+	DP_ADAPTOR_PROPRIETARY_UNSTABLE,
+	DP_ADAPTOR_PROPRIETARY_STABLE,
+	DP_ADAPTOR_PROPRIETARY_DANGLE,
+};
+#endif
+
 struct mdss_dp_drv_pdata {
 	/* device driver */
 	int (*on) (struct mdss_panel_data *pdata);
@@ -690,6 +695,16 @@ struct mdss_dp_drv_pdata {
 	struct dpcd_sink_count prev_sink_count;
 
 	struct list_head attention_head;
+
+#if defined (CONFIG_LGE_DISPLAY_DISPLAYPORT_PROPRIETARY)
+	bool hdmi_cable_out;
+	enum dp_adaptor_type dp_adaptor;
+	struct delayed_work proprietary_dp_work;
+	ktime_t dp_adaptor_confirm_timeout;
+#endif
+#if defined(CONFIG_LGE_DISPLAY_DISPLAYPORT_EXTERNAL_BLOCK)
+	bool blk_state;
+#endif
 };
 
 enum dp_phy_lane_num {
@@ -1181,11 +1196,12 @@ void dp_aux_native_handler(struct mdss_dp_drv_pdata *dp, u32 isr);
 void mdss_dp_aux_init(struct mdss_dp_drv_pdata *ep);
 
 void mdss_dp_fill_link_cfg(struct mdss_dp_drv_pdata *ep);
-void mdss_dp_sink_power_down(struct mdss_dp_drv_pdata *ep);
+
 void mdss_dp_lane_power_ctrl(struct mdss_dp_drv_pdata *ep, int up);
 void mdss_dp_config_ctrl(struct mdss_dp_drv_pdata *ep);
+u32 mdss_dp_calc_max_pclk_rate(struct mdss_dp_drv_pdata *dp,
+		u32 link_rate, char lane_count);
 char mdss_dp_gen_link_clk(struct mdss_dp_drv_pdata *dp);
-int mdss_dp_aux_set_sink_power_state(struct mdss_dp_drv_pdata *ep, char state);
 int mdss_dp_aux_send_psm_request(struct mdss_dp_drv_pdata *dp, bool enable);
 void mdss_dp_aux_send_test_response(struct mdss_dp_drv_pdata *ep);
 void *mdss_dp_get_hdcp_data(struct device *dev);

@@ -11,7 +11,9 @@ menuconfig INPUT_TOUCHSCREEN
 
 if INPUT_TOUCHSCREEN
 
-source "drivers/input/touchscreen/synaptics_dsx/Kconfig"
+source "drivers/input/touchscreen/lge/Kconfig"
+source "drivers/input/touchscreen/stm/Kconfig"
+#source "drivers/input/touchscreen/synaptics_dsx/Kconfig"
 
 config OF_TOUCHSCREEN
 	def_tristate INPUT

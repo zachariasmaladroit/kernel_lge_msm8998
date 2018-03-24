@@ -13,6 +13,9 @@
 #ifndef __FG_CORE_H__
 #define __FG_CORE_H__
 
+#ifdef CONFIG_LGE_PM
+#include <linux/alarmtimer.h>
+#endif
 #include <linux/atomic.h>
 #include <linux/bitops.h>
 #include <linux/debugfs.h>
@@ -51,7 +54,7 @@
 #define PROFILE_LOAD		"fg_profile_load"
 #define TTF_PRIMING		"fg_ttf_priming"
 
-/* Delta BSOC irq votable reasons */
+/* Delta BSOC votable reasons */
 #define DELTA_BSOC_IRQ_VOTER	"fg_delta_bsoc_irq"
 
 /* Battery missing irq votable reasons */
@@ -76,10 +79,20 @@
 
 #define KI_COEFF_MAX			62200
 #define KI_COEFF_SOC_LEVELS		3
+#ifdef CONFIG_LGE_PM_DEBUG
+#define FG_INFORM_NORMAL_TIME 60000
+#endif
 
 #define SLOPE_LIMIT_COEFF_MAX		31
 
 #define BATT_THERM_NUM_COEFFS		3
+#define MAX_CC_STEPS			20
+
+//#define CONFIG_LGE_PM_SOC_SCALING_DEBUG/*This is a SoC Scaling debug feature*/
+#ifdef CONFIG_LGE_PM_CYCLE_BASED_CHG_VOLTAGE
+#define MAX_CYCLE_STEP  4
+#define DEFAULT_FLOAT_VOLTAGE	4400000
+#endif
 
 #define MAX_CC_STEPS			20
 
@@ -94,6 +107,9 @@ enum fg_debug_flag {
 	FG_BUS_READ		= BIT(6), /* Show REGMAP reads */
 	FG_CAP_LEARN		= BIT(7), /* Show capacity learning */
 	FG_TTF			= BIT(8), /* Show time to full */
+#ifdef CONFIG_LGE_PM_DEBUG
+	FG_LGE          = BIT(9), /*LGE Debug feature*/
+#endif
 };
 
 /* SRAM access */
@@ -177,6 +193,9 @@ enum fg_sram_param_id {
 	FG_SRAM_ESR_TIGHT_FILTER,
 	FG_SRAM_ESR_BROAD_FILTER,
 	FG_SRAM_SLOPE_LIMIT,
+#ifdef CONFIG_LGE_PM
+	FG_SRAM_SYS_STANDBY_CURR,
+#endif
 	FG_SRAM_MAX,
 };
 
@@ -224,6 +243,14 @@ enum slope_limit_status {
 	SLOPE_LIMIT_NUM_COEFFS,
 };
 
+#ifdef CONFIG_LGE_PM
+enum esr_filter_status {
+	ROOM_TEMP = 0,
+	LOW_TEMP,
+	RELAX_TEMP,
+};
+#endif
+
 enum esr_timer_config {
 	TIMER_RETRY = 0,
 	TIMER_MAX,
@@ -269,6 +296,11 @@ struct fg_dt_props {
 	int	esr_broad_flt_upct;
 	int	esr_tight_lt_flt_upct;
 	int	esr_broad_lt_flt_upct;
+#ifdef CONFIG_LGE_PM
+	int	esr_flt_rt_switch_temp;
+	int	esr_tight_rt_flt_upct;
+	int	esr_broad_rt_flt_upct;
+#endif
 	int	slope_limit_temp;
 	int	esr_pulse_thresh_ma;
 	int	esr_meas_curr_ma;
@@ -401,6 +433,9 @@ struct fg_chip {
 	struct mutex		bus_lock;
 	struct mutex		sram_rw_lock;
 	struct mutex		charge_full_lock;
+#ifdef CONFIG_LGE_PM
+	struct mutex		qnovo_esr_ctrl_lock;
+#endif
 	u32			batt_soc_base;
 	u32			batt_info_base;
 	u32			mem_if_base;
@@ -420,8 +455,16 @@ struct fg_chip {
 	int			delta_soc;
 	int			last_msoc;
 	int			last_recharge_volt_mv;
+
+#ifdef CONFIG_LGE_PM
+	int			delta_temp_irq_count;
+#endif
+
 	int			esr_timer_charging_default[NUM_ESR_TIMERS];
 	enum slope_limit_status	slope_limit_sts;
+#ifdef CONFIG_LGE_PM
+	enum esr_filter_status	esr_flt_sts;
+#endif
 	bool			profile_available;
 	bool			profile_loaded;
 	bool			battery_missing;
@@ -434,12 +477,58 @@ struct fg_chip {
 	bool			esr_flt_cold_temp_en;
 	bool			slope_limit_en;
 	bool			use_ima_single_mode;
+#ifdef CONFIG_LGE_PM
+	bool			qnovo_enable;
+#endif
 	struct completion	soc_update;
 	struct completion	soc_ready;
 	struct delayed_work	profile_load_work;
 	struct work_struct	status_change_work;
 	struct delayed_work	ttf_work;
 	struct delayed_work	sram_dump_work;
+#ifdef CONFIG_LGE_PM
+	struct work_struct	esr_filter_work;
+	struct alarm		esr_filter_alarm;
+	ktime_t			last_delta_temp_time;
+#endif
+#ifdef CONFIG_LGE_PM_DEBUG
+	struct delayed_work fg_inform_work;
+#endif
+#ifdef CONFIG_LGE_PM_SOC_SCALING
+	int			batt_profile_enabled;
+	int			batt_scale_criteria;
+#endif
+#ifdef CONFIG_LGE_PM_SOC_SCALING_DEBUG
+	struct delayed_work soc_level_log;
+#endif
+#ifdef CONFIG_LGE_PM_CHARGERLOGO_WAIT_FOR_FG_INIT
+	int			first_soc_est_done;
+#endif
+#ifdef CONFIG_LGE_PM_CYCLE_BASED_CHG_VOLTAGE
+	u32			batt_life_cycle_set[MAX_CYCLE_STEP];
+	u32			batt_life_cycle_offset[MAX_CYCLE_STEP];
+	u32			batt_life_cycle_vfloat[MAX_CYCLE_STEP];
+	int			lge_cycle_enable;
+	int			battery_cycle;
+	int			rescale_offset;
+	int			cycle_based_vfloat;
+	int			batt_life_prev_cycle[BUCKET_COUNT];
+	struct work_struct	fg_set_cycle_based_offset;
+#ifdef CONFIG_LGE_PM_CYCLE_BASED_WEIGHT
+	int			cycle_weight_integer[BUCKET_COUNT];
+	int			cycle_weight_fraction[BUCKET_COUNT];
+	ktime_t		cycle_weight_update_time;
+	int			cycle_weight_update_time_delta;
+	int			cycle_weight_update_count;
+	u32			cycle_weight_batt_temp_sum;
+	int			cycle_weight_avg_batt_temp;
+	u32			cycle_weight_batt_voltage_sum;
+	int			cycle_weight_avg_batt_voltage;
+#endif
+#endif
+#ifdef CONFIG_LGE_PM_TIME_TO_FULL
+	int 			ttf_soc;
+#endif
 };
 
 /* Debugfs data structures are below */

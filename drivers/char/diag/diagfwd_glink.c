@@ -514,6 +514,7 @@ static void diag_glink_connect_work_fn(struct work_struct *work)
 							connect_work);
 	if (!glink_info || !glink_info->hdl)
 		return;
+
 	atomic_set(&glink_info->opened, 1);
 	diagfwd_channel_open(glink_info->fwd_ctxt);
 	diagfwd_late_open(glink_info->fwd_ctxt);

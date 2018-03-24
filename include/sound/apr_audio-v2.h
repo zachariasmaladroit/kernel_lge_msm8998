@@ -3772,6 +3772,9 @@ struct afe_lpass_core_shared_clk_config_command {
 #define VPM_TX_DM_RFECNS_COPP_TOPOLOGY			0x00010F86
 #define ADM_CMD_COPP_OPEN_TOPOLOGY_ID_DTS_HPX		0x10015002
 #define ADM_CMD_COPP_OPEN_TOPOLOGY_ID_AUDIOSPHERE	0x10028000
+#define FLUENCE_AUDIOV5_TOPOLOGY           0x01000005
+
+
 
 /* Memory map regions command payload used by the
  * #ASM_CMD_SHARED_MEM_MAP_REGIONS ,#ADM_CMD_SHARED_MEM_MAP_REGIONS
@@ -4071,8 +4074,13 @@ struct asm_stream_pan_ctrl_params {
 
 #define ASM_MEDIA_FMT_MULTI_CHANNEL_PCM_V2 0x00010DA5
 
-#define ASM_MEDIA_FMT_MULTI_CHANNEL_PCM_V3 0x00010DDC
+#if defined(CONFIG_SND_LGE_EFFECT) || defined(CONFIG_SND_LGE_NORMALIZER) || defined(CONFIG_SND_LGE_MABL)
+#define ASM_STREAM_POSTPROC_TOPO_ID_DEFAULT_LGE 0x10009009
+#define ASM_STREAM_POSTPROC_TOPO_ID_OFFLOAD_LGE 0x10009010
+#endif
 
+#define ASM_MEDIA_FMT_MULTI_CHANNEL_PCM_V3 0x00010DDC
+#define ASM_STREAM_POSTPROC_TOPO_ID_OFFLOAD_LGE_TEST 0x10009008      //[Audio_framework][MQA] add condition 
 #define ASM_MEDIA_FMT_MULTI_CHANNEL_PCM_V4 0x0001320C
 
 #define ASM_MEDIA_FMT_EVRCB_FS 0x00010BEF
@@ -9746,8 +9754,7 @@ struct afe_clk_set {
 	 * for enable and disable clock.
 	 *	"clk_freq_in_hz", "clk_attri", and "clk_root"
 	 *	are ignored in disable clock case.
-	 *	@values 
-	 *	- 0 -- Disabled
+	 *	@values?	 *	- 0 -- Disabled
 	 *	- 1 -- Enabled  @tablebulletend
 	 */
 	uint32_t enable;

@@ -51,6 +51,7 @@
 #include "lim_ft.h"
 #include "cds_utils.h"
 #include "lim_process_fils.h"
+#include "lim_send_messages.h"
 
 /**
  * is_auth_valid
@@ -315,7 +316,10 @@ static void lim_process_auth_frame_type1(tpAniSirGlobal mac_ctx,
 		 * pStaDS != NULL and isConnected = 1 means the STA is already
 		 * connected, But SAP received the Auth from that station.
 		 * For non PMF connection send Deauth frame as STA will retry
-		 * to connect back.
+		 * to connect back. The reason for above logic is captured in
+		 * CR620403. If we silently drop the auth, the subsequent EAPOL
+		 * exchange will fail & peer STA will keep trying until DUT
+		 * SAP/GO gets a kickout event from FW & cleans up.
 		 *
 		 * For PMF connection the AP should not tear down or otherwise
 		 * modify the state of the existing association until the
@@ -1015,6 +1019,43 @@ static void lim_process_auth_frame_type4(tpAniSirGlobal mac_ctx,
 	}
 }
 
+void lim_send_open_system_auth(void *ctx, uint32_t param)
+{
+	tLimMlmAuthReq *auth_req;
+	tpPESession session_entry;
+	tpAniSirGlobal mac_ctx = (tpAniSirGlobal)ctx;
+	uint8_t session_id;
+
+	session_id = mac_ctx->lim.limTimers.open_sys_auth_timer.sessionId;
+	session_entry = pe_find_session_by_session_id(mac_ctx, session_id);
+
+	if (!session_entry)
+		return;
+	/* Trigger MAC based Authentication */
+	auth_req = qdf_mem_malloc(sizeof(tLimMlmAuthReq));
+	if (!auth_req) {
+		pe_err("mlmAuthReq :Memory alloc failed");
+		lim_handle_sme_join_result(mac_ctx,
+					eSIR_SME_AUTH_TIMEOUT_RESULT_CODE,
+					eSIR_MAC_AUTH_ALGO_NOT_SUPPORTED_STATUS,
+					session_entry);
+		tx_timer_deactivate(&mac_ctx->lim.limTimers.
+				    open_sys_auth_timer);
+		return;
+	}
+	sir_copy_mac_addr(auth_req->peerMacAddr, session_entry->bssId);
+	auth_req->authType = eSIR_OPEN_SYSTEM;
+	/* Update PE session Id */
+	auth_req->sessionId = session_id;
+	if (wlan_cfg_get_int(mac_ctx, WNI_CFG_AUTHENTICATE_FAILURE_TIMEOUT,
+	    (uint32_t *) &auth_req->authFailureTimeout) != eSIR_SUCCESS) {
+		pe_err("Fail:retrieve AuthFailureTimeout");
+	}
+	lim_post_mlm_message(mac_ctx, LIM_MLM_AUTH_REQ, (uint32_t *) auth_req);
+	tx_timer_deactivate(&mac_ctx->lim.limTimers.open_sys_auth_timer);
+
+}
+
 /**
  * lim_process_auth_frame() - to process auth frame
  * @mac_ctx - Pointer to Global MAC structure
@@ -1089,6 +1130,15 @@ lim_process_auth_frame(tpAniSirGlobal mac_ctx, uint8_t *rx_pkt_info,
 		pe_session->peSessionId, GET_LIM_SYSTEM_ROLE(pe_session),
 		pe_session->limMlmState, MAC_ADDR_ARRAY(mac_hdr->bssId),
 		(uint) abs((int8_t) WMA_GET_RX_RSSI_NORMALIZED(rx_pkt_info)));
+
+	if (pe_session->prev_auth_seq_num == curr_seq_num) {
+		pe_err("auth frame, seq num: %d is already processed, drop it",
+			curr_seq_num);
+		return;
+	}
+
+	/* save seq number in pe_session */
+	pe_session->prev_auth_seq_num = curr_seq_num;
 
 	body_ptr = WMA_GET_RX_MPDU_DATA(rx_pkt_info);
 

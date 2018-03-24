@@ -3693,6 +3693,12 @@ static int dwc3_msm_gadget_vbus_draw(struct dwc3_msm *mdwc, unsigned mA)
 	if (mdwc->max_power == mA)
 		return 0;
 
+#ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_CABLE_DETECT
+	power_supply_get_property(mdwc->usb_psy, POWER_SUPPLY_PROP_PRESENT, &pval);
+	if (!pval.intval)
+		return 0;
+#endif
+
 	psy_type = get_psy_type(mdwc);
 	if (psy_type == POWER_SUPPLY_TYPE_USB) {
 		dev_info(mdwc->dev, "Avail curr from USB = %u\n", mA);
