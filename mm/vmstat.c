@@ -767,6 +767,7 @@ const char * const vmstat_text[] = {
 #ifdef CONFIG_MIGRATE_HIGHORDER
 	"nr_free_highorder",
 #endif
+	"nr_indirectly_reclaimable",
 
 	/* enum writeback_stat_item counters */
 	"nr_dirty_threshold",
