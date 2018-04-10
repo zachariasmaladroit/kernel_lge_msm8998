@@ -181,6 +181,7 @@ enum zone_stat_item {
 #ifdef CONFIG_MIGRATE_HIGHORDER
 	NR_FREE_HIGHORDER_PAGES,
 #endif
+	NR_INDIRECTLY_RECLAIMABLE_BYTES, /* measured in bytes */
 	NR_VM_ZONE_STAT_ITEMS };
 
 /*
