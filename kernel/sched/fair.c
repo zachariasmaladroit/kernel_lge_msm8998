@@ -6512,10 +6512,14 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 					schedstat_inc(this_rq(), eas_stats.fbt_pref_idle);
 
 					if (boosted &&
-					   (capacity_orig <= target_capacity))
+					   (capacity_orig < target_capacity))
 						continue;
 					if (!boosted &&
-					   (capacity_orig >= target_capacity))
+					   (capacity_orig > target_capacity))
+						continue;
+					if ((capacity_orig == target_capacity) &&
+					    sysctl_sched_cstate_aware &&
+					    (best_idle_cstate <= idle_idx))
 						continue;
 					if ((capacity_orig == target_capacity) &&
 					    sysctl_sched_cstate_aware &&
