@@ -1409,6 +1409,15 @@ int ipa2_reset_rt(enum ipa_ip_type ip)
 			ipa_id_remove(id);
 		}
 	}
+
+	/* commit the change to IPA-HW */
+	if (ipa_ctx->ctrl->ipa_commit_rt(IPA_IP_v4) ||
+		ipa_ctx->ctrl->ipa_commit_rt(IPA_IP_v6)) {
+		IPAERR("fail to commit rt-rule\n");
+		WARN_ON_RATELIMIT_IPA(1);
+		mutex_unlock(&ipa_ctx->lock);
+		return -EPERM;
+	}
 	mutex_unlock(&ipa_ctx->lock);
 
 	return 0;
