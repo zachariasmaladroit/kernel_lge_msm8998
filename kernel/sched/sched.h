@@ -1625,7 +1625,7 @@ static inline unsigned long task_util(struct task_struct *p)
 		return (demand << SCHED_CAPACITY_SHIFT) / walt_ravg_window;
 	}
 #endif
-	return p->se.avg.util_avg;
+	return READ_ONCE(p->se.avg.util_avg);
 }
 
 

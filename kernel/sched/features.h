@@ -104,3 +104,8 @@ SCHED_FEAT(FBT_STRICT_ORDER, false)
  * RT class.
  */
 SCHED_FEAT(SCHEDTUNE_BOOST_HOLD_ALL, true)
+
+/*
+ * UtilEstimation. Use estimated CPU utilization.
+ */
+SCHED_FEAT(UTIL_EST, false)
