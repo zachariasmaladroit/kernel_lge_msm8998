@@ -757,7 +757,6 @@ static int kgsl_suspend_device(struct kgsl_device *device, pm_message_t state)
 	if (!device)
 		return -EINVAL;
 
-	KGSL_PWR_WARN(device, "suspend start\n");
 
 	mutex_lock(&device->mutex);
 	status = kgsl_pwrctrl_change_state(device, KGSL_STATE_SUSPEND);
@@ -765,7 +764,6 @@ static int kgsl_suspend_device(struct kgsl_device *device, pm_message_t state)
 		device->ftbl->dispatcher_halt(device);
 	mutex_unlock(&device->mutex);
 
-	KGSL_PWR_WARN(device, "suspend end\n");
 	return status;
 }
 
@@ -774,7 +772,6 @@ static int kgsl_resume_device(struct kgsl_device *device)
 	if (!device)
 		return -EINVAL;
 
-	KGSL_PWR_WARN(device, "resume start\n");
 	mutex_lock(&device->mutex);
 	if (device->state == KGSL_STATE_SUSPEND) {
 		device->ftbl->dispatcher_unhalt(device);
@@ -790,11 +787,11 @@ static int kgsl_resume_device(struct kgsl_device *device)
 			device->ftbl->idle(device);
 		kgsl_pwrctrl_change_state(device, KGSL_STATE_SLUMBER);
 		KGSL_PWR_ERR(device,
-			"resume invoked without a suspend\n");
+			"resume invoked without a suspend, state = 0x%x\n",
+			device->state);
 	}
 
 	mutex_unlock(&device->mutex);
-	KGSL_PWR_WARN(device, "resume end\n");
 	return 0;
 }
 
@@ -823,8 +820,7 @@ static int kgsl_runtime_resume(struct device *dev)
 }
 
 const struct dev_pm_ops kgsl_pm_ops = {
-	.suspend = kgsl_suspend,
-	.resume = kgsl_resume,
+	SET_SYSTEM_SLEEP_PM_OPS(kgsl_suspend, kgsl_resume)
 	.runtime_suspend = kgsl_runtime_suspend,
 	.runtime_resume = kgsl_runtime_resume,
 };
