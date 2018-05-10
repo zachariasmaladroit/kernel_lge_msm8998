@@ -89,7 +89,7 @@ static u64 bpf_trace_printk(u64 r1, u64 fmt_size, u64 r3, u64 r4, u64 r5)
 	bool str_seen = false;
 	int mod[3] = {};
 	int fmt_cnt = 0;
-	u64 unsafe_addr;
+	u64 unsafe_addr = 0;
 	char buf[64];
 	int i;
 
