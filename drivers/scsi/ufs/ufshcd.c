@@ -1430,6 +1430,7 @@ static void ufshcd_ungate_work(struct work_struct *work)
 	ufshcd_enable_clocks(hba);
 
 	/* enable the host irq */
+	/* disable interrupt in clk-gating */
 	ufshcd_enable_irq(hba);
 
 	/* Exit from hibern8 */
@@ -1590,6 +1591,7 @@ static void ufshcd_gate_work(struct work_struct *work)
 	}
 
 	/* disable the host irq */
+	/* disable interrupt in clk-gating */
 	ufshcd_disable_irq(hba);
 
 	/*
