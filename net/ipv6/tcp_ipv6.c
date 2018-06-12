@@ -1668,6 +1668,10 @@ process:
 			reqsk_put(req);
 			goto discard_it;
 		}
+		if (tcp_checksum_complete(skb)) {
+			reqsk_put(req);
+			goto csum_error;
+		}
 #ifdef CONFIG_LGP_DATA_TCPIP_MPTCP
 		if (likely(sk->sk_state == TCP_LISTEN || is_meta_sk(sk))) {
 			if (is_meta_sk(sk)) {
