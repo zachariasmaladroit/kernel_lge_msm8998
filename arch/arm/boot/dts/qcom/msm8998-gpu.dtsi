@@ -67,6 +67,7 @@
 		qcom,initial-pwrlevel = <4>;
 
 		qcom,idle-timeout = <80>; //<HZ/12>
+		qcom,deep-nap-timeout = <100>; //msecs
 
 		qcom,highest-bank-bit = <15>;
 
