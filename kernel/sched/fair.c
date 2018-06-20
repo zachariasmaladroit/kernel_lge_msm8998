@@ -6730,8 +6730,8 @@ static int wake_cap(struct task_struct *p, int cpu, int prev_cpu)
 	return min_cap * 1024 < task_util(p) * capacity_margin;
 }
 
-static int
-select_energy_cpu_brute(struct task_struct *p, int prev_cpu, int sync)
+static int select_energy_cpu_brute(struct task_struct *p, int prev_cpu,
+				   int sync_boost)
 {
 	bool boosted, prefer_idle;
 	struct sched_domain *sd;
@@ -6742,7 +6742,7 @@ select_energy_cpu_brute(struct task_struct *p, int prev_cpu, int sync)
 	schedstat_inc(p, se.statistics.nr_wakeups_secb_attempts);
 	schedstat_inc(this_rq(), eas_stats.secb_attempts);
 
-	if (sysctl_sched_sync_hint_enable && sync) {
+	if (sysctl_sched_sync_hint_enable && sync_boost) {
 		int cpu = smp_processor_id();
 
 		if (cpumask_test_cpu(cpu, tsk_cpus_allowed(p))) {
@@ -6769,7 +6769,8 @@ select_energy_cpu_brute(struct task_struct *p, int prev_cpu, int sync)
 	sync_entity_load_avg(&p->se);
 
 	/* Find a cpu with sufficient capacity */
-	next_cpu = find_best_target(p, &backup_cpu, boosted, prefer_idle);
+	next_cpu = find_best_target(p, &backup_cpu, boosted || sync_boost,
+				    prefer_idle);
 	if (next_cpu == -1) {
 		target_cpu = prev_cpu;
 		goto out;
@@ -6878,8 +6879,17 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 	}
 
 	if (energy_aware() && !(cpu_rq(prev_cpu)->rd->overutilized)) {
+		/*
+		 * If the sync flag is set but ignored, prefer to
+		 * select cpu in the same cluster as current. So
+		 * if current is a big cpu and sync is set, indicate
+		 * that the selection algorithm for a boosted task
+		 * should be used.
+		 */
+		bool sync_boost = sync && cpu >= start_cpu(true);
+
 		rcu_read_lock();
-		new_cpu = select_energy_cpu_brute(p, prev_cpu, sync);
+		new_cpu = select_energy_cpu_brute(p, prev_cpu, sync_boost);
 		rcu_read_unlock();
 		return new_cpu;
 	}
