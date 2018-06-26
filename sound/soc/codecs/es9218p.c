@@ -1641,7 +1641,8 @@ static int __es9218_sabre_headphone_on(void)
         cancel_delayed_work_sync(&g_es9218_priv->sleep_work);
         // guanrantee engough time to check impedance of headphone before entering to hifi mode, which means
         // that es9218p_sabre_bypass2hifi() is invoked after some delay like 220ms.
-        schedule_delayed_work(&g_es9218_priv->hifi_in_standby_work, msecs_to_jiffies(220));
+        queue_delayed_work(system_power_efficient_wq,
+							&g_es9218_priv->hifi_in_standby_work, msecs_to_jiffies(220));
 #ifdef SHOW_LOGS
         pr_info("%s(): end calling es9218p_sabre_bypass2hifi() after 220ms \n", __func__);
 #endif
@@ -3137,10 +3138,12 @@ static void es9218_shutdown(struct snd_pcm_substream *substream,
 
 #ifdef ES9218P_DEBUG
     wake_lock_timeout(&g_es9218_priv->shutdown_lock, msecs_to_jiffies( 10 ));
-    schedule_delayed_work(&g_es9218_priv->sleep_work, msecs_to_jiffies(10));      //  3 Sec
+    queue_delayed_work(system_power_efficient_wq,
+						&g_es9218_priv->sleep_work, msecs_to_jiffies(10));      //  3 Sec
 #else
     wake_lock_timeout(&g_es9218_priv->shutdown_lock, msecs_to_jiffies( 5000 ));
-    schedule_delayed_work(&g_es9218_priv->sleep_work, msecs_to_jiffies(3000));      //  3 Sec
+    queue_delayed_work(system_power_efficient_wq,
+						&g_es9218_priv->sleep_work, msecs_to_jiffies(3000));      //  3 Sec
 #endif
 
     es9218_start = 0;
