@@ -1781,7 +1781,8 @@ static void es9218_shutdown(struct snd_pcm_substream *substream,
 	mutex_lock(&g_es9218_priv->power_lock);
 	dev_info(codec->dev, "%s(): entry\n", __func__);
 	es9218_sabre_audio_idle();
-	schedule_delayed_work(&g_es9218_priv->sleep_work, msecs_to_jiffies(100));	//	10msec
+	queue_delayed_work(system_power_efficient_wq,
+						&g_es9218_priv->sleep_work, msecs_to_jiffies(100));	//	10msec
 	//schedule_delayed_work(&g_es9218_priv->sleep_work, msecs_to_jiffies(2000));		//	2 Sec
 	//schedule_delayed_work(&g_es9218_priv->sleep_work, msecs_to_jiffies(3000));		//	3 Sec
 	//schedule_delayed_work(&g_es9218_priv->sleep_work, msecs_to_jiffies(5000));	//	5 Sec
