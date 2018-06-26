@@ -2206,7 +2206,6 @@ int cpufreq_get_policy(struct cpufreq_policy *policy, unsigned int cpu)
 EXPORT_SYMBOL(cpufreq_get_policy);
 
 #define UNDERCLK_MAX_PERFCL 1958400
-static bool disable_underclock;
 
 /*
  * policy : current policy.
@@ -2218,11 +2217,9 @@ static int cpufreq_set_policy(struct cpufreq_policy *policy,
 	struct cpufreq_governor *old_gov;
 	int ret;
 
-	if (!disable_underclock) {
-		if (new_policy->cpu > 3) {
-			if (new_policy->max > UNDERCLK_MAX_PERFCL)
-				new_policy->max = UNDERCLK_MAX_PERFCL;
-		}
+	if (new_policy->cpu > 3) {
+		if (new_policy->max > UNDERCLK_MAX_PERFCL)
+			new_policy->max = UNDERCLK_MAX_PERFCL;
 	}
 
 	pr_debug("setting new policy for CPU %u: %u - %u kHz\n",
