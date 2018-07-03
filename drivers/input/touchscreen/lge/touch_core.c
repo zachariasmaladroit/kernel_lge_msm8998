@@ -32,7 +32,7 @@
 #include <touch_core.h>
 #include <touch_common.h>
 
-u32 touch_debug_mask = BASE_INFO;
+u32 touch_debug_mask = 0;
 /* Debug mask value
  * usage: echo [debug_mask] > /sys/module/touch_core/parameters/debug_mask
  */
