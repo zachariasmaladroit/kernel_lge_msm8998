@@ -881,6 +881,8 @@ struct mdss_panel_info {
 	int new_fps;
 	/* stores initial fps after boot */
 	u32 default_fps;
+	/* store programmable fetch corresponding to default fps */
+	u32 default_prg_fet;
 	/* stores initial vtotal (vfp-method) or htotal (hfp-method) */
 	u32 saved_total;
 	/* stores initial vfp (vfp-method) or hfp (hfp-method) */
