@@ -255,13 +255,6 @@ static void _deferred_put(struct work_struct *work)
 	kgsl_mem_entry_put(entry);
 }
 
-static inline void
-kgsl_mem_entry_put_deferred(struct kgsl_mem_entry *entry)
-{
-	if (entry)
-		queue_work(kgsl_driver.mem_workqueue, &entry->work);
-}
-
 static inline struct kgsl_mem_entry *
 kgsl_mem_entry_create(void)
 {
@@ -272,7 +265,6 @@ kgsl_mem_entry_create(void)
 
 		/* put this ref in the caller functions after init */
 		kref_get(&entry->refcount);
-		INIT_WORK(&entry->work, _deferred_put);
 	}
 	return entry;
 }
@@ -1842,7 +1834,7 @@ long kgsl_ioctl_sharedmem_free(struct kgsl_device_private *dev_priv,
 		return -EINVAL;
 
 	ret = gpumem_free_entry(entry);
-	kgsl_mem_entry_put_deferred(entry);
+	kgsl_mem_entry_put(entry);
 
 	return ret;
 }
@@ -1860,7 +1852,7 @@ long kgsl_ioctl_gpumem_free_id(struct kgsl_device_private *dev_priv,
 		return -EINVAL;
 
 	ret = gpumem_free_entry(entry);
-	kgsl_mem_entry_put_deferred(entry);
+	kgsl_mem_entry_put(entry);
 
 	return ret;
 }
@@ -1897,7 +1889,8 @@ static void gpuobj_free_fence_func(void *priv)
 {
 	struct kgsl_mem_entry *entry = priv;
 
-	kgsl_mem_entry_put_deferred(entry);
+	INIT_WORK(&entry->work, _deferred_put);
+	queue_work(kgsl_driver.mem_workqueue, &entry->work);
 }
 
 static long gpuobj_free_on_fence(struct kgsl_device_private *dev_priv,
@@ -1961,7 +1954,7 @@ long kgsl_ioctl_gpuobj_free(struct kgsl_device_private *dev_priv,
 	else
 		ret = -EINVAL;
 
-	kgsl_mem_entry_put_deferred(entry);
+	kgsl_mem_entry_put(entry);
 	return ret;
 }
 
@@ -3334,13 +3327,7 @@ long kgsl_ioctl_sparse_phys_free(struct kgsl_device_private *dev_priv,
 	if (entry == NULL)
 		return -EINVAL;
 
-	if (!kgsl_mem_entry_set_pend(entry)) {
-		kgsl_mem_entry_put(entry);
-		return -EBUSY;
-	}
-
 	if (entry->memdesc.cur_bindings != 0) {
-		kgsl_mem_entry_unset_pend(entry);
 		kgsl_mem_entry_put(entry);
 		return -EINVAL;
 	}
@@ -3349,7 +3336,7 @@ long kgsl_ioctl_sparse_phys_free(struct kgsl_device_private *dev_priv,
 
 	/* One put for find_id(), one put for the kgsl_mem_entry_create() */
 	kgsl_mem_entry_put(entry);
-	kgsl_mem_entry_put_deferred(entry);
+	kgsl_mem_entry_put(entry);
 
 	return 0;
 }
@@ -3409,13 +3396,7 @@ long kgsl_ioctl_sparse_virt_free(struct kgsl_device_private *dev_priv,
 	if (entry == NULL)
 		return -EINVAL;
 
-	if (!kgsl_mem_entry_set_pend(entry)) {
-		kgsl_mem_entry_put(entry);
-		return -EBUSY;
-	}
-
 	if (entry->bind_tree.rb_node != NULL) {
-		kgsl_mem_entry_unset_pend(entry);
 		kgsl_mem_entry_put(entry);
 		return -EINVAL;
 	}
@@ -3424,7 +3405,7 @@ long kgsl_ioctl_sparse_virt_free(struct kgsl_device_private *dev_priv,
 
 	/* One put for find_id(), one put for the kgsl_mem_entry_create() */
 	kgsl_mem_entry_put(entry);
-	kgsl_mem_entry_put_deferred(entry);
+	kgsl_mem_entry_put(entry);
 
 	return 0;
 }
@@ -4921,7 +4902,7 @@ static int __init kgsl_core_init(void)
 		WQ_HIGHPRI | WQ_UNBOUND | WQ_MEM_RECLAIM | WQ_SYSFS, 0);
 
 	kgsl_driver.mem_workqueue = alloc_workqueue("kgsl-mementry",
-		WQ_MEM_RECLAIM, 0);
+		WQ_UNBOUND | WQ_MEM_RECLAIM, 0);
 
 	init_kthread_worker(&kgsl_driver.worker);
 
