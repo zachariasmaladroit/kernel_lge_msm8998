@@ -3115,7 +3115,8 @@ static void fg_ttf_update(struct fg_chip *chip)
 	chip->ttf.last_ttf = 0;
 	chip->ttf.last_ms = 0;
 	mutex_unlock(&chip->ttf.lock);
-	schedule_delayed_work(&chip->ttf_work, msecs_to_jiffies(delay_ms));
+	queue_delayed_work(system_power_efficient_wq,
+			&chip->ttf_work, msecs_to_jiffies(delay_ms));
 }
 
 static void restore_cycle_counter(struct fg_chip *chip)
@@ -4100,7 +4101,8 @@ static void sram_dump_work(struct work_struct *work)
 	fg_dbg(chip, FG_STATUS, "SRAM Dump done at %lld.%d\n",
 		quotient, remainder);
 resched:
-	schedule_delayed_work(&chip->sram_dump_work,
+	queue_delayed_work(system_power_efficient_wq,
+			&chip->sram_dump_work,
 			msecs_to_jiffies(fg_sram_dump_period_ms));
 }
 
@@ -4128,7 +4130,8 @@ static int fg_sram_dump_sysfs(const char *val, const struct kernel_param *kp)
 
 	chip = power_supply_get_drvdata(bms_psy);
 	if (fg_sram_dump)
-		schedule_delayed_work(&chip->sram_dump_work,
+		queue_delayed_work(system_power_efficient_wq,
+				&chip->sram_dump_work,
 				msecs_to_jiffies(fg_sram_dump_period_ms));
 	else
 		cancel_delayed_work_sync(&chip->sram_dump_work);
@@ -4752,7 +4755,8 @@ static void ttf_work(struct work_struct *work)
 		/* keep the wake lock and prime the IBATT and VBATT buffers */
 		if (ttf < 0) {
 			/* delay for one FG cycle */
-			schedule_delayed_work(&chip->ttf_work,
+			queue_delayed_work(system_power_efficient_wq,
+							&chip->ttf_work,
 							msecs_to_jiffies(1500));
 			mutex_unlock(&chip->ttf.lock);
 			return;
@@ -4769,7 +4773,8 @@ static void ttf_work(struct work_struct *work)
 	}
 
 	/* recurse every 10 seconds */
-	schedule_delayed_work(&chip->ttf_work, msecs_to_jiffies(10000));
+	queue_delayed_work(system_power_efficient_wq,
+			&chip->ttf_work, msecs_to_jiffies(10000));
 end_work:
 	vote(chip->awake_votable, TTF_PRIMING, false, 0);
 	mutex_unlock(&chip->ttf.lock);
@@ -5505,7 +5510,8 @@ static irqreturn_t fg_batt_missing_irq_handler(int irq, void *data)
 	}
 
 	clear_battery_profile(chip);
-	schedule_delayed_work(&chip->profile_load_work, 0);
+	queue_delayed_work(system_power_efficient_wq,
+			&chip->profile_load_work, 0);
 
 	if (chip->fg_psy)
 		power_supply_changed(chip->fg_psy);
@@ -6419,7 +6425,8 @@ static void fg_information(struct work_struct *work)
 		fg_cycle_weight_update(chip, (batt_vol/1000), batt_temp);
 #endif
 #endif
-	schedule_delayed_work(&chip->fg_inform_work,
+	queue_delayed_work(system_power_efficient_wq,
+						&chip->fg_inform_work,
 			            round_jiffies_relative(msecs_to_jiffies(FG_INFORM_NORMAL_TIME)));
 }
 #endif
@@ -6443,7 +6450,8 @@ static void fg_soc_level_log(struct work_struct *work)
 
 	fg_dbg(chip, FG_LGE, "batt_soc_modify:%d, batt_soc_original:%d, voltage:%d\n",
 			batt_soc_modify, batt_soc_original, batt_vol);
-	schedule_delayed_work(&chip->soc_level_log, 6000);
+	queue_delayed_work(system_power_efficient_wq,
+			&chip->soc_level_log, 6000);
 	return;
 }
 #endif
@@ -6786,15 +6794,18 @@ static int fg_gen3_probe(struct platform_device *pdev)
 	}
 #ifdef CONFIG_LGE_PM_DEBUG
 	INIT_DELAYED_WORK(&chip->fg_inform_work, fg_information);
-	schedule_delayed_work(&chip->fg_inform_work,
+	queue_delayed_work(system_power_efficient_wq,
+			&chip->fg_inform_work,
 			round_jiffies_relative(msecs_to_jiffies(FG_INFORM_NORMAL_TIME)));
 #endif
 #ifdef CONFIG_LGE_PM_SOC_SCALING_DEBUG
 	INIT_DELAYED_WORK(&chip->soc_level_log, fg_soc_level_log);
-	schedule_delayed_work(&chip->soc_level_log, 1000);
+	queue_delayed_work(system_power_efficient_wq,
+			&chip->soc_level_log, 1000);
 #endif
 	device_init_wakeup(chip->dev, true);
-	schedule_delayed_work(&chip->profile_load_work, 0);
+	queue_delayed_work(system_power_efficient_wq,
+			&chip->profile_load_work, 0);
 
 	pr_debug("FG GEN3 driver probed successfully\n");
 	return 0;
@@ -6830,12 +6841,15 @@ static int fg_gen3_resume(struct device *dev)
 	if (rc < 0)
 		pr_err("Error in configuring ESR timer, rc=%d\n", rc);
 
-	schedule_delayed_work(&chip->ttf_work, 0);
+	queue_delayed_work(system_power_efficient_wq,
+			&chip->ttf_work, 0);
 	if (fg_sram_dump)
-		schedule_delayed_work(&chip->sram_dump_work,
+		queue_delayed_work(system_power_efficient_wq,
+				&chip->sram_dump_work,
 				msecs_to_jiffies(fg_sram_dump_period_ms));
 #ifdef CONFIG_LGE_PM_DEBUG
-        schedule_delayed_work(&chip->fg_inform_work,
+        queue_delayed_work(system_power_efficient_wq,
+				&chip->fg_inform_work,
 		round_jiffies_relative(msecs_to_jiffies(FG_INFORM_NORMAL_TIME)));
 #endif
 	return 0;
