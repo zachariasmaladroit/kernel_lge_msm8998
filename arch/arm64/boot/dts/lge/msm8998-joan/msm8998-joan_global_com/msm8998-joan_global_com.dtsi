@@ -31,12 +31,6 @@
 			no-map;
 			reg = <0 0xb0000000 0 0x100000>;
 		};
-
-		crash_fb_mem: crash_fb_mem@b0100000 {
-			linux,contiguous-region;
-			reg = <0 0xb0100000 0 0x1800000>;
-			label = "crash_fb_mem";
-		};
 	};
 };
 
@@ -53,12 +47,6 @@
 		ftrace-size = <0x40000>;
 		pmsg-size = <0>;
 		ecc-size = <0>;
-	};
-
-	crash_fb {
-		compatible = "crash_fb";
-		mem-addr = <0xb0100000>;
-		mem-size = <0x1800000>;
 	};
 
 	bootlog {
