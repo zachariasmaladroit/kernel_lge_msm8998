@@ -394,7 +394,6 @@ struct mptcp_options_received;
 
 void tcp_cleanup_rbuf(struct sock *sk, int copied);
 void tcp_cwnd_validate(struct sock *sk, bool is_cwnd_limited);
-void tcp_enter_quickack_mode(struct sock *sk);
 int tcp_close_state(struct sock *sk);
 void tcp_minshall_update(struct tcp_sock *tp, unsigned int mss_now,
 			 const struct sk_buff *skb);
@@ -514,6 +513,7 @@ extern int tcp_use_userconfig_sysctl_handler(struct ctl_table *, int,
 extern int tcp_proc_delayed_ack_control(struct ctl_table *, int,
 				void __user *, size_t *, loff_t *);
 
+void tcp_enter_quickack_mode(struct sock *sk);
 static inline void tcp_dec_quickack_mode(struct sock *sk,
 					 const unsigned int pkts)
 {

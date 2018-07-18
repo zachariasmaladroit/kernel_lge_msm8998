@@ -196,17 +196,14 @@ static void tcp_incr_quickack(struct sock *sk)
 		icsk->icsk_ack.quick = min(quickacks, TCP_MAX_QUICKACKS);
 }
 
-#ifdef CONFIG_LGP_DATA_TCPIP_MPTCP
 void tcp_enter_quickack_mode(struct sock *sk)
-#else
-static void tcp_enter_quickack_mode(struct sock *sk)
-#endif
 {
 	struct inet_connection_sock *icsk = inet_csk(sk);
 	tcp_incr_quickack(sk);
 	icsk->icsk_ack.pingpong = 0;
 	icsk->icsk_ack.ato = TCP_ATO_MIN;
 }
+EXPORT_SYMBOL(tcp_enter_quickack_mode);
 
 /* Send ACKs quickly, if "quick" count is not exhausted
  * and the session is not interactive.
