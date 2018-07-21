@@ -5584,6 +5584,9 @@ CONFIG_QMI_ENCDEC=y
 
 # customizations
 
+# KCAL
+CONFIG_FB_MSM_MDSS_KCAL_CTRL=y
+
 # raise size of kernel log
 CONFIG_LOG_BUF_SHIFT=22
 CONFIG_LOG_CPU_MAX_BUF_SHIFT=21
