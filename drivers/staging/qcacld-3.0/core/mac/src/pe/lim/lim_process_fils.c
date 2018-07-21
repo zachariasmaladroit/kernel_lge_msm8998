@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -1062,8 +1062,9 @@ bool lim_process_fils_auth_frame2(tpAniSirGlobal mac_ctx,
 		tpPESession pe_session,
 		tSirMacAuthFrameBody *rx_auth_frm_body)
 {
-	bool pmkid_found = false;
 	int i;
+	uint32_t ret;
+	bool pmkid_found = false;
 	tDot11fIERSN dot11f_ie_rsn = {0};
 
 	if (rx_auth_frm_body->authAlgoNumber != eSIR_FILS_SK_WITHOUT_PFS)
@@ -1072,10 +1073,14 @@ bool lim_process_fils_auth_frame2(tpAniSirGlobal mac_ctx,
 	if (!pe_session->fils_info)
 		return false;
 
-	dot11f_unpack_ie_rsn(mac_ctx,
-				&rx_auth_frm_body->rsn_ie.info[0],
-				rx_auth_frm_body->rsn_ie.length,
-				&dot11f_ie_rsn, 0);
+	ret = dot11f_unpack_ie_rsn(mac_ctx,
+				   &rx_auth_frm_body->rsn_ie.info[0],
+				   rx_auth_frm_body->rsn_ie.length,
+				   &dot11f_ie_rsn, 0);
+	if (!DOT11F_SUCCEEDED(ret)) {
+		pe_err("unpack failed, ret: %d", ret);
+		return false;
+	}
 
 	for (i = 0; i < dot11f_ie_rsn.pmkid_count; i++) {
 		if (qdf_mem_cmp(dot11f_ie_rsn.pmkid[i],
@@ -1338,6 +1343,18 @@ static QDF_STATUS lim_parse_kde_elements(tpAniSirGlobal mac_ctx,
 		elem_len = *temp_ie++;
 		rem_len -= 2;
 
+		if (rem_len < elem_len || elem_len > kde_list_len) {
+			pe_err("Invalid elem_len %d rem_len %d list_len %d",
+				elem_len, rem_len, kde_list_len);
+			return QDF_STATUS_E_FAILURE;
+		}
+
+		if (elem_len < KDE_IE_DATA_OFFSET) {
+			pe_err("Not enough len to parse elem_len %d",
+				elem_len);
+			return QDF_STATUS_E_FAILURE;
+		}
+
 		if (lim_check_if_vendor_oui_match(mac_ctx, KDE_OUI_TYPE,
 				KDE_OUI_TYPE_SIZE, current_ie, elem_len)) {
 
@@ -1347,6 +1364,11 @@ static QDF_STATUS lim_parse_kde_elements(tpAniSirGlobal mac_ctx,
 
 			switch (data_type) {
 			case DATA_TYPE_GTK:
+				if (data_len < GTK_OFFSET) {
+					pe_err("Invalid KDE data_len %d",
+						data_len);
+					return QDF_STATUS_E_FAILURE;
+				}
 				qdf_mem_copy(fils_info->gtk, (ie_data +
 					     GTK_OFFSET), (data_len -
 					     GTK_OFFSET));
@@ -1354,6 +1376,11 @@ static QDF_STATUS lim_parse_kde_elements(tpAniSirGlobal mac_ctx,
 				break;
 
 			case DATA_TYPE_IGTK:
+				if (data_len < IGTK_OFFSET) {
+					pe_err("Invalid KDE data_len %d",
+						data_len);
+					return QDF_STATUS_E_FAILURE;
+				}
 				fils_info->igtk_len = (data_len - IGTK_OFFSET);
 				qdf_mem_copy(fils_info->igtk, (ie_data +
 					     IGTK_OFFSET), (data_len -
@@ -1548,7 +1575,7 @@ static int fils_aead_encrypt(const u8 *kek, unsigned int kek_len,
 	    anonce == NULL || data_len == 0 || plain_text_len == 0 ||
 	    out == NULL) {
 		QDF_TRACE(QDF_MODULE_ID_QDF, QDF_TRACE_LEVEL_ERROR,
-			  FL("Error missing params mac:%p bssid:%p snonce:%p anonce:%p data_len:%zu plain_text_len:%zu out:%p"),
+			  FL("Error missing params mac:%pK bssid:%pK snonce:%pK anonce:%pK data_len:%zu plain_text_len:%zu out:%pK"),
 			  own_mac, bssid, snonce, anonce, data_len,
 			  plain_text_len, out);
 		return -EINVAL;
@@ -1703,7 +1730,7 @@ static int fils_aead_decrypt(const u8 *kek, unsigned int kek_len,
 	    anonce == NULL || data_len == 0 || ciphered_text_len == 0 ||
 	    plain_text == NULL) {
 		QDF_TRACE(QDF_MODULE_ID_QDF, QDF_TRACE_LEVEL_ERROR,
-			  FL("Error missing params mac:%p bssid:%p snonce:%p anonce:%p data_len:%zu ciphered_text_len:%zu plain_text:%p"),
+			  FL("Error missing params mac:%pK bssid:%pK snonce:%pK anonce:%pK data_len:%zu ciphered_text_len:%zu plain_text:%pK"),
 			  own_mac, bssid, snonce, anonce, data_len,
 			  ciphered_text_len, plain_text);
 		return -EINVAL;
