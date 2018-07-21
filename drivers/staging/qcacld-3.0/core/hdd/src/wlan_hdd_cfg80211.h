@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -285,6 +285,40 @@ typedef struct sHddAvoidFreqList {
 #define CFG_PROPAGATION_DELAY_BASE             (64)
 #define CFG_AGG_RETRY_MIN                      (5)
 
+/**
+ * hdd_is_ie_valid() - Determine if an IE sequence is valid
+ * @ie: Pointer to the IE buffer
+ * @ie_len: Length of the IE buffer @ie
+ *
+ * This function validates that the IE sequence is valid by verifying
+ * that the sum of the lengths of the embedded elements match the
+ * length of the sequence.
+ *
+ * Note well that a 0-length IE sequence is considered valid.
+ *
+ * Return: true if the IE sequence is valid, false if it is invalid
+ */
+bool hdd_is_ie_valid(const uint8_t *ie, size_t ie_len);
+
+
+#define CONNECTIVITY_CHECK_SET_ARP \
+	QCA_WLAN_VENDOR_CONNECTIVITY_CHECK_SET_ARP
+#define CONNECTIVITY_CHECK_SET_DNS \
+	QCA_WLAN_VENDOR_CONNECTIVITY_CHECK_SET_DNS
+#define CONNECTIVITY_CHECK_SET_TCP_HANDSHAKE \
+	QCA_WLAN_VENDOR_CONNECTIVITY_CHECK_SET_TCP_HANDSHAKE
+#define CONNECTIVITY_CHECK_SET_ICMPV4 \
+	QCA_WLAN_VENDOR_CONNECTIVITY_CHECK_SET_ICMPV4
+#define CONNECTIVITY_CHECK_SET_ICMPV6 \
+	QCA_WLAN_VENDOR_CONNECTIVITY_CHECK_SET_ICMPV6
+#define CONNECTIVITY_CHECK_SET_TCP_SYN \
+	QCA_WLAN_VENDOR_CONNECTIVITY_CHECK_SET_TCP_SYN
+#define CONNECTIVITY_CHECK_SET_TCP_SYN_ACK \
+	QCA_WLAN_VENDOR_CONNECTIVITY_CHECK_SET_TCP_SYN_ACK
+#define CONNECTIVITY_CHECK_SET_TCP_ACK \
+	QCA_WLAN_VENDOR_CONNECTIVITY_CHECK_SET_TCP_ACK
+
+
 struct cfg80211_bss *wlan_hdd_cfg80211_update_bss_db(hdd_adapter_t *pAdapter,
 						tCsrRoamInfo *pRoamInfo);
 
@@ -405,7 +439,7 @@ int wlan_hdd_send_avoid_freq_event(hdd_context_t *pHddCtx,
  *
  * Return: 0 on success or failure reason
  */
-int wlan_hdd_send_hang_reason_event(hdd_context_t *pHddCtx, uint32_t reason);
+int wlan_hdd_send_hang_reason_event(hdd_context_t *hdd_ctx, uint32_t reason);
 #ifdef FEATURE_WLAN_EXTSCAN
 void wlan_hdd_cfg80211_extscan_callback(void *ctx,
 					const uint16_t evType, void *pMsg);
@@ -532,14 +566,6 @@ static inline void wlan_hdd_cfg80211_indicate_disconnect(struct net_device *dev,
 struct cfg80211_bss *wlan_hdd_cfg80211_inform_bss_frame(hdd_adapter_t *pAdapter,
 						tSirBssDescription *bss_desc);
 
-/*
- * As of 4.7, ieee80211_band is removed; add shims so we can reference
- * nl80211_band instead
-  */
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 7, 0))
-#define NUM_NL80211_BANDS ((enum nl80211_band)IEEE80211_NUM_BANDS)
-#endif
-
 /**
  * hdd_lost_link_info_cb() - callback function to get lost link information
  * @context: HDD context
@@ -580,6 +606,17 @@ void hdd_process_defer_disconnect(hdd_adapter_t *adapter);
  * Return: 0 for success, non-zero for failure
  */
 int wlan_hdd_try_disconnect(hdd_adapter_t *adapter);
+
+/**
+ * wlan_hdd_disconnect() - hdd disconnect api
+ * @pAdapter: Pointer to adapter
+ * @reason: Disconnect reason code
+ *
+ * This function is used to issue a disconnect request to SME
+ *
+ * Return: 0 for success, non-zero for failure
+ */
+int wlan_hdd_disconnect(hdd_adapter_t *pAdapter, u16 reason);
 
 /**
  * hdd_bt_activity_cb() - callback function to receive bt activity
@@ -637,4 +674,32 @@ void wlan_hdd_save_gtk_offload_params(hdd_adapter_t *adapter,
 					     uint8_t *replay_ctr,
 					     bool big_endian,
 					     uint32_t ul_flags);
+
+/*
+ * wlan_hdd_send_sta_authorized_event() - Function to send station authorized
+ * event to user space in case of SAP
+ * @pAdapter: Pointer to the adapter
+ * @pHddCtx: HDD Context
+ * @mac_addr: MAC address of the STA for which the Authorized event needs to
+ * be sent
+ *
+ * This api is used to send station authorized event to user space
+ *
+ * Return: Returns QDF_STATUS_SUCCESS on success else rturns error value
+ */
+
+QDF_STATUS wlan_hdd_send_sta_authorized_event(
+					hdd_adapter_t *pAdapter,
+					hdd_context_t *pHddCtx,
+					const struct qdf_mac_addr *mac_addr);
+
+/**
+ * wlan_hdd_restore_channels() - Restore the channels which were cached
+ * and disabled in wlan_hdd_disable_channels api.
+ * @hdd_ctx: Pointer to the HDD context
+ *
+ * Return: 0 on success, Error code on failure
+ */
+int wlan_hdd_restore_channels(hdd_context_t *hdd_ctx);
+
 #endif

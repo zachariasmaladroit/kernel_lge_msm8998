@@ -678,6 +678,33 @@ tSirRetStatus lim_strip_extcap_update_struct(tpAniSirGlobal mac_ctx,
 void lim_merge_extcap_struct(tDot11fIEExtCap *dst, tDot11fIEExtCap *src,
 		bool add);
 
+#ifdef WLAN_FEATURE_11W
+/**
+ * lim_del_pmf_sa_query_timer() - This function deletes SA query timer
+ * @mac_ctx: pointer to mac context
+ * @pe_session: pointer to PE session
+ *
+ * This API is to delete the PMF SA query timer created for each associated STA
+ *
+ * Return: none
+ */
+void lim_del_pmf_sa_query_timer(tpAniSirGlobal mac_ctx, tpPESession pe_session);
+#else
+/**
+ * lim_del_pmf_sa_query_timer() - This function deletes SA query timer
+ * @mac_ctx: pointer to mac context
+ * @pe_session: pointer to PE session
+ *
+ * This API is to delete the PMF SA query timer created for each associated STA
+ *
+ * Return: none
+ */
+static inline void
+lim_del_pmf_sa_query_timer(tpAniSirGlobal mac_ctx, tpPESession pe_session)
+{
+}
+#endif
+
 /**
  * lim_strip_op_class_update_struct - strip sup op class IE and populate
  *				  the dot11f structure
@@ -814,4 +841,16 @@ void lim_assoc_rej_add_to_rssi_based_reject_list(tpAniSirGlobal mac_ctx,
 bool lim_check_if_vendor_oui_match(tpAniSirGlobal mac_ctx,
 				uint8_t *oui, uint8_t oui_len,
 				uint8_t *ie, uint8_t ie_len);
+
+/**
+ * lim_get_min_session_txrate() - Get the minimum rate supported in the session
+ * @session: Pointer to PE session
+ *
+ * This API will find the minimum rate supported by the given PE session and
+ * return the enum rateid corresponding to the rate.
+ *
+ * Return: enum rateid
+ */
+enum rateid lim_get_min_session_txrate(tpPESession session);
+
 #endif /* __LIM_UTILS_H */

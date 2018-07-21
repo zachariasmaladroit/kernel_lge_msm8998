@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2011-2018 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -34,12 +34,7 @@
 #ifndef _HTT_H_
 #define _HTT_H_
 
-#include <a_types.h>    /* A_UINT32 */
-#include <a_osapi.h>    /* PREPACK, POSTPACK */
-#ifdef ATHR_WIN_NWF
-#pragma warning(disable:4214) /* bit field types other than int */
-#endif
-#include "wlan_defs.h"
+#include <htt_deps.h>
 #include <htt_common.h>
 
 /*
@@ -163,9 +158,16 @@
  * 3.42 Add PPDU_STATS_CFG + PPDU_STATS_IND
  * 3.43 Add HTT_STATS_RX_PDEV_FW_STATS_PHY_ERR defs
  * 3.44 Add htt_tx_wbm_completion_v2
+ * 3.45 Add host_tx_desc_pool flag in htt_tx_msdu_desc_ext2_t
+ * 3.46 Add MAC ID and payload size fields to HTT_T2H_MSG_TYPE_PKTLOG header
+ * 3.47 Add HTT_T2H PEER_MAP_V2 and PEER_UNMAP_V2
+ * 3.48 Add pdev ID field to HTT_T2H_MSG_TYPE_PPDU_STATS_IND and
+ *      HTT_T2H_MSG_TYPE_PKTLOG
+ * 3.49 Add HTT_T2H_MSG_TYPE_MONITOR_MAC_HEADER_IND def
+ * 3.50 Add learning_frame flag to htt_tx_msdu_desc_ext2_t
  */
 #define HTT_CURRENT_VERSION_MAJOR 3
-#define HTT_CURRENT_VERSION_MINOR 44
+#define HTT_CURRENT_VERSION_MINOR 50
 
 #define HTT_NUM_TX_FRAG_DESC  1024
 
@@ -1581,7 +1583,13 @@ PREPACK struct htt_tx_msdu_desc_ext2_t {
                                    * (Bit mask of 5, 10, 20, 40, 80, 160Mhz.
                                    * Refer to HTT_TX_MSDU_EXT2_DESC_BW defs.)
                                    */
-        reserved0_31         : 1;
+        host_tx_desc_pool    : 1; /* If set, Firmware allocates tx_descriptors
+                                   * in WAL_BUFFERID_TX_HOST_DATA_EXP,instead
+                                   * of WAL_BUFFERID_TX_TCL_DATA_EXP.
+                                   * Use cases:
+                                   * Any time firmware uses TQM-BYPASS for Data
+                                   * TID, firmware expect host to set this bit.
+                                   */
 
     /* DWORD 1: tx power, tx rate */
     A_UINT32
@@ -1641,7 +1649,13 @@ PREPACK struct htt_tx_msdu_desc_ext2_t {
      * This structure can be expanded further up to 60 bytes
      * by adding further DWORDs as needed.
      */
-    A_UINT32 rsvd0;
+    A_UINT32
+        /* learning_frame
+         * When this flag is set, this frame will be dropped by FW
+         * rather than being enqueued to the Transmit Queue Manager (TQM) HW.
+         */
+        learning_frame      :  1,
+        rsvd0               : 31;
 
 } POSTPACK;
 
@@ -1706,6 +1720,10 @@ PREPACK struct htt_tx_msdu_desc_ext2_t {
 #define HTT_TX_MSDU_EXT2_DESC_KEY_FLAGS_S                     8
 #define HTT_TX_MSDU_EXT_DESC_CHANFREQ_M                       0xffff0000
 #define HTT_TX_MSDU_EXT_DESC_CHANFREQ_S                       16
+
+/* DWORD 5 */
+#define HTT_TX_MSDU_EXT2_DESC_FLAG_LEARNING_FRAME_M           0x00000001
+#define HTT_TX_MSDU_EXT2_DESC_FLAG_LEARNING_FRAME_S           0
 
 /* DWORD 0 */
 #define HTT_TX_MSDU_EXT2_DESC_FLAG_VALID_PWR_GET(_var) \
@@ -1967,6 +1985,15 @@ PREPACK struct htt_tx_msdu_desc_ext2_t {
          ((_var) |= ((_val) << HTT_TX_MSDU_EXT2_DESC_CHANFREQ_S)); \
      } while (0)
 
+/* DWORD 5 */
+#define HTT_TX_MSDU_EXT2_DESC_FLAG_LEARNING_FRAME_GET(_var) \
+    (((_var) & HTT_TX_MSDU_EXT2_DESC_FLAG_LEARNING_FRAME_M) >> \
+    HTT_TX_MSDU_EXT2_DESC_FLAG_LEARNING_FRAME_S)
+#define HTT_TX_MSDU_EXT2_DESC_FLAG_LEARNING_FRAME_SET(_var, _val) \
+    do { \
+        HTT_CHECK_SET_VAL(HTT_TX_MSDU_EXT2_DESC_FLAG_LEARNING_FRAME, _val); \
+        ((_var) |= ((_val) << HTT_TX_MSDU_EXT2_DESC_FLAG_LEARNING_FRAME_S)); \
+    } while (0)
 
 typedef enum {
     HTT_TCL_METADATA_TYPE_PEER_BASED = 0,
@@ -2224,7 +2251,9 @@ PREPACK struct htt_tx_wbm_completion_v2 {
         tx_status:              4, /* Takes enum values of htt_tx_fw2wbm_tx_status_t */
         reinject_reason:        4, /* Takes enum values of htt_tx_fw2wbm_reinject_reason_t */
         exception_frame:        1,
-        rsvd0:                 14; /* For future use */
+        rsvd0:                 12, /* For future use */
+        used_by_hw4:            1, /* wbm_internal_error bit being used by HW */
+        rsvd1:                  1; /* For future use */
     A_UINT32
         data0:                 32; /* data0,1 and 2 changes based on tx_status type
                                     * if HTT_TX_FW2WBM_TX_STATUS_OK or HTT_TX_FW2WBM_TX_STATUS_DROP
@@ -5050,23 +5079,23 @@ PREPACK struct htt_rx_ring_selection_cfg_t {
 #define HTT_RX_RING_SELECTION_CFG_PKT_TYPE_ENABLE_FLAG2_MO_CTRL_0111_S 23
 
 /* Block Ack Request */
-#define HTT_RX_RING_SELECTION_CFG_PKT_TYPE_ENABLE_FLAG2_FP_CTRL_1000_M 0x01000001
+#define HTT_RX_RING_SELECTION_CFG_PKT_TYPE_ENABLE_FLAG2_FP_CTRL_1000_M 0x01000000
 #define HTT_RX_RING_SELECTION_CFG_PKT_TYPE_ENABLE_FLAG2_FP_CTRL_1000_S 24
 
-#define HTT_RX_RING_SELECTION_CFG_PKT_TYPE_ENABLE_FLAG2_MD_CTRL_1000_M 0x02000001
+#define HTT_RX_RING_SELECTION_CFG_PKT_TYPE_ENABLE_FLAG2_MD_CTRL_1000_M 0x02000000
 #define HTT_RX_RING_SELECTION_CFG_PKT_TYPE_ENABLE_FLAG2_MD_CTRL_1000_S 25
 
-#define HTT_RX_RING_SELECTION_CFG_PKT_TYPE_ENABLE_FLAG2_MO_CTRL_1000_M 0x00000001
+#define HTT_RX_RING_SELECTION_CFG_PKT_TYPE_ENABLE_FLAG2_MO_CTRL_1000_M 0x04000000
 #define HTT_RX_RING_SELECTION_CFG_PKT_TYPE_ENABLE_FLAG2_MO_CTRL_1000_S 26
 
 /* Block Ack*/
-#define HTT_RX_RING_SELECTION_CFG_PKT_TYPE_ENABLE_FLAG2_FP_CTRL_1001_M 0x00000001
+#define HTT_RX_RING_SELECTION_CFG_PKT_TYPE_ENABLE_FLAG2_FP_CTRL_1001_M 0x08000000
 #define HTT_RX_RING_SELECTION_CFG_PKT_TYPE_ENABLE_FLAG2_FP_CTRL_1001_S 27
 
-#define HTT_RX_RING_SELECTION_CFG_PKT_TYPE_ENABLE_FLAG2_MD_CTRL_1001_M 0x00000001
+#define HTT_RX_RING_SELECTION_CFG_PKT_TYPE_ENABLE_FLAG2_MD_CTRL_1001_M 0x10000000
 #define HTT_RX_RING_SELECTION_CFG_PKT_TYPE_ENABLE_FLAG2_MD_CTRL_1001_S 28
 
-#define HTT_RX_RING_SELECTION_CFG_PKT_TYPE_ENABLE_FLAG2_MO_CTRL_1001_M 0x00000001
+#define HTT_RX_RING_SELECTION_CFG_PKT_TYPE_ENABLE_FLAG2_MO_CTRL_1001_M 0x20000000
 #define HTT_RX_RING_SELECTION_CFG_PKT_TYPE_ENABLE_FLAG2_MO_CTRL_1001_S 29
 
 /* PS-POLL */
@@ -5485,6 +5514,9 @@ enum htt_t2h_msg_type {
     HTT_T2H_MSG_TYPE_MAP_FLOW_INFO            = 0x1b,
     HTT_T2H_MSG_TYPE_EXT_STATS_CONF           = 0x1c,
     HTT_T2H_MSG_TYPE_PPDU_STATS_IND           = 0x1d,
+    HTT_T2H_MSG_TYPE_PEER_MAP_V2              = 0x1e,
+    HTT_T2H_MSG_TYPE_PEER_UNMAP_V2            = 0x1f,
+    HTT_T2H_MSG_TYPE_MONITOR_MAC_HEADER_IND   = 0x20,
 
     HTT_T2H_MSG_TYPE_TEST,
     /* keep this last */
@@ -7334,6 +7366,248 @@ PREPACK struct htt_chan_info_t
 
 
 /**
+ * @brief target -> host rx peer map V2 message definition
+ *
+ * @details
+ * The following diagram shows the format of the rx peer map v2 message sent
+ * from the target to the host.  This layout assumes the target operates
+ * as little-endian.
+ *
+ * This message always contains a SW peer ID.  The main purpose of the
+ * SW peer ID is to tell the host what peer ID rx packets will be tagged
+ * with, so that the host can use that peer ID to determine which peer
+ * transmitted the rx frame.  This SW peer ID is sometimes also used for
+ * other purposes, such as identifying during tx completions which peer
+ * the tx frames in question were transmitted to.
+ *
+ * The peer map v2 message also contains a HW peer ID.  This HW peer ID
+ * is used during rx --> tx frame forwarding to identify which peer the
+ * frame needs to be forwarded to (i.e. the peer assocated with the
+ * Destination MAC Address within the packet), and particularly which vdev
+ * needs to transmit the frame (for cases of inter-vdev rx --> tx forwarding).
+ * This DA-based peer ID that is provided for certain rx frames
+ * (the rx frames that need to be re-transmitted as tx frames)
+ * is the ID that the HW uses for referring to the peer in question,
+ * rather than the peer ID that the SW+FW use to refer to the peer.
+ *
+ *
+ * |31             24|23             16|15              8|7               0|
+ * |-----------------------------------------------------------------------|
+ * |            SW peer ID             |     VDEV ID     |     msg type    |
+ * |-----------------------------------------------------------------------|
+ * |    MAC addr 3   |    MAC addr 2   |    MAC addr 1   |    MAC addr 0   |
+ * |-----------------------------------------------------------------------|
+ * |            HW peer ID             |    MAC addr 5   |    MAC addr 4   |
+ * |-----------------------------------------------------------------------|
+ * |     Reserved_17_31     | Next Hop |          AST Hash Value           |
+ * |-----------------------------------------------------------------------|
+ * |                               Reserved_0                              |
+ * |-----------------------------------------------------------------------|
+ * |                               Reserved_1                              |
+ * |-----------------------------------------------------------------------|
+ * |                               Reserved_2                              |
+ * |-----------------------------------------------------------------------|
+ * |                               Reserved_3                              |
+ * |-----------------------------------------------------------------------|
+ *
+ *
+ * The following field definitions describe the format of the rx peer map v2
+ * messages sent from the target to the host.
+ *   - MSG_TYPE
+ *     Bits 7:0
+ *     Purpose: identifies this as an rx peer map v2 message
+ *     Value: peer map v2 -> 0x1e
+ *   - VDEV_ID
+ *     Bits 15:8
+ *     Purpose: Indicates which virtual device the peer is associated with.
+ *     Value: vdev ID (used in the host to look up the vdev object)
+ *   - SW_PEER_ID
+ *     Bits 31:16
+ *     Purpose: The peer ID (index) that WAL is allocating
+ *     Value: (rx) peer ID
+ *   - MAC_ADDR_L32
+ *     Bits 31:0
+ *     Purpose: Identifies which peer node the peer ID is for.
+ *     Value: lower 4 bytes of peer node's MAC address
+ *   - MAC_ADDR_U16
+ *     Bits 15:0
+ *     Purpose: Identifies which peer node the peer ID is for.
+ *     Value: upper 2 bytes of peer node's MAC address
+ *   - HW_PEER_ID
+ *     Bits 31:16
+ *     Purpose: Identifies the HW peer ID corresponding to the peer MAC
+ *         address, so for rx frames marked for rx --> tx forwarding, the
+ *         host can determine from the HW peer ID provided as meta-data with
+ *         the rx frame which peer the frame is supposed to be forwarded to.
+ *     Value: ID used by the MAC HW to identify the peer
+ *   - AST_HASH_VALUE
+ *     Bits 15:0
+ *     Purpose: Indicates AST Hash value is required for the TCL AST index
+ *         override feature.
+ *   - NEXT_HOP
+ *     Bit 16
+ *     Purpose: Bit indicates that a next_hop AST entry is used for WDS
+ *         (Wireless Distribution System).
+ */
+#define HTT_RX_PEER_MAP_V2_VDEV_ID_M        0xff00
+#define HTT_RX_PEER_MAP_V2_VDEV_ID_S        8
+#define HTT_RX_PEER_MAP_V2_SW_PEER_ID_M     0xffff0000
+#define HTT_RX_PEER_MAP_V2_SW_PEER_ID_S     16
+#define HTT_RX_PEER_MAP_V2_MAC_ADDR_L32_M   0xffffffff
+#define HTT_RX_PEER_MAP_V2_MAC_ADDR_L32_S   0
+#define HTT_RX_PEER_MAP_V2_MAC_ADDR_U16_M   0xffff
+#define HTT_RX_PEER_MAP_V2_MAC_ADDR_U16_S   0
+#define HTT_RX_PEER_MAP_V2_HW_PEER_ID_M     0xffff0000
+#define HTT_RX_PEER_MAP_V2_HW_PEER_ID_S     16
+#define HTT_RX_PEER_MAP_V2_AST_HASH_VALUE_M 0x0000ffff
+#define HTT_RX_PEER_MAP_V2_AST_HASH_VALUE_S 0
+#define HTT_RX_PEER_MAP_V2_NEXT_HOP_M       0x00010000
+#define HTT_RX_PEER_MAP_V2_NEXT_HOP_S       16
+
+#define HTT_RX_PEER_MAP_V2_VDEV_ID_SET(word, value)           \
+    do {                                                      \
+        HTT_CHECK_SET_VAL(HTT_RX_PEER_MAP_V2_VDEV_ID, value); \
+        (word) |= (value)  << HTT_RX_PEER_MAP_V2_VDEV_ID_S;   \
+    } while (0)
+#define HTT_RX_PEER_MAP_V2_VDEV_ID_GET(word) \
+    (((word) & HTT_RX_PEER_MAP_V2_VDEV_ID_M) >> HTT_RX_PEER_MAP_V2_VDEV_ID_S)
+
+#define HTT_RX_PEER_MAP_V2_SW_PEER_ID_SET(word, value)            \
+    do {                                                          \
+        HTT_CHECK_SET_VAL(HTT_RX_PEER_MAP_V2_SW_PEER_ID, value);  \
+        (word) |= (value)  << HTT_RX_PEER_MAP_V2_SW_PEER_ID_S;    \
+    } while (0)
+#define HTT_RX_PEER_MAP_V2_SW_PEER_ID_GET(word) \
+    (((word) & HTT_RX_PEER_MAP_V2_SW_PEER_ID_M) >> HTT_RX_PEER_MAP_V2_SW_PEER_ID_S)
+
+#define HTT_RX_PEER_MAP_V2_HW_PEER_ID_SET(word, value)            \
+    do {                                                          \
+        HTT_CHECK_SET_VAL(HTT_RX_PEER_MAP_V2_HW_PEER_ID, value);  \
+        (word) |= (value)  << HTT_RX_PEER_MAP_V2_HW_PEER_ID_S;    \
+    } while (0)
+#define HTT_RX_PEER_MAP_V2_HW_PEER_ID_GET(word) \
+    (((word) & HTT_RX_PEER_MAP_V2_HW_PEER_ID_M) >> HTT_RX_PEER_MAP_V2_HW_PEER_ID_S)
+
+#define HTT_RX_PEER_MAP_V2_AST_HASH_VALUE_SET(word, value)            \
+    do {                                                              \
+        HTT_CHECK_SET_VAL(HTT_RX_PEER_MAP_V2_AST_HASH_VALUE, value);  \
+        (word) |= (value)  << HTT_RX_PEER_MAP_V2_AST_HASH_VALUE_S;    \
+    } while (0)
+#define HTT_RX_PEER_MAP_V2_AST_HASH_VALUE_GET(word) \
+    (((word) & HTT_RX_PEER_MAP_V2_AST_HASH_VALUE_M) >> HTT_RX_PEER_MAP_V2_AST_HASH_VALUE_S)
+
+#define HTT_RX_PEER_MAP_V2_NEXT_HOP_SET(word, value)            \
+    do {                                                        \
+        HTT_CHECK_SET_VAL(HTT_RX_PEER_MAP_V2_NEXT_HOP, value);  \
+        (word) |= (value)  << HTT_RX_PEER_MAP_V2_NEXT_HOP_S;    \
+    } while (0)
+#define HTT_RX_PEER_MAP_V2_NEXT_HOP_GET(word) \
+    (((word) & HTT_RX_PEER_MAP_V2_NEXT_HOP_M) >> HTT_RX_PEER_MAP_V2_NEXT_HOP_S)
+
+#define HTT_RX_PEER_MAP_V2_MAC_ADDR_OFFSET       4  /* bytes */
+#define HTT_RX_PEER_MAP_V2_HW_PEER_ID_OFFSET     8  /* bytes */
+#define HTT_RX_PEER_MAP_V2_AST_HASH_INDEX_OFFSET 12 /* bytes */
+#define HTT_RX_PEER_MAP_V2_NEXT_HOP_OFFSET       12 /* bytes */
+
+#define HTT_RX_PEER_MAP_V2_BYTES 32
+
+/**
+ * @brief target -> host rx peer unmap V2 message definition
+ *
+ *
+ * The following diagram shows the format of the rx peer unmap message sent
+ * from the target to the host.
+ *
+ * |31             24|23             16|15              8|7               0|
+ * |-----------------------------------------------------------------------|
+ * |            SW peer ID             |     VDEV ID     |     msg type    |
+ * |-----------------------------------------------------------------------|
+ * |    MAC addr 3   |    MAC addr 2   |    MAC addr 1   |    MAC addr 0   |
+ * |-----------------------------------------------------------------------|
+ * |    Reserved_17_31     | Next Hop  |    MAC addr 5   |    MAC addr 4   |
+ * |-----------------------------------------------------------------------|
+ * |                         Peer Delete Duration                          |
+ * |-----------------------------------------------------------------------|
+ * |                               Reserved_0                              |
+ * |-----------------------------------------------------------------------|
+ * |                               Reserved_1                              |
+ * |-----------------------------------------------------------------------|
+ * |                               Reserved_2                              |
+ * |-----------------------------------------------------------------------|
+ *
+ *
+ * The following field definitions describe the format of the rx peer unmap
+ * messages sent from the target to the host.
+ *   - MSG_TYPE
+ *     Bits 7:0
+ *     Purpose: identifies this as an rx peer unmap v2 message
+ *     Value: peer unmap v2 -> 0x1f
+ *   - VDEV_ID
+ *     Bits 15:8
+ *     Purpose: Indicates which virtual device the peer is associated
+ *         with.
+ *     Value: vdev ID (used in the host to look up the vdev object)
+ *   - SW_PEER_ID
+ *     Bits 31:16
+ *     Purpose: The peer ID (index) that WAL is freeing
+ *     Value: (rx) peer ID
+ *   - MAC_ADDR_L32
+ *     Bits 31:0
+ *     Purpose: Identifies which peer node the peer ID is for.
+ *     Value: lower 4 bytes of peer node's MAC address
+ *   - MAC_ADDR_U16
+ *     Bits 15:0
+ *     Purpose: Identifies which peer node the peer ID is for.
+ *     Value: upper 2 bytes of peer node's MAC address
+ *   - NEXT_HOP
+ *     Bits 16
+ *     Purpose: Bit indicates next_hop AST entry used for WDS
+ *              (Wireless Distribution System).
+ *   - PEER_DELETE_DURATION
+ *     Bits 31:0
+ *     Purpose: Time taken to delete peer, in msec,
+ *         Used for monitoring / debugging PEER delete response delay
+ */
+
+#define HTT_RX_PEER_UNMAP_V2_VDEV_ID_M      HTT_RX_PEER_MAP_V2_VDEV_ID_M
+#define HTT_RX_PEER_UNMAP_V2_VDEV_ID_S      HTT_RX_PEER_MAP_V2_VDEV_ID_S
+#define HTT_RX_PEER_UNMAP_V2_SW_PEER_ID_M   HTT_RX_PEER_MAP_V2_SW_PEER_ID_M
+#define HTT_RX_PEER_UNMAP_V2_SW_PEER_ID_S   HTT_RX_PEER_MAP_V2_SW_PEER_ID_S
+#define HTT_RX_PEER_UNMAP_V2_MAC_ADDR_L32_M HTT_RX_PEER_MAP_V2_MAC_ADDR_L32_M
+#define HTT_RX_PEER_UNMAP_V2_MAC_ADDR_L32_S HTT_RX_PEER_MAP_V2_MAC_ADDR_L32_S
+#define HTT_RX_PEER_UNMAP_V2_MAC_ADDR_U16_M HTT_RX_PEER_MAP_V2_MAC_ADDR_U16_M
+#define HTT_RX_PEER_UNMAP_V2_MAC_ADDR_U16_S HTT_RX_PEER_MAP_V2_MAC_ADDR_U16_S
+#define HTT_RX_PEER_UNMAP_V2_NEXT_HOP_M     HTT_RX_PEER_MAP_V2_NEXT_HOP_M
+#define HTT_RX_PEER_UNMAP_V2_NEXT_HOP_S     HTT_RX_PEER_MAP_V2_NEXT_HOP_S
+
+#define HTT_RX_PEER_UNMAP_V2_PEER_DELETE_DURATION_M   0xffffffff
+#define HTT_RX_PEER_UNMAP_V2_PEER_DELETE_DURATION_S   0
+
+#define HTT_RX_PEER_UNMAP_V2_VDEV_ID_SET    HTT_RX_PEER_MAP_V2_VDEV_ID_SET
+#define HTT_RX_PEER_UNMAP_V2_VDEV_ID_GET    HTT_RX_PEER_MAP_V2_VDEV_ID_GET
+
+#define HTT_RX_PEER_UNMAP_V2_SW_PEER_ID_SET HTT_RX_PEER_MAP_V2_SW_PEER_ID_SET
+#define HTT_RX_PEER_UNMAP_V2_SW_PEER_ID_GET HTT_RX_PEER_MAP_V2_SW_PEER_ID_GET
+
+#define HTT_RX_PEER_UNMAP_V2_NEXT_HOP_SET   HTT_RX_PEER_MAP_V2_NEXT_HOP_SET
+#define HTT_RX_PEER_UNMAP_V2_NEXT_HOP_GET   HTT_RX_PEER_MAP_V2_NEXT_HOP_GET
+
+#define HTT_RX_PEER_UNMAP_V2_PEER_DELETE_DURATION_SET(word, value)           \
+    do {                                                                     \
+        HTT_CHECK_SET_VAL(HTT_RX_PEER_UNMAP_V2_PEER_DELETE_DURATION, value); \
+        (word) |= (value)  << HTT_RX_PEER_UNMAP_V2_PEER_DELETE_DURATION_S;   \
+    } while (0)
+#define HTT_RX_PEER_UNMAP_V2_PEER_DELETE_DURATION_GET(word) \
+    (((word) & HTT_RX_PEER_UNMAP_V2_PEER_DELETE_DURATION_M) >> HTT_RX_PEER_UNMAP_V2_PEER_DELETE_DURATION_S)
+
+#define HTT_RX_PEER_UNMAP_V2_MAC_ADDR_OFFSET      4  /* bytes */
+#define HTT_RX_PEER_UNMAP_V2_NEXT_HOP_OFFSET      8  /* bytes */
+#define HTT_RX_PEER_UNMAP_V2_PEER_DELETE_DURATION_OFFSET    12 /* bytes */
+
+#define HTT_RX_PEER_UNMAP_V2_BYTES 28
+
+
+/**
  * @brief target -> host message specifying security parameters
  *
  * @details
@@ -8149,22 +8423,71 @@ typedef struct {
  * The message consists of a 4-octet header,followed by a variable number
  * of 32-bit character values.
  *
- * |31          24|23          16|15           8|7            0|
- * |-----------------------------------------------------------|
- * |              |              |              |   msg type   |
- * |-----------------------------------------------------------|
- * |                        payload                            |
- * |-----------------------------------------------------------|
+ * |31                         16|15  12|11   10|9    8|7            0|
+ * |------------------------------------------------------------------|
+ * |        payload_size         | rsvd |pdev_id|mac_id|   msg type   |
+ * |------------------------------------------------------------------|
+ * |                              payload                             |
+ * |------------------------------------------------------------------|
  *   - MSG_TYPE
  *     Bits 7:0
- *     Purpose: identifies this as a test message
- *     Value: HTT_MSG_TYPE_PACKETLOG
+ *     Purpose: identifies this as a pktlog message
+ *     Value: HTT_T2H_MSG_TYPE_PKTLOG
+ *   - mac_id
+ *     Bits 9:8
+ *     Purpose: identifies which MAC/PHY instance generated this pktlog info
+ *     Value: 0-3
+ *   - pdev_id
+ *     Bits 11:10
+ *     Purpose: pdev_id
+ *     Value: 0-3
+ *     0 (for rings at SOC level),
+ *     1/2/3 PDEV -> 0/1/2
+ *   - payload_size
+ *     Bits 31:16
+ *     Purpose: explicitly specify the payload size
+ *     Value: payload size in bytes (payload size is a multiple of 4 bytes)
  */
 PREPACK struct htt_pktlog_msg {
-    A_UINT32    header;
-    A_UINT32   payload[1/* or more */];
+    A_UINT32 header;
+    A_UINT32 payload[1/* or more */];
 } POSTPACK;
 
+#define HTT_T2H_PKTLOG_MAC_ID_M           0x00000300
+#define HTT_T2H_PKTLOG_MAC_ID_S           8
+
+#define HTT_T2H_PKTLOG_PDEV_ID_M          0x00000C00
+#define HTT_T2H_PKTLOG_PDEV_ID_S          10
+
+#define HTT_T2H_PKTLOG_PAYLOAD_SIZE_M     0xFFFF0000
+#define HTT_T2H_PKTLOG_PAYLOAD_SIZE_S     16
+
+#define HTT_T2H_PKTLOG_MAC_ID_SET(word, value)             \
+    do {                                                   \
+        HTT_CHECK_SET_VAL(HTT_T2H_PKTLOG_MAC_ID, value);   \
+        (word) |= (value)  << HTT_T2H_PKTLOG_MAC_ID_S;     \
+    } while (0)
+#define HTT_T2H_PKTLOG_MAC_ID_GET(word) \
+    (((word) & HTT_T2H_PKTLOG_MAC_ID_M) >> \
+    HTT_T2H_PKTLOG_MAC_ID_S)
+
+#define HTT_T2H_PKTLOG_PDEV_ID_SET(word, value)            \
+    do {                                                   \
+        HTT_CHECK_SET_VAL(HTT_T2H_PKTLOG_PDEV_ID, value);  \
+        (word) |= (value)  << HTT_T2H_PKTLOG_PDEV_ID_S;    \
+    } while (0)
+#define HTT_T2H_PKTLOG_PDEV_ID_GET(word) \
+    (((word) & HTT_T2H_PKTLOG_PDEV_ID_M) >> \
+    HTT_T2H_PKTLOG_PDEV_ID_S)
+
+#define HTT_T2H_PKTLOG_PAYLOAD_SIZE_SET(word, value)             \
+    do {                                                         \
+        HTT_CHECK_SET_VAL(HTT_T2H_PKTLOG_PAYLOAD_SIZE, value);   \
+        (word) |= (value)  << HTT_T2H_PKTLOG_PAYLOAD_SIZE_S;     \
+    } while (0)
+#define HTT_T2H_PKTLOG_PAYLOAD_SIZE_GET(word) \
+    (((word) & HTT_T2H_PKTLOG_PAYLOAD_SIZE_M) >> \
+    HTT_T2H_PKTLOG_PAYLOAD_SIZE_S)
 
 /*
  * Rx reorder statistics
@@ -9791,9 +10114,9 @@ enum htt_dbg_ext_stats_status {
  * to host ppdu stats indication message.
  *
  *
- * |31                         16|15           10|9      8|7            0 |
+ * |31                         16|15   12|11   10|9      8|7            0 |
  * |----------------------------------------------------------------------|
- * |    payload_size             |    rsvd bits  |mac_id  |    msg type   |
+ * |    payload_size             | rsvd  |pdev_id|mac_id  |    msg type   |
  * |----------------------------------------------------------------------|
  * |                          ppdu_id                                     |
  * |----------------------------------------------------------------------|
@@ -9811,9 +10134,15 @@ enum htt_dbg_ext_stats_status {
  *             message.
  *    Value: 0x1d
  *  - mac_id
- *    Bits 2
+ *    Bits 9:8
  *    Purpose: mac_id of this ppdu_id
  *    Value: 0-3
+ *  - pdev_id
+ *    Bits 11:10
+ *    Purpose: pdev_id of this ppdu_id
+ *    Value: 0-3
+ *     0 (for rings at SOC level),
+ *     1/2/3 PDEV -> 0/1/2
  *  - payload_size
  *    Bits 31:16
  *    Purpose: total tlv size
@@ -9823,6 +10152,9 @@ enum htt_dbg_ext_stats_status {
 
 #define HTT_T2H_PPDU_STATS_MAC_ID_M           0x00000300
 #define HTT_T2H_PPDU_STATS_MAC_ID_S           8
+
+#define HTT_T2H_PPDU_STATS_PDEV_ID_M          0x00000C00
+#define HTT_T2H_PPDU_STATS_PDEV_ID_S          10
 
 #define HTT_T2H_PPDU_STATS_PAYLOAD_SIZE_M     0xFFFF0000
 #define HTT_T2H_PPDU_STATS_PAYLOAD_SIZE_S     16
@@ -9838,6 +10170,15 @@ enum htt_dbg_ext_stats_status {
 #define HTT_T2H_PPDU_STATS_MAC_ID_GET(word) \
     (((word) & HTT_T2H_PPDU_STATS_MAC_ID_M) >> \
     HTT_T2H_PPDU_STATS_MAC_ID_S)
+
+#define HTT_T2H_PPDU_STATS_PDEV_ID_SET(word, value)             \
+    do {                                                        \
+        HTT_CHECK_SET_VAL(HTT_T2H_PPDU_STATS_PDEV_ID, value);   \
+        (word) |= (value)  << HTT_T2H_PPDU_STATS_PDEV_ID_S;     \
+    } while (0)
+#define HTT_T2H_PPDU_STATS_PDEV_ID_GET(word) \
+    (((word) & HTT_T2H_PPDU_STATS_PDEV_ID_M) >> \
+    HTT_T2H_PPDU_STATS_PDEV_ID_S)
 
 #define HTT_T2H_PPDU_STATS_PAYLOAD_SIZE_SET(word, value)             \
     do {                                                         \
@@ -10010,5 +10351,81 @@ typedef struct {
         ((c_macaddr)[3] << 24)); \
     (phtt_mac_addr)->mac_addr47to32 = ((c_macaddr)[4] | ((c_macaddr)[5] << 8));\
    } while (0)
+
+/**
+ * @brief target -> host monitor mac header indication message
+ *
+ * @details
+ * The following diagram shows the format of the monitor mac header message
+ * sent from the target to the host.
+ * This message is primarily sent when promiscuous rx mode is enabled.
+ * One message is sent per rx PPDU.
+ *
+ *          |31          24|23           16|15            8|7            0|
+ *          |-------------------------------------------------------------|
+ *          |            peer_id           |    reserved0  |    msg_type  |
+ *          |-------------------------------------------------------------|
+ *          |            reserved1         |           num_mpdu           |
+ *          |-------------------------------------------------------------|
+ *          |                       struct hw_rx_desc                     |
+ *          |                      (see wal_rx_desc.h)                    |
+ *          |-------------------------------------------------------------|
+ *          |                   struct ieee80211_frame_addr4              |
+ *          |                      (see ieee80211_defs.h)                 |
+ *          |-------------------------------------------------------------|
+ *          |                   struct ieee80211_frame_addr4              |
+ *          |                      (see ieee80211_defs.h)                 |
+ *          |-------------------------------------------------------------|
+ *          |                            ......                           |
+ *          |-------------------------------------------------------------|
+ *
+ * Header fields:
+ *  - msg_type
+ *    Bits 7:0
+ *    Purpose: Identifies this is a monitor mac header indication message.
+ *    Value: 0x20
+ *  - peer_id
+ *    Bits 31:16
+ *    Purpose: Software peer id given by host during association,
+ *             During promiscuous mode, the peer ID will be invalid (0xFF)
+ *             for rx PPDUs received from unassociated peers.
+ *    Value: peer ID (for associated peers) or 0xFF (for unassociated peers)
+ *  - num_mpdu
+ *    Bits 15:0
+ *    Purpose: The number of MPDU frame headers (struct ieee80211_frame_addr4)
+ *             delivered within the message.
+ *    Value: 1 to 32
+ *           num_mpdu is limited to a maximum value of 32, due to buffer
+ *           size limits.  For PPDUs with more than 32 MPDUs, only the
+ *           ieee80211_frame_addr4 headers from the first 32 MPDUs within
+ *           the PPDU will be provided.
+ */
+#define HTT_T2H_MONITOR_MAC_HEADER_IND_HDR_SIZE       8
+
+#define HTT_T2H_MONITOR_MAC_HEADER_PEER_ID_M          0xFFFF0000
+#define HTT_T2H_MONITOR_MAC_HEADER_PEER_ID_S          16
+
+#define HTT_T2H_MONITOR_MAC_HEADER_NUM_MPDU_M         0x0000FFFF
+#define HTT_T2H_MONITOR_MAC_HEADER_NUM_MPDU_S         0
+
+
+#define HTT_T2H_MONITOR_MAC_HEADER_PEER_ID_SET(word, value)             \
+    do {                                                         \
+        HTT_CHECK_SET_VAL(HTT_T2H_MONITOR_MAC_HEADER_PEER_ID, value);   \
+        (word) |= (value)  << HTT_T2H_MONITOR_MAC_HEADER_PEER_ID_S;     \
+    } while (0)
+#define HTT_T2H_MONITOR_MAC_HEADER_PEER_ID_GET(word) \
+    (((word) & HTT_T2H_MONITOR_MAC_HEADER_PEER_ID_M) >> \
+    HTT_T2H_MONITOR_MAC_HEADER_PEER_ID_S)
+
+#define HTT_T2H_MONITOR_MAC_HEADER_NUM_MPDU_SET(word, value)             \
+    do {                                                         \
+        HTT_CHECK_SET_VAL(HTT_T2H_MONITOR_MAC_HEADER_NUM_MPDU, value);   \
+        (word) |= (value)  << HTT_T2H_MONITOR_MAC_HEADER_NUM_MPDU_S;     \
+    } while (0)
+#define HTT_T2H_MONITOR_MAC_HEADER_NUM_MPDU_GET(word) \
+    (((word) & HTT_T2H_MONITOR_MAC_HEADER_NUM_MPDU_M) >> \
+    HTT_T2H_MONITOR_MAC_HEADER_NUM_MPDU_S)
+
 
 #endif
