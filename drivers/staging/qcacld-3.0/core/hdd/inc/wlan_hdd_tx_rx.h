@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2017 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2013-2018 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -61,6 +61,27 @@ QDF_STATUS hdd_init_tx_rx(hdd_adapter_t *pAdapter);
 QDF_STATUS hdd_deinit_tx_rx(hdd_adapter_t *pAdapter);
 QDF_STATUS hdd_rx_packet_cbk(void *context, qdf_nbuf_t rxBuf);
 
+/**
+ * hdd_reset_all_adapters_connectivity_stats() - reset connectivity stats
+ * @hdd_ctx: pointer to HDD Station Context
+ *
+ * Return: None
+ */
+void hdd_reset_all_adapters_connectivity_stats(hdd_context_t *hdd_ctx);
+
+/**
+ * hdd_tx_rx_collect_connectivity_stats_info() - collect connectivity stats
+ * @skb: pointer to skb data
+ * @adapter: pointer to vdev apdapter
+ * @action: action done on pkt.
+ * @pkt_type: data pkt type
+ *
+ * Return: None
+ */
+void hdd_tx_rx_collect_connectivity_stats_info(struct sk_buff *skb,
+		void *adapter, enum connectivity_stats_pkt_status action,
+		uint8_t *pkt_type);
+
 #ifdef IPA_OFFLOAD
 QDF_STATUS hdd_rx_mul_packet_cbk(void *cds_context,
 				 qdf_nbuf_t rx_buf_list, uint8_t staId);
@@ -72,10 +93,29 @@ QDF_STATUS hdd_get_peer_sta_id(hdd_station_ctx_t *sta_ctx,
 
 #ifdef QCA_LL_LEGACY_TX_FLOW_CONTROL
 void hdd_tx_resume_cb(void *adapter_context, bool tx_resume);
+
+/**
+ * hdd_tx_flow_control_is_pause() - Is TX Q paused by flow control
+ * @adapter_context: pointer to vdev apdapter
+ *
+ * Return: true if TX Q is paused by flow control
+ */
+bool hdd_tx_flow_control_is_pause(void *adapter_context);
 void hdd_tx_resume_timer_expired_handler(void *adapter_context);
+
+/**
+ * hdd_register_tx_flow_control() - Register TX Flow control
+ * @adapter: adapter handle
+ * @timer_callback: timer callback
+ * @flow_control_fp: txrx flow control
+ * @flow_control_is_pause_fp: is txrx paused by flow control
+ *
+ * Return: none
+ */
 void hdd_register_tx_flow_control(hdd_adapter_t *adapter,
 		qdf_mc_timer_callback_t timer_callback,
-		ol_txrx_tx_flow_control_fp flowControl);
+		ol_txrx_tx_flow_control_fp flowControl,
+		ol_txrx_tx_flow_control_is_pause_fp flow_control_is_pause);
 void hdd_deregister_tx_flow_control(hdd_adapter_t *adapter);
 void hdd_get_tx_resource(hdd_adapter_t *adapter,
 			uint8_t STAId, uint16_t timer_value);
@@ -84,12 +124,17 @@ void hdd_get_tx_resource(hdd_adapter_t *adapter,
 static inline void hdd_tx_resume_cb(void *adapter_context, bool tx_resume)
 {
 }
+static inline bool hdd_tx_flow_control_is_pause(void *adapter_context)
+{
+	return false;
+}
 static inline void hdd_tx_resume_timer_expired_handler(void *adapter_context)
 {
 }
 static inline void hdd_register_tx_flow_control(hdd_adapter_t *adapter,
 		qdf_mc_timer_callback_t timer_callback,
-		ol_txrx_tx_flow_control_fp flowControl)
+		ol_txrx_tx_flow_control_fp flowControl,
+		ol_txrx_tx_flow_control_is_pause_fp flow_control_is_pause)
 {
 }
 static inline void hdd_deregister_tx_flow_control(hdd_adapter_t *adapter)
