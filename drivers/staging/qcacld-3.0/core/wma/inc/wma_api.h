@@ -419,19 +419,6 @@ void wma_peer_debug_log(uint8_t vdev_id, uint8_t op,
 			void *peer_obj, uint32_t val1, uint32_t val2);
 void wma_peer_debug_dump(void);
 
-/**
- * wma_set_vc_mode_config() - set voltage corner mode config to FW.
- * @wma_handle:	pointer to wma handle.
- * @vc_bitmap:	value needs to set to firmware.
- *
- * At the time of driver startup, set operating voltage corner mode
- * for differenet phymode and bw configurations.
- *
- * Return: QDF_STATUS.
- */
-QDF_STATUS wma_set_vc_mode_config(void *wma_handle,
-		uint32_t vc_bitmap);
-
 #ifdef WLAN_FEATURE_LINK_LAYER_STATS
 /**
  * wma_tx_failure_cb() - TX failure callback
@@ -488,14 +475,4 @@ static inline void wma_spectral_scan_config(WMA_HANDLE wma_handle,
 {
 }
 #endif
-
-/**
- * wma_cleanup_vdev_resp_and_hold_req() - cleaunup the vdev resp and hold req
- * queue
- * @priv : WMA handle
- *
- * Return: None
- */
-void wma_cleanup_vdev_resp_and_hold_req(void *priv);
-
 #endif

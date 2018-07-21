@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -291,49 +291,6 @@ hdd_conn_get_connected_cipher_algo(hdd_station_ctx_t *pHddStaCtx,
 	return fConnected;
 }
 
-hdd_adapter_t *hdd_get_sta_connection_in_progress(hdd_context_t *hdd_ctx)
-{
-	hdd_adapter_list_node_t *adapter_node = NULL, *next = NULL;
-	hdd_adapter_t *adapter = NULL;
-	QDF_STATUS status;
-	hdd_station_ctx_t *hdd_sta_ctx;
-
-	if (!hdd_ctx) {
-		hdd_err("HDD context is NULL");
-		return NULL;
-	}
-
-	status = hdd_get_front_adapter(hdd_ctx, &adapter_node);
-	while (NULL != adapter_node && QDF_STATUS_SUCCESS == status) {
-		adapter = adapter_node->pAdapter;
-		if (!adapter)
-			goto end;
-
-		hdd_sta_ctx = WLAN_HDD_GET_STATION_CTX_PTR(adapter);
-		if ((QDF_STA_MODE == adapter->device_mode) ||
-		    (QDF_P2P_CLIENT_MODE == adapter->device_mode) ||
-		    (QDF_P2P_DEVICE_MODE == adapter->device_mode)) {
-			if (eConnectionState_Connecting ==
-			    hdd_sta_ctx->conn_info.connState) {
-				hdd_debug("session_id %d: Connection is in progress",
-					  adapter->sessionId);
-				return adapter;
-			} else if ((eConnectionState_Associated ==
-				   hdd_sta_ctx->conn_info.connState) &&
-				   sme_is_sta_key_exchange_in_progress(
-				   hdd_ctx->hHal, adapter->sessionId)) {
-				hdd_debug("session_id %d: Key exchange is in progress",
-					  adapter->sessionId);
-				return adapter;
-			}
-		}
-end:
-		status = hdd_get_next_adapter(hdd_ctx, adapter_node, &next);
-		adapter_node = next;
-	}
-	return NULL;
-}
-
 /**
  * hdd_remove_beacon_filter() - remove beacon filter
  * @adapter: Pointer to the hdd adapter
@@ -381,9 +338,19 @@ static int hdd_add_beacon_filter(hdd_adapter_t *adapter)
 	return 0;
 }
 
-void hdd_copy_ht_caps(struct ieee80211_ht_cap *hdd_ht_cap,
-		      tDot11fIEHTCaps *roam_ht_cap)
+/**
+ * hdd_copy_vht_caps()- copy vht caps info from roam info to
+ *  hdd station context.
+ * @hdd_sta_ctx: pointer to hdd station context
+ * @roam_info: pointer to roam info
+ *
+ * Return: None
+ */
+static void hdd_copy_ht_caps(hdd_station_ctx_t *hdd_sta_ctx,
+				     tCsrRoamInfo *roam_info)
 {
+	tDot11fIEHTCaps *roam_ht_cap = &roam_info->ht_caps;
+	struct ieee80211_ht_cap *hdd_ht_cap = &hdd_sta_ctx->conn_info.ht_caps;
 	uint32_t i, temp_ht_cap;
 
 	qdf_mem_zero(hdd_ht_cap, sizeof(struct ieee80211_ht_cap));
@@ -566,16 +533,19 @@ void hdd_copy_ht_caps(struct ieee80211_ht_cap *hdd_ht_cap,
 #define VHT_CAP_VHT_LINK_ADAPTATION_VHT_MRQ_MFB_SHIFT 26
 
 /**
- * hdd_copy_vht_caps()- copy vht caps info from roam info to
+ * hdd_copy_ht_caps()- copy ht caps info from roam info to
  *  hdd station context.
  * @hdd_sta_ctx: pointer to hdd station context
  * @roam_info: pointer to roam info
  *
  * Return: None
  */
-void hdd_copy_vht_caps(struct ieee80211_vht_cap *hdd_vht_cap,
-		       tDot11fIEVHTCaps *roam_vht_cap)
+static void hdd_copy_vht_caps(hdd_station_ctx_t *hdd_sta_ctx,
+				     tCsrRoamInfo *roam_info)
 {
+	tDot11fIEVHTCaps *roam_vht_cap = &roam_info->vht_caps;
+	struct ieee80211_vht_cap *hdd_vht_cap =
+		&hdd_sta_ctx->conn_info.vht_caps;
 	uint32_t temp_vht_cap;
 
 	qdf_mem_zero(hdd_vht_cap, sizeof(struct ieee80211_vht_cap));
@@ -814,15 +784,13 @@ static void hdd_save_bss_info(hdd_adapter_t *adapter,
 		hdd_sta_ctx->conn_info.operationChannel);
 	if (roam_info->vht_caps.present) {
 		hdd_sta_ctx->conn_info.conn_flag.vht_present = true;
-		hdd_copy_vht_caps(&hdd_sta_ctx->conn_info.vht_caps,
-				  &roam_info->vht_caps);
+		hdd_copy_vht_caps(hdd_sta_ctx, roam_info);
 	} else {
 		hdd_sta_ctx->conn_info.conn_flag.vht_present = false;
 	}
 	if (roam_info->ht_caps.present) {
 		hdd_sta_ctx->conn_info.conn_flag.ht_present = true;
-		hdd_copy_ht_caps(&hdd_sta_ctx->conn_info.ht_caps,
-				 &roam_info->ht_caps);
+		hdd_copy_ht_caps(hdd_sta_ctx, roam_info);
 	} else {
 		hdd_sta_ctx->conn_info.conn_flag.ht_present = false;
 	}
@@ -1658,10 +1626,7 @@ static QDF_STATUS hdd_dis_connect_handler(hdd_adapter_t *pAdapter,
 					sta_id, status, status);
 			status = QDF_STATUS_E_FAILURE;
 		}
-		if (sta_id < HDD_MAX_ADAPTERS)
-			pHddCtx->sta_to_adapter[sta_id] = NULL;
-		else
-			hdd_debug("invalid sta_id %d", sta_id);
+		pHddCtx->sta_to_adapter[sta_id] = NULL;
 		/* Clear all the peer sta register with TL. */
 		for (i = 0; i < MAX_PEERS; i++) {
 			if (HDD_WLAN_INVALID_STA_ID ==
@@ -1682,10 +1647,8 @@ static QDF_STATUS hdd_dis_connect_handler(hdd_adapter_t *pAdapter,
 						HDD_WLAN_INVALID_STA_ID;
 			qdf_mem_zero(&pHddStaCtx->conn_info.peerMacAddress[i],
 				sizeof(struct qdf_mac_addr));
-			if (sta_id < HDD_MAX_ADAPTERS)
+			if (sta_id < (WLAN_MAX_STA_COUNT + 3))
 				pHddCtx->sta_to_adapter[sta_id] = NULL;
-			else
-				hdd_debug("invalid sta_id %d", sta_id);
 		}
 	} else {
 		sta_id = pHddStaCtx->conn_info.staId[0];
@@ -1699,10 +1662,8 @@ static QDF_STATUS hdd_dis_connect_handler(hdd_adapter_t *pAdapter,
 			sme_remove_bssid_from_scan_list(pHddCtx->hHal,
 			pHddStaCtx->conn_info.bssId.bytes);
 		}
-		if (sta_id < HDD_MAX_ADAPTERS)
+		if (sta_id < HDD_MAX_STA_COUNT)
 			pHddCtx->sta_to_adapter[sta_id] = NULL;
-		else
-			hdd_debug("invalid sta_id %d", sta_id);
 	}
 	/* Clear saved connection information in HDD */
 	hdd_conn_remove_connect_info(pHddStaCtx);
@@ -1730,11 +1691,6 @@ static QDF_STATUS hdd_dis_connect_handler(hdd_adapter_t *pAdapter,
 	wlan_hdd_clear_link_layer_stats(pAdapter);
 
 	pAdapter->dad = false;
-
-	pAdapter->hdd_stats.hddTxRxStats.cont_txtimeout_cnt = 0;
-
-	hdd_debug("check for SAP restart");
-	cds_check_concurrent_intf_and_restart_sap(pAdapter);
 
 	/* Unblock anyone waiting for disconnect to complete */
 	complete(&pAdapter->disconnect_comp_var);
@@ -1890,7 +1846,6 @@ QDF_STATUS hdd_roam_register_sta(hdd_adapter_t *pAdapter,
 	/* Register the vdev transmit and receive functions */
 	qdf_mem_zero(&txrx_ops, sizeof(txrx_ops));
 	txrx_ops.rx.rx = hdd_rx_packet_cbk;
-	txrx_ops.rx.stats_rx = hdd_tx_rx_collect_connectivity_stats_info;
 	ol_txrx_vdev_register(
 		 ol_txrx_get_vdev_from_vdev_id(pAdapter->sessionId),
 		 pAdapter, &txrx_ops);
@@ -1986,14 +1941,20 @@ void hdd_save_gtk_params(hdd_adapter_t *adapter,
 	if (is_reassoc) {
 		kek = csr_roam_info->kek;
 		kek_len = csr_roam_info->kek_len;
-	} else {
+    } else {
+#if defined(FEATURE_SUPPORT_LGE)
+        // don't use it in lge devices. it is not verified yet
+        return;
+#else
 		/*
 		 * This should come for FILS case only.
 		 * Caller should make sure fils_join_rsp is
 		 * not NULL, if there is need to use else where.
 		 */
+
 		kek = csr_roam_info->fils_join_rsp->kek;
 		kek_len = csr_roam_info->fils_join_rsp->kek_len;
+#endif
 	}
 
 	wlan_hdd_save_gtk_offload_params(adapter, NULL, kek, kek_len,
@@ -2544,15 +2505,12 @@ static QDF_STATUS hdd_association_completion_handler(hdd_adapter_t *pAdapter,
 			pHddStaCtx->ft_carrier_on = false;
 			ft_carrier_on = true;
 		}
-		if (pRoamInfo->staId < HDD_MAX_ADAPTERS)
+		if ((WLAN_MAX_STA_COUNT + 3) > pRoamInfo->staId)
 			pHddCtx->sta_to_adapter[pRoamInfo->staId] = pAdapter;
 		else
 			hdd_err("Wrong Staid: %d", pRoamInfo->staId);
 
-		if (pRoamInfo->staId < HDD_MAX_ADAPTERS)
-			pHddCtx->sta_to_adapter[pRoamInfo->staId] = pAdapter;
-		else
-			hdd_debug("invalid sta_id %d", pRoamInfo->staId);
+		pHddCtx->sta_to_adapter[pRoamInfo->staId] = pAdapter;
 
 		if (hdd_ipa_is_enabled(pHddCtx))
 			hdd_ipa_wlan_evt(pAdapter, pRoamInfo->staId,
@@ -3132,11 +3090,8 @@ static void hdd_roam_ibss_indication_handler(hdd_adapter_t *pAdapter,
 
 		hdd_sta_ctx->broadcast_staid = pRoamInfo->staId;
 
-		if (pRoamInfo->staId < HDD_MAX_ADAPTERS)
-			pHddCtx->sta_to_adapter[pRoamInfo->staId] =
+		pHddCtx->sta_to_adapter[pRoamInfo->staId] =
 			pAdapter;
-		else
-			hdd_debug("invalid sta_id %d", pRoamInfo->staId);
 		hdd_roam_register_sta(pAdapter, pRoamInfo,
 				      pRoamInfo->staId,
 				      &broadcastMacAddr,
@@ -3486,10 +3441,7 @@ roam_roam_connect_status_update_handler(hdd_adapter_t *pAdapter,
 			break;
 		}
 
-		if (pRoamInfo->staId < HDD_MAX_ADAPTERS)
-			pHddCtx->sta_to_adapter[pRoamInfo->staId] = pAdapter;
-		else
-			hdd_debug("invalid sta_id %d", pRoamInfo->staId);
+		pHddCtx->sta_to_adapter[pRoamInfo->staId] = pAdapter;
 
 		/* Register the Station with TL for the new peer. */
 		qdf_status = hdd_roam_register_sta(pAdapter,
@@ -3579,11 +3531,7 @@ roam_roam_connect_status_update_handler(hdd_adapter_t *pAdapter,
 
 		hdd_roam_deregister_sta(pAdapter, pRoamInfo->staId);
 
-		if (pRoamInfo->staId < HDD_MAX_ADAPTERS)
-			pHddCtx->sta_to_adapter[pRoamInfo->staId] = NULL;
-		else
-			hdd_debug("invalid sta_id %d", pRoamInfo->staId);
-
+		pHddCtx->sta_to_adapter[pRoamInfo->staId] = NULL;
 		pHddStaCtx->ibss_sta_generation++;
 
 		cfg80211_del_sta(pAdapter->dev,
@@ -3648,7 +3596,6 @@ QDF_STATUS hdd_roam_register_tdlssta(hdd_adapter_t *pAdapter,
 	/* Register the vdev transmit and receive functions */
 	qdf_mem_zero(&txrx_ops, sizeof(txrx_ops));
 	txrx_ops.rx.rx = hdd_rx_packet_cbk;
-	txrx_ops.rx.stats_rx = hdd_tx_rx_collect_connectivity_stats_info;
 	ol_txrx_vdev_register(
 		 ol_txrx_get_vdev_from_vdev_id(pAdapter->sessionId),
 		 pAdapter, &txrx_ops);
@@ -3849,13 +3796,9 @@ hdd_roam_tdls_status_update_handler(hdd_adapter_t *pAdapter,
 					return QDF_STATUS_E_FAILURE;
 				}
 
-				if (pRoamInfo->staId < HDD_MAX_ADAPTERS)
-					(WLAN_HDD_GET_CTX(pAdapter))->
-					sta_to_adapter[pRoamInfo->staId] =
-						pAdapter;
-				else
-					hdd_debug("invalid sta_id %d",
-						pRoamInfo->staId);
+				(WLAN_HDD_GET_CTX(pAdapter))->
+				sta_to_adapter[pRoamInfo->staId] =
+					pAdapter;
 				/*
 				 * store the ucast signature,
 				 * if required for further reference.
@@ -4808,9 +4751,6 @@ static void hdd_roam_channel_switch_handler(hdd_adapter_t *adapter,
 	if (QDF_IS_STATUS_ERROR(status))
 		hdd_err("channel change notification failed");
 
-	hdd_debug("check for SAP restart");
-	cds_check_concurrent_intf_and_restart_sap(adapter);
-
 	status = cds_set_hw_mode_on_channel_switch(adapter->sessionId);
 	if (QDF_IS_STATUS_ERROR(status))
 		hdd_debug("set hw mode change not done");
@@ -5393,12 +5333,11 @@ static int32_t hdd_process_genie(hdd_adapter_t *pAdapter,
 #endif
 				 uint16_t gen_ie_len, uint8_t *gen_ie)
 {
-	uint32_t ret;
-	uint8_t *pRsnIe;
-	uint16_t RSNIeLen;
+	tHalHandle halHandle = WLAN_HDD_GET_HAL_CTX(pAdapter);
 	tDot11fIERSN dot11RSNIE;
 	tDot11fIEWPA dot11WPAIE;
-	tHalHandle halHandle = WLAN_HDD_GET_HAL_CTX(pAdapter);
+	uint8_t *pRsnIe;
+	uint16_t RSNIeLen;
 
 	/*
 	 * Clear struct of tDot11fIERSN and tDot11fIEWPA specifically
@@ -5420,13 +5359,8 @@ static int32_t hdd_process_genie(hdd_adapter_t *pAdapter,
 		pRsnIe = gen_ie + 2;
 		RSNIeLen = gen_ie_len - 2;
 		/* Unpack the RSN IE */
-		ret = dot11f_unpack_ie_rsn((tpAniSirGlobal) halHandle,
-					   pRsnIe, RSNIeLen, &dot11RSNIE,
-					   false);
-		if (DOT11F_FAILED(ret)) {
-			hdd_err("unpack failed, ret: 0x%x", ret);
-			return -EINVAL;
-		}
+		dot11f_unpack_ie_rsn((tpAniSirGlobal) halHandle,
+				     pRsnIe, RSNIeLen, &dot11RSNIE, false);
 		/* Copy out the encryption and authentication types */
 		hdd_debug("pairwise cipher suite count: %d",
 			 dot11RSNIE.pwise_cipher_suite_count);
@@ -5459,12 +5393,8 @@ static int32_t hdd_process_genie(hdd_adapter_t *pAdapter,
 		pRsnIe = gen_ie + 2 + 4;
 		RSNIeLen = gen_ie_len - (2 + 4);
 		/* Unpack the WPA IE */
-		ret = dot11f_unpack_ie_wpa((tpAniSirGlobal) halHandle,
+		dot11f_unpack_ie_wpa((tpAniSirGlobal) halHandle,
 				     pRsnIe, RSNIeLen, &dot11WPAIE, false);
-		if (DOT11F_FAILED(ret)) {
-			hdd_err("unpack failed, ret: 0x%x", ret);
-			return -EINVAL;
-		}
 		/* Copy out the encryption and authentication types */
 		hdd_debug("WPA unicast cipher suite count: %d",
 			 dot11WPAIE.unicast_cipher_count);
