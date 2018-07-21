@@ -1629,7 +1629,8 @@ int wma_mcc_vdev_tx_pause_evt_handler(void *handle, uint8_t *event,
 	 * vdev_map = (1 << vdev_id)
 	 * So, host should unmap to ID
 	 */
-	for (vdev_id = 0; vdev_map != 0; vdev_id++) {
+	for (vdev_id = 0; vdev_map != 0 && vdev_id < wma->max_bssid;
+	     vdev_id++) {
 		if (!(vdev_map & 0x1)) {
 			/* No Vdev */
 		} else {
@@ -2176,8 +2177,9 @@ int wma_ibss_peer_info_event_handler(void *handle, uint8_t *data,
 	}
 
 	/*sanity check */
-	if ((num_peers > 32) || (NULL == peer_info)) {
-		WMA_LOGE("%s: Invalid event data from target num_peers %d peer_info %p",
+	if ((num_peers > 32) || (num_peers > param_tlvs->num_peer_info) ||
+	    (!peer_info)) {
+		WMA_LOGE("%s: Invalid event data from target num_peers %d peer_info %pK",
 			__func__, num_peers, peer_info);
 		status = 1;
 		goto send_response;
@@ -2263,7 +2265,7 @@ int wma_fast_tx_fail_event_handler(void *handle, uint8_t *data,
 	if (wma->hddTxFailCb != NULL)
 		wma->hddTxFailCb(peer_mac, tx_fail_cnt);
 	else
-		WMA_LOGE("%s: HDD callback is %p", __func__, wma->hddTxFailCb);
+		WMA_LOGE("%s: HDD callback is %pK", __func__, wma->hddTxFailCb);
 
 	return 0;
 }
@@ -2514,6 +2516,58 @@ void wmi_desc_put(tp_wma_handle wma_handle, struct wmi_desc_t *wmi_desc)
 }
 
 /**
+ * rate_pream: Mapping from data rates to preamble.
+ */
+static uint32_t rate_pream[] = {WMI_RATE_PREAMBLE_CCK, WMI_RATE_PREAMBLE_CCK,
+				WMI_RATE_PREAMBLE_CCK, WMI_RATE_PREAMBLE_CCK,
+				WMI_RATE_PREAMBLE_OFDM, WMI_RATE_PREAMBLE_OFDM,
+				WMI_RATE_PREAMBLE_OFDM, WMI_RATE_PREAMBLE_OFDM,
+				WMI_RATE_PREAMBLE_OFDM, WMI_RATE_PREAMBLE_OFDM,
+				WMI_RATE_PREAMBLE_OFDM, WMI_RATE_PREAMBLE_OFDM};
+
+/**
+ * rate_mcs: Mapping from data rates to MCS (+4 for OFDM to keep the sequence).
+ */
+static uint32_t rate_mcs[] = {WMI_MAX_CCK_TX_RATE_1M, WMI_MAX_CCK_TX_RATE_2M,
+			      WMI_MAX_CCK_TX_RATE_5_5M, WMI_MAX_CCK_TX_RATE_11M,
+			      WMI_MAX_OFDM_TX_RATE_6M + 4,
+			      WMI_MAX_OFDM_TX_RATE_9M + 4,
+			      WMI_MAX_OFDM_TX_RATE_12M + 4,
+			      WMI_MAX_OFDM_TX_RATE_18M + 4,
+			      WMI_MAX_OFDM_TX_RATE_24M + 4,
+			      WMI_MAX_OFDM_TX_RATE_36M + 4,
+			      WMI_MAX_OFDM_TX_RATE_48M + 4,
+			      WMI_MAX_OFDM_TX_RATE_54M + 4};
+
+#define WMA_TX_SEND_MGMT_TYPE 0
+#define WMA_TX_SEND_DATA_TYPE 1
+
+/**
+ * wma_update_tx_send_params() - Update tx_send_params TLV info
+ * @tx_param: Pointer to tx_send_params
+ * @rid: rate ID passed by PE
+ *
+ * Return: None
+ */
+static void wma_update_tx_send_params(struct tx_send_params *tx_param,
+				      enum rateid rid)
+{
+	uint8_t  preamble = 0, nss = 0, rix = 0;
+
+	preamble = rate_pream[rid];
+	rix = rate_mcs[rid];
+
+	tx_param->mcs_mask = (1 << rix);
+	tx_param->nss_mask = (1 << nss);
+	tx_param->preamble_type = (1 << preamble);
+	tx_param->frame_type = WMA_TX_SEND_MGMT_TYPE;
+
+	WMA_LOGD(FL("rate_id: %d, mcs: %0x, nss: %0x, preamble: %0x"),
+		     rid, tx_param->mcs_mask, tx_param->nss_mask,
+		     tx_param->preamble_type);
+}
+
+/**
  * wma_tx_packet() - Sends Tx Frame to TxRx
  * @wma_context: wma context
  * @tx_frame: frame buffer
@@ -2537,7 +2591,8 @@ QDF_STATUS wma_tx_packet(void *wma_context, void *tx_frame, uint16_t frmLen,
 			 eFrameType frmType, eFrameTxDir txDir, uint8_t tid,
 			 pWMATxRxCompFunc tx_frm_download_comp_cb, void *pData,
 			 pWMAAckFnTxComp tx_frm_ota_comp_cb, uint8_t tx_flag,
-			 uint8_t vdev_id, bool tdlsFlag, uint16_t channel_freq)
+			 uint8_t vdev_id, bool tdlsFlag, uint16_t channel_freq,
+			 enum rateid rid)
 {
 	tp_wma_handle wma_handle = (tp_wma_handle) (wma_context);
 	int32_t status;
@@ -2900,6 +2955,17 @@ QDF_STATUS wma_tx_packet(void *wma_context, void *tx_frame, uint16_t frmLen,
 		mgmt_param.pdata = pData;
 		mgmt_param.chanfreq = chanfreq;
 		mgmt_param.qdf_ctx = cds_get_context(QDF_MODULE_ID_QDF_DEVICE);
+		/*
+		 * Update the tx_params TLV only for rates
+		 * other than 1Mbps and 6 Mbps
+		 */
+		if (rid < RATEID_DEFAULT &&
+		    (rid != RATEID_1MBPS && rid != RATEID_6MBPS)) {
+			WMA_LOGD(FL("using rate id: %d for Tx"), rid);
+			mgmt_param.tx_params_valid = true;
+			wma_update_tx_send_params(&mgmt_param.tx_param, rid);
+		}
+
 		wmi_desc = wmi_desc_get(wma_handle);
 		if (!wmi_desc) {
 			/* Countinous failure can cause flooding of logs */
@@ -3146,7 +3212,7 @@ void wma_tx_abort(uint8_t vdev_id)
 
 	iface = &wma->interfaces[vdev_id];
 	if (!iface->handle) {
-		WMA_LOGE("%s: Failed to get iface handle: %p",
+		WMA_LOGE("%s: Failed to get iface handle: %pK",
 			 __func__, iface->handle);
 		return;
 	}
