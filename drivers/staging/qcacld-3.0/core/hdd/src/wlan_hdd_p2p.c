@@ -116,12 +116,12 @@ const char *tdls_action_frame_type[] = { "TDLS Setup Request",
 					 "TDLS Peer Traffic Response",
 					 "TDLS Discovery Request"};
 
-static bool wlan_hdd_is_type_p2p_action( const u8 *buf, uint32_t len)
+static bool wlan_hdd_is_type_p2p_action(const u8 *buf, uint32_t len)
 {
 	const u8 *ouiPtr;
 
-    if (len < WLAN_HDD_PUBLIC_ACTION_FRAME_SUB_TYPE_OFFSET + 1)
-        return false;
+	if (len < WLAN_HDD_PUBLIC_ACTION_FRAME_SUB_TYPE_OFFSET + 1)
+		return false;
 
 	if (buf[WLAN_HDD_PUBLIC_ACTION_FRAME_CATEGORY_OFFSET] !=
 	    WLAN_HDD_PUBLIC_ACTION_FRAME)
@@ -143,12 +143,11 @@ static bool wlan_hdd_is_type_p2p_action( const u8 *buf, uint32_t len)
 	return true;
 }
 
-static bool hdd_p2p_is_action_type_rsp( const u8 *buf, uint32_t len )
+static bool hdd_p2p_is_action_type_rsp(const u8 *buf, uint32_t len)
 {
 	enum action_frm_type actionFrmType;
 
-	if ( wlan_hdd_is_type_p2p_action(buf, len) )
-	{
+	if (wlan_hdd_is_type_p2p_action(buf, len)) {
 		actionFrmType =
 			buf[WLAN_HDD_PUBLIC_ACTION_FRAME_SUB_TYPE_OFFSET];
 		if (actionFrmType != WLAN_HDD_INVITATION_REQ
@@ -941,11 +940,11 @@ static void wlan_hdd_cancel_pending_roc(hdd_adapter_t *adapter)
 	mutex_unlock(&cfg_state->remain_on_chan_ctx_lock);
 
 	if (adapter->device_mode == QDF_P2P_GO_MODE) {
-		wlansap_cancel_remain_on_channel((WLAN_HDD_GET_CTX
-					(adapter))->pcds_context, roc_scan_id);
-	} else if (adapter->device_mode == QDF_P2P_CLIENT_MODE
-			|| adapter->device_mode ==
-			QDF_P2P_DEVICE_MODE) {
+		void *sap_ctx = WLAN_HDD_GET_SAP_CTX_PTR(adapter);
+
+		wlansap_cancel_remain_on_channel(sap_ctx, roc_scan_id);
+	} else if (adapter->device_mode == QDF_P2P_CLIENT_MODE ||
+		   adapter->device_mode == QDF_P2P_DEVICE_MODE) {
 		hdd_delete_all_action_frame_cookies(adapter);
 		sme_cancel_remain_on_channel(WLAN_HDD_GET_HAL_CTX
 				(adapter),
@@ -1018,7 +1017,7 @@ static void wlan_hdd_remain_on_chan_timeout(void *data)
 
 	if ((NULL == pAdapter) ||
 	    (WLAN_HDD_ADAPTER_MAGIC != pAdapter->magic)) {
-		hdd_err("pAdapter is invalid %p !!!", pAdapter);
+		hdd_err("pAdapter is invalid %pK !!!", pAdapter);
 		return;
 	}
 
@@ -1046,17 +1045,15 @@ static void wlan_hdd_remain_on_chan_timeout(void *data)
 
 	if ((QDF_STA_MODE == pAdapter->device_mode) ||
 	    (QDF_P2P_CLIENT_MODE == pAdapter->device_mode) ||
-	    (QDF_P2P_DEVICE_MODE == pAdapter->device_mode)
-	    ) {
+	    (QDF_P2P_DEVICE_MODE == pAdapter->device_mode)) {
 		hdd_delete_all_action_frame_cookies(pAdapter);
 		sme_cancel_remain_on_channel(WLAN_HDD_GET_HAL_CTX(pAdapter),
 			pAdapter->sessionId, roc_scan_id);
 	} else if ((QDF_SAP_MODE == pAdapter->device_mode) ||
-		   (QDF_P2P_GO_MODE == pAdapter->device_mode)
-		   ) {
-		wlansap_cancel_remain_on_channel(
-			(WLAN_HDD_GET_CTX(pAdapter))->pcds_context,
-			roc_scan_id);
+			(QDF_P2P_GO_MODE == pAdapter->device_mode)) {
+		void *sap_ctx = WLAN_HDD_GET_SAP_CTX_PTR(pAdapter);
+
+		wlansap_cancel_remain_on_channel(sap_ctx, roc_scan_id);
 	}
 
 	hdd_tdls_notify_p2p_roc(hdd_ctx, P2P_ROC_END);
@@ -1148,7 +1145,7 @@ static int wlan_hdd_execute_remain_on_channel(hdd_adapter_t *pAdapter,
 			mutex_lock(&cfgState->remain_on_chan_ctx_lock);
 			pAdapter->is_roc_inprogress = false;
 			pRemainChanCtx = cfgState->remain_on_chan_ctx;
-			hdd_debug("Freeing ROC ctx cfgState->remain_on_chan_ctx=%p",
+			hdd_debug("Freeing ROC ctx cfgState->remain_on_chan_ctx=%pK",
 				 cfgState->remain_on_chan_ctx);
 			if (pRemainChanCtx) {
 				if (qdf_mc_timer_destroy(
@@ -1165,18 +1162,19 @@ static int wlan_hdd_execute_remain_on_channel(hdd_adapter_t *pAdapter,
 			hdd_allow_suspend(WIFI_POWER_EVENT_WAKELOCK_ROC);
 			return -EINVAL;
 		}
-
-		if (REMAIN_ON_CHANNEL_REQUEST ==
-		    pRemainChanCtx->rem_on_chan_request) {
+		mutex_lock(&cfgState->remain_on_chan_ctx_lock);
+		pRemainChanCtx = cfgState->remain_on_chan_ctx;
+		if ((pRemainChanCtx) && (REMAIN_ON_CHANNEL_REQUEST ==
+		    pRemainChanCtx->rem_on_chan_request)) {
+			mutex_unlock(&cfgState->remain_on_chan_ctx_lock);
 			if (QDF_STATUS_SUCCESS != sme_register_mgmt_frame(
-						WLAN_HDD_GET_HAL_CTX(pAdapter),
-						sessionId,
-						(SIR_MAC_MGMT_FRAME << 2) |
-						(SIR_MAC_MGMT_PROBE_REQ << 4),
-						NULL, 0))
+			    WLAN_HDD_GET_HAL_CTX(pAdapter), sessionId,
+			    (SIR_MAC_MGMT_FRAME << 2) |
+			    (SIR_MAC_MGMT_PROBE_REQ << 4), NULL, 0))
 				hdd_err("sme_register_mgmt_frame failed");
+		} else {
+			mutex_unlock(&cfgState->remain_on_chan_ctx_lock);
 		}
-
 	} else if ((QDF_SAP_MODE == pAdapter->device_mode) ||
 		   (QDF_P2P_GO_MODE == pAdapter->device_mode)) {
 		/* call sme API to start remain on channel. */
@@ -1189,7 +1187,7 @@ static int wlan_hdd_execute_remain_on_channel(hdd_adapter_t *pAdapter,
 			mutex_lock(&cfgState->remain_on_chan_ctx_lock);
 			pAdapter->is_roc_inprogress = false;
 			pRemainChanCtx = cfgState->remain_on_chan_ctx;
-			hdd_debug("Freeing ROC ctx cfgState->remain_on_chan_ctx=%p",
+			hdd_debug("Freeing ROC ctx cfgState->remain_on_chan_ctx=%pK",
 				 cfgState->remain_on_chan_ctx);
 			if (pRemainChanCtx) {
 				if (qdf_mc_timer_destroy(
@@ -1416,7 +1414,7 @@ static int wlan_hdd_request_remain_on_channel(struct wiphy *wiphy,
 			schedule_delayed_work(&pHddCtx->roc_req_work,
 			msecs_to_jiffies(
 				pHddCtx->config->p2p_listen_defer_interval));
-			hdd_debug("Defer interval is %hu, pAdapter %p",
+			hdd_debug("Defer interval is %hu, pAdapter %pK",
 				pHddCtx->config->p2p_listen_defer_interval,
 				pAdapter);
 			return 0;
@@ -1826,10 +1824,11 @@ static int __wlan_hdd_mgmt_tx(struct wiphy *wiphy, struct wireless_dev *wdev,
 	hdd_adapter_t *goAdapter;
 	uint16_t current_freq;
 	uint8_t home_ch = 0;
-	uint32_t mgmt_hdr_len = sizeof(struct ieee80211_hdr_3addr);
 	bool enb_random_mac = false;
+	uint32_t mgmt_hdr_len = sizeof(struct ieee80211_hdr_3addr);
 
 	ENTER();
+
 	if (len < mgmt_hdr_len + 1) {
 		hdd_err("Invalid Length");
 		return -EINVAL;
@@ -1867,7 +1866,6 @@ static int __wlan_hdd_mgmt_tx(struct wiphy *wiphy, struct wireless_dev *wdev,
 			  WLAN_HDD_PUBLIC_ACTION_FRAME_CATEGORY_OFFSET],
 			  buf[WLAN_HDD_PUBLIC_ACTION_FRAME_BODY_OFFSET +
 			  WLAN_HDD_PUBLIC_ACTION_FRAME_ACTION_OFFSET]);
-
 
 #ifdef WLAN_FEATURE_P2P_DEBUG
 	if ((type == SIR_MAC_MGMT_FRAME) &&

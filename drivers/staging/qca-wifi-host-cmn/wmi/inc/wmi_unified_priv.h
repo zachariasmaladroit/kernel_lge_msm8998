@@ -38,6 +38,7 @@
 #include <wmi_unified.h>
 #endif
 #include "qdf_atomic.h"
+#include <qdf_threads.h>
 
 #define WMI_UNIFIED_MAX_EVENT 0x100
 #define WMI_MAX_CMDS 1024
@@ -167,6 +168,12 @@ struct fwdebug {
 };
 #endif /* WLAN_OPEN_SOURCE */
 
+struct wmi_wq_dbg_info {
+	uint32_t wd_msg_type_id;
+	qdf_workqueue_t *wmi_wq;
+	qdf_thread_t *task;
+};
+
 struct wmi_ops {
 QDF_STATUS (*send_vdev_create_cmd)(wmi_unified_t wmi_handle,
 				 uint8_t macaddr[IEEE80211_ADDR_LEN],
@@ -178,8 +185,9 @@ QDF_STATUS (*send_vdev_delete_cmd)(wmi_unified_t wmi_handle,
 QDF_STATUS (*send_vdev_stop_cmd)(wmi_unified_t wmi,
 					uint8_t vdev_id);
 
-QDF_STATUS (*send_conf_hw_filter_mode_cmd)(wmi_unified_t wmi, uint8_t vdev_id,
-					   uint8_t mode_bitmap);
+QDF_STATUS
+(*send_conf_hw_filter_mode_cmd)(wmi_unified_t wmi,
+				struct wmi_hw_filter_req_params *req);
 
 QDF_STATUS (*send_vdev_down_cmd)(wmi_unified_t wmi,
 			uint8_t vdev_id);
@@ -523,8 +531,7 @@ QDF_STATUS (*send_roam_scan_offload_mode_cmd)(wmi_unified_t wmi_handle,
 				struct roam_offload_scan_params *roam_req);
 
 QDF_STATUS (*send_roam_scan_offload_ap_profile_cmd)(wmi_unified_t wmi_handle,
-				    wmi_ap_profile * ap_profile_p,
-				    uint32_t vdev_id);
+				    struct ap_profile_params *ap_profile);
 
 QDF_STATUS (*send_pktlog_wmi_send_cmd)(wmi_unified_t wmi_handle,
 				   WMI_PKTLOG_EVENT pktlog_event,
@@ -1180,6 +1187,9 @@ QDF_STATUS (*send_fw_test_cmd)(wmi_unified_t wmi_handle,
 QDF_STATUS (*send_encrypt_decrypt_send_cmd)(wmi_unified_t wmi_handle,
 				struct encrypt_decrypt_req_params *params);
 
+QDF_STATUS (*send_action_oui_cmd)(wmi_unified_t wmi_handle,
+				  struct wmi_action_oui *action_oui);
+
 QDF_STATUS (*send_sar_limit_cmd)(wmi_unified_t wmi_handle,
 				struct sar_limit_cmd_params *params);
 uint16_t (*wmi_set_htc_tx_tag)(wmi_unified_t wmi_handle,
@@ -1190,6 +1200,12 @@ QDF_STATUS (*send_get_rcpi_cmd)(wmi_unified_t wmi_handle,
 
 QDF_STATUS (*send_limit_off_chan_cmd)(wmi_unified_t wmi_handle,
 			struct wmi_limit_off_chan_param *limit_off_chan_param);
+
+QDF_STATUS (*send_offload_11k_cmd)(wmi_unified_t wmi_handle,
+		struct wmi_11k_offload_params *params);
+
+QDF_STATUS (*send_invoke_neighbor_report_cmd)(wmi_unified_t wmi_handle,
+		struct wmi_invoke_neighbor_report_params *params);
 };
 
 struct target_abi_version {
