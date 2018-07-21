@@ -2358,7 +2358,6 @@ static void update_fils_data(struct sir_fils_indication *fils_ind,
 				 tDot11fIEfils_indication *fils_indication)
 {
 	uint8_t *data;
-	uint8_t remaining_data = fils_indication->num_variable_data;
 
 	data = fils_indication->variable_data;
 	fils_ind->is_present = true;
@@ -2371,37 +2370,18 @@ static void update_fils_data(struct sir_fils_indication *fils_ind,
 	fils_ind->is_pk_auth_supported =
 			fils_indication->is_pk_auth_supported;
 	if (fils_indication->is_cache_id_present) {
-		if (remaining_data < SIR_CACHE_IDENTIFIER_LEN) {
-			pe_err("Failed to copy Cache Identifier, Invalid remaining data %d",
-				remaining_data);
-			return;
-		}
 		fils_ind->cache_identifier.is_present = true;
 		qdf_mem_copy(fils_ind->cache_identifier.identifier,
 				data, SIR_CACHE_IDENTIFIER_LEN);
 		data = data + SIR_CACHE_IDENTIFIER_LEN;
-		remaining_data = remaining_data - SIR_CACHE_IDENTIFIER_LEN;
 	}
 	if (fils_indication->is_hessid_present) {
-		if (remaining_data < SIR_HESSID_LEN) {
-			pe_err("Failed to copy HESSID, Invalid remaining data %d",
-				remaining_data);
-			return;
-		}
 		fils_ind->hessid.is_present = true;
 		qdf_mem_copy(fils_ind->hessid.hessid,
 				data, SIR_HESSID_LEN);
 		data = data + SIR_HESSID_LEN;
-		remaining_data = remaining_data - SIR_HESSID_LEN;
 	}
 	if (fils_indication->realm_identifiers_cnt) {
-		if (remaining_data < (fils_indication->realm_identifiers_cnt *
-		    SIR_REALM_LEN)) {
-			pe_err("Failed to copy Realm Identifier, Invalid remaining data %d realm_cnt %d",
-				remaining_data,
-				fils_indication->realm_identifiers_cnt);
-			return;
-		}
 		fils_ind->realm_identifier.is_present = true;
 		fils_ind->realm_identifier.realm_cnt =
 			fils_indication->realm_identifiers_cnt;
@@ -2454,24 +2434,6 @@ void sir_copy_caps_info(tpAniSirGlobal mac_ctx, tDot11fFfCapabilities caps,
 	pProbeResp->capabilityInfo.dsssOfdm = caps.dsssOfdm;
 	pProbeResp->capabilityInfo.delayedBA = caps.delayedBA;
 	pProbeResp->capabilityInfo.immediateBA = caps.immediateBA;
-}
-
-/**
- * sir_convert_esp_data_to_probersp_struct: update ESP params from probe resp
- * @probe_resp: pointer to tpSirProbeRespBeacon
- * @pr: pointer to tDot11fProbeResponse
- *
- * Return: None
- */
-static void
-sir_convert_esp_data_to_probersp_struct(tpSirProbeRespBeacon probe_resp,
-					tDot11fProbeResponse *pr)
-{
-	if (!pr->ESP_information.present)
-		return;
-
-	update_esp_data(&probe_resp->esp_information,
-			&pr->ESP_information);
 }
 
 tSirRetStatus sir_convert_probe_frame2_struct(tpAniSirGlobal pMac,
@@ -2627,6 +2589,8 @@ tSirRetStatus sir_convert_probe_frame2_struct(tpAniSirGlobal pMac,
 	if (pr->WMMParams.present) {
 		pProbeResp->wmeEdcaPresent = 1;
 		convert_wmm_params(pMac, &pProbeResp->edcaParams, &pr->WMMParams);
+		pe_debug("WMM Parameter present in Probe Response Frame!");
+		       __print_wmm_params(pMac, &pr->WMMParams);
 	}
 
 	if (pr->WMMInfoAp.present) {
@@ -2686,8 +2650,6 @@ tSirRetStatus sir_convert_probe_frame2_struct(tpAniSirGlobal pMac,
 	pProbeResp->Vendor3IEPresent = pr->Vendor3IE.present;
 
 	pProbeResp->vendor_vht_ie.present = pr->vendor_vht_ie.present;
-	if (pr->vendor_vht_ie.present)
-		pProbeResp->vendor_vht_ie.sub_type = pr->vendor_vht_ie.sub_type;
 	if (pr->vendor_vht_ie.VHTCaps.present) {
 		qdf_mem_copy(&pProbeResp->vendor_vht_ie.VHTCaps,
 				&pr->vendor_vht_ie.VHTCaps,
@@ -2723,11 +2685,6 @@ tSirRetStatus sir_convert_probe_frame2_struct(tpAniSirGlobal pMac,
 			pProbeResp->assoc_disallowed_reason =
 				pr->MBO_IE.assoc_disallowed.reason_code;
 		}
-		if (pr->MBO_IE.reduced_wan_metrics.present) {
-			pProbeResp->oce_wan_present = true;
-			pProbeResp->oce_wan_downlink_av_cap =
-				pr->MBO_IE.reduced_wan_metrics.downlink_av_cap;
-		}
 	}
 
 	if (pr->QCN_IE.present) {
@@ -2741,14 +2698,11 @@ tSirRetStatus sir_convert_probe_frame2_struct(tpAniSirGlobal pMac,
 		}
 	}
 
-	sir_convert_esp_data_to_probersp_struct(pProbeResp, pr);
 	sir_convert_fils_data_to_probersp_struct(pProbeResp, pr);
 	qdf_mem_free(pr);
 	return eSIR_SUCCESS;
 
 } /* End sir_convert_probe_frame2_struct. */
-
-
 
 tSirRetStatus
 sir_convert_assoc_req_frame2_struct(tpAniSirGlobal pMac,
@@ -2927,7 +2881,6 @@ sir_convert_assoc_req_frame2_struct(tpAniSirGlobal pMac,
 
 	pAssocReq->vendor_vht_ie.present = ar->vendor_vht_ie.present;
 	if (ar->vendor_vht_ie.present) {
-		pAssocReq->vendor_vht_ie.sub_type = ar->vendor_vht_ie.sub_type;
 		if (ar->vendor_vht_ie.VHTCaps.present) {
 			qdf_mem_copy(&pAssocReq->vendor_vht_ie.VHTCaps,
 				     &ar->vendor_vht_ie.VHTCaps,
@@ -3190,7 +3143,8 @@ sir_convert_assoc_resp_frame2_struct(tpAniSirGlobal pMac,
 		for (cnt = 0; cnt < ar->num_WMMTSPEC; cnt++) {
 			qdf_mem_copy(&pAssocRsp->TSPECInfo[cnt],
 					&ar->WMMTSPEC[cnt],
-					sizeof(tDot11fIEWMMTSPEC));
+					(sizeof(tDot11fIEWMMTSPEC) *
+					 ar->num_WMMTSPEC));
 		}
 		pAssocRsp->tspecPresent = true;
 	}
@@ -3235,8 +3189,6 @@ sir_convert_assoc_resp_frame2_struct(tpAniSirGlobal pMac,
 	}
 
 	pAssocRsp->vendor_vht_ie.present = ar->vendor_vht_ie.present;
-	if (ar->vendor_vht_ie.present)
-		pAssocRsp->vendor_vht_ie.sub_type = ar->vendor_vht_ie.sub_type;
 	if (ar->OBSSScanParameters.present) {
 		qdf_mem_copy(&pAssocRsp->obss_scanparams,
 				&ar->OBSSScanParameters,
@@ -3969,9 +3921,6 @@ sir_parse_beacon_ie(tpAniSirGlobal pMac,
 	pBeaconStruct->Vendor1IEPresent = pBies->Vendor1IE.present;
 	pBeaconStruct->Vendor3IEPresent = pBies->Vendor3IE.present;
 	pBeaconStruct->vendor_vht_ie.present = pBies->vendor_vht_ie.present;
-	if (pBies->vendor_vht_ie.present)
-		pBeaconStruct->vendor_vht_ie.sub_type =
-						pBies->vendor_vht_ie.sub_type;
 
 	if (pBies->vendor_vht_ie.VHTCaps.present) {
 		pBeaconStruct->vendor_vht_ie.VHTCaps.present = 1;
@@ -4277,6 +4226,8 @@ sir_convert_beacon_frame2_struct(tpAniSirGlobal pMac,
 		pBeaconStruct->wmeEdcaPresent = 1;
 		convert_wmm_params(pMac, &pBeaconStruct->edcaParams,
 				   &pBeacon->WMMParams);
+		pe_debug("WMM Parameter present in Beacon Frame!");
+		       __print_wmm_params(pMac, &pBeacon->WMMParams);
 	}
 
 	if (pBeacon->WMMInfoAp.present) {
@@ -4358,11 +4309,8 @@ sir_convert_beacon_frame2_struct(tpAniSirGlobal pMac,
 	pBeaconStruct->Vendor3IEPresent = pBeacon->Vendor3IE.present;
 
 	pBeaconStruct->vendor_vht_ie.present = pBeacon->vendor_vht_ie.present;
-	if (pBeacon->vendor_vht_ie.present) {
-		pBeaconStruct->vendor_vht_ie.sub_type =
-			pBeacon->vendor_vht_ie.sub_type;
+	if (pBeacon->vendor_vht_ie.present)
 		pe_debug("Vendor Specific VHT caps present in Beacon Frame!");
-	}
 
 	if (pBeacon->vendor_vht_ie.VHTCaps.present) {
 		qdf_mem_copy(&pBeaconStruct->vendor_vht_ie.VHTCaps,
@@ -4413,12 +4361,6 @@ sir_convert_beacon_frame2_struct(tpAniSirGlobal pMac,
 			pBeaconStruct->assoc_disallowed = true;
 			pBeaconStruct->assoc_disallowed_reason =
 				pBeacon->MBO_IE.assoc_disallowed.reason_code;
-		}
-		if (pBeacon->MBO_IE.reduced_wan_metrics.present) {
-			pBeaconStruct->oce_wan_present = true;
-			pBeaconStruct->oce_wan_downlink_av_cap =
-				pBeacon->MBO_IE.
-					reduced_wan_metrics.downlink_av_cap;
 		}
 	}
 
@@ -5841,25 +5783,17 @@ tSirRetStatus populate_dot11f_assoc_res_wsc_ie(tpAniSirGlobal pMac,
 					       tDot11fIEWscAssocRes *pDot11f,
 					       tpSirAssocReq pRcvdAssocReq)
 {
-	uint32_t ret;
-	uint8_t *wscIe;
 	tDot11fIEWscAssocReq parsedWscAssocReq = { 0, };
+	uint8_t *wscIe;
 
-	wscIe = limGetWscIEPtr(pMac, pRcvdAssocReq->addIE.addIEdata,
+	wscIe =
+		limGetWscIEPtr(pMac, pRcvdAssocReq->addIE.addIEdata,
 			       pRcvdAssocReq->addIE.length);
 	if (wscIe != NULL) {
 		/* retreive WSC IE from given AssocReq */
-		ret = dot11f_unpack_ie_wsc_assoc_req(pMac,
-						     /* EID, length, OUI */
-						     wscIe + 2 + 4,
-						     /* length without OUI */
-						     wscIe[1] - 4,
-						     &parsedWscAssocReq, false);
-		if (!DOT11F_SUCCEEDED(ret)) {
-			pe_err("unpack failed, ret: %d", ret);
-			return eSIR_HAL_INPUT_INVALID;
-		}
-
+		dot11f_unpack_ie_wsc_assoc_req(pMac, wscIe + 2 + 4,     /* EID, length, OUI */
+					       wscIe[1] - 4, /* length without OUI */
+					       &parsedWscAssocReq, false);
 		pDot11f->present = 1;
 		/* version has to be 0x10 */
 		pDot11f->Version.present = 1;
