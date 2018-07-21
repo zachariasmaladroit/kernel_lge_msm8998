@@ -37,7 +37,6 @@
 #include <linux/regulator/consumer.h>
 #include <linux/wakelock.h>
 #include <linux/input.h>
-#define FPC_TTW_HOLD_TIME 1000
 
 #define RESET_LOW_SLEEP_MIN_US 5000
 #define RESET_LOW_SLEEP_MAX_US (RESET_LOW_SLEEP_MIN_US + 100)
