@@ -205,13 +205,6 @@ void qdf_trace_set_value(QDF_MODULE_ID module, QDF_TRACE_LEVEL level,
 		return;
 	}
 
-#ifdef FEATURE_SUPPORT_LGE // 2017.07.12 Logging level update by QCT request
-    if (module ==  QDF_MODULE_ID_HDD || module ==  QDF_MODULE_ID_SME || module ==  QDF_MODULE_ID_PE || module ==  QDF_MODULE_ID_QDF) {
-        g_qdf_trace_info[module].module_trace_level = 0xFFFF;
-        return;
-    }
-#endif
-
 	/* Treat 'none' differently.  NONE means we have to turn off all
 	 * the bits in the bit mask so none of the traces appear
 	 */
