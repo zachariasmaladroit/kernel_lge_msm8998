@@ -177,7 +177,7 @@ CONFIG_SYSFS_SYSCALL=y
 # CONFIG_SYSCTL_SYSCALL is not set
 CONFIG_KALLSYMS=y
 CONFIG_KALLSYMS_ALL=y
-CONFIG_PRINTK=y
+
 CONFIG_BUG=y
 CONFIG_ELF_CORE=y
 CONFIG_BASE_FULL=y
@@ -5078,14 +5078,6 @@ CONFIG_NLS_UTF8=y
 #
 
 #
-# printk and dmesg options
-#
-CONFIG_PRINTK_TIME=y
-CONFIG_MESSAGE_LOGLEVEL_DEFAULT=4
-# CONFIG_BOOT_PRINTK_DELAY is not set
-# CONFIG_DYNAMIC_DEBUG is not set
-
-#
 # Compile-time checks and compiler options
 #
 CONFIG_DEBUG_INFO=y
@@ -5862,3 +5854,13 @@ CONFIG_MODULE_SIG_SHA512=y
 CONFIG_MODULE_SIG_HASH="sha512"
 # CONFIG_MODULE_COMPRESS is not set
 CONFIG_MODULES_TREE_LOOKUP=y
+
+# kernel log output
+# CONFIG_PRINTK is not set # since it's broken on non-stock anyway, disable it
+#
+# printk and dmesg options
+#
+CONFIG_PRINTK_TIME=y
+CONFIG_MESSAGE_LOGLEVEL_DEFAULT=4
+# CONFIG_BOOT_PRINTK_DELAY is not set
+# CONFIG_DYNAMIC_DEBUG is not set
