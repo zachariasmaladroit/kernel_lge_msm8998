@@ -5739,9 +5739,9 @@ CONFIG_LGE_PM_DEBUG=y
 # CONFIG_MSM_RPM_LOG is not set
 # CONFIG_MSM_RPM_STATS_LOG is not set
 # CONFIG_MSM_TZ_LOG is not set
-CONFIG_TRACER_PKT=y # might be needed
+# CONFIG_TRACER_PKT is not set
 # CONFIG_QCOM_REMOTEQDSS is not set
-CONFIG_QCOM_COMMON_LOG=y # printk, dmesg, pstore ?
+# CONFIG_QCOM_COMMON_LOG is not set
 # CONFIG_QCOM_MEMORY_DUMP_V2 is not set
 
 # disable for debug, security, attack surface
