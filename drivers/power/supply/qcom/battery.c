@@ -342,7 +342,8 @@ static void pl_taper_work(struct work_struct *work)
 		rerun_election(chip->fcc_votable);
 		pl_dbg(chip, PR_PARALLEL, "taper entry scheduling work after %d ms\n",
 				PL_TAPER_WORK_DELAY_MS);
-		schedule_delayed_work(&chip->pl_taper_work,
+		queue_delayed_work(system_power_efficient_wq,
+				&chip->pl_taper_work,
 				msecs_to_jiffies(PL_TAPER_WORK_DELAY_MS));
 		return;
 	}
@@ -579,7 +580,8 @@ static int usb_icl_vote_callback(struct votable *votable, void *data,
 	if (icl_ua <= 1400000)
 		vote(chip->pl_enable_votable_indirect, USBIN_I_VOTER, false, 0);
 	else
-		schedule_delayed_work(&chip->status_change_work,
+		queue_delayed_work(system_power_efficient_wq,
+						&chip->status_change_work,
 						msecs_to_jiffies(PL_DELAY_MS));
 
 	/* rerun AICL */
@@ -718,7 +720,8 @@ static int pl_disable_vote_callback(struct votable *votable,
 				if (pval.intval == POWER_SUPPLY_CHARGE_TYPE_TAPER) {
 					pl_dbg(chip, PR_PARALLEL,
 						"pl enabled in Taper scheduing work\n");
-					schedule_delayed_work(&chip->pl_taper_work, 0);
+					queue_delayed_work(system_power_efficient_wq,
+							&chip->pl_taper_work, 0);
 				}
 			}
 		}
@@ -731,7 +734,8 @@ static int pl_disable_vote_callback(struct votable *votable,
 			if (pval.intval == POWER_SUPPLY_CHARGE_TYPE_TAPER) {
 				pl_dbg(chip, PR_PARALLEL,
 					"pl enabled in Taper scheduing work\n");
-				schedule_delayed_work(&chip->pl_taper_work, 0);
+				queue_delayed_work(system_power_efficient_wq,
+						&chip->pl_taper_work, 0);
 			}
 		}
 #endif
@@ -901,7 +905,8 @@ static void handle_main_charge_type(struct pl_data *chip)
 		&& (pval.intval == POWER_SUPPLY_CHARGE_TYPE_TAPER)) {
 		chip->charge_type = pval.intval;
 		pl_dbg(chip, PR_PARALLEL, "taper entry scheduling work\n");
-		schedule_delayed_work(&chip->pl_taper_work, 0);
+		queue_delayed_work(system_power_efficient_wq,
+				&chip->pl_taper_work, 0);
 		return;
 	}
 
@@ -1056,7 +1061,8 @@ static int pl_notifier_call(struct notifier_block *nb,
 	if ((strcmp(psy->desc->name, "parallel") == 0)
 	    || (strcmp(psy->desc->name, "battery") == 0)
 	    || (strcmp(psy->desc->name, "main") == 0))
-		schedule_delayed_work(&chip->status_change_work, 0);
+		queue_delayed_work(system_power_efficient_wq,
+				&chip->status_change_work, 0);
 
 	return NOTIFY_OK;
 }
