@@ -346,7 +346,8 @@ static void batt_mngr_monitor_set_work(struct work_struct *work)
 				bm_monitor_set_work.work);
 
 	if(work_started == true) {
-		schedule_delayed_work(&bm->parameter_track_work,
+		queue_delayed_work(system_power_efficient_wq,
+			&bm->parameter_track_work,
 			round_jiffies_relative(msecs_to_jiffies(BM_PARAM_MONITOR_NORMAL)));
 	}
 }
@@ -724,10 +725,12 @@ static void batt_mngr_parameter_track_work(struct work_struct *work)
 	batt_mngr_parameter_logger(bm);
 
 	if (bm->ref->check_abvd && work_started == true) {
-		schedule_delayed_work(&bm->parameter_track_work,
+		queue_delayed_work(system_power_efficient_wq,
+			&bm->parameter_track_work,
 			round_jiffies_relative(msecs_to_jiffies(BM_PARAM_MONITOR_FAST)));
 	} else if(work_started == true) {
-		schedule_delayed_work(&bm->parameter_track_work,
+		queue_delayed_work(system_power_efficient_wq,
+			&bm->parameter_track_work,
 			round_jiffies_relative(msecs_to_jiffies(BM_PARAM_MONITOR_NORMAL)));
 	}
 }
@@ -802,7 +805,8 @@ static int batt_mngr_start_work(struct batt_mngr *bm)
 
 	if(work_started == true) {
 		cancel_delayed_work_sync(&bm->bm_monitor_set_work);
-		schedule_delayed_work(&bm->bm_monitor_set_work,
+		queue_delayed_work(system_power_efficient_wq,
+				&bm->bm_monitor_set_work,
 				round_jiffies_relative(msecs_to_jiffies(BM_MONITOR_SET_TIME)));
 		pr_bm(PR_INFO,"Start work\n");
 	}
@@ -963,7 +967,8 @@ static int batt_mngr_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, bm);
 
-	schedule_delayed_work(&bm->bm_monitor_work,
+	queue_delayed_work(system_power_efficient_wq,
+			&bm->bm_monitor_work,
 			round_jiffies_relative(msecs_to_jiffies(BM_MONITOR_WORK_TIME)));
 
 	work_started = true;
