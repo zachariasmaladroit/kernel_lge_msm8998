@@ -1670,7 +1670,8 @@ int ncm_ctrlrequest(struct usb_composite_dev *cdev,
 					w_value, w_index, w_length);
 			value = 0;
 			start_requested = 1;
-			schedule_delayed_work(&start_work,
+			queue_delayed_work(system_power_efficient_wq,
+					&start_work,
 					msecs_to_jiffies(10));
 		}
 	}
