@@ -386,7 +386,8 @@ static int pt_dis_votable_cb(struct votable *votable, void *data, int disable,
 
 	if (!disable) {
 		vote(chip->awake_votable, PT_RESTART_VOTER, true, 0);
-		schedule_delayed_work(&chip->ptrain_restart_work,
+		queue_delayed_work(system_power_efficient_wq,
+				&chip->ptrain_restart_work,
 				msecs_to_jiffies(20));
 	}
 
@@ -1410,7 +1411,8 @@ static void status_change_work(struct work_struct *work)
 		/* insertion */
 		chip->usb_present = 1;
 		vote(chip->awake_votable, USB_READY_VOTER, true, 0);
-		schedule_delayed_work(&chip->usb_debounce_work,
+		queue_delayed_work(system_power_efficient_wq,
+				&chip->usb_debounce_work,
 				msecs_to_jiffies(DEBOUNCE_MS));
 	}
 
@@ -1438,7 +1440,8 @@ static void status_change_work(struct work_struct *work)
 		/* insertion */
 		chip->dc_present = 1;
 		vote(chip->awake_votable, DC_READY_VOTER, true, 0);
-		schedule_delayed_work(&chip->dc_debounce_work,
+		queue_delayed_work(system_power_efficient_wq,
+				&chip->dc_debounce_work,
 				msecs_to_jiffies(DEBOUNCE_MS));
 	}
 
