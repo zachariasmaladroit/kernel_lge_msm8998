@@ -5856,7 +5856,7 @@ CONFIG_MODULE_SIG_HASH="sha512"
 CONFIG_MODULES_TREE_LOOKUP=y
 
 # kernel log output
-# CONFIG_PRINTK is not set # since it's broken on non-stock anyway, disable it
+CONFIG_PRINTK=y # since it's broken on non-stock anyway, disable it
 #
 # printk and dmesg options
 #
