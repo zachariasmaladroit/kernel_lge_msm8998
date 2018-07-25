@@ -3195,7 +3195,8 @@ static int smb2_resume(struct device *dev)
 {
 	struct smb_charger *chg = dev_get_drvdata(dev);
 
-	schedule_delayed_work(&chg->charging_inform_work,
+	queue_delayed_work(system_power_efficient_wq,
+			&chg->charging_inform_work,
 			round_jiffies_relative(msecs_to_jiffies(CHARGING_INFORM_NORMAL_TIME)));
 	return 0;
 }
