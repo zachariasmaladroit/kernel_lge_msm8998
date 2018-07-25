@@ -398,8 +398,9 @@ static void pil_proxy_unvote(struct pil_desc *desc, int immediate)
 			timeout = 0;
 
 		if (!desc->proxy_unvote_irq || immediate)
-			schedule_delayed_work(&priv->proxy,
-					      msecs_to_jiffies(timeout));
+			queue_delayed_work(system_power_efficient_wq,
+						&priv->proxy,
+					    msecs_to_jiffies(timeout));
 	}
 }
 
