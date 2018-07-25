@@ -610,7 +610,8 @@ static void lge_cable_detect_external_power_changed(struct lge_power *lpc)
 				cd->usb_psy, POWER_SUPPLY_PROP_PRESENT, &ret);
 		cd->chg_present = ret.intval;
 		if (cd->chg_present != prev_chg_present) {
-			schedule_delayed_work(&cd->cable_detect_work,
+			queue_delayed_work(system_power_efficient_wq,
+					&cd->cable_detect_work,
 					CABLE_DETECT_DELAY);
 			pr_err("chg_present %d, prev %d / type %d\n",
 					cd->chg_present, prev_chg_present, cd->chg_type);
