@@ -44,7 +44,8 @@ static bool mdss_check_te_status(struct mdss_dsi_ctrl_pdata *ctrl_pdata,
 	 */
 	ret = !atomic_read(&ctrl_pdata->te_irq_ready);
 	if (ret) {
-		schedule_delayed_work(&pstatus_data->check_status,
+		queue_delayed_work(system_power_efficient_wq,
+			&pstatus_data->check_status,
 			msecs_to_jiffies(interval));
 		pr_debug("%s: TE IRQ line not enabled yet\n", __func__);
 	}
@@ -97,7 +98,8 @@ void mdss_check_dsi_ctrl_status(struct work_struct *work, uint32_t interval)
 	if (!pdata->panel_info.esd_rdy) {
 		pr_debug("%s: unblank not complete, reschedule check status\n",
 			__func__);
-		schedule_delayed_work(&pstatus_data->check_status,
+		queue_delayed_work(system_power_efficient_wq,
+				&pstatus_data->check_status,
 				msecs_to_jiffies(interval));
 		return;
 	}
@@ -170,7 +172,8 @@ void mdss_check_dsi_ctrl_status(struct work_struct *work, uint32_t interval)
 
 	if ((pstatus_data->mfd->panel_power_state == MDSS_PANEL_POWER_ON)) {
 		if (ret > 0)
-			schedule_delayed_work(&pstatus_data->check_status,
+			queue_delayed_work(system_power_efficient_wq,
+				&pstatus_data->check_status,
 				msecs_to_jiffies(interval));
 		else
 			goto status_dead;
