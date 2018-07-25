@@ -693,7 +693,8 @@ static void lge_battery_profile_read_work(struct work_struct *work)
 	rc = power_supply_get_property(ttf->bms_psy, POWER_SUPPLY_PROP_BATTERY_TYPE, &prop);
 	if (rc) {
 		pr_ttf(PR_ERROR, "bms_psy battery type read fail rc = %d\n", rc);
-		schedule_delayed_work(&ttf->battery_profile_read_work, BATT_PROFILE_READ_TIME);
+		queue_delayed_work(system_power_efficient_wq,
+				&ttf->battery_profile_read_work, BATT_PROFILE_READ_TIME);
 		return;
 	} else
 		ttf->profile_name = prop.strval;
@@ -705,7 +706,8 @@ static void lge_battery_profile_read_work(struct work_struct *work)
 					"lge,profile_name", &profile_name);
 		if (rc) {
 			pr_ttf(PR_ERROR, "failed to read battery profile name : %d", rc);
-			schedule_delayed_work(&ttf->battery_profile_read_work, BATT_PROFILE_READ_TIME);
+			queue_delayed_work(system_power_efficient_wq,
+					&ttf->battery_profile_read_work, BATT_PROFILE_READ_TIME);
 		}
 		if (ttf->chargerlogo_supported) {
 			if (lge_get_boot_mode() == LGE_BOOT_MODE_CHARGERLOGO) {
@@ -842,7 +844,8 @@ static void lge_time_to_full_report_work(struct work_struct *work)
 		if (rc) {
 			pr_ttf(PR_ERROR, "usb_psy usb present read fail rc = %d\n", rc);
 			ttf->ttf_now = ERROR;
-			schedule_delayed_work(&ttf->time_to_full_report_work, TIME_TO_FULL_REPORT_PERIOD);
+			queue_delayed_work(system_power_efficient_wq,
+					&ttf->time_to_full_report_work, TIME_TO_FULL_REPORT_PERIOD);
 			return;
 		} else
 			chg_present = prop.intval;
@@ -858,7 +861,8 @@ static void lge_time_to_full_report_work(struct work_struct *work)
 		rc = power_supply_get_property(ttf->bms_psy, POWER_SUPPLY_PROP_TIME_TO_FULL_CAPACITY, &prop);
 		if (rc) {
 			pr_ttf(PR_ERROR, "bms_psy time to full soc read fail rc = %d\n", rc);
-			schedule_delayed_work(&ttf->time_to_full_report_work, TIME_TO_FULL_REPORT_PERIOD);
+			queue_delayed_work(system_power_efficient_wq,
+					&ttf->time_to_full_report_work, TIME_TO_FULL_REPORT_PERIOD);
 			ttf->ttf_now = ERROR;
 			return;
 		} else
@@ -871,7 +875,8 @@ static void lge_time_to_full_report_work(struct work_struct *work)
 #ifdef CONFIG_LGE_PM_CHARGERLOGO_WAIT_FOR_FG_INIT
 	}
 #endif
-	schedule_delayed_work(&ttf->time_to_full_report_work, TIME_TO_FULL_REPORT_PERIOD);
+	queue_delayed_work(system_power_efficient_wq,
+			&ttf->time_to_full_report_work, TIME_TO_FULL_REPORT_PERIOD);
 }
 
 static int ttf_power_get_property(struct power_supply *psy,
@@ -1016,7 +1021,8 @@ static void lge_time_to_full_calc_work(struct work_struct *work)
 				cancel_delayed_work(&ttf->time_to_full_report_work);
 
 				ttf->ttf_now = lge_time_to_full_report(ttf);
-				schedule_delayed_work(&ttf->time_to_full_report_work, TIME_TO_FULL_REPORT_PERIOD);
+				queue_delayed_work(system_power_efficient_wq,
+						&ttf->time_to_full_report_work, TIME_TO_FULL_REPORT_PERIOD);
 				/* for evaluate */
 				if (soc != prev_soc)
 					lge_time_to_full_evaluate(ttf);
@@ -1028,7 +1034,8 @@ static void lge_time_to_full_calc_work(struct work_struct *work)
 					pr_ttf(PR_DEBUG, "soc = %d, prev_soc = %d\n", soc_ttf, prev_soc_ttf);
 					cancel_delayed_work(&ttf->time_to_full_report_work);
 					ttf->ttf_now = lge_time_to_full_report(ttf);
-					schedule_delayed_work(&ttf->time_to_full_report_work, TIME_TO_FULL_REPORT_PERIOD);
+					queue_delayed_work(system_power_efficient_wq,
+							&ttf->time_to_full_report_work, TIME_TO_FULL_REPORT_PERIOD);
 				}
 
 				/* for evaluate */
@@ -1094,11 +1101,14 @@ static void ttf_external_power_changed(struct power_supply *psy)
 	} else {
 		if (chg_present != prev_chg_present) {
 			if (chg_present)
-				schedule_delayed_work(&ttf->time_to_full_calc_work, HZ*4);
+				queue_delayed_work(system_power_efficient_wq,
+						&ttf->time_to_full_calc_work, HZ*4);
 			else
-				schedule_delayed_work(&ttf->time_to_full_calc_work, HZ*0);
+				queue_delayed_work(system_power_efficient_wq,
+						&ttf->time_to_full_calc_work, HZ*0);
 		} else {
-			schedule_delayed_work(&ttf->time_to_full_calc_work, HZ*0);
+			queue_delayed_work(system_power_efficient_wq,
+						&ttf->time_to_full_calc_work, HZ*0);
 		}
 	}
 	prev_chg_present = chg_present;
@@ -1411,8 +1421,10 @@ static int lge_time_to_full_probe(struct platform_device *pdev)
 	INIT_DELAYED_WORK(&ttf->time_to_full_calc_work, lge_time_to_full_calc_work);
 	INIT_DELAYED_WORK(&ttf->battery_profile_read_work, lge_battery_profile_read_work);
 
-	schedule_delayed_work(&ttf->time_to_full_report_work, TIME_TO_FULL_REPORT_PERIOD);
-	schedule_delayed_work(&ttf->battery_profile_read_work, BATT_PROFILE_READ_TIME);
+	queue_delayed_work(system_power_efficient_wq,
+			&ttf->time_to_full_report_work, TIME_TO_FULL_REPORT_PERIOD);
+	queue_delayed_work(system_power_efficient_wq,
+			&ttf->battery_profile_read_work, BATT_PROFILE_READ_TIME);
 
 	pr_ttf(PR_STATUS,"Done\n");
 	return 0;
