@@ -5668,6 +5668,9 @@ CONFIG_WLAN_FEATURE_FILS=y
 #
 CONFIG_BOEFFLA_WL_BLOCKER=y
 
+# PM / Sleep: Use workqueue for user space wakeup sources garbage collector
+CONFIG_PM_WAKELOCKS_GC=y
+
 # powerefficient workqueues
 CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y # needs more commits
 
