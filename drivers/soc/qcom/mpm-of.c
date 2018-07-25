@@ -524,7 +524,8 @@ static void check_work(struct work_struct *work)
 	pr_err("allow = %d -------------\n", allow);
 
 	if (msm_mpm_debug_mask & LGE_MPM_DEBUG_POLL_IRQ_GPIO)
-		schedule_delayed_work(&check_w, msecs_to_jiffies(3000));
+		queue_delayed_work(system_power_efficient_wq,
+				&check_w, msecs_to_jiffies(3000));
 	else
 		pr_err("%s : stop LGE_MPM_DEBUG_POLL_IRQ_GPIO\n",
 				__func__);
@@ -542,7 +543,8 @@ static int __ref mpm_debug_set(const char *val,
 			__func__, old, msm_mpm_debug_mask);
 
 	if (msm_mpm_debug_mask & LGE_MPM_DEBUG_POLL_IRQ_GPIO)
-		schedule_delayed_work(&check_w,
+		queue_delayed_work(system_power_efficient_wq,
+				&check_w,
 				msecs_to_jiffies(10000));
 	return ret;
 }
