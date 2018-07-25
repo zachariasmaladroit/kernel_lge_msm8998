@@ -346,7 +346,8 @@ static void smd_tty_notify(void *priv, unsigned event)
 			tasklet_hi_schedule(&info->tty_tsklt);
 
 			if (tty->index == LOOPBACK_IDX)
-				schedule_delayed_work(&loopback_work,
+				queue_delayed_work(system_power_efficient_wq,
+						&loopback_work,
 						msecs_to_jiffies(1000));
 		}
 		tty_kref_put(tty);
@@ -776,7 +777,8 @@ static void loopback_probe_worker(struct work_struct *work)
 {
 	/* wait for modem to restart before requesting loopback server */
 	if (!is_modem_smsm_inited())
-		schedule_delayed_work(&loopback_work, msecs_to_jiffies(1000));
+		queue_delayed_work(system_power_efficient_wq,
+				&loopback_work, msecs_to_jiffies(1000));
 	else
 		smsm_change_state(SMSM_APPS_STATE,
 			  0, SMSM_SMD_LOOPBACK);
