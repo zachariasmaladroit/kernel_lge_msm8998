@@ -346,11 +346,13 @@ static int restricted_charging_find_current(int reason, int status)
 						|| delayed_work_pending(&the_cc->uhd_record_disable_work)) {
 					cancel_delayed_work_sync(&the_cc->uhd_record_disable_work);
 				} else {
-					schedule_delayed_work(&the_cc->uhd_record_work, DELAY_FOR_UHD_RECORD_PERIOD);
+					queue_delayed_work(system_power_efficient_wq,
+							&the_cc->uhd_record_work, DELAY_FOR_UHD_RECORD_PERIOD);
 				}
 			} else {
 				the_cc->uhd_record = 0;
-				schedule_delayed_work(&the_cc->uhd_record_disable_work, DELAY_FOR_UHD_RECORD_DISABLE_PERIOD);
+				queue_delayed_work(system_power_efficient_wq,
+						&the_cc->uhd_record_disable_work, DELAY_FOR_UHD_RECORD_DISABLE_PERIOD);
 			}
 			chg_curr = RESTRICTED_CHG_CURRENT_500;
 			break;
@@ -457,7 +459,8 @@ static void lge_monitor_batt_temp_work(struct work_struct *work){
 	cc->usb_psy = power_supply_get_by_name("usb");
 	if(!cc->usb_psy){
 		pr_err("usb power_supply not found deferring probe\n");
-		schedule_delayed_work(&cc->battemp_work,
+		queue_delayed_work(system_power_efficient_wq,
+			&cc->battemp_work,
 			MONITOR_BATTEMP_POLLING_PERIOD);
 		return;
 	}
@@ -465,7 +468,8 @@ static void lge_monitor_batt_temp_work(struct work_struct *work){
 	cc->batt_psy = power_supply_get_by_name("battery");
 	if(!cc->batt_psy){
 		pr_err("battery power_supply not found deferring probe\n");
-		schedule_delayed_work(&cc->battemp_work,
+		queue_delayed_work(system_power_efficient_wq,
+			&cc->battemp_work,
 			MONITOR_BATTEMP_POLLING_PERIOD);
 		return;
 	}
@@ -473,7 +477,8 @@ static void lge_monitor_batt_temp_work(struct work_struct *work){
 	cc->lge_cd_lpc = lge_power_get_by_name("lge_cable_detect");
 	if (!cc->lge_cd_lpc) {
 		pr_err("lge_cd_lpc is not yet ready\n");
-		schedule_delayed_work(&cc->battemp_work,
+		queue_delayed_work(system_power_efficient_wq,
+			&cc->battemp_work,
 			MONITOR_BATTEMP_POLLING_PERIOD);
 		return;
 	}
@@ -633,19 +638,24 @@ static void lge_monitor_batt_temp_work(struct work_struct *work){
 			ret.intval, req.batt_volt/1000);
 
 	if (cc->batt_temp <= 30)
-		schedule_delayed_work(&cc->battemp_work,
+		queue_delayed_work(system_power_efficient_wq,
+				&cc->battemp_work,
 				MONITOR_BATTEMP_POLLING_PERIOD / 6);
 	else if (cc->batt_temp > 30 && cc->batt_temp <= 120)
-		schedule_delayed_work(&cc->battemp_work,
+		queue_delayed_work(system_power_efficient_wq,
+				&cc->battemp_work,
 				MONITOR_BATTEMP_POLLING_PERIOD / 3);
 	else if (cc->batt_temp >= 430 && cc->batt_temp <= 550)
-		schedule_delayed_work(&cc->battemp_work,
+		queue_delayed_work(system_power_efficient_wq,
+				&cc->battemp_work,
 				MONITOR_BATTEMP_POLLING_PERIOD / 3);
 	else if (cc->batt_temp >= 550 && cc->batt_temp <= 590)
-		schedule_delayed_work(&cc->battemp_work,
+		queue_delayed_work(system_power_efficient_wq,
+				&cc->battemp_work,
 				MONITOR_BATTEMP_POLLING_PERIOD / 6);
 	else
-		schedule_delayed_work(&cc->battemp_work,
+		queue_delayed_work(system_power_efficient_wq,
+				&cc->battemp_work,
 				MONITOR_BATTEMP_POLLING_PERIOD);
 }
 
@@ -668,7 +678,8 @@ static int lg_cc_get_btm_state(struct lge_charging_controller *cc) {
 static void lg_cc_start_battemp_work(struct lge_charging_controller *cc,
 		int delay) {
 	pr_debug("start_battemp_work~!!\n");
-	schedule_delayed_work(&cc->battemp_work, (delay * HZ));
+	queue_delayed_work(system_power_efficient_wq,
+			&cc->battemp_work, (delay * HZ));
 }
 
 static void lg_cc_stop_battemp_work(struct lge_charging_controller *cc) {
@@ -722,7 +733,8 @@ static int lge_power_lge_cc_set_property(struct lge_power *lpc,
 			if (cc->otp_enable != val->intval) {
 				cc->otp_enable = val->intval;
 				cancel_delayed_work_sync(&cc->battemp_work);
-				schedule_delayed_work(&cc->battemp_work, 0);
+				queue_delayed_work(system_power_efficient_wq,
+						&cc->battemp_work, 0);
 			}
 			break;
 		case LGE_POWER_PROP_HVDCP_FAKE_MODE:
@@ -979,7 +991,8 @@ static int lge_charging_controller_resume(struct device *dev)
 	}
 
 	cancel_delayed_work_sync(&cc->battemp_work);
-	schedule_delayed_work(&cc->battemp_work, 0);
+	queue_delayed_work(system_power_efficient_wq,
+			&cc->battemp_work, 0);
 
 	return 0;
 }
