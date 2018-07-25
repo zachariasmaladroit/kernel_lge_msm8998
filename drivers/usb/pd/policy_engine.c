@@ -3007,13 +3007,15 @@ static int psy_changed(struct notifier_block *nb, unsigned long evt, void *ptr)
 					pd->in_pr_swap, pd->current_state);
 			if (!pd->vbus_present && typec_mode == POWER_SUPPLY_TYPEC_NONE && !pd->in_pr_swap &&
 				!(pd->current_state == PE_ERROR_RECOVERY || pd->current_state == PE_FORCED_PR_SWAP)) {
-				schedule_delayed_work(&pd->init_sbu_adc_work, (1500*HZ/1000));
+				queue_delayed_work(system_power_efficient_wq,
+						&pd->init_sbu_adc_work, (1500*HZ/1000));
 			} else {
 				usbpd_dbg(&pd->dev, "[moisture] sbu switch off\n");
 				gpiod_direction_output(pd->sbu_sel, 0);
 				if (lge_get_boot_mode() == LGE_BOOT_MODE_CHARGERLOGO &&
 						!vbus_present && pd->vbus_present && pd->current_dr != DR_DFP) {
-					schedule_delayed_work(&pd->sbu_ov_adc_work, msecs_to_jiffies(1000));
+					queue_delayed_work(system_power_efficient_wq,
+							&pd->sbu_ov_adc_work, msecs_to_jiffies(1000));
 					vbus_present = pd->vbus_present;
 				}
 			}
@@ -3028,7 +3030,8 @@ static int psy_changed(struct notifier_block *nb, unsigned long evt, void *ptr)
 			pd->edge_lock = true;
 			if (!pd->vbus_present && typec_mode == POWER_SUPPLY_TYPEC_NONE && !pd->in_pr_swap &&
 				!(pd->current_state == PE_ERROR_RECOVERY || pd->current_state == PE_FORCED_PR_SWAP))
-				schedule_delayed_work(&pd->init_edge_adc_work, (1500*HZ/1000));
+				queue_delayed_work(system_power_efficient_wq,
+						&pd->init_edge_adc_work, (1500*HZ/1000));
 		}
 
 		if (pd->edge_sel && pd->edge_moisture && !pd->vbus_present) {
@@ -3037,7 +3040,8 @@ static int psy_changed(struct notifier_block *nb, unsigned long evt, void *ptr)
 				pm_relax(&pd->dev);
 			}
 			cancel_delayed_work(&pd->edge_adc_work);
-			schedule_delayed_work(&pd->edge_adc_work, 0);
+			queue_delayed_work(system_power_efficient_wq,
+					&pd->edge_adc_work, 0);
 		}
 		if (pd->sbu_sel && pd->sbu_moisture && !pd->vbus_present) {
 			if (pd->sbu_run_work) {
@@ -3045,7 +3049,8 @@ static int psy_changed(struct notifier_block *nb, unsigned long evt, void *ptr)
 				pm_relax(&pd->dev);
 			}
 			cancel_delayed_work(&pd->sbu_adc_work);
-			schedule_delayed_work(&pd->sbu_adc_work, 0);
+			queue_delayed_work(system_power_efficient_wq,
+					&pd->sbu_adc_work, 0);
 		}
 	}
 
@@ -3629,10 +3634,12 @@ static int usbpd_dr_set_property(struct dual_role_phy_instance *dual_role,
 		} else if (*val == DUAL_ROLE_PROP_MOISTURE_EN_ENABLE){
 			usbpd_info(&pd->dev, "[moisture] %s: enable moisture detection\n", __func__);
 			if (pd->edge_sel) {
-				schedule_delayed_work(&pd->init_edge_adc_work, 0);
+				queue_delayed_work(system_power_efficient_wq,
+						&pd->init_edge_adc_work, 0);
 			}
 			if (pd->sbu_sel) {
-				schedule_delayed_work(&pd->init_sbu_adc_work, 0);
+				queue_delayed_work(system_power_efficient_wq,
+						&pd->init_sbu_adc_work, 0);
 			}
 		}
 		mutex_unlock(&pd->moisture_lock);
@@ -3683,9 +3690,11 @@ static int usbpd_dr_set_property(struct dual_role_phy_instance *dual_role,
 				pd->edge_tm_state = ADC_TM_LOW_STATE;
 			}
 			if (pd->sbu_sel)
-				schedule_delayed_work(&pd->sbu_adc_work, msecs_to_jiffies(0));
+				queue_delayed_work(system_power_efficient_wq,
+						&pd->sbu_adc_work, msecs_to_jiffies(0));
 			if (pd->edge_sel)
-				schedule_delayed_work(&pd->edge_adc_work, msecs_to_jiffies(0));
+				queue_delayed_work(system_power_efficient_wq,
+						&pd->edge_adc_work, msecs_to_jiffies(0));
 
 		} else if (*val == DUAL_ROLE_PROP_MOISTURE_FALSE) {
 			usbpd_info(&pd->dev, "[moisture] %s: set moisture false\n", __func__);
@@ -4288,7 +4297,8 @@ static enum hrtimer_restart pd_edge_timeout(struct hrtimer *timer)
 
 	usbpd_dbg(&pd->dev, "timeout");
 	cancel_delayed_work(&pd->edge_adc_work);
-	schedule_delayed_work(&pd->edge_adc_work, 0);
+	queue_delayed_work(system_power_efficient_wq,
+			&pd->edge_adc_work, 0);
 
 	return HRTIMER_NORESTART;
 }
@@ -4299,7 +4309,8 @@ static enum hrtimer_restart pd_sbu_timeout(struct hrtimer *timer)
 
 	usbpd_dbg(&pd->dev, "timeout");
 	cancel_delayed_work(&pd->sbu_adc_work);
-	schedule_delayed_work(&pd->sbu_adc_work, 0);
+	queue_delayed_work(system_power_efficient_wq,
+			&pd->sbu_adc_work, 0);
 
 	return HRTIMER_NORESTART;
 }
@@ -4490,7 +4501,8 @@ static void pd_edge_adc_work(struct work_struct *w)
 	}
 
 	if (work)
-		schedule_delayed_work(&pd->edge_adc_work, delay);
+		queue_delayed_work(system_power_efficient_wq,
+				&pd->edge_adc_work, delay);
 	else {
 		pd->edge_run_work = false;
 		msleep(50);
@@ -4530,7 +4542,8 @@ static void pd_edge_notification(enum qpnp_tm_state state, void *ctx)
 	} else {
 		pd->edge_tm_state = ADC_TM_LOW_STATE;
 	}
-	schedule_delayed_work(&pd->edge_adc_work, msecs_to_jiffies(1000));
+	queue_delayed_work(system_power_efficient_wq,
+			&pd->edge_adc_work, msecs_to_jiffies(1000));
 }
 
 static void pd_sbu_ov_adc_work(struct work_struct *w)
@@ -4563,9 +4576,11 @@ static void pd_sbu_ov_adc_work(struct work_struct *w)
 			pd->sbu_lock = false;
 			pd->sbu_adc_state = ADC_STATE_WET;
 			pd->sbu_tm_state = ADC_TM_LOW_STATE;
-			schedule_delayed_work(&pd->sbu_adc_work, msecs_to_jiffies(0));
+			queue_delayed_work(system_power_efficient_wq,
+					&pd->sbu_adc_work, msecs_to_jiffies(0));
 		} else if (++count < 10) {
-			schedule_delayed_work(&pd->sbu_ov_adc_work, msecs_to_jiffies(1000));
+			queue_delayed_work(system_power_efficient_wq,
+					&pd->sbu_ov_adc_work, msecs_to_jiffies(1000));
 		} else {
 			count = 0;
 			usbpd_info(&pd->dev, "[moisture] %s: exceed count, stop\n", __func__);
@@ -4827,7 +4842,8 @@ static void pd_sbu_adc_work(struct work_struct *w)
 						__func__);
 				pd->edge_adc_state = ADC_STATE_WET;
 				cancel_delayed_work(&pd->edge_adc_work);
-				schedule_delayed_work(&pd->edge_adc_work, 0);
+				queue_delayed_work(system_power_efficient_wq,
+						&pd->edge_adc_work, 0);
 			}
 		}
 		break;
@@ -4836,7 +4852,8 @@ static void pd_sbu_adc_work(struct work_struct *w)
 	}
 
 	if (work)
-		schedule_delayed_work(&pd->sbu_adc_work, delay);
+		queue_delayed_work(system_power_efficient_wq,
+				&pd->sbu_adc_work, delay);
 	else {
 		pd->sbu_run_work = false;
 		msleep(50);
@@ -4876,7 +4893,8 @@ static void pd_sbu_notification(enum qpnp_tm_state state, void *ctx)
 	} else {
 		pd->sbu_tm_state = ADC_TM_LOW_STATE;
 	}
-	schedule_delayed_work(&pd->sbu_adc_work, msecs_to_jiffies(1000));
+	queue_delayed_work(system_power_efficient_wq,
+			&pd->sbu_adc_work, msecs_to_jiffies(1000));
 }
 
 static void pd_init_edge_adc_work(struct work_struct *w)
@@ -4901,8 +4919,9 @@ static void pd_init_edge_adc_work(struct work_struct *w)
 			 if (PTR_ERR(pd->adc_tm_dev) == -EPROBE_DEFER) {
 				 usbpd_err(&pd->dev, "qpnp vadc not yet "
 					"probed.\n");
-				 schedule_delayed_work(&pd->init_edge_adc_work,
-						 msecs_to_jiffies(200));
+				 queue_delayed_work(system_power_efficient_wq,
+						&pd->init_edge_adc_work,
+						msecs_to_jiffies(200));
 				 goto out;
 			 }
 		 }
@@ -4913,8 +4932,9 @@ static void pd_init_edge_adc_work(struct work_struct *w)
 			 if (PTR_ERR(pd->vadc_dev) == -EPROBE_DEFER) {
 				 usbpd_err(&pd->dev, "qpnp vadc not yet "
 					"probed.\n");
-				 schedule_delayed_work(&pd->init_edge_adc_work,
-						 msecs_to_jiffies(200));
+				 queue_delayed_work(system_power_efficient_wq,
+						&pd->init_edge_adc_work,
+						msecs_to_jiffies(200));
 				 goto out;
 			 }
 		 }
@@ -4968,8 +4988,9 @@ static void pd_init_sbu_adc_work(struct work_struct *w)
 			 if (PTR_ERR(pd->adc_tm_dev) == -EPROBE_DEFER) {
 				 usbpd_err(&pd->dev, "qpnp vadc not yet "
 					"probed.\n");
-				 schedule_delayed_work(&pd->init_sbu_adc_work,
-						 msecs_to_jiffies(200));
+				 queue_delayed_work(system_power_efficient_wq,
+						&pd->init_sbu_adc_work,
+						msecs_to_jiffies(200));
 				 goto out;
 			 }
 		 }
@@ -4980,8 +5001,9 @@ static void pd_init_sbu_adc_work(struct work_struct *w)
 			 if (PTR_ERR(pd->vadc_dev) == -EPROBE_DEFER) {
 				 usbpd_err(&pd->dev, "qpnp vadc not yet "
 					"probed.\n");
-				 schedule_delayed_work(&pd->init_sbu_adc_work,
-						 msecs_to_jiffies(200));
+				queue_delayed_work(system_power_efficient_wq,
+						&pd->init_sbu_adc_work,
+						msecs_to_jiffies(200));
 				 goto out;
 			 }
 		 }
@@ -5335,8 +5357,10 @@ struct usbpd *usbpd_create(struct device *parent)
 #endif
 #endif
 #ifdef CONFIG_LGE_USB_MOISTURE_DETECTION
-	schedule_delayed_work(&pd->init_edge_adc_work, 0);
-	schedule_delayed_work(&pd->init_sbu_adc_work, 0);
+	queue_delayed_work(system_power_efficient_wq,
+			&pd->init_edge_adc_work, 0);
+	queue_delayed_work(system_power_efficient_wq,
+			&pd->init_sbu_adc_work, 0);
 	pd->prop_moisture_en = DUAL_ROLE_PROP_MOISTURE_EN_ENABLE;
 #ifdef CONFIG_LGE_USB_COMPLIANCE_TEST
 	pd->prop_moisture_en = DUAL_ROLE_PROP_MOISTURE_EN_DISABLE;
