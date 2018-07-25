@@ -804,7 +804,8 @@ static ssize_t therm_dim_set(struct device *dev,
 	cancel_delayed_work_sync(&lge_ctrl_pdata->bc_dim_work);
 	lge_bc_dim_set(ctrl, bc_dim_en, bc_dim_f_cnt);
 	mdss_fb_set_bl_brightness(&backlight_led, BC_DIM_BRIGHTNESS_THERM);
-	schedule_delayed_work(&lge_ctrl_pdata->bc_dim_work, BC_DIM_TIME);
+	queue_delayed_work(system_power_efficient_wq,
+			&lge_ctrl_pdata->bc_dim_work, BC_DIM_TIME);
 
 	mutex_unlock(&mfd_primary_base->mdss_sysfs_lock);
 
@@ -980,7 +981,8 @@ static ssize_t video_enhancement_set(struct device *dev,
 	cancel_delayed_work_sync(&lge_ctrl_pdata->bc_dim_work);
 	lge_bc_dim_set(ctrl, BC_DIM_ON, BC_DIM_FRAMES_VE);
 	mdss_fb_set_bl_brightness(&backlight_led, backlight_led.brightness);
-	schedule_delayed_work(&lge_ctrl_pdata->bc_dim_work, BC_DIM_TIME);
+	queue_delayed_work(system_power_efficient_wq,
+			&lge_ctrl_pdata->bc_dim_work, BC_DIM_TIME);
 
 	pr_info("VE Mode bl_lvl : %d, BC DIM: 0x%x, BC : 0x%x\n",
 			backlight_led.brightness,
