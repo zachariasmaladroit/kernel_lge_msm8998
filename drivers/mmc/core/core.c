@@ -4651,8 +4651,8 @@ int mmc_pm_notify(struct notifier_block *notify_block,
 
 		spin_lock_irqsave(&host->lock, flags);
 		host->rescan_disable = 0;
-		if (host->ops->get_cd)
-			present = host->ops->get_cd(host);
+		if (mmc_card_is_removable(host))
+			present = !!mmc_gpio_get_cd(host);
 
 #ifdef CONFIG_MMC_BLOCK_DEFERRED_RESUME_WAKE_UP
 		if (!host->trigger_card_event && mmc_bus_manual_resume(host)) {
