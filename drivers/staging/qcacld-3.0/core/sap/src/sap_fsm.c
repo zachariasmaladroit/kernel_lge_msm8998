@@ -1870,8 +1870,8 @@ static void sap_mark_dfs_channels(ptSapContext sapContext, uint8_t *channels,
 	nRegDomainDfsChannels =
 		pMac->sap.SapDfsInfo.numCurrentRegDomainDfsChannels;
 
-	for (i, j = 0; i < numChannels,
-		 j <= nRegDomainDfsChannels; i++, j++) {
+	for (i = 0, j = 0; i < numChannels &&
+		j <= nRegDomainDfsChannels; i++, j++) {
 		if (!(psapDfsChannelNolList[j].dfs_channel_number ==
 				channels[i]))
 			continue;
