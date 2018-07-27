@@ -5486,8 +5486,8 @@ QDF_STATUS wma_start_extscan(tp_wma_handle wma,
 	params->configuration_flags = pstart->configuration_flags;
 	params->extscan_adaptive_dwell_mode =
 			pstart->extscan_adaptive_dwell_mode;
-	for (i = 0, j = 0; i < WMI_WLAN_EXTSCAN_MAX_BUCKETS,
-		 j < WLAN_EXTSCAN_MAX_CHANNELS; i++, j++) {
+	for (i = 0, j = 0; i < WMI_WLAN_EXTSCAN_MAX_BUCKETS &&
+		j < WLAN_EXTSCAN_MAX_CHANNELS; i++, j++) {
 		params->buckets[i].bucket = pstart->buckets[i].bucket;
 		params->buckets[i].band =
 			(enum wmi_wifi_band) pstart->buckets[i].band;
