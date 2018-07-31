@@ -135,7 +135,7 @@ enum {
 	LGE_MPM_DEBUG_POLL_IRQ_GPIO = BIT(7),
 };
 
-static int msm_mpm_debug_mask = 1;
+static int msm_mpm_debug_mask = 0;
 #endif
 
 enum mpm_state {
