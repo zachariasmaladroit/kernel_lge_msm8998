@@ -409,6 +409,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fmodulo-sched -fmodulo-sched-allow-regmoves \
 		   -fipa-reference -fipa-icf -fdevirtualize -fdevirtualize-speculatively -flra-remat -fipa-ra \
 		   -fivopts \
+		   -flive-range-shrinkage \
 		   -march=armv8-a+crc+crypto -mtune=cortex-a73.cortex-a53 \
 		   -std=gnu89 $(call cc-option,-fno-PIE)
 
