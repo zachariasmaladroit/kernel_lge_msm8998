@@ -5738,11 +5738,11 @@ CONFIG_KALLSYMS_ALL=y # needed on Stock for successful booting
 CONFIG_DEBUG_INFO_REDUCED=y
 
 # 1000/300/100 Hz ticks
-CONFIG_HZ_100=y
+# CONFIG_HZ_100 is not set
 # CONFIG_HZ_250 is not set
 # CONFIG_HZ_300 is not set
-# CONFIG_HZ_1000 is not set
-CONFIG_HZ=100
+CONFIG_HZ_1000=y
+CONFIG_HZ=1000
 
 #
 # Timers subsystem
