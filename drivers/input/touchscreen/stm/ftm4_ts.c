@@ -89,7 +89,6 @@ static int fts_suspend(struct i2c_client *client, pm_message_t mesg);
 static int fts_resume(struct i2c_client *client);
 
 #if defined(CONFIG_FB)
-static void touch_pm_worker(struct work_struct *work);
 static int touch_fb_notifier_callback(struct notifier_block *self,
 		unsigned long event, void *data);
 #endif
@@ -1631,8 +1630,7 @@ static int fts_probe(struct i2c_client *client, const struct i2c_device_id *idp)
 		__func__, info->irq);
 #endif
 
-#ifdef CONFIG_FB
-	INIT_WORK(&info->pm_work, touch_pm_worker);
+#if defined(CONFIG_FB)
 	info->fb_notif.notifier_call = touch_fb_notifier_callback;
 	retval = fb_register_client(&info->fb_notif);
 #endif
@@ -2116,16 +2114,6 @@ static int fts_resume(struct i2c_client *client)
 }
 
 #if defined(CONFIG_FB)
-static void touch_pm_worker(struct work_struct *work)
-{
-	struct fts_ts_info *info = container_of(work, typeof(*info), pm_work);
-
-	if (info->screen_off)
-		fts_suspend(info->client, PMSG_SUSPEND);
-	else
-		fts_resume(info->client);
-}
-
 static int touch_fb_notifier_callback(struct notifier_block *self,
 		unsigned long event, void *data)
 {
@@ -2136,8 +2124,10 @@ static int touch_fb_notifier_callback(struct notifier_block *self,
 	if (ev && ev->data && event == FB_EVENT_BLANK) {
 		int *blank = (int *)ev->data;
 
-		info->screen_off = *blank != FB_BLANK_UNBLANK;
-		schedule_work(&info->pm_work);
+		if (*blank == FB_BLANK_UNBLANK)
+			fts_resume(info->client);
+		else if (*blank == FB_BLANK_POWERDOWN)
+			fts_suspend(info->client, PMSG_SUSPEND);
 	}
 
 	return 0;

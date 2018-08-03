@@ -313,8 +313,6 @@ struct fts_ts_info {
 	bool enabled;
 #if defined(CONFIG_FB)
 	struct notifier_block fb_notif;
-	struct work_struct pm_work;
-	bool screen_off;
 #endif
 #ifdef FEATURE_FTS_PRODUCTION_CODE
 	struct device *pdc_dev_ts;
