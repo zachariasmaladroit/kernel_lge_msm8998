@@ -5653,6 +5653,14 @@ CONFIG_PM_WAKELOCKS_GC=y
 # powerefficient workqueues
 CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y # needs more commits
 
+# Jump labels:
+# the kernel will compile trace point locations with just a nop instruction.
+# When trace points are enabled, the nop will be converted to a jump
+# to the trace function. This technique lowers overhead and stress
+# on the branch prediction of the processor.
+#
+CONFIG_JUMP_LABEL=y
+
 # add additional drivers that might be needed
 # CONFIG_RELAY is not set
 
