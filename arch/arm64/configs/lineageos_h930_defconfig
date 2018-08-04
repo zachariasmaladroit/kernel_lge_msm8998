@@ -5713,6 +5713,7 @@ CONFIG_WIL6210_PLATFORM_MSM=y
 # CONFIG_BLK_DEV_MD is not set
 # CONFIG_MD_LINEAR is not set
 # CONFIG_V4L_PLATFORM_DRIVERS # eval
+# CONFIG_MSM_SMP2P_TEST is not set
 
 # disable debug, logs stuff
 CONFIG_LGE_PM_DEBUG=y
