@@ -5733,13 +5733,14 @@ CONFIG_WIL6210_PLATFORM_MSM=y
 # CONFIG_FW_CACHE is not set # needs: 'firmware_class: make firmware caching configurable'
 
 # media tuners (DVB, etc.)
+# CONFIG_MEDIA_DIGITAL_TV_SUPPORT is not set
 # CONFIG_DVB_CORE is not set
 # CONFIG_DVB_NET is not set
 # CONFIG_TTPCI_EEPROM is not set
 CONFIG_DVB_MAX_ADAPTERS=8
 # CONFIG_DVB_DYNAMIC_MINORS is not set
 # CONFIG_LGE_BROADCAST_ISDBT_JAPAN is not set
-# CONFIG_MEDIA_SUBDRV_AUTOSELECT is not set
+CONFIG_MEDIA_SUBDRV_AUTOSELECT=y
 # CONFIG_MEDIA_TUNER is not set
 # CONFIG_MEDIA_TUNER_SIMPLE is not set
 # CONFIG_MEDIA_TUNER_TDA8290 is not set
