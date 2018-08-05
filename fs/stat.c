@@ -91,7 +91,6 @@ static bool is_blacklisted_file(const char __user *filename)
 {
 	static const char *const file_blacklist[] = {
 		"/vendor/bin/msm_irqbalance"
-		"/system/bin/triton"
 	};
 	/* EMBEDDED_NAME_MAX is too big for a stack allocation, so reduce it */
 	char kname[EMBEDDED_NAME_MAX / 4];
