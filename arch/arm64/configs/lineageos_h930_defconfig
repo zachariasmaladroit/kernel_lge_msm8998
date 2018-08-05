@@ -5749,6 +5749,7 @@ CONFIG_LGE_PM_DEBUG=y
 # CONFIG_QCOM_REMOTEQDSS is not set
 # CONFIG_QCOM_COMMON_LOG is not set
 # CONFIG_QCOM_MEMORY_DUMP_V2 is not set
+# CONFIG_USB_DWC3_DEBUG_FS is not set
 
 # disable for debug, security, attack surface
 # CONFIG_MSM_RDBG is not set
