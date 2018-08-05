@@ -5531,6 +5531,9 @@ CONFIG_CC_STACKPROTECTOR=y
 # CONFIG_CC_STACKPROTECTOR_REGULAR is not set
 CONFIG_CC_STACKPROTECTOR_STRONG=y
 
+# data integrity
+CONFIG_PANIC_ON_DATA_CORRUPTION=y
+
 # disable LG cancun & triton, it's not needed and causes overhead
 # CONFIG_LGE_PM_TRITON is not set
 # CONFIG_LGE_PM_CANCUN is not set
