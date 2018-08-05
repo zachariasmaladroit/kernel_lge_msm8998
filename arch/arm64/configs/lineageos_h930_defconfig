@@ -5796,6 +5796,8 @@ CONFIG_DEFAULT_IOSCHED="noop"
 # CONFIG_SCSI_MQ_DEFAULT is not set # broken on 4.4 Android ?
 # CONFIG_MANDATORY_FILE_LOCKING is not set
 
+CONFIG_CRYPTO_PCRYPT=y
+
 # swap, hswap, zram, etc.
 CONFIG_KSWAPD_CPU_AFFINITY_MASK="f"
 
