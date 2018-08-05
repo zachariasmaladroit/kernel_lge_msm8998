@@ -477,7 +477,6 @@ CONFIG_ARMV8_DEPRECATED=y
 CONFIG_SWP_EMULATION=y
 CONFIG_CP15_BARRIER_EMULATION=y
 CONFIG_SETEND_EMULATION=y
-CONFIG_ARM64_SW_TTBR0_PAN=y
 
 #
 # ARMv8.1 architectural features
@@ -5643,6 +5642,9 @@ CONFIG_WLAN_FEATURE_FILS=y
 # qcacld-3.0 debug stuff
 # CONFIG_FEATURE_TSO_DEBUG is not set
 # CONFIG_WLAN_NAPI_DEBUG is not set
+
+# TTBR0 PAN emulation
+# CONFIG_ARM64_SW_TTBR0_PAN is not set
 
 # disable workarounds NOT applicable to our hardware (modified later revision cortex A53, A73)
 
