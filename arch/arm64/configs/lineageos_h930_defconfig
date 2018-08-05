@@ -5732,6 +5732,26 @@ CONFIG_WIL6210_PLATFORM_MSM=y
 # CONFIG_MSM_SMP2P_TEST is not set
 # CONFIG_FW_CACHE is not set # needs: 'firmware_class: make firmware caching configurable'
 
+# media tuners (DVB, etc.)
+# CONFIG_DVB_CORE is not set
+# CONFIG_DVB_NET is not set
+# CONFIG_TTPCI_EEPROM is not set
+CONFIG_DVB_MAX_ADAPTERS=8
+# CONFIG_DVB_DYNAMIC_MINORS is not set
+# CONFIG_LGE_BROADCAST_ISDBT_JAPAN is not set
+# CONFIG_MEDIA_SUBDRV_AUTOSELECT is not set
+# CONFIG_MEDIA_TUNER is not set
+# CONFIG_MEDIA_TUNER_SIMPLE is not set
+# CONFIG_MEDIA_TUNER_TDA8290 is not set
+# CONFIG_MEDIA_TUNER_TDA827X is not set
+# CONFIG_MEDIA_TUNER_TDA18271 is not set
+# CONFIG_MEDIA_TUNER_TDA9887 is not set
+# CONFIG_MEDIA_TUNER_MT20XX is not set
+# CONFIG_MEDIA_TUNER_XC2028 is not set
+# CONFIG_MEDIA_TUNER_XC5000 is not set
+# CONFIG_MEDIA_TUNER_XC4000 is not set
+# CONFIG_MEDIA_TUNER_MC44S803 is not set
+
 # disable debug, logs stuff
 CONFIG_LGE_PM_DEBUG=y
 # CONFIG_MSM_SDE_ROTATOR_EVTLOG_DEBUG is not set
