@@ -5579,7 +5579,6 @@ static QDF_STATUS cds_modify_pcl_based_on_enabled_channels(
 			weight_list_org[pcl_len++] = weight_list_org[i];
 		}
 	}
-	*pcl_len_org = pcl_len;
 
 	return QDF_STATUS_SUCCESS;
 }
@@ -10133,7 +10132,6 @@ QDF_STATUS cds_modify_sap_pcl_based_on_mandatory_channel(uint8_t *pcl_list_org,
 			weight_list_org[pcl_len++] = weight_list_org[i];
 		}
 	}
-	*pcl_len_org = pcl_len;
 
 	return QDF_STATUS_SUCCESS;
 }
