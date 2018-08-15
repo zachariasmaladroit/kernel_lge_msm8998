@@ -488,17 +488,17 @@ static int sectors_dirty_init_fn(struct btree_op *_op, struct btree *b,
 	return MAP_CONTINUE;
 }
 
-void bch_sectors_dirty_init(struct bcache_device *d)
+void bch_sectors_dirty_init(struct cached_dev *dc)
 {
 	struct sectors_dirty_init op;
 
 	bch_btree_op_init(&op.op, -1);
-	op.inode = d->id;
+	op.inode = dc->disk.id;
 
-	bch_btree_map_keys(&op.op, d->c, &KEY(op.inode, 0, 0),
+	bch_btree_map_keys(&op.op, dc->disk.c, &KEY(op.inode, 0, 0),
 			   sectors_dirty_init_fn, 0);
 
-	d->sectors_dirty_last = bcache_dev_sectors_dirty(d);
+	dc->disk.sectors_dirty_last = bcache_dev_sectors_dirty(&dc->disk);
 }
 
 void bch_cached_dev_writeback_init(struct cached_dev *dc)
