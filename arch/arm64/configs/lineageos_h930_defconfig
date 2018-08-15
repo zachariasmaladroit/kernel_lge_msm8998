@@ -5721,10 +5721,10 @@ CONFIG_WIL6210_PLATFORM_MSM=y
 # CONFIG_QCOM_DCC is not set # QCOM Data Capture and Compare enigne support
 # CONFIG_MSM_BOOT_STATS is not set
 # CONFIG_QCOM_CPUSS_DUMP is not set
-# CONFIG_BLK_DEV_MD is not set
-# CONFIG_MD_LINEAR is not set
+CONFIG_BLK_DEV_MD=y
+CONFIG_MD_LINEAR=y # "linear harddrive mode", "JBOD"
 # CONFIG_V4L_PLATFORM_DRIVERS # eval
-# CONFIG_MSM_SMP2P_TEST is not set
+CONFIG_MSM_SMP2P_TEST=y
 # CONFIG_FW_CACHE is not set # needs: 'firmware_class: make firmware caching configurable'
 
 # media tuners (DVB, etc.)
