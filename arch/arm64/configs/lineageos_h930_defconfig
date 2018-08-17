@@ -5747,12 +5747,12 @@ CONFIG_STRIP_ASM_SYMS=y
 CONFIG_PROFILING=y
 # CONFIG_TRACEPOINTS is not set # Place an empty function call at each tracepoint site. Can be dynamically changed for a probe function.
 
-# CONFIG_TRACING is not set # =y
-# CONFIG_GENERIC_TRACER is not set # =y
-# CONFIG_TRACING_SUPPORT is not set # =y
-# CONFIG_FTRACE is not set  # =y
-# CONFIG_FUNCTION_TRACER is not set # =y
-# CONFIG_FUNCTION_GRAPH_TRACER is not set # =y
+CONFIG_TRACING=y # =y
+CONFIG_GENERIC_TRACER=y # =y
+CONFIG_TRACING_SUPPORT=y # =y
+CONFIG_FTRACE=y # =y
+CONFIG_FUNCTION_TRACER=y # =y
+CONFIG_FUNCTION_GRAPH_TRACER=y # =y
 # CONFIG_IRQSOFF_TRACER is not set
 # CONFIG_PREEMPT_TRACER is not set
 # CONFIG_SCHED_TRACER is not set
@@ -5767,7 +5767,7 @@ CONFIG_BRANCH_PROFILE_NONE=y # keep =y
 CONFIG_DYNAMIC_FTRACE=y # keep =y
 # CONFIG_FUNCTION_PROFILER is not set
 # CONFIG_CPU_FREQ_SWITCH_PROFILER is not set # =y
-# CONFIG_FTRACE_MCOUNT_RECORD is not set # =y
+CONFIG_FTRACE_MCOUNT_RECORD=y # =y , needed by msm/ipa ? (/home/padma.r/LGH930/android/kernel/msm-4.4)
 # CONFIG_FTRACE_STARTUP_TEST is not set
 # CONFIG_TRACEPOINT_BENCHMARK is not set
 # CONFIG_RING_BUFFER_BENCHMARK is not set
