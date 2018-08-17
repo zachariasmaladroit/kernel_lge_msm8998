@@ -5819,6 +5819,7 @@ CONFIG_DEFAULT_IOSCHED="noop"
 # CONFIG_ZEN_INTERACTIVE is not set
 # CONFIG_SCSI_MQ_DEFAULT is not set # broken on 4.4 Android ?
 # CONFIG_MANDATORY_FILE_LOCKING is not set
+# CONFIG_SLUB_CPU_PARTIAL is not set # more indeterminism in the latency of the free , taking of locks that may cause latency spikes
 
 CONFIG_CRYPTO_PCRYPT=y
 
