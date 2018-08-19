@@ -26,13 +26,6 @@
 	static struct mutex mutexname = __MUTEX_INITIALIZER(mutexname)
 
 #define	MSM_OIS_MAX_VREGS (10)
-#define	READ_OUT_TIME 5000000 /*5ms*/
-
-DEFINE_MSM_MUTEX(ois_gyro_mutex);
-#define MAX_GYRO_QUERY_SIZE 15
-
-#define MSM_OIS_DATA_BUFFER_SIZE 15
-
 
 struct msm_ois_ctrl_t;
 
@@ -118,13 +111,6 @@ struct msm_ois_func_tbl {
 	int ois_cur_mode;
 };
 
-/* ois data ring buffer type */
-struct msm_ois_readout_buffer {
-	struct msm_ois_readout buffer[MSM_OIS_DATA_BUFFER_SIZE];
-	int32_t buffer_head;
-	int32_t buffer_tail;
-};
-
 
 struct msm_ois_ctrl_t {
 	struct i2c_driver *i2c_driver;
@@ -153,11 +139,6 @@ struct msm_ois_ctrl_t {
 	struct msm_ois_func_tbl *func_tbl;
 	uint16_t sid_ois;
 //~LG OIS
-
-	struct workqueue_struct *ois_wq;
-	struct work_struct g_work;
-	struct msm_ois_readout_buffer buf;
-	struct hrtimer hr_timer;
 };
 
 #endif
