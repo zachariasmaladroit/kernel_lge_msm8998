@@ -394,7 +394,7 @@ enum msm_ois_cfg_type_t {
 	/* renesas */
 	CFG_OIS_GYRO_CALIBRATION,
 	CFG_OIS_GET_INFO,
-	CFG_OIS_MOVEMENT_TEST
+	CFG_OIS_MOVEMENT_TEST,
 #endif
 /* #endif */
 	CFG_OIS_READ_TIMER,
@@ -408,6 +408,10 @@ enum msm_ois_cfg_type_t {
 	CFG_OIS_POWERUP,
 	CFG_OIS_CONTROL,
 	CFG_OIS_I2C_WRITE_SEQ_TABLE,
+	CFG_OIS_I2C_READ_SEQ_TABLE,
+	CFG_OIS_SET_MODE,
+	CFG_OIS_MOVE_LENS,
+	CFG_OIS_PWM_MODE
 };
 #endif
 
