@@ -229,20 +229,8 @@ struct msm_ois_set_info_t32 {
 #endif
 };
 
-struct ois_position_32 {
-	uint8_t data0;
-	uint8_t data1;
-	uint8_t data2;
-	uint8_t data3;
-	uint8_t data4;
-	uint8_t data5;
-	uint8_t data6;
-	uint8_t data7;
-};
-
 struct msm_ois_cfg_data32 {
 	int cfgtype;
-	struct ois_position_32 pos;
 	union {
 		struct msm_ois_set_info_t32 set_info;
 		compat_uptr_t settings;
@@ -322,3 +310,4 @@ struct msm_flash_cfg_data_t32 {
 	_IOWR('V', BASE_VIDIOC_PRIVATE + 16, struct msm_proxy_cfg_data32)
 #endif
 #endif
+
