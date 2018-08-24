@@ -27,7 +27,9 @@
 #include "diagfwd_hsic.h"
 #include "diagfwd_smux.h"
 #endif
+#ifdef CONFIG_MSM_MHI
 #include "diagfwd_mhi.h"
+#endif
 #include "diag_dci.h"
 
 #ifdef CONFIG_MSM_MHI
