@@ -2037,7 +2037,7 @@ CONFIG_DIAGFWD_BRIDGE_CODE=y
 #
 # LGE DM APP Support
 #
-CONFIG_LGE_DM_APP=y
+
 
 #
 # LGE DIAG BYPASS Support
@@ -5693,6 +5693,9 @@ CONFIG_MD_LINEAR=y # "linear harddrive mode", "JBOD"
 # CONFIG_V4L_PLATFORM_DRIVERS # eval
 CONFIG_MSM_SMP2P_TEST=y
 # CONFIG_FW_CACHE is not set # needs: 'firmware_class: make firmware caching configurable'
+
+# disable LG stuff
+# CONFIG_LGE_DM_APP is not set
 
 # media tuners (DVB, etc.)
 # CONFIG_MEDIA_DIGITAL_TV_SUPPORT is not set
