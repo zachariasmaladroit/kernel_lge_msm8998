@@ -491,13 +491,13 @@ static void deassert_ps_hold(void)
 
 static void do_msm_restart(enum reboot_mode reboot_mode, const char *cmd)
 {
-#ifdef CONFIG_LGE_HANDLE_PANIC
-	struct task_struct *task = current_thread_info()->task;
-	pr_notice("Going down for restart now (pid: %d, comm: %s)\n",
-			task->pid, task->comm);
-#else
+//#ifdef CONFIG_LGE_HANDLE_PANIC
+//	struct task_struct *task = current_thread_info()->task;
+//	pr_notice("Going down for restart now (pid: %d, comm: %s)\n",
+//			task->pid, task->comm);
+//#else
 	pr_notice("Going down for restart now\n");
-#endif
+//#endif
 
 	msm_restart_prepare(cmd);
 
@@ -520,13 +520,13 @@ static void do_msm_restart(enum reboot_mode reboot_mode, const char *cmd)
 
 static void do_msm_poweroff(void)
 {
-#ifdef CONFIG_LGE_HANDLE_PANIC
-	struct task_struct *task = current_thread_info()->task;
-	pr_notice("Powering off the SoC (pid: %d, comm: %s)\n",
-			task->pid, task->comm);
-#else
+//#ifdef CONFIG_LGE_HANDLE_PANIC
+//	struct task_struct *task = current_thread_info()->task;
+//	pr_notice("Powering off the SoC (pid: %d, comm: %s)\n",
+//			task->pid, task->comm);
+//#else
 	pr_notice("Powering off the SoC\n");
-#endif
+//#endif
 	set_dload_mode(0);
 	scm_disable_sdi();
 	qpnp_pon_system_pwr_off(PON_POWER_OFF_SHUTDOWN);
