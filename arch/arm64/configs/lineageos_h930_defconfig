@@ -5482,6 +5482,9 @@ CONFIG_INPUT_BOOST_FREQ_PERF=1190400
 CONFIG_LOG_BUF_SHIFT=22
 CONFIG_LOG_CPU_MAX_BUF_SHIFT=21
 
+# security frameworks & related
+CONFIG_SECURITY_YAMA=y
+
 # SSP stackprotector, degrades sound quality, let's set protection to "regular"
 CONFIG_HAVE_CC_STACKPROTECTOR=y
 CONFIG_CC_STACKPROTECTOR=y
