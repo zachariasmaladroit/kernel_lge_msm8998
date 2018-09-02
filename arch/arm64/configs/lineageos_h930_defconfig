@@ -5517,8 +5517,8 @@ CONFIG_STRICT_DEVMEM=y # If this option is disabled,
 # CONFIG_ARM64_STRICT_BREAK_BEFORE_MAKE is not set # spr (non-perf) , arch/arm64/include/asm/pgtable.h
 
 # disable LG cancun & triton, it's not needed and causes overhead
-# CONFIG_LGE_PM_TRITON is not set
-# CONFIG_LGE_PM_CANCUN is not set
+CONFIG_LGE_PM_TRITON=y
+CONFIG_LGE_PM_CANCUN=y
 
 #
 # CPU Frequency scaling
