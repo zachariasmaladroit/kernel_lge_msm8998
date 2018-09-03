@@ -800,7 +800,7 @@ compress_again:
 
 		if (printk_timed_ratelimit(&zram_rs_time,
 					   ALLOC_ERROR_LOG_RATE_MS))
-			pr_err("Error allocating memory for compressed page: %u, size=%u\n",
+			pr_info("Error allocating memory for compressed page: %u, size=%u\n",
 				index, clen);
 
 		ret = -ENOMEM;
