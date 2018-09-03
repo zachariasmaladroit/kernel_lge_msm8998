@@ -80,7 +80,7 @@ config SDFAT_SUPPORT_STLOG
 config SDFAT_DEBUG
 	bool "Enable debug features"
 	depends on SDFAT_FS
-	default n
+	default y
 
 config SDFAT_DBG_IOCTL
 	bool "Enable debug-ioctl features"
@@ -90,7 +90,7 @@ config SDFAT_DBG_IOCTL
 config SDFAT_DBG_MSG
 	bool "Enable debug messages"
 	depends on SDFAT_FS && SDFAT_DEBUG
-	default n
+	default y
 
 config SDFAT_DBG_BUGON
 	bool "Enable strict BUG_ON() for debugging"
@@ -105,7 +105,7 @@ config SDFAT_DBG_WARNON
 config SDFAT_STATISTICS
 	bool "Enable statistics for bigdata"
 	depends on SDFAT_FS
-	default n
+	default y
 
 config SDFAT_DFR
 	bool "enable sdfat defragger"
