@@ -1,4 +1,4 @@
-/* Copyright (c) 2015-2018, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2015-2017, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -1028,7 +1028,6 @@ error_m2m_init:
 	mutex_unlock(&rot_dev->lock);
 error_lock:
 	kfree(ctx);
-	ctx = NULL;
 	return ret;
 }
 
@@ -1038,18 +1037,10 @@ error_lock:
  */
 static int sde_rotator_release(struct file *file)
 {
+	struct sde_rotator_device *rot_dev = video_drvdata(file);
 	struct sde_rotator_ctx *ctx =
 			sde_rotator_ctx_from_fh(file->private_data);
-	struct sde_rotator_device *rot_dev;
-	u32 session_id;
-
-	if (!ctx) {
-		SDEROT_DBG("ctx is NULL\n");
-		return -EINVAL;
-	}
-
-        rot_dev = video_drvdata(file);
-        session_id = ctx->session_id;
+	u32 session_id = ctx->session_id;
 
 	ATRACE_END(ctx->kobj.name);
 
