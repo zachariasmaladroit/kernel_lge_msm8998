@@ -5944,3 +5944,11 @@ CONFIG_ANDROID_SIMPLE_LMK=y
 # driver, which is used with adb and mtp. It is now required to be enabled
 # for better performance with those services.
 CONFIG_AIO=y
+
+# IP tunnel stuff
+CONFIG_NET_IP_TUNNEL=y
+# CONFIG_IP_MROUTE is not set
+CONFIG_NET_IPVTI=y
+CONFIG_NET_UDP_TUNNEL=y
+# CONFIG_NET_FOU is not set
+# CONFIG_NET_FOU_IP_TUNNELS is not set
