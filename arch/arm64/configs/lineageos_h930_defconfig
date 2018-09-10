@@ -5500,8 +5500,8 @@ CONFIG_DEBUG_RODATA=y
 CONFIG_PANIC_ON_DATA_CORRUPTION=y
 
 # disable LG cancun & triton, it's not needed and causes overhead
-CONFIG_LGE_PM_TRITON=y
-CONFIG_LGE_PM_CANCUN=y
+# CONFIG_LGE_PM_TRITON is not set
+# CONFIG_LGE_PM_CANCUN is not set
 
 #
 # CPU Frequency scaling
