@@ -4923,7 +4923,7 @@ CONFIG_ECRYPT_FS=y
 CONFIG_ECRYPT_FS_MESSAGING=y
 # CONFIG_CRYPTO_DEV_HWCRYPTO_FOR_SDCARD is not set
 # CONFIG_CRYPTO_DEV_KEY_INTEGRITY_CHECK is not set
-CONFIG_SD_ENCRYPTION_MANAGER=y
+
 # CONFIG_SDP is not set
 CONFIG_SDCARD_FS=y
 # CONFIG_HFS_FS is not set
@@ -5457,6 +5457,9 @@ CONFIG_QMI_ENCDEC=y
 # KCAL
 CONFIG_FB_MSM_MDSS_KCAL_CTRL=y
 
+# BOOTCHART, scheduler (CPU), I/O load breakdown
+CONFIG_SCHEDSTATS=y
+
 # MSM_PERFORMANCE
 CONFIG_MSM_PERFORMANCE=y
 
@@ -5495,6 +5498,10 @@ CONFIG_CC_STACKPROTECTOR_STRONG=y
 # Kernel (self)protection
 CONFIG_DEBUG_RODATA=y
 # DEBUG_SET_MODULE_RONX is not set # for Stock ROM "Set loadable kernel module data as NX and text as RO"
+
+# CONFIG_FREE_PAGES_RDONLY is not set # spr (non-perf) , needs CONFIG_FORCE_PAGES=y (?!)
+# CONFIG_ARM64_STRICT_BREAK_BEFORE_MAKE is not set # spr (non-perf) , arch/arm64/include/asm/pgtable.h
+
 
 # data integrity
 CONFIG_PANIC_ON_DATA_CORRUPTION=y
@@ -5597,6 +5604,7 @@ CONFIG_WLAN_FEATURE_FILS=y
 # CONFIG_GOLDFISH is not set
 # CONFIG_CHROME_PLATFORMS is not set
 
+# CONFIG_IOMMU_IO_PGTABLE_FAST_SELFTEST is not set
 # CONFIG_IOMMU_DEBUG is not set
 # CONFIG_IOMMU_DEBUG_TRACKING is not set
 # CONFIG_IOMMU_TESTS is not set
@@ -5692,9 +5700,22 @@ CONFIG_MD_LINEAR=y # "linear harddrive mode", "JBOD"
 # CONFIG_V4L_PLATFORM_DRIVERS # eval
 CONFIG_MSM_SMP2P_TEST=y
 # CONFIG_FW_CACHE is not set # needs: 'firmware_class: make firmware caching configurable'
-
-# disable LG stuff
-CONFIG_LGE_DM_APP=y
+# CONFIG_SKY2 is not set
+# CONFIG_SMSC911X is not set
+# CONFIG_CHR_DEV_SCH is not set # SCSI media changer (jukeboxes !)
+# CONFIG_USB_STORAGE_REALTEK is not set # necessary/needed ?
+# CONFIG_REALTEK_AUTOPM=y
+# CONFIG_USB_STORAGE_DATAFAB is not set 
+# CONFIG_USB_STORAGE_FREECOM is not set
+# CONFIG_USB_STORAGE_ISD200 is not set
+# CONFIG_USB_STORAGE_USBAT is not set
+# CONFIG_USB_STORAGE_SDDR09 is not set
+# CONFIG_USB_STORAGE_SDDR55 is not set
+# CONFIG_USB_STORAGE_JUMPSHOT is not set
+# CONFIG_USB_STORAGE_ALAUDA is not set
+# CONFIG_USB_STORAGE_ONETOUCH is not set
+# CONFIG_USB_STORAGE_KARMA is not set
+# CONFIG_USB_STORAGE_CYPRESS_ATACB is not set
 
 # media tuners (DVB, etc.)
 # CONFIG_MEDIA_DIGITAL_TV_SUPPORT is not set
@@ -5720,6 +5741,7 @@ CONFIG_MEDIA_SUBDRV_AUTOSELECT=y
 # disable debug, logs stuff
 CONFIG_LGE_PM_DEBUG=y
 CONFIG_IPC_LOGGING=y
+CONFIG_DEBUG_BUGVERBOSE=y # we REALLY need this
 # CONFIG_MSM_SDE_ROTATOR_EVTLOG_DEBUG is not set
 # CONFIG_FB_MSM_MDSS_XLOG_DEBUG is not set
 # CONFIG_IOMMU_DEBUG is not set
@@ -5737,6 +5759,7 @@ CONFIG_TRACER_PKT=y
 CONFIG_QCOM_COMMON_LOG=y
 # CONFIG_QCOM_MEMORY_DUMP_V2 is not set
 # CONFIG_USB_DWC3_DEBUG_FS is not set
+# CONFIG_MSM_SMEM_LOGGING is not set
 
 # disable for debug, security, attack surface
 # CONFIG_MSM_RDBG is not set
@@ -5874,6 +5897,11 @@ CONFIG_NETFILTER=y
 CONFIG_NETFILTER_ADVANCED=y
 # CONFIG_BRIDGE_NETFILTER is not set # =m
 
+CONFIG_NET_CLS_ACT=y
+CONFIG_NET_ACT_GACT=y
+CONFIG_NET_ACT_MIRRED=y
+CONFIG_NET_ACT_SKBEDIT=y
+
 # monolithic kernel, external modules
 # CONFIG_MODULES is not set
 # CONFIG_MODULE_FORCE_LOAD is not set
@@ -5945,6 +5973,9 @@ CONFIG_ANDROID_SIMPLE_LMK=y
 # for better performance with those services.
 CONFIG_AIO=y
 
+# network filesystems - NFS, CIFS - enable if needed - security (!)
+# CONFIG_NETWORK_FILESYSTEMS is not set
+
 # IP tunnel stuff
 CONFIG_NET_IP_TUNNEL=y
 # CONFIG_IP_MROUTE is not set
@@ -5952,3 +5983,94 @@ CONFIG_NET_IPVTI=y
 CONFIG_NET_UDP_TUNNEL=y
 # CONFIG_NET_FOU is not set
 # CONFIG_NET_FOU_IP_TUNNELS is not set
+
+# [eval]joan_spr_us/joan_vzv
+CONFIG_MACH_LGE=y
+CONFIG_MACH_MSM8998_JOAN=y
+CONFIG_MACH_MSM8998_JOAN_GLOBAL_COM=y
+# CONFIG_MACH_MSM8998_JOAN_SPR_US is not set
+# CONFIG_MACH_MSM8998_JOAN_VZW is not set
+
+CONFIG_LGE_USB_DIAG_LOCK=y
+# CONFIG_LGE_USB_DIAG_LOCK_SPR is not set # SET on spr_us
+# CONFIG_LGE_USB_DIAG_LOCK_TRF is not set
+# CONFIG_LGE_USB_DIAG_LOCK_VZW is not set # NOT set on vzw ?!
+
+CONFIG_LGE_PM_BATT_MANAGER=y # GLOBAL # NOT spr, vzw
+CONFIG_IDTP9223_CHARGER_WPC_ONLY=y # GLOBAL # NOT spr, vzw
+
+# CONFIG_LGE_PM_LGE_POWER_CLASS_VZW_REQ is not set # vzw ONLY
+
+CONFIG_USB_ANNOUNCE_NEW_DEVICES=y # off for spr ?
+CONFIG_USB_SERIAL=y # off for spr ?
+
+CONFIG_USB_HOST_NOTIFY=y # off for spr/vzw ?
+CONFIG_USB_CONFIGFS_F_CCID=y # off for spr ? , =y vzw
+
+# CONFIG_LGE_USB_GADGET_AUTORUN_VZW is not set # vzw ONLY
+CONFIG_LGE_USB_GADGET=y # ALL
+
+
+# disable LG stuff
+CONFIG_LGE_DM_APP=y # global_com, spr_us - NOT vzw
+
+# CONFIG_MDFPP_CCAUDIT is not set # main branch config , spr/vzw (=y)
+# CONFIG_SDP is not set
+# CONFIG_CRYPTO_DEV_KEY_INTEGRITY_CHECK is not set
+
+CONFIG_SYSTEM_TRUSTED_KEYS="verity.x509.pem" # joan_global_com ONLY
+CONFIG_SD_ENCRYPTION_MANAGER=y # joan_global_com ONLY , no spr/vzw
+
+#klcm , SPR_US/VZW ONLY
+# CONFIG_CRYPTODEV is not set
+# CONFIG_LGCRYPTO_FIPS_ENABLE is not set
+# CONFIG_LGECRYPTO_FIPS_ADDED_SIGNATURE_SIZE=710
+# CONFIG_LGE_PKM is not set
+
+# vzw ONLY
+# CONFIG_TRUSTONIC_TEE is not set
+# CONFIG_CMA_PINPAGE_MIGRATION is not set
+# CONFIG_LGE_QSDL_SUPPORT is not set
+
+# LG_VPN_V36 (SPR_US/VZW)
+# CONFIG_LG_VPN_V36 is not set
+# CONFIG_VPNCLIENT_SECURITY is not set # spr (=m)
+
+CONFIG_IKCONFIG_PROC=y # spr
+# CONFIG_BLK_DEV_BSG is not set # spr
+# CONFIG_CLEANCACHE is not set # spr (=y), pointless if tmem users aren't selected (e.g. zcache, xen, etc.)
+# CONFIG_CMA_DEBUGFS is not set # spr (=y)
+# CONFIG_PM_DEBUG is not set # spr (non-perf)
+# CONFIG_DPM_WATCHDOG is not set # spr (=y)
+CONFIG_DPM_WATCHDOG_TIMEOUT=10 # spr , way too strict
+# CONFIG_INET_DIAG is not set # spr (=y)
+# CONFIG_INET_DIAG_DESTROY=y
+# CONFIG_L2TP_DEBUGFS is not set # spr (=y)
+# CONFIG_DNS_RESOLVER is not set # spr (non-perf)
+# CONFIG_REGMAP_ALLOW_WRITE_DEBUGFS is not set # spr (non-perf), DANGEROUS! "Regmap, allow direct register writes through debugfs"
+# CONFIG_SCSI_LOGGING is not set # spr (=y) [needs to be enabled via /proc/sys/dev/scsi/logging_level
+# CONFIG_SCSI_UFSHCD_CMD_LOGGING is not set # spr (=y)
+
+# CONFIG_VIDEO_ADV_DEBUG is not set # spr (non-perf)
+# CONFIG_MSM_CAMERA_DEBUG is not set # spr (non-perf)
+# CONFIG_MSMB_CAMERA_DEBUG is not set # spr (non-perf)
+# CONFIG_ESOC_DEBUG is not set # spr (=y)
+# CONFIG_ESOC_MDM_DBG_ENG is not set # spr (=y)
+# CONFIG_EFIVAR_FS is not set # pointless ?
+# CONFIG_PAGE_OWNER is not set # spr (=y) "Eats a fair amount of memory if enabled."
+# CONFIG_PAGE_OWNER_ENABLE_DEFAULT is not set # spr (=y)
+
+# CONFIG_BOOTPARAM_HARDLOCKUP_PANIC is not set # EVAL
+# CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC is not set # EVAL
+# CONFIG_PANIC_ON_SCHED_BUG is not set # EVAL
+# CONFIG_PANIC_ON_RT_THROTTLING is not set # EVAL
+# CONFIG_DEFAULT_HUNG_TASK_TIMEOUT=140
+# CONFIG_RCU_CPU_STALL_TIMEOUT=100
+
+# CONFIG_PAGE_POISONING is not set # spr (non-perf), "This results in a large slowdown, but helps to find certain types of memory corruption."
+# CONFIG_PAGE_POISONING_ENABLE_DEFAULT is not set
+
+# XZ/LZMA(2) data compression
+CONFIG_XZ_DEC=y
+CONFIG_XZ_DEC_BCJ=y # branch/call/jump filters
+
