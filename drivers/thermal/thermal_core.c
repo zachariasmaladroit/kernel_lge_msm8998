@@ -2464,6 +2464,19 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
 	if (result)
 		dev_err(&tz->device, "Failed to create tz_map soft link\n");
 
+	/* Create softlink now */
+	mutex_lock(&tz_softlink_lock);
+	if (tz_softlink_kobj == NULL) {
+		tz_softlink_kobj = kobject_create_and_add("tz-by-name",
+						tz->device.kobj.parent);
+	}
+	mutex_unlock(&tz_softlink_lock);
+
+	result = sysfs_create_link(tz_softlink_kobj,
+				&tz->device.kobj, tz->type);
+	if (result)
+		dev_err(&tz->device, "Fail to create tz_map soft link\n");
+
 	return tz;
 
 unregister:
