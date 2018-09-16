@@ -49,6 +49,7 @@ static bool sched_boost_active;
 static struct delayed_work input_boost_rem;
 static u64 last_input_time;
 
+static struct kthread_work input_boost_multi;
 static struct kthread_work input_boost_work;
 static struct kthread_worker cpu_boost_worker;
 static struct task_struct *cpu_boost_worker_thread;
@@ -119,8 +120,6 @@ static DEFINE_PER_CPU(unsigned int, multi_boost_freq_sync_info);
 static bool multi_boost_enabled;
 static unsigned int multi_boost_ms = 0;
 static bool multi_boost_started;
-
-static struct work_struct input_boost_multi;
 
 static int set_multi_boost_freq(const char *buf, const struct kernel_param *kp)
 {
@@ -359,7 +358,7 @@ static void do_input_boost(struct kthread_work *work)
 		&input_boost_rem, msecs_to_jiffies(input_boost_ms));
 }
 
-static void do_input_boost_multi(struct work_struct *work)
+static void do_input_boost_multi(struct kthread_work *work)
 {
 	unsigned int i, ret;
 	struct cpu_sync *i_sync_info;
@@ -390,7 +389,7 @@ static void do_input_boost_multi(struct work_struct *work)
 				sched_boost_active = true;
 		}
 
-		queue_delayed_work(cpu_boost_wq, &input_boost_rem,
+		queue_delayed_work(system_power_efficient_wq, &input_boost_rem,
 						msecs_to_jiffies(input_boost_ms  * 2));
 
 		multi_boost_started = true;
@@ -416,8 +415,8 @@ static void do_input_boost_multi(struct work_struct *work)
 			multi_boost_started = false;
 		}
 
-		mod_delayed_work(cpu_boost_wq, &input_boost_rem,
-						msecs_to_jiffies(input_boost_ms * 2));
+		queue_delayed_work(system_power_efficient_wq,
+				&input_boost_rem, msecs_to_jiffies(input_boost_ms * 2));
 	}
 
 	pr_debug("Setting multi boost #%d for all CPUs\n", multi_boost_ms);
@@ -438,10 +437,10 @@ static void cpuboost_input_event(struct input_handle *handle,
 		if (now - last_input_time < INPUT_SAMPLING_TIME)
 			return;
 
-		if (work_pending(&input_boost_multi))
+		if (queuing_blocked(&cpu_boost_worker, &input_boost_multi))
 			return;
 
-		queue_work(cpu_boost_wq, &input_boost_multi);
+		queue_kthread_work(&cpu_boost_worker, &input_boost_multi);
 		last_input_time = ktime_to_us(ktime_get());
 		return;
 	}
@@ -543,8 +542,8 @@ static int cpu_boost_init(void)
 	sched_setscheduler(cpu_boost_worker_thread, SCHED_FIFO, &param);
 
 	init_kthread_work(&input_boost_work, do_input_boost);
+ 	init_kthread_work(&input_boost_multi, do_input_boost_multi);
 	INIT_DELAYED_WORK(&input_boost_rem, do_input_boost_rem);
-	INIT_WORK(&input_boost_multi, do_input_boost_multi);
 
 	for_each_possible_cpu(cpu) {
 		s = &per_cpu(sync_info, cpu);
