@@ -46,7 +46,6 @@
 #include <linux/irq.h>
 #include <linux/extcon.h>
 #include <linux/reset.h>
-#include <soc/qcom/boot_stats.h>
 
 #include "power.h"
 #include "core.h"
@@ -2920,7 +2919,6 @@ static int dwc3_msm_probe(struct platform_device *pdev)
 	int ret = 0;
 	int ext_hub_reset_gpio;
 	u32 val;
-	char boot_marker[40];
 
 	mdwc = devm_kzalloc(&pdev->dev, sizeof(*mdwc), GFP_KERNEL);
 	if (!mdwc)
@@ -3268,14 +3266,7 @@ static int dwc3_msm_probe(struct platform_device *pdev)
 		mdwc->host_only_mode = true;
 		mdwc->id_state = DWC3_ID_GROUND;
 		dwc3_ext_event_notify(mdwc);
-		snprintf(boot_marker, sizeof(boot_marker),
-			"M - DRIVER %s Host Ready", dev_name(&pdev->dev));
-	} else {
-		snprintf(boot_marker, sizeof(boot_marker),
-			"M - DRIVER %s Device Ready", dev_name(&pdev->dev));
 	}
-
-	place_marker(boot_marker);
 
 	return 0;
 
