@@ -663,9 +663,10 @@ static void mark_oom_victim(struct task_struct *tsk)
 /**
  * exit_oom_victim - note the exit of an OOM victim
  */
-void exit_oom_victim(void)
+void exit_oom_victim(struct task_struct *tsk)
 {
-	clear_thread_flag(TIF_MEMDIE);
+	if (!test_and_clear_tsk_thread_flag(tsk, TIF_MEMDIE))
+		return;
 
 	if (!atomic_dec_return(&oom_victims))
 		wake_up_all(&oom_victims_wait);
