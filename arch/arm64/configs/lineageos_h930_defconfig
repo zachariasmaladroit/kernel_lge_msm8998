@@ -5960,12 +5960,12 @@ CONFIG_ION_MSM=y
 # CONFIG_ALLOC_BUFFERS_IN_4K_CHUNKS is not set # default =y
 
 # Memory Subsystem changes & tweaks
-# CONFIG_PROCESS_RECLAIM is not set # default =y
+CONFIG_PROCESS_RECLAIM=y # default =y , so something uses it properly ?
 # CONFIG_MEMCG is not set
 # CONFIG_MEMCG_SWAP is not set
-# CONFIG_ANDROID_LOW_MEMORY_KILLER is not set
-# CONFIG_ANDROID_LOW_MEMORY_KILLER_AUTODETECT_OOM_ADJ_VALUES is not set
-CONFIG_ANDROID_SIMPLE_LMK=y
+CONFIG_ANDROID_LOW_MEMORY_KILLER=y
+CONFIG_ANDROID_LOW_MEMORY_KILLER_AUTODETECT_OOM_ADJ_VALUES=y
+# CONFIG_ANDROID_SIMPLE_LMK is not set # needs work
 
 # AIO
 # CONFIG_AIO has legitimate use for the functionfs
