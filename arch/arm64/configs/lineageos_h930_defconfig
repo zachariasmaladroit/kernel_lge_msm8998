@@ -5989,8 +5989,12 @@ CONFIG_MACH_LGE=y
 CONFIG_MACH_MSM8998_JOAN=y
 CONFIG_MACH_MSM8998_JOAN_GLOBAL_COM=y
 # CONFIG_MACH_MSM8998_JOAN_SPR_US is not set
+# CONFIG_MACH_MSM8998_JOAN_TMO_US is not set # config similar to sprint
 # CONFIG_MACH_MSM8998_JOAN_VZW is not set
 
+# CONFIG_TOUCHSCREEN_FTS=y # for tmo_us-perf (config doesn't exist !)
+
+# "feature for usb diag access lock" - perhaps shouldn't even used in production ...
 CONFIG_LGE_USB_DIAG_LOCK=y
 # CONFIG_LGE_USB_DIAG_LOCK_SPR is not set # SET on spr_us
 # CONFIG_LGE_USB_DIAG_LOCK_TRF is not set
@@ -6027,10 +6031,10 @@ CONFIG_SD_ENCRYPTION_MANAGER=y # joan_global_com ONLY , no spr/vzw
 # CONFIG_LGECRYPTO_FIPS_ADDED_SIGNATURE_SIZE=710
 # CONFIG_LGE_PKM is not set
 
-# vzw ONLY
+# tmo/vzw ONLY
 # CONFIG_TRUSTONIC_TEE is not set
 # CONFIG_CMA_PINPAGE_MIGRATION is not set
-# CONFIG_LGE_QSDL_SUPPORT is not set
+# CONFIG_LGE_QSDL_SUPPORT is not set # NOT for tmo_us ?
 
 # LG_VPN_V36 (SPR_US/VZW)
 # CONFIG_LG_VPN_V36 is not set
