@@ -432,7 +432,7 @@ static void clusttimer_cancel(void)
 	if (ktime_to_us(time_rem) > 0)
 		hrtimer_try_to_cancel(&cluster->histtimer);
 
-//	if (cluster->parent) {
+	if (cluster->parent) {
 		time_rem = hrtimer_get_remaining(
 			&cluster->parent->histtimer);
 
@@ -440,7 +440,7 @@ static void clusttimer_cancel(void)
 			return;
 
 		hrtimer_try_to_cancel(&cluster->parent->histtimer);
-//	}
+	}
 }
 
 static enum hrtimer_restart clusttimer_fn(struct hrtimer *h)
