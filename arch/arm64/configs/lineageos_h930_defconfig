@@ -432,7 +432,7 @@ CONFIG_PHYS_ADDR_T_64BIT=y
 CONFIG_ZONE_DMA_FLAG=1
 CONFIG_BOUNCE=y
 # CONFIG_KSM is not set
-CONFIG_DEFAULT_MMAP_MIN_ADDR=4096
+
 # CONFIG_TRANSPARENT_HUGEPAGE is not set
 # CONFIG_CLEANCACHE is not set
 # CONFIG_FRONTSWAP is not set
@@ -5067,7 +5067,7 @@ CONFIG_SCHED_DEBUG=y
 # CONFIG_PANIC_ON_RT_THROTTLING is not set
 CONFIG_SYSRQ_SCHED_DEBUG=y
 # CONFIG_SCHEDSTATS is not set
-CONFIG_SCHED_STACK_END_CHECK=y
+
 # CONFIG_DEBUG_TIMEKEEPING is not set
 # CONFIG_DEBUG_PREEMPT is not set
 
@@ -5495,15 +5495,23 @@ CONFIG_CC_STACKPROTECTOR=y
 CONFIG_CC_STACKPROTECTOR_STRONG=y
 
 # Kernel (self)protection
+CONFIG_DEFAULT_MMAP_MIN_ADDR=32768 # Disallow allocating the first 32k of memory (cannot be 64k due to ARM loader).
 CONFIG_DEBUG_RODATA=y
 # DEBUG_SET_MODULE_RONX is not set # for Stock ROM "Set loadable kernel module data as NX and text as RO"
+CONFIG_SCHED_STACK_END_CHECK=y # The runtime overhead introduced is minimal.
+CONFIG_STRICT_DEVMEM=y # If this option is disabled,
+# you allow userspace (root) access to all of memory, including kernel and userspace memory. Accidental
+# access to this is obviously disastrous, but specific access can be used by people debugging the kernel.
+#
+# data integrity/DEBUG (in combination with the below, follow-up checks)
+# CONFIG_PANIC_ON_DATA_CORRUPTION=y # NOT needed in production/stable (?)
+# CONFIG_DEBUG_CREDENTIALS=y # (+ SELinux, checks to see that this number never exceeds the usage count of the cred struct)
+# CONFIG_DEBUG_NOTIFIERS is not set # modules, This is a relatively cheap check
+# CONFIG_DEBUG_LIST=y
+# CONFIG_DEBUG_SG=y # This can help find problems with drivers that do not properly initialize their sg tables.
 
 # CONFIG_FREE_PAGES_RDONLY is not set # spr (non-perf) , needs CONFIG_FORCE_PAGES=y (?!)
 # CONFIG_ARM64_STRICT_BREAK_BEFORE_MAKE is not set # spr (non-perf) , arch/arm64/include/asm/pgtable.h
-
-
-# data integrity
-CONFIG_PANIC_ON_DATA_CORRUPTION=y
 
 # disable LG cancun & triton, it's not needed and causes overhead
 # CONFIG_LGE_PM_TRITON is not set
