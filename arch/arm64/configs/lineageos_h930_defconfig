@@ -5456,7 +5456,8 @@ CONFIG_QMI_ENCDEC=y
 CONFIG_FB_MSM_MDSS_KCAL_CTRL=y
 
 # BOOTCHART, scheduler (CPU), I/O load breakdown
-CONFIG_SCHEDSTATS=y
+# CONFIG_SCHED_INFO is not set
+# CONFIG_SCHEDSTATS is not set # overhead # recommended =y for scheduler tweaking
 
 # MSM_PERFORMANCE
 CONFIG_MSM_PERFORMANCE=y
@@ -5642,7 +5643,7 @@ CONFIG_JUMP_LABEL=y
 # CONFIG_RELAY is not set
 
 # swap, zram related settings
-# CONFIG_BALANCE_ANON_FILE_RECLAIM is not set
+CONFIG_BALANCE_ANON_FILE_RECLAIM=y # eval
 
 # DVB, disable or needed for some weird streaming usage-case ?
 # CONFIG_DVB_MPQ is not set # =m
@@ -5672,7 +5673,7 @@ CONFIG_WIL6210_PLATFORM_MSM=y
 # CONFIG_SND_SUPPORT_OLD_API is not set
 # CONFIG_SND_VERBOSE_PROCFS is not set
 # CONFIG_SND_DRIVERS is not set
-# CONFIG_MSM_BOOT_STATS is not set
+# CONFIG_MSM_BOOT_STATS is not set # default =y
 # CONFIG_SCHED_AUTOGROUP is not set # so it's obviously not necessarily to work on stock ROMs
 CONFIG_QCOM_RTB=y
 CONFIG_QCOM_RTB_SEPARATE_CPUS=y
@@ -5684,23 +5685,27 @@ CONFIG_QCOM_RTB_SEPARATE_CPUS=y
 # CONFIG_MSM_GLADIATOR_HANG_DETECT is not set
 # CONFIG_MSM_CORE_HANG_DETECT is not set
 # CONFIG_EDAC_SUPPORT is not set
-# CONFIG_EDAC is not set
-# CONFIG_EDAC_MM_EDAC is not set
-# CONFIG_EDAC_CORTEX_ARM64 is not set
+# CONFIG_EDAC is not set # missing dts/dtb entries, so NOP ?
+CONFIG_EDAC_LEGACY_SYSFS=y
+# CONFIG_EDAC_DEBUG is not set
+# CONFIG_EDAC_MM_EDAC is not set # (default =y)
+# CONFIG_EDAC_CORTEX_ARM64 is not set # (default =y)
 # CONFIG_EDAC_CORTEX_ARM64_PANIC_ON_CE is not set
 # CONFIG_EDAC_CORTEX_ARM64_DBE_IRQ_ONLY is not set
-# CONFIG_EDAC_CORTEX_ARM64_PANIC_ON_UE is not set
-# CONFIG_MPC_UT_FRAMEWORK is not set # qcacld-3.0 $(HDD_SRC_DIR)/wlan_hdd_conc_ut.o
+# CONFIG_EDAC_CORTEX_ARM64_PANIC_ON_UE is not set # "Panic on uncorrectable errors",
+# For production builds, you should probably say 'N' here. This can reduce debugging times on hardware which may be
+#	   operating at voltages or frequencies outside normal specification.
+# CONFIG_MPC_UT_FRAMEWORK is not set # qcacld-3.0 $(HDD_SRC_DIR)/wlan_hdd_conc_ut.o , # Enable Unit test framework for multiport concurrency
 CONFIG_QCOM_DCC=y # QCOM Data Capture and Compare enigne support
 # CONFIG_QCOM_CPUSS_DUMP is not set
 CONFIG_BLK_DEV_MD=y
 CONFIG_MD_LINEAR=y # "linear harddrive mode", "JBOD"
 # CONFIG_V4L_PLATFORM_DRIVERS # eval
 CONFIG_MSM_SMP2P_TEST=y
-# CONFIG_FW_CACHE is not set # needs: 'firmware_class: make firmware caching configurable'
+CONFIG_FW_CACHE=y # needs: 'firmware_class: make firmware caching configurable', Enable firmware caching during suspend
 # CONFIG_SKY2 is not set
 # CONFIG_SMSC911X is not set
-# CONFIG_CHR_DEV_SCH is not set # SCSI media changer (jukeboxes !)
+CONFIG_CHR_DEV_SCH=y # SCSI media changer (jukeboxes ?!)
 # CONFIG_USB_STORAGE_REALTEK is not set # necessary/needed ?
 # CONFIG_REALTEK_AUTOPM=y
 # CONFIG_USB_STORAGE_DATAFAB is not set 
@@ -5738,7 +5743,7 @@ CONFIG_MEDIA_SUBDRV_AUTOSELECT=y
 
 # disable debug, logs stuff
 CONFIG_LGE_PM_DEBUG=y
-CONFIG_IPC_LOGGING=y
+# CONFIG_IPC_LOGGING is not set # we shouldn't need this (forcing us into being a DEBUG kernel)
 CONFIG_DEBUG_BUGVERBOSE=y # we REALLY need this
 # CONFIG_MSM_SDE_ROTATOR_EVTLOG_DEBUG is not set
 # CONFIG_FB_MSM_MDSS_XLOG_DEBUG is not set
@@ -5746,21 +5751,21 @@ CONFIG_DEBUG_BUGVERBOSE=y # we REALLY need this
 # CONFIG_IOMMU_TESTS is not set
 # CONFIG_ICNSS_DEBUG is not set
 # CONFIG_FEATURE_TSO_DEBUG is not set
-# CONFIG_ALLOW_DEV_COREDUMP is not set
+# CONFIG_ALLOW_DEV_COREDUMP is not set # this totally disables any coredump whatsoever (=off)
 # CONFIG_WLAN_FEATURE_MEMDUMP is not set
 CONFIG_MSM_RPM_RBCPR_STATS_V2_LOG=y
 CONFIG_MSM_RPM_LOG=y
 CONFIG_MSM_RPM_STATS_LOG=y # needed for power-libperfmgr / permgr
 # CONFIG_MSM_TZ_LOG is not set
 CONFIG_TRACER_PKT=y
-# CONFIG_QCOM_REMOTEQDSS is not set
-CONFIG_QCOM_COMMON_LOG=y
+# CONFIG_QCOM_REMOTEQDSS is not set # Allow debug tools to enable events on other processors
+# CONFIG_QCOM_COMMON_LOG is not set # default (=n)
 # CONFIG_QCOM_MEMORY_DUMP_V2 is not set
 # CONFIG_USB_DWC3_DEBUG_FS is not set
 # CONFIG_MSM_SMEM_LOGGING is not set
 
 # disable for debug, security, attack surface
-# CONFIG_MSM_RDBG is not set
+# CONFIG_MSM_RDBG is not set # remote debugger driver (=m by default)
 # CONFIG_MAGIC_SYSRQ is not set
 
 # disable debug/strip/shrink kernel
@@ -5791,7 +5796,7 @@ CONFIG_BRANCH_PROFILE_NONE=y # keep =y
 # CONFIG_PROBE_EVENTS is not set
 CONFIG_DYNAMIC_FTRACE=y # keep =y
 # CONFIG_FUNCTION_PROFILER is not set
-# CONFIG_CPU_FREQ_SWITCH_PROFILER is not set # =y
+# CONFIG_CPU_FREQ_SWITCH_PROFILER is not set # =y , probably NO overhead, needs to be enabled through debugfs
 CONFIG_FTRACE_MCOUNT_RECORD=y # =y , needed by msm/ipa ? (/home/padma.r/LGH930/android/kernel/msm-4.4)
 # CONFIG_FTRACE_STARTUP_TEST is not set
 # CONFIG_TRACEPOINT_BENCHMARK is not set
@@ -5860,7 +5865,7 @@ CONFIG_PSTORE_RAM=y
 # PSTORE_FTRACE is not set
 
 # build drivers INto the kernel
-CONFIG_USB_GSPCA=y
+# CONFIG_USB_GSPCA is not set # most likely NOT needed , disable it
 
 CONFIG_TCP_CONG_ADVANCED=y
 CONFIG_TCP_CONG_BIC=y
@@ -5893,7 +5898,7 @@ CONFIG_DEFAULT_TCP_CONG="olia"
 CONFIG_NETFILTER=y
 # CONFIG_NETFILTER_DEBUG is not set
 CONFIG_NETFILTER_ADVANCED=y
-# CONFIG_BRIDGE_NETFILTER is not set # =m
+CONFIG_BRIDGE_NETFILTER=y # =m
 
 CONFIG_NET_CLS_ACT=y
 CONFIG_NET_ACT_GACT=y
@@ -6041,7 +6046,7 @@ CONFIG_SD_ENCRYPTION_MANAGER=y # joan_global_com ONLY , no spr/vzw
 # CONFIG_VPNCLIENT_SECURITY is not set # spr (=m)
 
 CONFIG_IKCONFIG_PROC=y # spr
-# CONFIG_BLK_DEV_BSG is not set # spr
+CONFIG_BLK_DEV_BSG=y # spr # eval
 # CONFIG_CLEANCACHE is not set # spr (=y), pointless if tmem users aren't selected (e.g. zcache, xen, etc.)
 # CONFIG_CMA_DEBUGFS is not set # spr (=y)
 # CONFIG_PM_DEBUG is not set # spr (non-perf)
@@ -6081,3 +6086,8 @@ CONFIG_XZ_DEC_BCJ=y # branch/call/jump filters
 # SERIAL_MSM_CONSOLE
 CONFIG_SERIAL_MSM=y
 CONFIG_SERIAL_MSM_CONSOLE=y
+
+# lge-oreo, stock config; and other discoveries
+CONFIG_BT_BDA=y
+CONFIG_SPI_SLAVE=y # SPI slave protocol handlers
+
