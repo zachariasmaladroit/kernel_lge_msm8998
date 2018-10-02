@@ -491,6 +491,7 @@ extern appid_t get_appid(const char *app_name);
 extern appid_t get_ext_gid(const char *app_name);
 extern appid_t is_excluded(const char *app_name, userid_t userid);
 extern int check_caller_access_to_name(struct inode *parent_node, const struct qstr *name);
+extern int open_flags_to_access_mode(int open_flags);
 extern int packagelist_init(void);
 extern void packagelist_exit(void);
 
@@ -646,7 +647,7 @@ static inline bool str_n_case_eq(const char *s1, const char *s2, size_t len)
 
 static inline bool qstr_case_eq(const struct qstr *q1, const struct qstr *q2)
 {
-	return q1->len == q2->len && str_n_case_eq(q1->name, q2->name, q2->len);
+	return q1->len == q2->len && str_case_eq(q1->name, q2->name);
 }
 
 #define QSTR_LITERAL(string) QSTR_INIT(string, sizeof(string)-1)
