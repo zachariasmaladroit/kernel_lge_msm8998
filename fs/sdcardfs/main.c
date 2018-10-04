@@ -337,7 +337,7 @@ static int sdcardfs_read_super(struct vfsmount *mnt, struct super_block *sb,
 	sb->s_root = d_make_root(inode);
 	if (!sb->s_root) {
 		err = -ENOMEM;
-		goto out_iput;
+		goto out_sput;
 	}
 	d_set_d_op(sb->s_root, &sdcardfs_ci_dops);
 
@@ -382,8 +382,7 @@ static int sdcardfs_read_super(struct vfsmount *mnt, struct super_block *sb,
 	/* no longer needed: free_dentry_private_data(sb->s_root); */
 out_freeroot:
 	dput(sb->s_root);
-out_iput:
-	iput(inode);
+	sb->s_root = NULL;
 out_sput:
 	/* drop refs we took earlier */
 	atomic_dec(&lower_sb->s_active);
@@ -397,41 +396,34 @@ out:
 	return err;
 }
 
-/* A feature which supports mount_nodev() with options */
-static struct dentry *mount_nodev_with_options(struct vfsmount *mnt,
-			struct file_system_type *fs_type, int flags,
-			const char *dev_name, void *data,
-			int (*fill_super)(struct vfsmount *, struct super_block *,
-						const char *, void *, int))
+struct sdcardfs_mount_private {
+	struct vfsmount *mnt;
+	const char *dev_name;
+	void *raw_data;
+};
 
+static int __sdcardfs_fill_super(
+	struct super_block *sb,
+	void *_priv, int silent)
 {
-	int error;
-	struct super_block *s = sget(fs_type, NULL, set_anon_super, flags, NULL);
+	struct sdcardfs_mount_private *priv = _priv;
 
-	if (IS_ERR(s))
-		return ERR_CAST(s);
-
-	s->s_flags = flags;
-
-	error = fill_super(mnt, s, dev_name, data, flags & MS_SILENT ? 1 : 0);
-	if (error) {
-		deactivate_locked_super(s);
-		return ERR_PTR(error);
-	}
-	s->s_flags |= MS_ACTIVE;
-	return dget(s->s_root);
+	return sdcardfs_read_super(priv->mnt,
+		sb, priv->dev_name, priv->raw_data, silent);
 }
 
 static struct dentry *sdcardfs_mount(struct vfsmount *mnt,
 		struct file_system_type *fs_type, int flags,
 			    const char *dev_name, void *raw_data)
 {
-	/*
-	 * dev_name is a lower_path_name,
-	 * raw_data is a option string.
-	 */
-	return mount_nodev_with_options(mnt, fs_type, flags, dev_name,
-						raw_data, sdcardfs_read_super);
+	struct sdcardfs_mount_private priv = {
+		.mnt = mnt,
+		.dev_name = dev_name,
+		.raw_data = raw_data
+	};
+
+	return mount_nodev(fs_type, flags,
+		&priv, __sdcardfs_fill_super);
 }
 
 static struct dentry *sdcardfs_mount_wrn(struct file_system_type *fs_type,
@@ -450,13 +442,13 @@ void sdcardfs_kill_sb(struct super_block *sb)
 {
 	struct sdcardfs_sb_info *sbi;
 
-	if (sb->s_magic == SDCARDFS_SUPER_MAGIC) {
+	if (sb->s_magic == SDCARDFS_SUPER_MAGIC && sb->s_fs_info) {
 		sbi = SDCARDFS_SB(sb);
 		mutex_lock(&sdcardfs_super_list_lock);
 		list_del(&sbi->list);
 		mutex_unlock(&sdcardfs_super_list_lock);
 	}
-	generic_shutdown_super(sb);
+	kill_anon_super(sb);
 }
 
 static struct file_system_type sdcardfs_fs_type = {
