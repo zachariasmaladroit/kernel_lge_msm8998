@@ -3408,7 +3408,6 @@ static void __process_sys_error(struct venus_hfi_device *device)
 {
 	struct hfi_sfr_struct *vsfr = NULL;
 
-
 	/* Once SYS_ERROR received from HW, it is safe to halt the AXI.
 	 * With SYS_ERROR, Venus FW may have crashed and HW might be
 	 * active and causing unnecessary transactions. Hence it is
