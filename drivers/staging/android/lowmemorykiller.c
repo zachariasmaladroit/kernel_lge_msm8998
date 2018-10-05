@@ -135,7 +135,7 @@ module_param_named(adj_max_shift, adj_max_shift, short,
                    S_IRUGO | S_IWUSR);
 
 /* User knob to enable/disable adaptive lmk feature */
-static int enable_adaptive_lmk;
+static int enable_adaptive_lmk = 1;
 module_param_named(enable_adaptive_lmk, enable_adaptive_lmk, int,
 		   S_IRUGO | S_IWUSR);
 
@@ -151,7 +151,7 @@ module_param_named(vmpressure_file_min, vmpressure_file_min, int,
 		   S_IRUGO | S_IWUSR);
 
 /* User knob to enable/disable oom reaping feature */
-static int oom_reaper;
+static int oom_reaper = 1;
 module_param_named(oom_reaper, oom_reaper, int, 0644);
 
 enum {
