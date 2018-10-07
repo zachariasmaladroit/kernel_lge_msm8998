@@ -221,8 +221,6 @@ static struct ext4_crypt_info *ext4_dedup_crypt_info(struct ext4_crypt_info *ci)
 			continue;
 		if (existing->ci_ctfm != ci->ci_ctfm)
 			continue;
-		if (existing->ci_keyring_key != ci->ci_keyring_key)
-			continue;
 		if (crypto_memneq(existing->ci_master_key, ci->ci_master_key,
 				  sizeof(ci->ci_master_key)))
 			continue;
