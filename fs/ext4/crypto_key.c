@@ -419,6 +419,9 @@ int ext4_get_encryption_info(struct inode *inode)
 					       ext4_encryption_key_size(mode));
 		if (res)
 			goto out;
+		memzero_explicit(crypt_info->ci_raw_key,
+			sizeof(crypt_info->ci_raw_key));
+	}
 
 	if (cmpxchg(&ei->i_crypt_info, NULL, crypt_info) == NULL)
 		crypt_info = NULL;
