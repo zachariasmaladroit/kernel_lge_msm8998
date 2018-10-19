@@ -5980,6 +5980,11 @@ CONFIG_ANDROID_LOW_MEMORY_KILLER=y
 CONFIG_ANDROID_LOW_MEMORY_KILLER_AUTODETECT_OOM_ADJ_VALUES=y
 # CONFIG_ANDROID_SIMPLE_LMK is not set # needs work
 
+# later added performance enhancements and tweaks behind a config entry
+# RSEQ (selected via Makefile by default)
+CONFIG_HAVE_RSEQ=y
+CONFIG_RSEQ=y
+
 # AIO
 # CONFIG_AIO has legitimate use for the functionfs
 # driver, which is used with adb and mtp. It is now required to be enabled
