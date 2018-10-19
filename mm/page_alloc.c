@@ -3658,18 +3658,10 @@ retry:
 		migration_mode = MIGRATE_SYNC_LIGHT;
 
 #ifdef CONFIG_ANDROID_SIMPLE_LMK
-	if (gfp_mask & __GFP_NORETRY) {
-		simple_lmk_mem_reclaim();
+	simple_lmk_mem_reclaim();
+	if (gfp_mask & __GFP_NORETRY)
 		goto noretry;
-	}
-
-	while (1) {
-		simple_lmk_mem_reclaim();
-		page = get_page_from_freelist(gfp_mask, order, alloc_flags, ac);
-		if (page)
-			goto got_pg;
-		cond_resched();
-	}
+	goto retry;
 #endif
 
 	/* Try direct reclaim and then allocating */
