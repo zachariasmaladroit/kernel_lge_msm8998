@@ -5544,7 +5544,7 @@ CONFIG_CPU_BOOST=y
 
 # GPU thermal throttling
 CONFIG_DEVFREQ_THERMAL=y
-CONFIG_QCOM_ADRENO_DEFAULT_GOVERNOR="simple_ondemand"
+CONFIG_QCOM_ADRENO_DEFAULT_GOVERNOR="msm-adreno-tz"
 
 # exfat opensource'd Samsung exfat leaked driver
 # CONFIG_EXFAT_FS is not set
