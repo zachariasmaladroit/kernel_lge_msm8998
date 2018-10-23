@@ -406,16 +406,17 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fdiagnostics-color=always \
 		   -Wno-unused-value -Wno-unused-parameter \
 		   -Wno-missing-field-initializers -fno-delete-null-pointer-checks \
-		   -fdevirtualize -fdevirtualize-speculatively -flra-remat \
-		   -fivopts \
-		   -flive-range-shrinkage \
-		   -fno-ipa-sra \
 		   -march=armv8-a+crc+crypto -mtune=cortex-a73.cortex-a53 \
 		   -std=gnu89 $(call cc-option,-fno-PIE)
 
 #		   -fmodulo-sched -fmodulo-sched-allow-regmoves \
 #		   -fipa-ra
 #		   -fipa-reference -fipa-icf
+#
+#		   -fdevirtualize -fdevirtualize-speculatively -flra-remat \
+#		   -fivopts \
+#		   -flive-range-shrinkage \
+#		   -fno-ipa-sra \
 
 
 KBUILD_AFLAGS_KERNEL :=
