@@ -406,7 +406,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fdiagnostics-color=always \
 		   -Wno-unused-value -Wno-unused-parameter \
 		   -Wno-missing-field-initializers -fno-delete-null-pointer-checks \
-		   -fipa-reference -fipa-icf -fdevirtualize -fdevirtualize-speculatively -flra-remat -fipa-ra \
+		   -fdevirtualize -fdevirtualize-speculatively -flra-remat \
 		   -fivopts \
 		   -flive-range-shrinkage \
 		   -fno-ipa-sra \
@@ -414,6 +414,9 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -std=gnu89 $(call cc-option,-fno-PIE)
 
 #		   -fmodulo-sched -fmodulo-sched-allow-regmoves \
+#		   -fipa-ra
+#		   -fipa-reference -fipa-icf
+
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
