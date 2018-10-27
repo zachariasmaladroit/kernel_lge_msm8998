@@ -434,7 +434,7 @@ static struct pil_seg *pil_init_seg(const struct pil_desc *desc,
 	const struct pil_priv *priv = desc->priv;
 	struct pil_seg *seg;
 
-	if (!reloc && memblock_overlaps_memory(phdr->p_paddr, phdr->p_memsz)) {
+	if (!reloc && memblock_is_region_reserved(phdr->p_paddr, phdr->p_memsz)) {
 		pil_err(desc, "Segment not relocatable,kernel memory would be overwritten[%#08lx, %#08lx)\n",
 		(unsigned long)phdr->p_paddr,
 		(unsigned long)(phdr->p_paddr + phdr->p_memsz));

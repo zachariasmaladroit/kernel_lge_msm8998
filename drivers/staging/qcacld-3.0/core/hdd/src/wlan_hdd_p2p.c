@@ -120,8 +120,8 @@ static bool wlan_hdd_is_type_p2p_action( const u8 *buf, uint32_t len)
 {
 	const u8 *ouiPtr;
 
-    if (len < WLAN_HDD_PUBLIC_ACTION_FRAME_SUB_TYPE_OFFSET + 1)
-        return false;
+	if (len < WLAN_HDD_PUBLIC_ACTION_FRAME_SUB_TYPE_OFFSET + 1)
+		return false;
 
 	if (buf[WLAN_HDD_PUBLIC_ACTION_FRAME_CATEGORY_OFFSET] !=
 	    WLAN_HDD_PUBLIC_ACTION_FRAME)
