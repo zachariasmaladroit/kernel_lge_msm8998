@@ -7808,9 +7808,9 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 	}
 
 #ifdef CONFIG_USE_3RD_SPKR_AMP
-if(0)
+	if(0)
 #endif
-	ret = msm_init_wsa_dev(pdev, card);
+		ret = msm_init_wsa_dev(pdev, card);
 	if (ret)
 		goto err;
 
