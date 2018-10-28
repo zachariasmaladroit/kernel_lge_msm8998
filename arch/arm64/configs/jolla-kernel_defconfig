@@ -4934,12 +4934,16 @@ CONFIG_TSPDRV=y
 #
 # LGE Broadcast Device Support
 #
-# CONFIG_LGE_BROADCAST_TDMB is not set
+CONFIG_LGE_BROADCAST_TDMB=y
 
 #
 # LGE Japanese Mobile Broadcast(ISDB-T 1seg/ISDB-Tmm 13seg) Device Support
 #
-# CONFIG_TRUSTONIC_TEE is not set
+CONFIG_LGE_BROADCAST_TDMB_FC8080=y
+CONFIG_TRUSTONIC_TEE=y
+CONFIG_TRUSTONIC_TEE_LPAE=y
+# CONFIG_TRUSTONIC_TEE_DEBUG is not set
+# CONFIG_TRUSTONIC_TRUSTED_UI is not set
 
 #
 # Firmware Drivers
