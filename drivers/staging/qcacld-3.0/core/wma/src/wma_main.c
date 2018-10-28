@@ -84,9 +84,7 @@
 #define WMA_LOG_COMPLETION_TIMER 3000 /* 3 seconds */
 
 #define WMI_TLV_HEADROOM 128
-#ifdef TRACE_RECORD
 uint8_t *mac_trace_get_wma_msg_string(uint16_t wmaMsg);
-#endif
 static uint32_t g_fw_wlan_feat_caps;
 /**
  * wma_get_fw_wlan_feat_caps() - get fw feature capablity
@@ -861,6 +859,8 @@ static void wma_set_modulated_dtim(tp_wma_handle wma,
 		&wma->interfaces[vdev_id];
 	bool prev_dtim_enabled;
 	uint32_t listen_interval;
+	uint32_t beacon_interval_mod;
+	uint32_t max_mod_dtim;
 	QDF_STATUS ret;
 
 	iface->alt_modulated_dtim = privcmd->param_value;
@@ -875,22 +875,41 @@ static void wma_set_modulated_dtim(tp_wma_handle wma,
 	if ((true == iface->alt_modulated_dtim_enabled) ||
 	    (true == prev_dtim_enabled)) {
 
-		listen_interval = iface->alt_modulated_dtim
-			* iface->dtimPeriod;
+		beacon_interval_mod = iface->beaconInterval / 100;
+		if (!beacon_interval_mod)
+			beacon_interval_mod = 1;
 
-		ret = wma_vdev_set_param(wma->wmi_handle,
-						privcmd->param_vdev_id,
-						WMI_VDEV_PARAM_LISTEN_INTERVAL,
-						listen_interval);
+		if (iface->dtimPeriod)
+			max_mod_dtim = wma->staMaxLIModDtim
+				/ (iface->dtimPeriod*beacon_interval_mod);
+		else
+			max_mod_dtim = wma->staMaxLIModDtim/beacon_interval_mod;
+
+		if (!max_mod_dtim)
+			max_mod_dtim = 1;
+
+		if (iface->alt_modulated_dtim > max_mod_dtim) {
+			WMA_LOGE("User ModDtim(%d) exceeding ceiling limit(%d)",
+				 iface->alt_modulated_dtim, max_mod_dtim);
+			listen_interval = max_mod_dtim * iface->dtimPeriod;
+		} else {
+			listen_interval = iface->alt_modulated_dtim
+						* iface->dtimPeriod;
+		}
+
+		WMA_LOGD("Setting Listen Interval %d for vdev id %d",
+			 listen_interval, vdev_id);
+		ret = wma_vdev_set_param(wma->wmi_handle, vdev_id,
+					 WMI_VDEV_PARAM_LISTEN_INTERVAL,
+					 listen_interval);
 		if (QDF_IS_STATUS_ERROR(ret))
 			/* Even if it fails, continue */
 			WMA_LOGW("Failed to set listen interval %d",
 				 listen_interval);
 
-		ret = wma_vdev_set_param(wma->wmi_handle,
-						privcmd->param_vdev_id,
-						WMI_VDEV_PARAM_DTIM_POLICY,
-						NORMAL_DTIM);
+		ret = wma_vdev_set_param(wma->wmi_handle, vdev_id,
+					 WMI_VDEV_PARAM_DTIM_POLICY,
+					 NORMAL_DTIM);
 		if (QDF_IS_STATUS_ERROR(ret))
 			WMA_LOGE("Failed to Set to Normal DTIM policy");
 	}
@@ -1889,6 +1908,19 @@ static void wma_cleanup_hold_req(tp_wma_handle wma)
 	qdf_spin_unlock_bh(&wma->wma_hold_req_q_lock);
 }
 
+void wma_cleanup_vdev_resp_and_hold_req(void *priv)
+{
+	tp_wma_handle wma_handle = priv;
+
+	if (!wma_handle) {
+		WMA_LOGE(FL("wma_handle is invald!"));
+		return;
+	}
+
+	wma_cleanup_vdev_resp_queue(wma_handle);
+	wma_cleanup_hold_req(wma_handle);
+}
+
 /**
  * wma_shutdown_notifier_cb - Shutdown notifer call back
  * @priv : WMA handle
@@ -1904,10 +1936,16 @@ static void wma_cleanup_hold_req(tp_wma_handle wma)
 static void wma_shutdown_notifier_cb(void *priv)
 {
 	tp_wma_handle wma_handle = priv;
+	cds_msg_t msg = { 0 };
+	QDF_STATUS status;
 
 	qdf_event_set(&wma_handle->wma_resume_event);
-	wma_cleanup_vdev_resp_queue(wma_handle);
-	wma_cleanup_hold_req(wma_handle);
+
+	sys_build_message_header(SYS_MSG_ID_CLEAN_VDEV_RSP_QUEUE, &msg);
+	msg.bodyptr = priv;
+	status = cds_mq_post_message(QDF_MODULE_ID_SYS, &msg);
+	if (QDF_IS_STATUS_ERROR(status))
+		WMA_LOGE(FL("Failed to post SYS_MSG_ID_CLEAN_VDEV_RSP_QUEUE"));
 }
 
 struct wma_version_info g_wmi_version_info;
@@ -3113,6 +3151,11 @@ static int wma_pdev_set_hw_mode_resp_evt_handler(void *handle,
 			QDF_BUG(0);
 			goto fail;
 		}
+		if (vdev_id >= wma->max_bssid) {
+			WMA_LOGE("%s: vdev_id: %d is invalid, max_bssid: %d",
+					__func__, vdev_id, wma->max_bssid);
+			goto fail;
+		}
 		mac_id = WMA_PDEV_TO_MAC_MAP(vdev_mac_entry[i].pdev_id);
 
 		WMA_LOGE("%s: vdev_id:%d mac_id:%d",
@@ -3172,7 +3215,13 @@ void wma_process_pdev_hw_mode_trans_ind(void *handle,
 {
 	uint32_t i;
 	tp_wma_handle wma = (tp_wma_handle) handle;
-
+	if (fixed_param->num_vdev_mac_entries > MAX_VDEV_SUPPORTED) {
+		WMA_LOGE("Number of Vdev mac entries %d exceeded"
+			 " max vdev supported %d",
+			 fixed_param->num_vdev_mac_entries,
+			 MAX_VDEV_SUPPORTED);
+		return;
+	}
 	hw_mode_trans_ind->old_hw_mode_index = fixed_param->old_hw_mode_index;
 	hw_mode_trans_ind->new_hw_mode_index = fixed_param->new_hw_mode_index;
 	hw_mode_trans_ind->num_vdev_mac_entries =
@@ -3193,6 +3242,11 @@ void wma_process_pdev_hw_mode_trans_ind(void *handle,
 			WMA_LOGE("%s: soc level id received for mac id)",
 					__func__);
 			QDF_BUG(0);
+			return;
+		}
+		if (vdev_id >= wma->max_bssid) {
+			WMA_LOGE("%s: vdev_id: %d is invalid, max_bssid: %d",
+					__func__, vdev_id, wma->max_bssid);
 			return;
 		}
 
@@ -6120,8 +6174,9 @@ QDF_STATUS wma_wait_for_ready_event(WMA_HANDLE handle)
 	QDF_STATUS qdf_status;
 
 	/* wait until WMI_READY_EVENTID received from FW */
-	qdf_status = qdf_wait_single_event(&(wma_handle->wma_ready_event),
-					   WMA_READY_EVENTID_TIMEOUT);
+	qdf_status = qdf_wait_for_event_completion(
+					&wma_handle->wma_ready_event,
+					WMA_READY_EVENTID_TIMEOUT);
 
 	if (QDF_STATUS_SUCCESS != qdf_status) {
 		WMA_LOGE("%s: Timeout waiting for ready event from FW",
@@ -7766,6 +7821,7 @@ QDF_STATUS wma_mc_process_msg(void *cds_context, cds_msg_t *msg)
 	case WMA_RESET_PASSPOINT_LIST_REQ:
 		wma_reset_passpoint_network_list(wma_handle,
 			(struct wifi_passpoint_req *)msg->bodyptr);
+		qdf_mem_free(msg->bodyptr);
 		break;
 #endif /* FEATURE_WLAN_EXTSCAN */
 	case WMA_SET_SCAN_MAC_OUI_REQ:

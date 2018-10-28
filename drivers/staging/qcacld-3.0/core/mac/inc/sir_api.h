@@ -274,6 +274,17 @@ typedef enum eSirScanType {
 	eSIR_BEACON_TABLE,
 } tSirScanType;
 
+/* Rsn Capabilities structure */
+struct rsn_caps {
+	uint16_t PreAuthSupported:1;
+	uint16_t NoPairwise:1;
+	uint16_t PTKSAReplayCounter:2;
+	uint16_t GTKSAReplayCounter:2;
+	uint16_t MFPRequired:1;
+	uint16_t MFPCapable:1;
+	uint16_t Reserved:8;
+};
+
 /* / Result codes Firmware return to Host SW */
 typedef enum eSirResultCodes {
 	eSIR_SME_SUCCESS,
@@ -482,6 +493,7 @@ typedef struct sSirSmeReadyReq {
 	void *csr_roam_synch_cb;
 	void *pe_roam_synch_cb;
 	void *sme_msg_cb;
+	void *stop_roaming_cb;
 } tSirSmeReadyReq, *tpSirSmeReadyReq;
 
 /**
@@ -535,16 +547,35 @@ struct sir_set_dual_mac_cfg {
 };
 
 /**
+ * enum set_antenna_mode_status - Status of set antenna mode
+ * command
+ * @SET_ANTENNA_MODE_STATUS_OK: command successful
+ * @SET_ANTENNA_MODE_STATUS_EINVAL: invalid antenna mode
+ * @SET_ANTENNA_MODE_STATUS_ECANCELED: mode change cancelled
+ * @SET_ANTENNA_MODE_STATUS_ENOTSUP: mode not supported
+ */
+enum set_antenna_mode_status {
+	SET_ANTENNA_MODE_STATUS_OK,
+	SET_ANTENNA_MODE_STATUS_EINVAL,
+	SET_ANTENNA_MODE_STATUS_ECANCELED,
+	SET_ANTENNA_MODE_STATUS_ENOTSUP,
+};
+
+typedef void (*antenna_mode_cb)(enum set_antenna_mode_status status,
+				void *context);
+
+/**
  * struct sir_antenna_mode_param - antenna mode param
  * @num_tx_chains: Number of TX chains
  * @num_rx_chains: Number of RX chains
- * @reason: Reason for setting antenna mode
  * @set_antenna_mode_resp: callback to set antenna mode command
+ * @set_antenna_mode_ctx: callback context to set antenna mode command
  */
 struct sir_antenna_mode_param {
 	uint32_t num_tx_chains;
 	uint32_t num_rx_chains;
-	void *set_antenna_mode_resp;
+	antenna_mode_cb set_antenna_mode_resp;
+	void *set_antenna_mode_ctx;
 };
 
 /**
@@ -1297,6 +1328,7 @@ typedef struct sSirSmeJoinReq {
 	bool ignore_assoc_disallowed;
 	bool enable_bcast_probe_rsp;
 	bool force_24ghz_in_ht20;
+	bool force_rsne_override;
 	tSirBssDescription bssDescription;
 	/*
 	 * WARNING: Pls make bssDescription as last variable in struct
@@ -1450,6 +1482,7 @@ typedef struct sSirSmeAssocInd {
 
 	tDot11fIEHTCaps HTCaps;
 	tDot11fIEVHTCaps VHTCaps;
+	tSirMacCapabilityInfo capability_info;
 } tSirSmeAssocInd, *tpSirSmeAssocInd;
 
 /* / Definition for Association confirm */
@@ -1710,6 +1743,7 @@ typedef struct sSirSmeDisassocInd {
 typedef struct sSirSmeDisassocCnf {
 	uint16_t messageType;   /* eWNI_SME_DISASSOC_CNF */
 	uint16_t length;
+	uint8_t sme_session_id;
 	tSirResultCodes statusCode;
 	struct qdf_mac_addr bssid;
 	struct qdf_mac_addr peer_macaddr;
@@ -3510,6 +3544,7 @@ typedef struct sSirRoamOffloadScanReq {
 	uint8_t OpportunisticScanThresholdDiff;
 	uint8_t RoamRescanRssiDiff;
 	uint8_t RoamRssiDiff;
+	struct rsn_caps rsn_caps;
 	int32_t rssi_abs_thresh;
 	uint8_t ChannelCacheType;
 	uint8_t Command;
@@ -3566,6 +3601,10 @@ typedef struct sSirRoamOffloadScanReq {
 #endif
 	struct scoring_param score_params;
 	struct wmi_11k_offload_params offload_11k_params;
+	uint32_t ho_delay_for_rx;
+	uint32_t min_delay_btw_roam_scans;
+	uint32_t roam_trigger_reason_bitmask;
+	bool roam_force_rssi_trigger;
 } tSirRoamOffloadScanReq, *tpSirRoamOffloadScanReq;
 
 typedef struct sSirRoamOffloadScanRsp {
@@ -3887,21 +3926,6 @@ struct sir_hw_mode_trans_ind {
  */
 struct sir_dual_mac_config_resp {
 	uint32_t status;
-};
-
-/**
- * enum set_antenna_mode_status - Status of set antenna mode
- * command
- * @SET_ANTENNA_MODE_STATUS_OK: command successful
- * @SET_ANTENNA_MODE_STATUS_EINVAL: invalid antenna mode
- * @SET_ANTENNA_MODE_STATUS_ECANCELED: mode change cancelled
- * @SET_ANTENNA_MODE_STATUS_ENOTSUP: mode not supported
- */
-enum set_antenna_mode_status {
-	SET_ANTENNA_MODE_STATUS_OK,
-	SET_ANTENNA_MODE_STATUS_EINVAL,
-	SET_ANTENNA_MODE_STATUS_ECANCELED,
-	SET_ANTENNA_MODE_STATUS_ENOTSUP,
 };
 
 /**
@@ -4393,6 +4417,11 @@ struct sir_peer_info_req {
  * @rssi: rssi
  * @tx_rate: last tx rate
  * @rx_rate: last rx rate
+ * @rx_mc_bc_cnt: Multicast broadcast packet count received from
+ *              current station
+ * MSB of rx_mc_bc_cnt indicates whether FW supports rx_mc_bc_cnt
+ * feature or not, if first bit is 1 it indictes that FW supports this
+ * feature, if it is 0 it indicates FW doesn't support this feature
  *
  * a station's information
  */
@@ -4401,6 +4430,7 @@ struct sir_peer_info {
 	int8_t rssi;
 	uint32_t tx_rate;
 	uint32_t rx_rate;
+	uint32_t rx_mc_bc_cnt;
 };
 
 /**
@@ -4483,6 +4513,17 @@ struct sir_peer_info_ext_resp {
 struct sir_peer_sta_info {
 	uint8_t sta_num;
 	struct sir_peer_info info[MAX_PEER_STA];
+};
+
+/**
+ * @sta_num: number of peer station which has valid info
+ * @info: peer extended information
+ *
+ * all SAP peer station's extended information retrieved
+ */
+struct sir_peer_sta_ext_info {
+	uint8_t sta_num;
+	struct sir_peer_info_ext info[MAX_PEER_STA];
 };
 
 typedef struct sSirAddPeriodicTxPtrn {
@@ -6654,7 +6695,6 @@ typedef void (*hw_mode_transition_cb)(uint32_t old_hw_mode_index,
 		struct sir_vdev_mac_map *vdev_mac_map);
 typedef void (*dual_mac_cb)(uint32_t status, uint32_t scan_config,
 		uint32_t fw_mode_config);
-typedef void (*antenna_mode_cb)(uint32_t status);
 
 /**
  * struct sir_nss_update_request
