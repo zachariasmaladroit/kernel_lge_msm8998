@@ -254,13 +254,13 @@ endif
 # Feature flags which are not (currently) configurable via Kconfig
 
 #Whether to build debug version
-BUILD_DEBUG_VERSION := 0
+BUILD_DEBUG_VERSION := 1
 
 #Enable this flag to build driver in diag version
 BUILD_DIAG_VERSION := 1
 
 #Do we panic on bug?  default is to warn
-PANIC_ON_BUG := 0
+PANIC_ON_BUG := 1
 
 #Enable OL debug and wmi unified functions
 CONFIG_ATH_PERF_PWR_OFFLOAD := 1
@@ -425,6 +425,7 @@ HDD_OBJS := 	$(HDD_SRC_DIR)/wlan_hdd_assoc.o \
 		$(HDD_SRC_DIR)/wlan_hdd_packet_filter.o \
 		$(HDD_SRC_DIR)/wlan_hdd_power.o \
 		$(HDD_SRC_DIR)/wlan_hdd_regulatory.o \
+		$(HDD_SRC_DIR)/wlan_hdd_request_manager.o \
 		$(HDD_SRC_DIR)/wlan_hdd_scan.o \
 		$(HDD_SRC_DIR)/wlan_hdd_softap_tx_rx.o \
 		$(HDD_SRC_DIR)/wlan_hdd_tx_rx.o \
@@ -765,6 +766,7 @@ QDF_INC :=	-I$(WLAN_COMMON_INC)/$(QDF_OS_INC_DIR) \
 
 QDF_OBJS := 	$(QDF_OBJ_DIR)/qdf_defer.o \
 		$(QDF_OBJ_DIR)/qdf_event.o \
+		$(QDF_OBJ_DIR)/qdf_idr.o \
 		$(QDF_OBJ_DIR)/qdf_list.o \
 		$(QDF_OBJ_DIR)/qdf_lock.o \
 		$(QDF_OBJ_DIR)/qdf_mc_timer.o \
@@ -1751,10 +1753,6 @@ EXTRA_CFLAGS += -Wmissing-prototypes
 ifeq ($(call cc-option-yn, -Wheader-guard),y)
 EXTRA_CFLAGS += -Wheader-guard
 endif
-
-# To build without debug just ignore not used code.
-EXTRA_CFLAGS += $(call cc-disable-warning,unused-variable,)
-EXTRA_CFLAGS += $(call cc-disable-warning,unused-function,)
 
 # If the module name is not "wlan", then the define MULTI_IF_NAME to be the
 # same a the QCA CHIP name. The host driver will then append MULTI_IF_NAME to
