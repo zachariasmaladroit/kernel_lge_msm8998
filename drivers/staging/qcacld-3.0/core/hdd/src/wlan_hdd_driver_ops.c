@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2017 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2015-2018 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -252,6 +252,7 @@ int hdd_hif_open(struct device *dev, void *bdev, const struct hif_bus_id *bid,
 		ret = qdf_status_to_os_return(status);
 		goto err_hif_close;
 	} else {
+		cds_set_target_ready(true);
 		ret = hdd_napi_create();
 		hdd_debug("hdd_napi_create returned: %d", ret);
 		if (ret == 0)
@@ -389,8 +390,6 @@ static int wlan_hdd_probe(struct device *dev, void *bdev, const struct hif_bus_i
 	hdd_allow_suspend(WIFI_POWER_EVENT_WAKELOCK_DRIVER_INIT);
 	hdd_remove_pm_qos(dev);
 
-	cds_clear_fw_state(CDS_FW_STATE_DOWN);
-
 	cds_set_driver_in_bad_state(false);
 	probe_fail_cnt = 0;
 	re_init_fail_cnt = 0;
@@ -416,7 +415,6 @@ err_hdd_deinit:
 	hdd_allow_suspend(WIFI_POWER_EVENT_WAKELOCK_DRIVER_INIT);
 	hdd_remove_pm_qos(dev);
 
-	cds_clear_fw_state(CDS_FW_STATE_DOWN);
 	hdd_stop_driver_ops_timer();
 	mutex_unlock(&hdd_init_deinit_lock);
 	return ret;
@@ -832,8 +830,7 @@ static int __wlan_hdd_bus_resume(void)
 	return 0;
 
 out:
-	if (cds_is_driver_recovering() || cds_is_driver_in_bad_state() ||
-		cds_is_fw_down())
+	if (cds_is_driver_recovering() || cds_is_driver_in_bad_state())
 		return 0;
 
 	QDF_BUG(false);
@@ -1295,6 +1292,7 @@ static void hdd_cleanup_on_fw_down(void)
 	ENTER();
 
 	hdd_ctx = cds_get_context(QDF_MODULE_ID_HDD);
+	qdf_complete_wait_events();
 	cds_set_target_ready(false);
 	if (hdd_ctx != NULL)
 		hdd_cleanup_scan_queue(hdd_ctx, NULL);
@@ -1315,12 +1313,8 @@ static void wlan_hdd_set_the_pld_uevent(struct pld_uevent_data *uevent)
 	case PLD_RECOVERY:
 		cds_set_recovery_in_progress(true);
 		break;
-	case PLD_FW_DOWN:
-		cds_set_fw_state(CDS_FW_STATE_DOWN);
-		break;
-	case PLD_FW_READY:
-		cds_set_target_ready(true);
-		break;
+	default:
+		return;
 	}
 }
 
@@ -1354,13 +1348,12 @@ static void wlan_hdd_pld_uevent(struct device *dev,
 
 	switch (uevent->uevent) {
 	case PLD_RECOVERY:
+		cds_set_target_ready(false);
 		hdd_pld_ipa_uc_shutdown_pipes();
 		wlan_hdd_purge_notifier();
 		break;
 	case PLD_FW_DOWN:
 		hdd_cleanup_on_fw_down();
-		break;
-	case PLD_FW_READY:
 		break;
 	}
 uevent_not_allowed:
