@@ -6099,3 +6099,5 @@ CONFIG_SERIAL_MSM_CONSOLE=y
 CONFIG_BT_BDA=y
 CONFIG_SPI_SLAVE=y # SPI slave protocol handlers
 
+# vibration tshoot
+CONFIG_DW7800_SYSFS=y
