@@ -575,6 +575,10 @@ static void package_details_release(struct config_item *item)
 {
 	struct package_details *package_details = to_package_details(item);
 
+#ifdef CONFIG_MACH_LGE
+	if (!package_details) // WBT 201796
+		return ;
+#endif
 	pr_info("sdcardfs: removing %s\n", package_details->name.name);
 	remove_packagelist_entry(&package_details->name);
 	kfree(package_details->name.name);
@@ -627,6 +631,10 @@ static void extension_details_release(struct config_item *item)
 {
 	struct extension_details *extension_details = to_extension_details(item);
 
+#ifdef CONFIG_MACH_LGE
+	if (!extension_details) // WBT 201797
+		return ;
+#endif
 	pr_info("sdcardfs: No longer mapping %s files to gid %d\n",
 			extension_details->name.name, extension_details->num);
 	remove_ext_gid_entry(&extension_details->name, extension_details->num);
@@ -659,7 +667,12 @@ static struct config_item *extension_details_make_item(struct config_group *grou
 		return ERR_PTR(-ENOMEM);
 	}
 	qstr_init(&extension_details->name, tmp);
-	extension_details->num = extensions_value->num;
+#ifdef CONFIG_MACH_LGE
+	if (!extensions_value) { // WBT 201799
+		kfree(extension_details);
+		return ERR_PTR(-ENOMEM);
+	}
+#endif
 	ret = insert_ext_gid_entry(&extension_details->name, extensions_value->num);
 
 	if (ret) {
@@ -706,6 +719,10 @@ static void extensions_drop_group(struct config_group *group, struct config_item
 {
 	struct extensions_value *value = to_extensions_value(item);
 
+#ifdef CONFIG_MACH_LGE
+	if (!value) // WBT 201798
+		return ;
+#endif
 	pr_info("sdcardfs: No longer mapping any files to gid %d\n", value->num);
 	kfree(value);
 }
