@@ -99,7 +99,6 @@ static struct workqueue_struct *sovc_volume_input_wq;
 static struct workqueue_struct *sovc_track_input_wq;
 static struct work_struct sovc_volume_input_work;
 static struct work_struct sovc_track_input_work;
-extern bool tavil_mic_detected;
 
 static void sovc_off(void);
 static void unregister_sovc(void);
@@ -626,7 +625,7 @@ static ssize_t sovc_scroff_volctr_dump(struct device *dev,
 	} else
 		return -EINVAL;
 
-	if (sovc_switch && sovc_tmp_onoff && sovc_scr_suspended && !tavil_mic_detected)
+	if (sovc_switch && sovc_tmp_onoff && sovc_scr_suspended)
 		register_sovc();
 	else
 		unregister_sovc();
@@ -672,10 +671,7 @@ static ssize_t sovc_scroff_volctr_temp_dump(struct device *dev,
 
 	if (sovc_switch && sovc_scr_suspended) {
 		if (sovc_tmp_onoff) {
-			if (tavil_mic_detected)
-				unregister_sovc();
-			else
-				register_sovc();
+			register_sovc();
 		} else {
 			unregister_sovc();
 			tfa98xx_notifier_call_chain(TFA98XX_EVENT_STOPPED, NULL);
@@ -770,13 +766,8 @@ static int sovc_fb_notifier_callback(struct notifier_block *self,
 		case FB_BLANK_VSYNC_SUSPEND:
 		case FB_BLANK_POWERDOWN:
 			sovc_scr_suspended = true;
-			if (sovc_switch && (track_changed || sovc_tmp_onoff)) {
-				if (tavil_mic_detected) {
-					unregister_sovc();
-					break;
-				}
+			if (sovc_switch && (track_changed || sovc_tmp_onoff))
 				register_sovc();
-			}
 			break;
 		}
 	}
