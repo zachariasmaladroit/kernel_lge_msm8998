@@ -91,7 +91,6 @@ enum sensor_sub_module_t {
 #if 1 /* CONFIG_MACH_LGE */
 	SUB_MODULE_PROXY,
 #endif
-	SUB_MODULE_LASER_LED,
 	SUB_MODULE_MAX,
 };
 
@@ -307,15 +306,6 @@ struct msm_ir_led_cfg_data_t {
 
 struct msm_ir_cut_cfg_data_t {
 	enum msm_ir_cut_cfg_type_t cfg_type;
-};
-
-struct msm_laser_led_cfg_data_t {
-	enum msm_laser_led_cfg_type_t cfg_type;
-	void __user                   *setting;
-	void __user                   *debug_reg;
-	uint32_t                      debug_reg_size;
-	uint16_t                      i2c_addr;
-	enum i2c_freq_mode_t          i2c_freq_mode;
 };
 
 struct msm_eeprom_cfg_data {
@@ -731,9 +721,5 @@ struct msm_proxy_cfg_data {
 #define VIDIOC_MSM_OIS_GET_INFO \
 	_IOWR('V', BASE_VIDIOC_PRIVATE + 19, struct msm_ois_info_t)
 #endif
-
-#define VIDIOC_MSM_LASER_LED_CFG \
-	_IOWR('V', BASE_VIDIOC_PRIVATE + 20, struct msm_laser_led_cfg_data_t)
-
 
 #endif
