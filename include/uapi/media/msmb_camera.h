@@ -57,8 +57,6 @@
 #define MSM_CAMERA_SUBDEV_PROXY        21
 #endif
 
-#define MSM_CAMERA_SUBDEV_LASER_LED    22
-
 #define MSM_MAX_CAMERA_SENSORS  5
 
 /* The below macro is defined to put an upper limit on maximum
