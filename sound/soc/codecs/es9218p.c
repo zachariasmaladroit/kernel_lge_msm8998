@@ -322,6 +322,8 @@ static unsigned int es9218_is_amp_on = 0;
 static unsigned int es9218_bps = 16;
 static unsigned int es9218_rate = 48000;
 
+static int force_advanced_mode = 0;
+
 static int g_headset_type = 0;
 static int g_avc_volume = 0;
 static int g_volume = 0;
@@ -573,13 +575,45 @@ static ssize_t es9218_registers_store(struct device *dev,
 static DEVICE_ATTR(registers, S_IWUSR | S_IRUGO,
         es9218_registers_show, es9218_registers_store);
 
+static ssize_t force_advanced_mode_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	size_t count = 0;
+
+	count += sprintf(buf, "%d\n", force_advanced_mode);
+
+	return count;
+}
+
+static ssize_t force_advanced_mode_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	int rc, val;
+
+	rc = kstrtoint(buf, 10, &val);
+	if (rc)
+		return -EINVAL;
+
+	if (val == 0 || val == 1) {
+		if (force_advanced_mode != val)
+			force_advanced_mode = val;
+	} else
+		return -EINVAL;
+
+	return count;
+}
+
+static DEVICE_ATTR(force_advanced_mode, S_IWUSR | S_IRUGO,
+        force_advanced_mode_show, force_advanced_mode_store);
+
 static struct attribute *es9218_attrs[] = {
 #ifdef CONFIG_SND_SOC_LGE_ESS_DIGITAL_FILTER
 	&dev_attr_fade_mute_count.attr,
 	&dev_attr_fade_mute_term.attr,
 #endif
-    &dev_attr_registers.attr,
-    NULL
+	&dev_attr_registers.attr,
+	&dev_attr_force_advanced_mode.attr,
+	NULL
 };
 
 static const struct attribute_group es9218_attr_group = {
@@ -2041,6 +2075,10 @@ static int es9218_headset_type_put(struct snd_kcontrol *kcontrol,
 
     if(value != 0) {
         g_headset_type = value;
+	if (g_headset_type == 1 && force_advanced_mode) {
+		pr_info("%s(): jolla-kernel: Force change to Advanced Mode!\n", __func__);
+		g_headset_type = 2;
+	}
         pr_debug("%s(): type = %d, state = %s\n ", __func__, value, power_state[es9218_power_state]);
     } else {
         /*
