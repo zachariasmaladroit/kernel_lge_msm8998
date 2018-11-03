@@ -42,6 +42,7 @@
 #include <linux/spinlock.h>
 #include <linux/circ_buf.h>
 #include <linux/workqueue.h>
+#include <linux/mm.h>
 
 /* Version info*/
 #define UFSHPB_VER				0x0103
@@ -390,7 +391,10 @@ struct ufshpb_sysfs_entry {
 	ssize_t (*store)(struct ufshpb_lu *hpb, const char *, size_t);
 };
 
-static inline void *kvzalloc(size_t size, gfp_t flags)
+/*
+ * scsi/ufs: make host performance booster compatible with msm8998 based phones
+ */
+/*static inline void *kvzalloc(size_t size, gfp_t flags)
 {
 	void *ret;
 
@@ -398,7 +402,7 @@ static inline void *kvzalloc(size_t size, gfp_t flags)
 	if (!ret)
 		ret = __vmalloc(size, flags | __GFP_ZERO, PAGE_KERNEL);
 	return ret;
-}
+}*/
 
 struct ufshcd_lrb;
 
