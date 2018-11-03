@@ -110,6 +110,8 @@ static void unregister_sovc(void);
 static bool registered = false;
 static DEFINE_MUTEX(reg_lock);
 
+struct mutex sovc_playing_state_lock;
+
 enum CONTROL {
 	NO_CONTROL,
 	VOL_UP,
@@ -120,6 +122,11 @@ enum CONTROL {
 static int control;
 
 static void scroff_volctr_key_delayed_trigger(void);
+
+bool sovc_state_playing(void)
+{
+	return 	sovc_switch & (track_changed | sovc_tmp_onoff);
+}
 
 /* Read cmdline for sovc */
 static int __init read_sovc_cmdline(char *sovc)
@@ -757,6 +764,7 @@ static int sovc_fb_notifier_callback(struct notifier_block *self,
 		case FB_BLANK_UNBLANK:
 			sovc_scr_suspended = false;
 			sovc_force_off = false;
+			track_changed = false;
 			cancel_delayed_work(&sovc_auto_off_check_work);
 			unregister_sovc();
 			break;
@@ -766,7 +774,7 @@ static int sovc_fb_notifier_callback(struct notifier_block *self,
 			if (is_executing)
 				return 0;
 			sovc_scr_suspended = true;
-			if (sovc_switch && (track_changed || sovc_tmp_onoff))
+			if (sovc_state_playing())
 				register_sovc();
 			break;
 		}
@@ -874,6 +882,8 @@ static int __init scroff_volctr_init(void)
 	if (rc) {
 		pr_warn("%s: sysfs_create_file failed for scroff_volctr_version\n", __func__);
 	}
+
+	mutex_init(&sovc_playing_state_lock);
 
 err_input_dev:
 	input_free_device(sovc_input);
