@@ -6149,7 +6149,7 @@ static void ufshcd_exception_event_handler(struct work_struct *work)
 
 out:
 	ufshcd_scsi_unblock_requests(hba);
-	pm_runtime_put(hba->dev);
+	pm_runtime_put_sync(hba->dev);
 	return;
 }
 
