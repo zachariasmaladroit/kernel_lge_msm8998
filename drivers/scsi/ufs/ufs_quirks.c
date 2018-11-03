@@ -59,38 +59,70 @@ static struct ufs_card_fix ufs_fixups[] = {
 	END_FIX
 };
 
-void ufs_advertise_fixup_device(struct ufs_hba *hba)
+static int ufs_get_device_info(struct ufs_hba *hba,
+				struct ufs_card_info *card_data)
 {
 	int err;
+	u8 model_index;
 	u8 str_desc_buf[QUERY_DESC_STRING_MAX_SIZE + 1];
-	char *model;
-	struct ufs_card_fix *f;
+	u8 desc_buf[QUERY_DESC_DEVICE_MAX_SIZE];
 
-	model = kmalloc(MAX_MODEL_LEN + 1, GFP_KERNEL);
-	if (!model)
+	err = ufshcd_read_device_desc(hba, desc_buf,
+					QUERY_DESC_DEVICE_MAX_SIZE);
+	if (err)
 		goto out;
 
+	/*
+	 * getting vendor (manufacturerID) and Bank Index in big endian
+	 * format
+	 */
+	card_data->wmanufacturerid = desc_buf[DEVICE_DESC_PARAM_MANF_ID] << 8 |
+				     desc_buf[DEVICE_DESC_PARAM_MANF_ID + 1];
+
+	model_index = desc_buf[DEVICE_DESC_PARAM_PRDCT_NAME];
+
 	memset(str_desc_buf, 0, QUERY_DESC_STRING_MAX_SIZE);
-	err = ufshcd_read_string_desc(hba, hba->dev_info.i_product_name,
-			str_desc_buf, QUERY_DESC_STRING_MAX_SIZE, ASCII_STD);
+	err = ufshcd_read_string_desc(hba, model_index, str_desc_buf,
+					QUERY_DESC_STRING_MAX_SIZE, ASCII_STD);
 	if (err)
 		goto out;
 
 	str_desc_buf[QUERY_DESC_STRING_MAX_SIZE] = '\0';
-	strlcpy(model, (str_desc_buf + QUERY_DESC_HDR_SIZE),
+	strlcpy(card_data->model, (str_desc_buf + QUERY_DESC_HDR_SIZE),
 		min_t(u8, str_desc_buf[QUERY_DESC_LENGTH_OFFSET],
 		      MAX_MODEL_LEN));
 	/* Null terminate the model string */
-	model[MAX_MODEL_LEN] = '\0';
+	card_data->model[MAX_MODEL_LEN] = '\0';
+
+out:
+	return err;
+}
+
+void ufs_advertise_fixup_device(struct ufs_hba *hba)
+{
+	int err;
+	struct ufs_card_fix *f;
+	struct ufs_card_info card_data;
+
+	card_data.wmanufacturerid = 0;
+	card_data.model = kmalloc(MAX_MODEL_LEN + 1, GFP_KERNEL);
+	if (!card_data.model)
+		goto out;
+
+	/* get device data*/
+	err = ufs_get_device_info(hba, &card_data);
+	if (err) {
+		dev_err(hba->dev, "%s: Failed getting device info\n", __func__);
+		goto out;
+	}
 
 	for (f = ufs_fixups; f->quirk; f++) {
 		/* if same wmanufacturerid */
-		if (((f->w_manufacturer_id ==
-			hba->dev_info.w_manufacturer_id) ||
-		     (f->w_manufacturer_id == UFS_ANY_VENDOR)) &&
+		if (((f->card.wmanufacturerid == card_data.wmanufacturerid) ||
+		     (f->card.wmanufacturerid == UFS_ANY_VENDOR)) &&
 		    /* and same model */
-		    (STR_PRFX_EQUAL(f->model, model) ||
-		     !strcmp(f->model, UFS_ANY_MODEL)))
+		    (STR_PRFX_EQUAL(f->card.model, card_data.model) ||
+		     !strcmp(f->card.model, UFS_ANY_MODEL)))
 #ifdef CONFIG_MACH_LGE
 		    {
 			    /* update quirks */
@@ -103,7 +135,7 @@ void ufs_advertise_fixup_device(struct ufs_hba *hba)
 #endif
 	}
 out:
-	kfree(model);
+	kfree(card_data.model);
 }
 
 int ufs_fix_qdepth_device(struct ufs_hba *hba, struct scsi_device *sdev)
