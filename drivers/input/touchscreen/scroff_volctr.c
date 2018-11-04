@@ -536,6 +536,8 @@ static int register_sovc(void)
 		goto out;
 	}
 
+	scroff_volctr_reset();
+
 	sovc_volume_input_wq = create_workqueue("sovc_volume_iwq");
 	if (!sovc_volume_input_wq) {
 		pr_err("%s: Failed to create sovc_volume_iwq workqueue\n", __func__);
@@ -569,7 +571,6 @@ out:
 	pr_info(LOGTAG"%s done\n", __func__);
 #endif
 
-	scroff_volctr_reset();
 	return rc;
 err:
 	flush_workqueue(sovc_volume_input_wq);
@@ -580,7 +581,6 @@ err:
 	cancel_work_sync(&sovc_track_input_work);
 	mutex_unlock(&reg_lock);
 
-	scroff_volctr_reset();
 	return rc;
 }
 
@@ -594,6 +594,8 @@ static void unregister_sovc(void)
 #endif
 		goto out;
 	}
+
+	scroff_volctr_reset();
 
 	input_unregister_handler(&sovc_volume_input_handler);
 	input_unregister_handler(&sovc_track_input_handler);
