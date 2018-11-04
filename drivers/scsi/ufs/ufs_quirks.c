@@ -91,16 +91,16 @@ void ufs_advertise_fixup_device(struct ufs_hba *hba)
 		    /* and same model */
 		    (STR_PRFX_EQUAL(f->model, model) ||
 		     !strcmp(f->model, UFS_ANY_MODEL)))
-#ifdef CONFIG_MACH_LGE
-		    {
-			    /* update quirks */
-			    dev_err(hba->dev, "[LGE][UFS] update quirks, manufacturerid:%d, model:%s, quirk:0x%x\n", f->card.wmanufacturerid, f->card.model, f->quirk);
-			    hba->dev_info.quirks |= f->quirk;
-		    }
-#else
+//#ifdef CONFIG_MACH_LGE
+//		    {
+//			    /* update quirks */
+//			    dev_err(hba->dev, "[LGE][UFS] update quirks, manufacturerid:%d, model:%s, quirk:0x%x\n", f->card.wmanufacturerid, f->card.model, f->quirk);
+//			    hba->dev_info.quirks |= f->quirk;
+//		    }
+//#else
 			/* update quirks */
 			hba->dev_info.quirks |= f->quirk;
-#endif
+//#endif
 	}
 out:
 	kfree(model);
