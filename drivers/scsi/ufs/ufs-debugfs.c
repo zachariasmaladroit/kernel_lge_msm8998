@@ -875,8 +875,8 @@ static int array_to_hex_val(u8 *array, int size)
 static int ufsdbg_dump_device_desc_show(struct seq_file *file, void *data)
 {
 	int err = 0, i;
-	int buff_len = QUERY_DESC_DEVICE_MAX_SIZE;
-	u8 desc_buf[QUERY_DESC_DEVICE_MAX_SIZE];
+	int buff_len = QUERY_DESC_DEVICE_DEF_SIZE;
+	u8 desc_buf[QUERY_DESC_DEVICE_DEF_SIZE];
 	struct ufs_hba *hba = (struct ufs_hba *)file->private;
 	struct desc_field_offset *tmp;
 
@@ -934,8 +934,8 @@ static int ufsdbg_dump_device_desc_show(struct seq_file *file, void *data)
 static int ufsdbg_dump_geo_desc_show(struct seq_file *file, void *data)
 {
 	int err = 0, i;
-	int buff_len = QUERY_DESC_GEOMETRY_MAZ_SIZE;
-	u8 desc_buf[QUERY_DESC_GEOMETRY_MAZ_SIZE];
+	int buff_len = QUERY_DESC_GEOMETRY_DEF_SIZE;
+	u8 desc_buf[QUERY_DESC_GEOMETRY_DEF_SIZE];
 	struct ufs_hba *hba = (struct ufs_hba *)file->private;
 	struct desc_field_offset *tmp;
 
@@ -1036,14 +1036,14 @@ static int ufsdbg_dump_string_desc_show(struct seq_file *file, void *data)
 	struct ufs_hba *hba = (struct ufs_hba *)file->private;
 	int i;
 	u8 index;
-	u8 str_desc_buf[QUERY_DESC_STRING_MAX_SIZE + 1];
-	u8 desc_buf[QUERY_DESC_DEVICE_MAX_SIZE];
-	u8 get_str_buf[QUERY_DESC_STRING_MAX_SIZE + 1];
+	u8 str_desc_buf[QUERY_DESC_MAX_SIZE + 1];
+	u8 desc_buf[QUERY_DESC_DEVICE_DEF_SIZE];
+	u8 get_str_buf[QUERY_DESC_MAX_SIZE + 1];
 	char *str_name[4] = {"Manufacturer Name", "Product Name", "Serial Number", "Oem ID"};
 
 	pm_runtime_get_sync(hba->dev);
 	err = ufshcd_read_device_desc(hba, desc_buf,
-			QUERY_DESC_DEVICE_MAX_SIZE);
+			QUERY_DESC_DEVICE_DEF_SIZE);
 	pm_runtime_put_sync(hba->dev);
 
 	if (err){
@@ -1054,20 +1054,20 @@ static int ufsdbg_dump_string_desc_show(struct seq_file *file, void *data)
 
 	for (i=0; i<4; i++) {
 		index = desc_buf[DEVICE_DESC_PARAM_MANF_NAME+i];
-		memset(str_desc_buf, 0, QUERY_DESC_STRING_MAX_SIZE);
-		memset(get_str_buf, 0, QUERY_DESC_DEVICE_MAX_SIZE);
+		memset(str_desc_buf, 0, QUERY_DESC_MAX_SIZE);
+		memset(get_str_buf, 0, QUERY_DESC_DEVICE_DEF_SIZE);
 		pm_runtime_get_sync(hba->dev);
 		err = ufshcd_read_string_desc(hba, index, str_desc_buf,
-				QUERY_DESC_STRING_MAX_SIZE, ASCII_STD);
+				QUERY_DESC_MAX_SIZE, ASCII_STD);
 		pm_runtime_put_sync(hba->dev);
 		if (err) {
 			seq_printf(file, "Reading String Descriptor failed. err =%d\n", err);
 			goto out;
 		}
-		str_desc_buf[QUERY_DESC_STRING_MAX_SIZE] = '\0';
+		str_desc_buf[QUERY_DESC_MAX_SIZE] = '\0';
 		strlcpy(get_str_buf, (str_desc_buf + QUERY_DESC_HDR_SIZE),
-				(QUERY_DESC_STRING_MAX_SIZE - QUERY_DESC_HDR_SIZE));
-		get_str_buf[QUERY_DESC_DEVICE_MAX_SIZE - QUERY_DESC_HDR_SIZE] = '\0';
+				(QUERY_DESC_MAX_SIZE - QUERY_DESC_HDR_SIZE));
+		get_str_buf[QUERY_DESC_DEVICE_DEF_SIZE - QUERY_DESC_HDR_SIZE] = '\0';
 		seq_printf(file,
 				"String Descriptor[%d. %s]: %s\n", i+1, str_name[i], get_str_buf);
 	}
@@ -1079,11 +1079,11 @@ out:
 static int ufsdbg_dump_config_desc_show(struct seq_file *file, void *data)
 {
 	int err = 0, i, j, offset, s_offset;
-	int buff_len = QUERY_DESC_CONFIGURAION_MAX_SIZE;
-	u8 config_buf[QUERY_DESC_CONFIGURAION_MAX_SIZE];
+	int buff_len = QUERY_DESC_CONFIGURATION_DEF_SIZE;
+	u8 config_buf[QUERY_DESC_CONFIGURATION_DEF_SIZE];
 	struct ufs_hba *hba = (struct ufs_hba *)file->private;
 	struct desc_field_offset *tmp;
-	u8 desc_buf[QUERY_DESC_DEVICE_MAX_SIZE];
+	u8 desc_buf[QUERY_DESC_DEVICE_DEF_SIZE];
 	struct desc_field_offset config_device_field_name[] = {
 		{"bLength",			0x00, BYTE},
 		{"bDescriptorType",		0x01, BYTE},
@@ -1110,7 +1110,7 @@ static int ufsdbg_dump_config_desc_show(struct seq_file *file, void *data)
 
 	pm_runtime_get_sync(hba->dev);
 	err = ufshcd_read_device_desc(hba, desc_buf,
-			QUERY_DESC_DEVICE_MAX_SIZE);
+			QUERY_DESC_DEVICE_DEF_SIZE);
 	pm_runtime_put_sync(hba->dev);
 
 	if (err){
@@ -1155,8 +1155,8 @@ out:
 static int ufsdbg_dump_unit_desc_show(struct seq_file *file, void *data)
 {
 	int err = 0, i, j;
-	int buff_len = QUERY_DESC_UNIT_MAX_SIZE;
-	u8 unit_buf[QUERY_DESC_UNIT_MAX_SIZE];
+	int buff_len = QUERY_DESC_UNIT_DEF_SIZE;
+	u8 unit_buf[QUERY_DESC_UNIT_DEF_SIZE];
 	struct ufs_hba *hba = (struct ufs_hba *)file->private;
 	struct desc_field_offset *tmp;
 
@@ -1240,8 +1240,8 @@ out:
 static int ufsdbg_dump_inter_desc_show(struct seq_file *file, void *data)
 {
 	int err = 0, i;
-	int buff_len = QUERY_DESC_INTERCONNECT_MAX_SIZE;
-	u8 inter_desc_buf[QUERY_DESC_INTERCONNECT_MAX_SIZE];
+	int buff_len = QUERY_DESC_INTERCONNECT_DEF_SIZE;
+	u8 inter_desc_buf[QUERY_DESC_INTERCONNECT_DEF_SIZE];
 	struct ufs_hba *hba = (struct ufs_hba *)file->private;
 	struct desc_field_offset *tmp;
 
@@ -1274,8 +1274,8 @@ static int ufsdbg_dump_inter_desc_show(struct seq_file *file, void *data)
 static int ufsdbg_dump_power_desc_show(struct seq_file *file, void *data)
 {
 	int err = 0, i;
-	int buff_len = QUERY_DESC_POWER_MAX_SIZE;
-	u8 power_desc_buf[QUERY_DESC_POWER_MAX_SIZE];
+	int buff_len = QUERY_DESC_POWER_DEF_SIZE;
+	u8 power_desc_buf[QUERY_DESC_POWER_DEF_SIZE];
 	struct ufs_hba *hba = (struct ufs_hba *)file->private;
 	struct desc_field_offset *tmp;
 
