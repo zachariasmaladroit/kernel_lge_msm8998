@@ -48,13 +48,13 @@ static bool frontswap_writethrough_enabled __read_mostly;
  */
 static bool frontswap_tmem_exclusive_gets_enabled __read_mostly;
 
-#ifdef CONFIG_DEBUG_FS
+//#ifdef CONFIG_DEBUG_FS
 /*
  * Counters available via /sys/kernel/debug/frontswap (if debugfs is
  * properly configured).  These are for information only so are not protected
  * against increment races.
  */
-static u64 frontswap_loads;
+/*static u64 frontswap_loads;
 static u64 frontswap_succ_stores;
 static u64 frontswap_failed_stores;
 static u64 frontswap_invalidates;
@@ -71,12 +71,12 @@ static inline void inc_frontswap_failed_stores(void) {
 static inline void inc_frontswap_invalidates(void) {
 	frontswap_invalidates++;
 }
-#else
+#else*/
 static inline void inc_frontswap_loads(void) { }
 static inline void inc_frontswap_succ_stores(void) { }
 static inline void inc_frontswap_failed_stores(void) { }
 static inline void inc_frontswap_invalidates(void) { }
-#endif
+//#endif
 
 /*
  * Due to the asynchronous nature of the backends loading potentially
@@ -487,7 +487,7 @@ EXPORT_SYMBOL(frontswap_curr_pages);
 
 static int __init init_frontswap(void)
 {
-#ifdef CONFIG_DEBUG_FS
+/*#ifdef CONFIG_DEBUG_FS
 	struct dentry *root = debugfs_create_dir("frontswap", NULL);
 	if (root == NULL)
 		return -ENXIO;
@@ -497,7 +497,7 @@ static int __init init_frontswap(void)
 				&frontswap_failed_stores);
 	debugfs_create_u64("invalidates", S_IRUGO,
 				root, &frontswap_invalidates);
-#endif
+#endif*/
 	return 0;
 }
 
