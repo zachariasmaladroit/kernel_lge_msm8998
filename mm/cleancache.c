@@ -303,7 +303,7 @@ EXPORT_SYMBOL(__cleancache_invalidate_fs);
 
 static int __init init_cleancache(void)
 {
-#ifdef CONFIG_DEBUG_FS
+/*#ifdef CONFIG_DEBUG_FS
 	struct dentry *root = debugfs_create_dir("cleancache", NULL);
 	if (root == NULL)
 		return -ENXIO;
@@ -313,7 +313,7 @@ static int __init init_cleancache(void)
 	debugfs_create_u64("puts", S_IRUGO, root, &cleancache_puts);
 	debugfs_create_u64("invalidates", S_IRUGO,
 				root, &cleancache_invalidates);
-#endif
+#endif*/
 	return 0;
 }
 module_init(init_cleancache)
