@@ -5652,9 +5652,6 @@ CONFIG_JUMP_LABEL=y
 # add additional drivers that might be needed
 # CONFIG_RELAY is not set
 
-# swap, zram related settings
-CONFIG_BALANCE_ANON_FILE_RECLAIM=y # eval
-
 # DVB, disable or needed for some weird streaming usage-case ?
 # CONFIG_DVB_MPQ is not set # =m
 # CONFIG_DVB_MPQ_DEMUX is not set # =m
@@ -5866,6 +5863,14 @@ CONFIG_CRYPTO_PCRYPT=y
 
 # swap, hswap, zram, etc.
 CONFIG_KSWAPD_CPU_AFFINITY_MASK="f"
+CONFIG_BALANCE_ANON_FILE_RECLAIM=y # eval
+CONFIG_ZSMALLOC=y
+# CONFIG_PGTABLE_MAPPING is not set
+# CONFIG_ZSMALLOC_STAT is not set
+# CONFIG_ZPOOL is not set
+CONFIG_ZBUD=y # needed for zswap
+CONFIG_CLEANCACHE=y
+CONFIG_FRONTSWAP=y
 
 # pstore functionality
 CONFIG_PSTORE=y
