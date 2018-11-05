@@ -39,7 +39,7 @@ static DEFINE_IDR(zram_index_idr);
 static DEFINE_MUTEX(zram_index_mutex);
 
 static int zram_major;
-static const char *default_compressor = "zstd";
+static const char *default_compressor = "lzo";
 
 /*
  * We don't need to see memory allocation errors more than once every 1
