@@ -25,7 +25,6 @@
 
 extern int sovc_switch;
 extern int sovc_tmp_onoff;
-extern bool sovc_force_off;
 extern bool track_changed;
 extern bool sovc_scr_suspended;
 
