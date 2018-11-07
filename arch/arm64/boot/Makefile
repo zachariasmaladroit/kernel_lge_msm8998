@@ -14,7 +14,11 @@
 # Based on the ia64 boot/Makefile.
 #
 
+ifeq ($(CONFIG_IMG_LZ4_DTB),y)
+targets := Image Image.lz4
+else
 targets := Image Image.gz
+endif
 
 DTB_NAMES := $(subst $\",,$(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES))
 ifneq ($(DTB_NAMES),)
@@ -46,6 +50,9 @@ $(obj)/Image.lzo: $(obj)/Image FORCE
 	$(call if_changed,lzo)
 
 $(obj)/Image.gz-dtb: $(obj)/Image.gz $(DTB_OBJS) FORCE
+	$(call if_changed,cat)
+
+$(obj)/Image.lz4-dtb: $(obj)/Image.lz4 $(DTB_OBJS) FORCE
 	$(call if_changed,cat)
 
 install: $(obj)/Image
