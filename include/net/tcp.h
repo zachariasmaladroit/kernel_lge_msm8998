@@ -255,7 +255,8 @@ void tcp_time_wait(struct sock *sk, int state, int timeo);
 #define FLAG_DSACKING_ACK	0x800 /* SACK blocks contained D-SACK info */
 #define FLAG_SACK_RENEGING      0x2000 /* snd_una advanced to a sacked seq */
 #define FLAG_UPDATE_TS_RECENT   0x4000 /* tcp_replace_ts_recent() */
-#define MPTCP_FLAG_DATA_ACKED	0x8000
+#define FLAG_NO_CHALLENGE_ACK	0x8000 /* do not call tcp_send_challenge_ack()	*/
+#define MPTCP_FLAG_DATA_ACKED	0x1000
 
 #define FLAG_ACKED              (FLAG_DATA_ACKED|FLAG_SYN_ACKED)
 #define FLAG_NOT_DUP		(FLAG_DATA|FLAG_WIN_UPDATE|FLAG_ACKED)
