@@ -5872,12 +5872,12 @@ CONFIG_ZSMALLOC=y
 # CONFIG_PGTABLE_MAPPING is not set
 # CONFIG_ZSMALLOC_STAT is not set
 # CONFIG_ZPOOL is not set
-CONFIG_ZBUD=y # needed for zswap
+# CONFIG_ZBUD is not set # needed for zswap if not z3fold
 CONFIG_Z3FOLD=y
 CONFIG_ZRAM_DEFAULT_Z3FOLD=y
-CONFIG_CLEANCACHE=y
-CONFIG_FRONTSWAP=y
-CONFIG_ZSWAP=y
+# CONFIG_CLEANCACHE is not set
+# CONFIG_FRONTSWAP is not set
+# CONFIG_ZSWAP is not set
 
 # pstore functionality
 CONFIG_PSTORE=y
