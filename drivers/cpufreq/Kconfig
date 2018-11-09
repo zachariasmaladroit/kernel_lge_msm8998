@@ -163,12 +163,6 @@ config CPU_FREQ_DEFAULT_GOV_IMPULSE
 	  loading your cpufreq low-level hardware driver, using the
 	  'impulse' governor for latency-sensitive workloads.
 
-config CPU_FREQ_DEFAULT_GOV_ZZMOOVE
-	bool "zzmoove"
-	select CPU_FREQ_GOV_ZZMOOVE
-	help
-	Use the CPUFreq governor 'zzmoove' as default.
-
 endchoice
 
 config CPU_FREQ_GOV_PERFORMANCE
@@ -288,12 +282,6 @@ config CPU_FREQ_GOV_CULTIVATION
 	depends on CPU_FREQ
 	help
 	  'cultivation' - another tuned interactive with extra options
-
-config CPU_FREQ_GOV_ZZMOOVE
-	tristate "'zzmoove' cpufreq governor"
-	depends on CPU_FREQ
-	help
-	  'zzmoove' - another tuned interactive with extra options
 
 config FINGERPRINT_BOOST
 	bool "Fingerprint Boost"

@@ -126,7 +126,6 @@ static void *get_cpu_dbs_info_s(int cpu)				\
  * cdbs: common dbs
  * od_*: On-demand governor
  * cs_*: Conservative governor
- * zz_*: ZZMoove governor
  */
 
 /* Common to all CPUs of a policy */
@@ -160,21 +159,6 @@ struct cpu_dbs_info {
 struct od_cpu_dbs_info_s {
 	struct cpu_dbs_info cdbs;
 	struct cpufreq_frequency_table *freq_table;
-	/* following is only used by zzmoove governor */
-	bool freq_table_desc;				// table order ascending or descending (true)
-	bool scaling_init_eval_done;			// flag for initial scaling range evaluation
-	unsigned int freq_table_size;			// size of freq table (index count)
-	unsigned int zz_prev_load;			// previous load saved by governor for afs calculation
-	unsigned int pol_min;				// saved actual max policy for range detection
-	unsigned int pol_max;				// saved actual min policy for range detection
-	unsigned int min_scaling_freq;			// saved min freq for range detection
-	unsigned int limit_table_start;			// table start index for range detection
-	unsigned int limit_table_end;			// table end index for range detection
-	unsigned int max_scaling_freq_hard;		// hard limit table index
-	unsigned int max_scaling_freq_soft;		// soft limit table index
-	unsigned int scaling_mode_up;			// fast up scaling steps
-	unsigned int scaling_mode_down;			// fast down scaling steps
-	/* used by zzmoove governor end */
 	unsigned int freq_lo;
 	unsigned int freq_lo_jiffies;
 	unsigned int freq_hi_jiffies;
@@ -213,7 +197,6 @@ struct common_dbs_data {
 	/* Common across governors */
 	#define GOV_ONDEMAND		0
 	#define GOV_CONSERVATIVE	1
-	#define GOV_ZZMOOVE			2
 	int governor;
 	struct attribute_group *attr_group_gov_sys; /* one governor - system */
 	struct attribute_group *attr_group_gov_pol; /* one governor - policy */
