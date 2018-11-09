@@ -5833,7 +5833,9 @@ CONFIG_HIGH_RES_TIMERS=y
 
 # AdrenoIdler for msm_adreno_tz, needs STATE_NOTIFIER
 # CONFIG_ADRENO_IDLER is not set
-# CONFIG_STATE_NOTIFIER is not set
+
+# state notifier, needed for cpufreq governors, adreno-idler, etc.
+CONFIG_STATE_NOTIFIER=y
 
 # i/o schedulers
 CONFIG_IOSCHED_NOOP=y
