@@ -80,6 +80,8 @@ struct fpc1020_data {
 	bool prepared;
 	atomic_t wakeup_enabled; /* Used both in ISR and non-ISR */
 	struct task_struct *fpc_hal;
+	struct workqueue_struct *fpc1020_wq;
+	struct work_struct irq_work;
 };
 
 static int vreg_setup(struct fpc1020_data *fpc1020, const char *name,
@@ -430,18 +432,25 @@ static const struct attribute_group attribute_group = {
 	.attrs = attributes,
 };
 
+static void fpc1020_irq_work(struct work_struct *work)
+{
+	struct fpc1020_data *fpc1020 =
+		container_of(work, typeof(*fpc1020), irq_work);
+
+	if (atomic_read(&fpc1020->wakeup_enabled))
+		pm_wakeup_event(fpc1020->dev, 100);
+
+	sysfs_notify(&fpc1020->input->dev.kobj, NULL, dev_attr_irq.attr.name);
+}
+
 static irqreturn_t fpc1020_irq_handler(int irq, void *handle)
 {
 	struct fpc1020_data *fpc1020 = handle;
 
 	dev_dbg(fpc1020->dev, "%s\n", __func__);
 
-	if (atomic_read(&fpc1020->wakeup_enabled)) {
-		wake_up_process(fpc1020->fpc_hal);
-		pm_wakeup_event(fpc1020->dev, 100);
-	}
-
-	sysfs_notify(&fpc1020->input->dev.kobj, NULL, dev_attr_irq.attr.name);
+	/* Force on first big core */
+	queue_work_on(4, fpc1020->fpc1020_wq, &fpc1020->irq_work);
 
 	return IRQ_HANDLED;
 }
@@ -601,6 +610,15 @@ static int fpc1020_probe(struct platform_device *pdev)
 	}
 
 	fpc1020->fpc_hal = NULL;
+
+	fpc1020->fpc1020_wq = alloc_workqueue("fpc1020_wq", WQ_HIGHPRI, 0);
+	if (!fpc1020->fpc1020_wq) {
+		pr_err("Create input workqueue failed\n");
+		rc = -EINVAL;
+		goto exit;
+	}
+
+	INIT_WORK(&fpc1020->irq_work, fpc1020_irq_work);
 
 	rc = hw_reset(fpc1020);
 
