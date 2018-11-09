@@ -5987,7 +5987,7 @@ CONFIG_ION_MSM=y
 
 # Memory Subsystem changes & tweaks
 CONFIG_PROCESS_RECLAIM=y # default =y , so something uses it properly ?
-CONFIG_HSWAP=y
+# CONFIG_HSWAP is not set
 # CONFIG_BOOST_DYING_TASK is not set
 # CONFIG_MEMCG is not set
 # CONFIG_MEMCG_SWAP is not set
