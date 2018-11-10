@@ -36,7 +36,6 @@
 #include <linux/platform_device.h>
 #include <linux/regulator/consumer.h>
 #include <linux/input.h>
-#include <linux/sched.h>
 
 #define RESET_LOW_SLEEP_MIN_US 5000
 #define RESET_LOW_SLEEP_MAX_US (RESET_LOW_SLEEP_MIN_US + 100)
@@ -79,7 +78,6 @@ struct fpc1020_data {
 	struct mutex lock; /* To set/get exported values in sysfs */
 	bool prepared;
 	atomic_t wakeup_enabled; /* Used both in ISR and non-ISR */
-	struct task_struct *fpc_hal;
 };
 
 static int vreg_setup(struct fpc1020_data *fpc1020, const char *name,
@@ -366,13 +364,11 @@ static ssize_t wakeup_enable_set(struct device *dev,
 	ssize_t ret = count;
 
 	mutex_lock(&fpc1020->lock);
-	if (!strncmp(buf, "enable", DSTRLEN("enable"))) {
-		set_user_nice(fpc1020->fpc_hal, -1);
+	if (!strncmp(buf, "enable", DSTRLEN("enable")))
 		atomic_set(&fpc1020->wakeup_enabled, 1);
-	} else if (!strncmp(buf, "disable", DSTRLEN("disable"))) {
-		set_user_nice(fpc1020->fpc_hal, 1);
+	else if (!strncmp(buf, "disable", DSTRLEN("disable")))
 		atomic_set(&fpc1020->wakeup_enabled, 0);
-	} else
+	else
 		ret = -EINVAL;
 	mutex_unlock(&fpc1020->lock);
 
@@ -404,11 +400,6 @@ static ssize_t irq_ack(struct device *dev,
 {
 	struct fpc1020_data *fpc1020 = dev_get_drvdata(dev);
 
-	if (!fpc1020->fpc_hal) {
-		fpc1020->fpc_hal = current;
-		pr_info("fpc hal: %s", fpc1020->fpc_hal->comm);
-	}
-
 	dev_dbg(fpc1020->dev, "%s\n", __func__);
 
 	return count;
@@ -437,7 +428,6 @@ static irqreturn_t fpc1020_irq_handler(int irq, void *handle)
 	dev_dbg(fpc1020->dev, "%s\n", __func__);
 
 	if (atomic_read(&fpc1020->wakeup_enabled)) {
-		wake_up_process(fpc1020->fpc_hal);
 		pm_wakeup_event(fpc1020->dev, 100);
 	}
 
@@ -599,8 +589,6 @@ static int fpc1020_probe(struct platform_device *pdev)
 		dev_info(dev, "Enabling hardware\n");
 		(void)device_prepare(fpc1020, true);
 	}
-
-	fpc1020->fpc_hal = NULL;
 
 	rc = hw_reset(fpc1020);
 
