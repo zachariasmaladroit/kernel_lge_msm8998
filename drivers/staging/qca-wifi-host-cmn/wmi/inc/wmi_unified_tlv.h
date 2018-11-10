@@ -561,13 +561,12 @@ QDF_STATUS send_enable_arp_ns_offload_cmd_tlv(wmi_unified_t wmi_handle,
 /**
  * send_conf_hw_filter_cmd_tlv() - configure hw filter mode to firmware
  * @wmi: wmi handle
- * @vdev_id: Id of the vdev to configure
- * @mode_bitmap: the hw filter mode to configure
+ * @req: the hw filter mode request parameters
  *
  * Return: QDF_STATUS
  */
-QDF_STATUS send_conf_hw_filter_cmd_tlv(wmi_unified_t wmi, uint8_t vdev_id,
-				       uint8_t mode_bitmap);
+QDF_STATUS send_conf_hw_filter_cmd_tlv(wmi_unified_t wmi,
+				       struct wmi_hw_filter_req_params *req);
 
 QDF_STATUS send_set_led_flashing_cmd_tlv(wmi_unified_t wmi_handle,
 				struct flashing_req_params *flashing);
@@ -593,8 +592,7 @@ QDF_STATUS send_roam_scan_offload_cmd_tlv(wmi_unified_t wmi_handle,
 					 uint32_t command, uint32_t vdev_id);
 
 QDF_STATUS send_roam_scan_offload_ap_profile_cmd_tlv(wmi_unified_t wmi_handle,
-					    wmi_ap_profile *ap_profile_p,
-					    uint32_t vdev_id);
+					  struct ap_profile_params *ap_profile);
 
 QDF_STATUS send_roam_scan_offload_scan_period_cmd_tlv(wmi_unified_t wmi_handle,
 					     uint32_t scan_period,
