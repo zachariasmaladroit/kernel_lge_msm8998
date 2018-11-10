@@ -609,23 +609,6 @@ int notify_for_subsystem(struct subsys_info *ss_info)
 		ret = glink_queue_rx_intent(handle,
 				(void *)ss_leaf_entry->cb_data,
 				sizeof(struct cleanup_done_msg));
-		if (ret) {
-			GLINK_SSR_ERR(
-				"%s %s: %s, ret[%d], resp. remaining[%d]\n",
-				"<SSR>", __func__,
-				"queue_rx_intent failed", ret,
-				atomic_read(&responses_remaining));
-			kfree(do_cleanup_data);
-			ss_leaf_entry->cb_data->do_cleanup_data = NULL;
-
-			if (!strcmp(ss_leaf_entry->ssr_name, "rpm"))
-				panic("%s: Could not queue intent for RPM!\n",
-						__func__);
-			atomic_dec(&responses_remaining);
-			kref_put(&ss_leaf_entry->cb_data->cb_kref,
-							cb_data_release);
-			continue;
-		}
 
 		if (strcmp(ss_leaf_entry->ssr_name, "rpm"))
 			ret = glink_tx(handle, ss_leaf_entry->cb_data,
@@ -653,6 +636,23 @@ int notify_for_subsystem(struct subsys_info *ss_info)
 							cb_data_release);
 			continue;
 		}
+		if (ret) {
+			GLINK_SSR_ERR(
+				"%s %s: %s, ret[%d], resp. remaining[%d]\n",
+				"<SSR>", __func__,
+				"queue_rx_intent failed", ret,
+				atomic_read(&responses_remaining));
+			kfree(do_cleanup_data);
+			ss_leaf_entry->cb_data->do_cleanup_data = NULL;
+
+			if (!strcmp(ss_leaf_entry->ssr_name, "rpm"))
+				panic("%s: Could not queue intent for RPM!\n",
+						__func__);
+			atomic_dec(&responses_remaining);
+			kref_put(&ss_leaf_entry->cb_data->cb_kref,
+							cb_data_release);
+			continue;
+		}		
 		sequence_number++;
 		kref_put(&ss_leaf_entry->cb_data->cb_kref, cb_data_release);
 	}
