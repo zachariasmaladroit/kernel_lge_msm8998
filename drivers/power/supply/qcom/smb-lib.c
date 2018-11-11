@@ -4428,15 +4428,15 @@ static int __smblib_set_prop_pd_active(struct smb_charger *chg, bool pd_active)
 	u8 stat;
 
 #ifdef CONFIG_LGE_PM
-	if (val->intval)
+	if (pd_active)
 		chg->checking_pd_active = true;
 #endif
 
 #ifdef CONFIG_LGE_PM
-	smblib_dbg(chg, PR_LGE, "update pd_active %d -> %d.\n", chg->pd_active, val->intval);
+	smblib_dbg(chg, PR_LGE, "update pd_active %d -> %d.\n", chg->pd_active, pd_active);
 #endif
 #ifdef CONFIG_LGE_USB
-	if (chg->pd_active && val->intval)
+	if (chg->pd_active && pd_active)
 		goto skip_pd_active;
 #endif
 
