@@ -23,7 +23,6 @@
 #include "msm8998-joan_global_com-fingerprint.dtsi"
 #include "msm8998-joan_global_com-touch.dtsi"
 #include "msm8998-joan_global_com-usb.dtsi"
-#include "../msm8998-joan_kr/msm8998-joan_kr-tdmb.dtsi"
 
 / {
 	reserved-memory {
