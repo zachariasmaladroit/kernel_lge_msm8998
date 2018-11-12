@@ -211,7 +211,7 @@ static DECLARE_DELAYED_WORK(scroff_volctr_key_work, scroff_volctr_key);
 /* Key trigger */
 static void scroff_volctr_key_trigger(void)
 {
-	schedule_delayed_work(&scroff_volctr_key_work, 0);
+	queue_delayed_work(system_power_efficient_wq, &scroff_volctr_key_work, 0);
 }
 
 /* Key delayed trigger */
@@ -239,8 +239,8 @@ static void scroff_volctr_key_delayed_trigger(void)
 		break;
 	}
 
-	schedule_delayed_work(&scroff_volctr_key_work,
-				msecs_to_jiffies(delay));
+	queue_delayed_work(system_power_efficient_wq, &scroff_volctr_key_work,
+			   msecs_to_jiffies(delay));
 }
 
 /* reset on finger release */
