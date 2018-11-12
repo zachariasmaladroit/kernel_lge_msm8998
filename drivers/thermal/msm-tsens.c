@@ -2662,6 +2662,8 @@ static int tsens_tm_remove(struct platform_device *pdev)
 			tmdev->tsens_len);
 	if (tmdev->tsens_critical_wq)
 		destroy_workqueue(tmdev->tsens_critical_wq);
+	if (tmdev)
+		list_del(&tmdev->list);
 	platform_set_drvdata(pdev, NULL);
 
 	return 0;
@@ -2674,6 +2676,7 @@ static struct platform_driver tsens_tm_driver = {
 		.name = "msm-tsens",
 		.owner = THIS_MODULE,
 		.of_match_table = tsens_match,
+		.suppress_bind_attrs = true,
 	},
 };
 
