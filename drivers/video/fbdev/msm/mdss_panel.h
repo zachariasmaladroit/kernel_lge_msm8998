@@ -354,6 +354,7 @@ enum mdss_intf_events {
 #if defined(CONFIG_LGE_DISPLAY_COMMON)
 	MDSS_EVENT_PANEL_REG_BACKUP,
 #endif
+	MDSS_EVENT_DSI_DYNAMIC_BITCLK,
 	MDSS_EVENT_MAX,
 };
 
@@ -875,6 +876,8 @@ struct mdss_panel_info {
 	bool esd_check_enabled;
 	bool allow_phy_power_off;
 	char dfps_update;
+	/* new requested bitclk before it is updated in hw */
+	int new_clk_rate;
 	/* new requested fps before it is updated in hw */
 	int new_fps;
 	/* stores initial fps after boot */
