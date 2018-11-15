@@ -100,6 +100,12 @@ static int g_right_fade_vol = 0;
 bool lge_ess_fade_inout_init = false;
 #endif  /* CONFIG_SND_SOC_LGE_ESS_DIGITAL_FILTER */
 
+#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
+bool es9218p_playing = false;
+EXPORT_SYMBOL_GPL(es9218p_playing);
+
+extern bool tfa9872_playing;
+#endif
 
 struct es9218_reg {
     unsigned char   num;
@@ -1762,6 +1768,9 @@ int es9218_sabre_headphone_off(void)
     }
 #endif
     __es9218_sabre_headphone_off();
+#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
+    es9218p_playing = false;
+#endif
     mutex_unlock(&g_es9218_priv->power_lock);
     return 0;
 }
@@ -3049,12 +3058,16 @@ static int es9218_mute(struct snd_soc_dai *dai, int mute)
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
     if (sovc_switch) {
         mutex_lock(&sovc_playing_state_lock);
-        if (mute && sovc_tmp_onoff) {
-            sovc_notifier_call_chain(SOVC_EVENT_STOPPED, NULL);
+        if (mute) {
+            es9218p_playing = false;
             sovc_hifi_mode = false;
-        } else if (!mute && !sovc_tmp_onoff) {
-            sovc_notifier_call_chain(SOVC_EVENT_PLAYING, NULL);
+            if (sovc_tmp_onoff && !tfa9872_playing)
+                sovc_notifier_call_chain(SOVC_EVENT_STOPPED, NULL);
+        } else {
+            es9218p_playing = true;
             sovc_hifi_mode = true;
+            if (!sovc_tmp_onoff)
+                sovc_notifier_call_chain(SOVC_EVENT_PLAYING, NULL);
         }
         mutex_unlock(&sovc_playing_state_lock);
     }
