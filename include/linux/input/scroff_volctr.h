@@ -38,6 +38,8 @@ extern bool sovc_tmp_userspace_playing;
 
 extern struct mutex sovc_playing_state_lock;
 
+extern void unregister_sovc(void);
+
 extern bool sovc_hifi_mode;
 extern bool sovc_state_playing(void);
 
