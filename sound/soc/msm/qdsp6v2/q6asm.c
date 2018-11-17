@@ -56,7 +56,6 @@
 #define FALSE       0x00
 #define SESSION_MAX 8
 #define ASM_MAX_CHANNELS 8
-
 enum {
 	ASM_TOPOLOGY_CAL = 0,
 	ASM_CUSTOM_TOP_CAL,
@@ -1162,9 +1161,7 @@ int q6asm_send_stream_cmd(struct audio_client *ac,
 {
 	char *asm_params = NULL;
 	struct apr_hdr hdr;
-	int rc;
-	uint32_t sz = 0;
-	uint64_t actual_sz = 0;
+	int sz, rc;
 
 	if (!data || !ac) {
 		pr_err("%s: %s is NULL\n", __func__,
@@ -1181,15 +1178,7 @@ int q6asm_send_stream_cmd(struct audio_client *ac,
 		goto done;
 	}
 
-	actual_sz = sizeof(struct apr_hdr) + data->payload_len;
-	if (actual_sz > U32_MAX) {
-		pr_err("%s: payload size 0x%X exceeds limit\n",
-				__func__, data->payload_len);
-		rc = -EINVAL;
-		goto done;
-	}
-
-	sz = (uint32_t)actual_sz;
+	sz = sizeof(struct apr_hdr) + data->payload_len;
 	asm_params = kzalloc(sz, GFP_KERNEL);
 	if (!asm_params) {
 		rc = -ENOMEM;
