@@ -5824,11 +5824,11 @@ CONFIG_FTRACE_MCOUNT_RECORD=y # =y , needed by msm/ipa ? (/home/padma.r/LGH930/a
 # CONFIG_TRACING_EVENTS_GPIO is not set # =y
 
 # 1000/300/100 Hz ticks
-# CONFIG_HZ_100 is not set
+CONFIG_HZ_100=y
 # CONFIG_HZ_250 is not set
-CONFIG_HZ_300=y
+# CONFIG_HZ_300 is not set
 #  CONFIG_HZ_1000 is not set
-CONFIG_HZ=300
+CONFIG_HZ=100
 
 #
 # Timers subsystem
