@@ -359,7 +359,7 @@ static bool mc_fastcall(void *data)
 		return false;
 
 	/* If work is queued or executing, wait for it to finish execution */
-	flush_kthread_work(&fc_work.work);
+	kthread_flush_work(&fc_work.work);
 #endif
 #else
 	struct fastcall_work fc_work = {
