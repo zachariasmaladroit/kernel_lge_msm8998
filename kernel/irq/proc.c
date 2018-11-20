@@ -88,12 +88,6 @@ static int irq_affinity_list_proc_show(struct seq_file *m, void *v)
 	return show_irq_affinity(1, m, v);
 }
 
-#if 1
-// the interrupt(s) numbers to skip...
-// irqbalancer on recent userspace of htc is not ignoring this irq,
-// and misplaces its affinity. We fix it here in kernel.
-static unsigned int K_IGNORE_1 = 201; //Interrupt number -> IRQ : 201 -> 332;
-#endif
 
 static ssize_t write_irq_affinity(int type, struct file *file,
 		const char __user *buffer, size_t count, loff_t *pos)
@@ -101,13 +95,6 @@ static ssize_t write_irq_affinity(int type, struct file *file,
 	unsigned int irq = (int)(long)PDE_DATA(file_inode(file));
 	cpumask_var_t new_value;
 	int err;
-
-#if 1
-	if (irq == K_IGNORE_1) {
-		printk(KERN_ERR "== ignoring IRQ332 ==\n");
-		return -EIO;
-	}
-#endif
 
 	if (!irq_can_set_affinity_usr(irq) || no_irq_affinity)
 		return -EIO;
@@ -500,15 +487,7 @@ int show_interrupts(struct seq_file *p, void *v)
 	for_each_online_cpu(j)
 		seq_printf(p, "%10u ", kstat_irqs_cpu(i, j));
 
-#if 0
-	// here we could use irq_data.hwirq == 332, to make sure that if interrupt number (i = 201 changes) it will still
-	// skip output GIC on /proc/unterrupts. That way msm_irqbalancer will ignore the problematic IRQ 332,
-	// because the userspace balancer skips interrupt lines without GIC in the text.
-	if ( desc->irq_data.hwirq!= 332 && desc->irq_data.chip) {
-#endif
-#if 1
 	if (desc->irq_data.chip) {
-#endif
 		if (desc->irq_data.chip->irq_print_chip)
 			desc->irq_data.chip->irq_print_chip(&desc->irq_data, p);
 		else if (desc->irq_data.chip->name)
