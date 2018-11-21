@@ -1290,15 +1290,8 @@ static const struct file_operations wakeup_sources_active_stats_fops = {
 };
 #endif
 
-static const struct kernfs_ops wakeup_sources_kern_fops = {
-	.seq_show = wakeup_sources_stats_show,
-};
-
 static int __init wakeup_sources_debugfs_init(void)
 {
-	struct kobject *kobj;
-	struct kernfs_node *node;
-
 	wakeup_sources_stats_dentry = debugfs_create_file("wakeup_sources",
 			S_IRUGO, NULL, NULL, &wakeup_sources_stats_fops);
 
@@ -1307,22 +1300,6 @@ static int __init wakeup_sources_debugfs_init(void)
 		"wakeup_sources_active", S_IRUGO, NULL,
 		NULL, &wakeup_sources_active_stats_fops);
 #endif
-
-	if (wakeup_sources_stats_dentry != ERR_PTR(-ENODEV))
-		return 0;
-
-	/* Create debugfs from scratch just for wakeup_sources */
-	kobj = kobject_create_and_add("debug", kernel_kobj);
-	if (!kobj)
-		return -ENOMEM;
-
-	node = kernfs_create_file(kobj->sd, "wakeup_sources",
-			S_IRUGO, 0, &wakeup_sources_kern_fops, NULL);
-	if (IS_ERR(node)) {
-		kobject_put(kobj);
-		return PTR_ERR(node);
-	}
-
 	return 0;
 }
 
