@@ -5723,7 +5723,7 @@ CONFIG_BLK_DEV_MD=y
 CONFIG_MD_LINEAR=y # "linear harddrive mode", "JBOD"
 # CONFIG_V4L_PLATFORM_DRIVERS # eval
 CONFIG_MSM_SMP2P_TEST=y
-CONFIG_FW_CACHE=y # needs: 'firmware_class: make firmware caching configurable', Enable firmware caching during suspend
+# CONFIG_FW_CACHE is not set # needs: 'firmware_class: make firmware caching configurable', Enable firmware caching during suspend
 # CONFIG_SKY2 is not set
 # CONFIG_SMSC911X is not set
 CONFIG_CHR_DEV_SCH=y # SCSI media changer (jukeboxes ?!)
