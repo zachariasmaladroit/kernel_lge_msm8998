@@ -69,6 +69,7 @@ static int max_mptcp_version = 1;
 
 /* 2015-06-03 jewon.lee@lge.com, LGP_DATA_TCPIP_MPTCP [START] */
 int sysctl_mptcp_enabled __read_mostly = 2;
+EXPORT_SYMBOL(sysctl_mptcp_enabled);
 #ifdef CONFIG_LGP_DATA_TCPIP_MPTCP_CHECKSUM_ENABLE
 int sysctl_mptcp_checksum __read_mostly = 1;
 #else
