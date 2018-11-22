@@ -409,10 +409,17 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fdiagnostics-color=always \
 		   -Wno-unused-value -Wno-unused-parameter \
 		   -Wno-missing-field-initializers -fno-delete-null-pointer-checks \
+		   -fivopts \
+		   -fgcse -fgcse-lm -fgcse-sm -fgcse-after-reload \
+		   -fsplit-paths \
+		   -fipa-cp-clone \
+		   -floop-unroll-and-jam -floop-interchange -ftree-loop-distribution \
+		   -ftree-loop-distribute-patterns \
+		   -freorder-blocks -freorder-blocks-and-partition \
 		   -march=armv8-a+crc+crypto \
 		   -std=gnu89 $(call cc-option,-fno-PIE)
 
-#		   -fmodulo-sched -fmodulo-sched-allow-regmoves \
+#		   -fmodulo-sched -fmodulo-sched-allow-regmoves \ # ICE, compiler bug
 #		   -fipa-ra
 #		   -fipa-reference -fipa-icf
 #
@@ -422,6 +429,9 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 #		   -fno-ipa-sra \
 #
 #		   -mtune=cortex-a73.cortex-a53
+#		   -fstack-clash-protection # this actually works with kernel ?
+#		   -freorder-blocks-and-partition # this works on aarch64, kernel ?
+#		   -flive-range-shrinkage # this actually reduces performance on our arch/SoC ?
 
 
 KBUILD_AFLAGS_KERNEL :=
