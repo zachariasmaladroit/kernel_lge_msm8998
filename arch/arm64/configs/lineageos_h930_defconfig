@@ -6139,3 +6139,7 @@ CONFIG_SERIAL_MSM_CONSOLE=y
 # lge-oreo, stock config; and other discoveries
 CONFIG_BT_BDA=y
 CONFIG_SPI_SLAVE=y # SPI slave protocol handlers
+
+# audio mods
+# mic gain control (for now)
+CONFIG_SOUND_CONTROL=y
