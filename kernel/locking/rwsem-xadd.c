@@ -157,7 +157,8 @@ static void __rwsem_mark_wake(struct rw_semaphore *sem,
 	if (wake_type != RWSEM_WAKE_READ_OWNED) {
 		adjustment = RWSEM_ACTIVE_READ_BIAS;
  try_reader_grant:
-		oldcount = atomic_long_fetch_add(adjustment, &sem->count);
+		oldcount = atomic_long_add_return(adjustment, &sem->count) - adjustment;
+
 		if (unlikely(oldcount < RWSEM_WAITING_BIAS)) {
 			/*
 			 * If the count is still less than RWSEM_WAITING_BIAS
