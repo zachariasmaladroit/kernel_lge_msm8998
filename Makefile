@@ -412,7 +412,8 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fivopts \
 		   -fgcse -fgcse-lm -fgcse-sm -fgcse-after-reload \
 		   -fsplit-paths \
-		   -fipa-cp-clone \
+		   -flive-range-shrinkage -ftree-vrp \
+		   -fipa-cp -fipa-cp-clone -fipa-bit-cp -fipa-vrp -fipa-icf \
 		   -floop-unroll-and-jam -floop-interchange -ftree-loop-distribution \
 		   -ftree-loop-distribute-patterns \
 		   -freorder-blocks -freorder-blocks-and-partition \
