@@ -408,7 +408,8 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Wno-format-security \
 		   -fdiagnostics-color=always \
 		   -Wno-unused-value -Wno-unused-parameter \
-		   -Wno-missing-field-initializers -fno-delete-null-pointer-checks \
+		   -Wno-missing-field-initializers \
+		   -fdelete-null-pointer-checks -fisolate-erroneous-paths-dereference \
 		   -fivopts \
 		   -fgcse -fgcse-lm -fgcse-sm -fgcse-after-reload \
 		   -fsplit-paths \
@@ -420,6 +421,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -march=armv8-a+crc+crypto \
 		   -std=gnu89 $(call cc-option,-fno-PIE)
 
+#		   -fno-delete-null-pointer-checks \
 #		   -fmodulo-sched -fmodulo-sched-allow-regmoves \ # ICE, compiler bug
 #		   -fipa-ra
 #		   -fipa-reference -fipa-icf
