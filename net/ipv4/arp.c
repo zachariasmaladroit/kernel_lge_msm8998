@@ -665,7 +665,6 @@ static inline int arp_fwd_pvlan(struct in_device *in_dev,
  @ ptype      If Ethernet - ETH_P_ARP
  @ dest_ip    Destination IP Address
  @ dev        Network Device
- @ dest_ip    Destination IP Address
  @ src_ip     Source IP Address
  @ dest_hw    Destination HW Address
  @ src_hw     Source HW Address
