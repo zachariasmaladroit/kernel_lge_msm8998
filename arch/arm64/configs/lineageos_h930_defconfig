@@ -6143,3 +6143,7 @@ CONFIG_SPI_SLAVE=y # SPI slave protocol handlers
 # audio mods
 # mic gain control (for now)
 CONFIG_SOUND_CONTROL=y
+
+# dynamic fsync
+CONFIG_DYNAMIC_FSYNC=y
+CONFIG_DYNAMIC_FSYNC_BG_SYNC=y
