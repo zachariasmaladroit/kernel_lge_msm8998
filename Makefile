@@ -1,6 +1,6 @@
 VERSION = 4
 PATCHLEVEL = 4
-SUBLEVEL = 165
+SUBLEVEL = 166
 EXTRAVERSION = _jolla_kernel_joan_v1.2
 NAME = Blurry Fish Butt
 
