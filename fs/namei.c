@@ -880,10 +880,10 @@ static inline void put_link(struct nameidata *nd)
 		path_put(&last->link);
 }
 
-int sysctl_protected_symlinks __read_mostly = 0;
-int sysctl_protected_hardlinks __read_mostly = 0;
-int sysctl_protected_fifos __read_mostly;
-int sysctl_protected_regular __read_mostly;
+int sysctl_protected_symlinks __read_mostly = 1;
+int sysctl_protected_hardlinks __read_mostly = 1;
+int sysctl_protected_fifos __read_mostly = 1;
+int sysctl_protected_regular __read_mostly = 1;
 
 /**
  * may_follow_link - Check symlink following for unsafe situations
