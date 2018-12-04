@@ -447,6 +447,7 @@ int kernel_active_single_step(void)
 NOKPROBE_SYMBOL(kernel_active_single_step);
 
 /* ptrace API */
+#ifdef CONFIG_DEBUG_MONITORS
 void user_enable_single_step(struct task_struct *task)
 {
 	struct thread_info *ti = task_thread_info(task);
@@ -461,3 +462,4 @@ void user_disable_single_step(struct task_struct *task)
 	clear_ti_thread_flag(task_thread_info(task), TIF_SINGLESTEP);
 }
 NOKPROBE_SYMBOL(user_disable_single_step);
+#endif
