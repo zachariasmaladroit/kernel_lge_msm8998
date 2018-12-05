@@ -1495,6 +1495,7 @@ clean: $(clean-dirs)
 		-o -name modules.builtin -o -name '.tmp_*.o.*' \
 		-o -name '*.ll' \
 		-o -name '*.gcno' \) -type f -print | xargs rm -f
+	@find . -name '*.dtb' -o -name 'Image*' -type f -print | xargs rm -f
 
 # Generate tags for editors
 # ---------------------------------------------------------------------------
