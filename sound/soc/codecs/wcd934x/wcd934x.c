@@ -708,7 +708,7 @@ int wcd934x_get_codec_info(struct wcd9xxx *wcd9xxx,
 		return -EINVAL;
 
 	if (!wcd9xxx->regmap) {
-		dev_err(wcd9xxx->dev, "%s: wcd9xxx regmap is null\n", __func__);
+		dev_err_ratelimited(wcd9xxx->dev, "%s: wcd9xxx regmap is null\n", __func__);
 		return -EINVAL;
 	}
 	wcd_regmap = wcd9xxx->regmap;
@@ -740,7 +740,7 @@ int wcd934x_get_codec_info(struct wcd9xxx *wcd9xxx,
 
 version_unknown:
 	if (version < 0)
-		dev_err(wcd9xxx->dev, "%s: wcd934x version unknown\n",
+		dev_err_ratelimited(wcd9xxx->dev, "%s: wcd934x version unknown\n",
 			__func__);
 
 	/* Fill codec type info */
@@ -802,7 +802,7 @@ int wcd934x_bringup(struct wcd9xxx *wcd9xxx)
 		return -EINVAL;
 
 	if (!wcd9xxx->regmap) {
-		dev_err(wcd9xxx->dev, "%s: wcd9xxx regmap is null!\n",
+		dev_err_ratelimited(wcd9xxx->dev, "%s: wcd9xxx regmap is null!\n",
 			__func__);
 		return -EINVAL;
 	}
@@ -1085,12 +1085,12 @@ static int tavil_codec_enable_anc(struct snd_soc_dapm_widget *w,
 			filename = "WCD934X/WCD934X_anc.bin";
 			ret = request_firmware(&fw, filename, codec->dev);
 			if (IS_ERR_VALUE(ret)) {
-				dev_err(codec->dev, "%s: Failed to acquire ANC data: %d\n",
+				dev_err_ratelimited(codec->dev, "%s: Failed to acquire ANC data: %d\n",
 					__func__, ret);
 				return ret;
 			}
 			if (!fw) {
-				dev_err(codec->dev, "%s: Failed to get anc fw\n",
+				dev_err_ratelimited(codec->dev, "%s: Failed to get anc fw\n",
 					__func__);
 				return -ENODEV;
 			}
@@ -1100,7 +1100,7 @@ static int tavil_codec_enable_anc(struct snd_soc_dapm_widget *w,
 				__func__);
 		}
 		if (cal_size < sizeof(struct wcd9xxx_anc_header)) {
-			dev_err(codec->dev, "%s: Invalid cal_size %zd\n",
+			dev_err_ratelimited(codec->dev, "%s: Invalid cal_size %zd\n",
 				__func__, cal_size);
 			ret = -EINVAL;
 			goto err;
@@ -1113,14 +1113,14 @@ static int tavil_codec_enable_anc(struct snd_soc_dapm_widget *w,
 		num_anc_slots = anc_head->num_anc_slots;
 
 		if (tavil->anc_slot >= num_anc_slots) {
-			dev_err(codec->dev, "%s: Invalid ANC slot selected\n",
+			dev_err_ratelimited(codec->dev, "%s: Invalid ANC slot selected\n",
 				__func__);
 			ret = -EINVAL;
 			goto err;
 		}
 		for (i = 0; i < num_anc_slots; i++) {
 			if (anc_size_remaining < WCD934X_PACKED_REG_SIZE) {
-				dev_err(codec->dev, "%s: Invalid register format\n",
+				dev_err_ratelimited(codec->dev, "%s: Invalid register format\n",
 					__func__);
 				ret = -EINVAL;
 				goto err;
@@ -1131,7 +1131,7 @@ static int tavil_codec_enable_anc(struct snd_soc_dapm_widget *w,
 
 			if ((anc_writes_size * WCD934X_PACKED_REG_SIZE) >
 			    anc_size_remaining) {
-				dev_err(codec->dev, "%s: Invalid register format\n",
+				dev_err_ratelimited(codec->dev, "%s: Invalid register format\n",
 					__func__);
 				ret = -EINVAL;
 				goto err;
@@ -1145,7 +1145,7 @@ static int tavil_codec_enable_anc(struct snd_soc_dapm_widget *w,
 			anc_ptr += anc_writes_size;
 		}
 		if (i == num_anc_slots) {
-			dev_err(codec->dev, "%s: Selected ANC slot not present\n",
+			dev_err_ratelimited(codec->dev, "%s: Selected ANC slot not present\n",
 				__func__);
 			ret = -EINVAL;
 			goto err;
@@ -1351,7 +1351,7 @@ static int slim_tx_mixer_put(struct snd_kcontrol *kcontrol,
 
 	mutex_lock(&tavil_p->codec_mutex);
 	if (dai_id >= ARRAY_SIZE(vport_slim_check_table)) {
-		dev_err(codec->dev, "%s: dai_id: %d, out of bounds\n",
+		dev_err_ratelimited(codec->dev, "%s: dai_id: %d, out of bounds\n",
 			__func__, dai_id);
 		mutex_unlock(&tavil_p->codec_mutex);
 		return -EINVAL;
@@ -1395,7 +1395,7 @@ static int slim_tx_mixer_put(struct snd_kcontrol *kcontrol,
 	case AIF4_MAD_TX:
 		break;
 	default:
-		dev_err(codec->dev, "Unknown AIF %d\n", dai_id);
+		dev_err_ratelimited(codec->dev, "Unknown AIF %d\n", dai_id);
 		mutex_unlock(&tavil_p->codec_mutex);
 		return -EINVAL;
 	}
@@ -1496,7 +1496,7 @@ static int slim_rx_mux_put(struct snd_kcontrol *kcontrol,
 			      &tavil_p->dai[AIF4_PB].wcd9xxx_ch_list);
 		break;
 	default:
-		dev_err(codec->dev, "Unknown AIF %d\n", rx_port_value);
+		dev_err_ratelimited(codec->dev, "Unknown AIF %d\n", rx_port_value);
 		goto err;
 	}
 rtn:
@@ -1811,7 +1811,7 @@ static int tavil_codec_enable_slimvi_feedback(struct snd_soc_dapm_widget *w,
 		ret = wcd9xxx_close_slim_sch_tx(core, &dai->wcd9xxx_ch_list,
 						dai->grph);
 		if (ret)
-			dev_err(codec->dev, "%s error in close_slim_sch_tx %d\n",
+			dev_err_ratelimited(codec->dev, "%s error in close_slim_sch_tx %d\n",
 				__func__, ret);
 		if (!dai->bus_down_in_recovery)
 			ret = tavil_codec_enable_slim_chmask(dai, false);
@@ -2358,7 +2358,7 @@ static int tavil_codec_enable_lineout_pa(struct snd_soc_dapm_widget *w,
 			dsd_clk_reg = WCD934X_CDC_DSD1_PATH_CTL;
 		}
 	} else {
-		dev_err(codec->dev, "%s: Error enabling lineout PA\n",
+		dev_err_ratelimited(codec->dev, "%s: Error enabling lineout PA\n",
 			__func__);
 		return -EINVAL;
 	}
@@ -2467,7 +2467,7 @@ static int tavil_codec_hphr_dac_event(struct snd_soc_dapm_widget *w,
 			  0x03;
 		if (((hph_mode == CLS_H_HIFI) || (hph_mode == CLS_H_LOHIFI) ||
 		     (hph_mode == CLS_H_LP)) && (dem_inp != 0x01)) {
-			dev_err(codec->dev, "%s: DEM Input not set correctly, hph_mode: %d\n",
+			dev_err_ratelimited(codec->dev, "%s: DEM Input not set correctly, hph_mode: %d\n",
 					__func__, hph_mode);
 			return -EINVAL;
 		}
@@ -2549,7 +2549,7 @@ static int tavil_codec_hphl_dac_event(struct snd_soc_dapm_widget *w,
 			  0x03;
 		if (((hph_mode == CLS_H_HIFI) || (hph_mode == CLS_H_LOHIFI) ||
 		     (hph_mode == CLS_H_LP)) && (dem_inp != 0x01)) {
-			dev_err(codec->dev, "%s: DEM Input not set correctly, hph_mode: %d\n",
+			dev_err_ratelimited(codec->dev, "%s: DEM Input not set correctly, hph_mode: %d\n",
 					__func__, hph_mode);
 			return -EINVAL;
 		}
@@ -2670,7 +2670,7 @@ static int tavil_codec_spk_boost_event(struct snd_soc_dapm_widget *w,
 		reg = WCD934X_CDC_RX8_RX_PATH_CTL;
 		reg_mix = WCD934X_CDC_RX8_RX_PATH_MIX_CTL;
 	} else {
-		dev_err(codec->dev, "%s: unknown widget: %s\n",
+		dev_err_ratelimited(codec->dev, "%s: unknown widget: %s\n",
 			__func__, w->name);
 		return -EINVAL;
 	}
@@ -2764,7 +2764,7 @@ static int tavil_codec_config_mad(struct snd_soc_codec *codec)
 	} else {
 		ret = request_firmware(&fw, filename, codec->dev);
 		if (ret || !fw) {
-			dev_err(codec->dev,
+			dev_err_ratelimited(codec->dev,
 				"%s: MAD firmware acquire failed, err = %d\n",
 				__func__, ret);
 			return -ENODEV;
@@ -2776,7 +2776,7 @@ static int tavil_codec_config_mad(struct snd_soc_codec *codec)
 	}
 
 	if (cal_size < sizeof(*mad_cal)) {
-		dev_err(codec->dev,
+		dev_err_ratelimited(codec->dev,
 			"%s: Incorrect size %zd for MAD Cal, expected %zd\n",
 			__func__, cal_size, sizeof(*mad_cal));
 		ret = -ENOMEM;
@@ -2785,7 +2785,7 @@ static int tavil_codec_config_mad(struct snd_soc_codec *codec)
 
 	mad_cal = (struct wcd_mad_audio_cal *) (data);
 	if (!mad_cal) {
-		dev_err(codec->dev,
+		dev_err_ratelimited(codec->dev,
 			"%s: Invalid calibration data\n",
 			__func__);
 		ret = -EINVAL;
@@ -3067,7 +3067,7 @@ static int tavil_codec_enable_asrc(struct snd_soc_codec *codec,
 		asrc = ASRC3;
 		break;
 	default:
-		dev_err(codec->dev, "%s: Invalid asrc input :%d\n", __func__,
+		dev_err_ratelimited(codec->dev, "%s: Invalid asrc input :%d\n", __func__,
 			asrc_in);
 		ret = -EINVAL;
 		goto done;
@@ -3117,7 +3117,7 @@ static int tavil_codec_enable_asrc_resampler(struct snd_soc_dapm_widget *w,
 
 	cfg = snd_soc_read(codec, WCD934X_CDC_RX_INP_MUX_SPLINE_ASRC_CFG0);
 	if (!(cfg & 0xFF)) {
-		dev_err(codec->dev, "%s: ASRC%u input not selected\n",
+		dev_err_ratelimited(codec->dev, "%s: ASRC%u input not selected\n",
 			__func__, w->shift);
 		return -EINVAL;
 	}
@@ -3140,7 +3140,7 @@ static int tavil_codec_enable_asrc_resampler(struct snd_soc_dapm_widget *w,
 		ret = tavil_codec_enable_asrc(codec, asrc_in, event);
 		break;
 	default:
-		dev_err(codec->dev, "%s: Invalid asrc:%u\n", __func__,
+		dev_err_ratelimited(codec->dev, "%s: Invalid asrc:%u\n", __func__,
 			w->shift);
 		ret = -EINVAL;
 		break;
@@ -3589,7 +3589,7 @@ static int tavil_codec_enable_mix_path(struct snd_soc_dapm_widget *w,
 
 	if (w->shift >= WCD934X_NUM_INTERPOLATORS ||
 	    w->shift == INTERP_LO3_NA || w->shift == INTERP_LO4_NA) {
-		dev_err(codec->dev, "%s: Invalid Interpolator value %d for name %s\n",
+		dev_err_ratelimited(codec->dev, "%s: Invalid Interpolator value %d for name %s\n",
 			__func__, w->shift, w->name);
 		return -EINVAL;
 	};
@@ -3709,7 +3709,7 @@ static int tavil_codec_enable_main_path(struct snd_soc_dapm_widget *w,
 
 	if (w->shift >= WCD934X_NUM_INTERPOLATORS ||
 	    w->shift == INTERP_LO3_NA || w->shift == INTERP_LO4_NA) {
-		dev_err(codec->dev, "%s: Invalid Interpolator value %d for name %s\n",
+		dev_err_ratelimited(codec->dev, "%s: Invalid Interpolator value %d for name %s\n",
 			__func__, w->shift, w->name);
 		return -EINVAL;
 	};
@@ -4087,7 +4087,7 @@ static int tavil_codec_enable_dec(struct snd_soc_dapm_widget *w,
 	wname = widget_name;
 	dec_adc_mux_name = strsep(&widget_name, " ");
 	if (!dec_adc_mux_name) {
-		dev_err(codec->dev, "%s: Invalid decimator = %s\n",
+		dev_err_ratelimited(codec->dev, "%s: Invalid decimator = %s\n",
 			__func__, w->name);
 		ret =  -EINVAL;
 		goto out;
@@ -4096,7 +4096,7 @@ static int tavil_codec_enable_dec(struct snd_soc_dapm_widget *w,
 
 	dec = strpbrk(dec_adc_mux_name, "012345678");
 	if (!dec) {
-		dev_err(codec->dev, "%s: decimator index not found\n",
+		dev_err_ratelimited(codec->dev, "%s: decimator index not found\n",
 			__func__);
 		ret =  -EINVAL;
 		goto out;
@@ -4104,7 +4104,7 @@ static int tavil_codec_enable_dec(struct snd_soc_dapm_widget *w,
 
 	ret = kstrtouint(dec, 10, &decimator);
 	if (ret < 0) {
-		dev_err(codec->dev, "%s: Invalid decimator = %s\n",
+		dev_err_ratelimited(codec->dev, "%s: Invalid decimator = %s\n",
 			__func__, wname);
 		ret =  -EINVAL;
 		goto out;
@@ -4285,7 +4285,7 @@ static u8 tavil_get_dmic_clk_val(struct snd_soc_codec *codec,
 		dmic_ctl_val = WCD934X_DMIC_CLK_DIV_3;
 
 	if (dmic_clk_rate == 0) {
-		dev_err(codec->dev,
+		dev_err_ratelimited(codec->dev,
 			"%s: dmic_sample_rate cannot be 0\n",
 			__func__);
 		goto done;
@@ -4312,7 +4312,7 @@ static u8 tavil_get_dmic_clk_val(struct snd_soc_codec *codec,
 		dmic_ctl_val = WCD934X_DMIC_CLK_DIV_16;
 		break;
 	default:
-		dev_err(codec->dev,
+		dev_err_ratelimited(codec->dev,
 			"%s: Invalid div_factor %u, clk_rate(%u), dmic_rate(%u)\n",
 			__func__, div_factor, mclk_rate, dmic_clk_rate);
 		break;
@@ -4357,13 +4357,13 @@ static int tavil_codec_enable_dmic(struct snd_soc_dapm_widget *w,
 
 	wname = strpbrk(w->name, "012345");
 	if (!wname) {
-		dev_err(codec->dev, "%s: widget not found\n", __func__);
+		dev_err_ratelimited(codec->dev, "%s: widget not found\n", __func__);
 		return -EINVAL;
 	}
 
 	ret = kstrtouint(wname, 10, &dmic);
 	if (ret < 0) {
-		dev_err(codec->dev, "%s: Invalid DMIC line on the codec\n",
+		dev_err_ratelimited(codec->dev, "%s: Invalid DMIC line on the codec\n",
 			__func__);
 		return -EINVAL;
 	}
@@ -4385,7 +4385,7 @@ static int tavil_codec_enable_dmic(struct snd_soc_dapm_widget *w,
 		dmic_clk_reg = WCD934X_CPE_SS_DMIC2_CTL;
 		break;
 	default:
-		dev_err(codec->dev, "%s: Invalid DMIC Selection\n",
+		dev_err_ratelimited(codec->dev, "%s: Invalid DMIC Selection\n",
 			__func__);
 		return -EINVAL;
 	};
@@ -4529,7 +4529,7 @@ int tavil_micbias_control(struct snd_soc_codec *codec,
 	int post_dapm_on = 0;
 
 	if ((micb_index < 0) || (micb_index > TAVIL_MAX_MICBIAS - 1)) {
-		dev_err(codec->dev, "%s: Invalid micbias index, micb_ind:%d\n",
+		dev_err_ratelimited(codec->dev, "%s: Invalid micbias index, micb_ind:%d\n",
 			__func__, micb_index);
 		return -EINVAL;
 	}
@@ -4553,7 +4553,7 @@ int tavil_micbias_control(struct snd_soc_codec *codec,
 		micb_reg = WCD934X_ANA_MICB4;
 		break;
 	default:
-		dev_err(codec->dev, "%s: Invalid micbias number: %d\n",
+		dev_err_ratelimited(codec->dev, "%s: Invalid micbias number: %d\n",
 			__func__, micb_num);
 		return -EINVAL;
 	}
@@ -4692,7 +4692,7 @@ int tavil_codec_enable_standalone_micbias(struct snd_soc_codec *codec,
 	}
 
 	if ((micb_index < 0) || (micb_index > TAVIL_MAX_MICBIAS - 1)) {
-		dev_err(codec->dev, "%s: Invalid micbias index, micb_ind:%d\n",
+		dev_err_ratelimited(codec->dev, "%s: Invalid micbias index, micb_ind:%d\n",
 			__func__, micb_index);
 		return -EINVAL;
 	}
@@ -4708,7 +4708,7 @@ int tavil_codec_enable_standalone_micbias(struct snd_soc_codec *codec,
 	if (!rc)
 		snd_soc_dapm_sync(snd_soc_codec_get_dapm(codec));
 	else
-		dev_err(codec->dev, "%s: micbias%d force %s pin failed\n",
+		dev_err_ratelimited(codec->dev, "%s: micbias%d force %s pin failed\n",
 			__func__, micb_num, (enable ? "enable" : "disable"));
 
 	return rc;
@@ -5436,7 +5436,7 @@ static int tavil_dmic_pin_mode_put(struct snd_kcontrol *kcontrol,
 		ctl_reg = WCD934X_TEST_DEBUG_PIN_CTL_OE_3;
 		break;
 	default:
-		dev_err(codec->dev, "%s: Invalid pinctl position = %d\n",
+		dev_err_ratelimited(codec->dev, "%s: Invalid pinctl position = %d\n",
 			__func__, pinctl_position);
 		return -EINVAL;
 	}
@@ -5546,7 +5546,7 @@ static int tavil_mad_input_put(struct snd_kcontrol *kcontrol,
 
 	if (tavil_mad_input >= sizeof(tavil_conn_mad_text)/
 	    sizeof(tavil_conn_mad_text[0])) {
-		dev_err(codec->dev,
+		dev_err_ratelimited(codec->dev,
 			"%s: tavil_mad_input = %d out of bounds\n",
 			__func__, tavil_mad_input);
 		return -EINVAL;
@@ -5568,14 +5568,14 @@ static int tavil_mad_input_put(struct snd_kcontrol *kcontrol,
 		mad_input = strpbrk(tavil_conn_mad_text[tavil_mad_input],
 				    "1234");
 		if (!mad_input) {
-			dev_err(codec->dev, "%s: Invalid MAD input %s\n",
+			dev_err_ratelimited(codec->dev, "%s: Invalid MAD input %s\n",
 				__func__, tavil_conn_mad_text[tavil_mad_input]);
 			return -EINVAL;
 		}
 
 		ret = kstrtouint(mad_input, 10, &adc);
 		if ((ret < 0) || (adc > 4)) {
-			dev_err(codec->dev, "%s: Invalid ADC = %s\n", __func__,
+			dev_err_ratelimited(codec->dev, "%s: Invalid ADC = %s\n", __func__,
 				tavil_conn_mad_text[tavil_mad_input]);
 			return -EINVAL;
 		}
@@ -5602,7 +5602,7 @@ static int tavil_mad_input_put(struct snd_kcontrol *kcontrol,
 		if (!strcmp(card->of_dapm_routes[i].sink, mad_input_widget)) {
 			source_widget = card->of_dapm_routes[i].source;
 			if (!source_widget) {
-				dev_err(codec->dev,
+				dev_err_ratelimited(codec->dev,
 					"%s: invalid source widget\n",
 					__func__);
 				return -EINVAL;
@@ -5629,7 +5629,7 @@ static int tavil_mad_input_put(struct snd_kcontrol *kcontrol,
 	}
 
 	if (!mic_bias_found) {
-		dev_err(codec->dev, "%s: mic bias not found for input %s\n",
+		dev_err_ratelimited(codec->dev, "%s: mic bias not found for input %s\n",
 			__func__, mad_input_widget);
 		return -EINVAL;
 	}
@@ -6109,7 +6109,7 @@ static int tavil_dec_enum_put(struct snd_kcontrol *kcontrol,
 			mic_sel_reg = WCD934X_CDC_TX7_TX_PATH_CFG0;
 		break;
 	default:
-		dev_err(codec->dev, "%s: e->reg: 0x%x not expected\n",
+		dev_err_ratelimited(codec->dev, "%s: e->reg: 0x%x not expected\n",
 			__func__, e->reg);
 		return -EINVAL;
 	}
@@ -7543,7 +7543,7 @@ static int tavil_get_channel_map(struct snd_soc_dai *dai,
 	case AIF3_PB:
 	case AIF4_PB:
 		if (!rx_slot || !rx_num) {
-			dev_err(tavil->dev, "%s: Invalid rx_slot 0x%pK or rx_num 0x%pK\n",
+			dev_err_ratelimited(tavil->dev, "%s: Invalid rx_slot 0x%pK or rx_num 0x%pK\n",
 				 __func__, rx_slot, rx_num);
 			ret = -EINVAL;
 			break;
@@ -7558,7 +7558,7 @@ static int tavil_get_channel_map(struct snd_soc_dai *dai,
 		dev_dbg(tavil->dev, "%s: dai_name = %s dai_id = %x  rx_num = %d\n",
 			__func__, dai->name, dai->id, i);
 		if (*rx_num == 0) {
-			dev_err(tavil->dev, "%s: Channel list empty for dai_name = %s dai_id = %x\n",
+			dev_err_ratelimited(tavil->dev, "%s: Channel list empty for dai_name = %s dai_id = %x\n",
 				__func__, dai->name, dai->id);
 			ret = -EINVAL;
 		}
@@ -7569,7 +7569,7 @@ static int tavil_get_channel_map(struct snd_soc_dai *dai,
 	case AIF4_MAD_TX:
 	case AIF4_VIFEED:
 		if (!tx_slot || !tx_num) {
-			dev_err(tavil->dev, "%s: Invalid tx_slot 0x%pK or tx_num 0x%pK\n",
+			dev_err_ratelimited(tavil->dev, "%s: Invalid tx_slot 0x%pK or tx_num 0x%pK\n",
 				 __func__, tx_slot, tx_num);
 			ret = -EINVAL;
 			break;
@@ -7584,13 +7584,13 @@ static int tavil_get_channel_map(struct snd_soc_dai *dai,
 		dev_dbg(tavil->dev, "%s: dai_name = %s dai_id = %x  tx_num = %d\n",
 			 __func__, dai->name, dai->id, i);
 		if (*tx_num == 0) {
-			dev_err(tavil->dev, "%s: Channel list empty for dai_name = %s dai_id = %x\n",
+			dev_err_ratelimited(tavil->dev, "%s: Channel list empty for dai_name = %s dai_id = %x\n",
 				 __func__, dai->name, dai->id);
 			ret = -EINVAL;
 		}
 		break;
 	default:
-		dev_err(tavil->dev, "%s: Invalid DAI ID %x\n",
+		dev_err_ratelimited(tavil->dev, "%s: Invalid DAI ID %x\n",
 			__func__, dai->id);
 		ret = -EINVAL;
 		break;
@@ -7611,7 +7611,7 @@ static int tavil_set_channel_map(struct snd_soc_dai *dai,
 	core = dev_get_drvdata(dai->codec->dev->parent);
 
 	if (!tx_slot || !rx_slot) {
-		dev_err(tavil->dev, "%s: Invalid tx_slot 0x%pK, rx_slot 0x%pK\n",
+		dev_err_ratelimited(tavil->dev, "%s: Invalid tx_slot 0x%pK, rx_slot 0x%pK\n",
 			__func__, tx_slot, rx_slot);
 		return -EINVAL;
 	}
@@ -7676,7 +7676,7 @@ static int tavil_set_decimator_rate(struct snd_soc_dai *dai,
 		tx_fs_rate = 6;
 		break;
 	default:
-		dev_err(tavil->dev, "%s: Invalid TX sample rate: %d\n",
+		dev_err_ratelimited(tavil->dev, "%s: Invalid TX sample rate: %d\n",
 			__func__, sample_rate);
 		return -EINVAL;
 
@@ -7688,7 +7688,7 @@ static int tavil_set_decimator_rate(struct snd_soc_dai *dai,
 			__func__, dai->id, tx_port);
 
 		if ((tx_port < 0) || (tx_port == 12) || (tx_port >= 14)) {
-			dev_err(codec->dev, "%s: Invalid SLIM TX%u port. DAI ID: %d\n",
+			dev_err_ratelimited(codec->dev, "%s: Invalid SLIM TX%u port. DAI ID: %d\n",
 				__func__, tx_port, dai->id);
 			return -EINVAL;
 		}
@@ -7743,7 +7743,7 @@ static int tavil_set_decimator_rate(struct snd_soc_dai *dai,
 			dev_dbg(codec->dev, "%s: RX_MIX_TX%u going to CDC_IF TX%u\n",
 					__func__, tx_port, tx_port);
 		} else {
-			dev_err(codec->dev, "%s: ERROR: Invalid decimator: %d\n",
+			dev_err_ratelimited(codec->dev, "%s: ERROR: Invalid decimator: %d\n",
 				__func__, decimator);
 			return -EINVAL;
 		}
@@ -7768,7 +7768,7 @@ static int tavil_set_mix_interpolator_rate(struct snd_soc_dai *dai,
 						WCD934X_RX_PORT_START_NUMBER;
 		if ((int_2_inp < INTn_2_INP_SEL_RX0) ||
 		    (int_2_inp > INTn_2_INP_SEL_RX7)) {
-			dev_err(codec->dev, "%s: Invalid RX%u port, Dai ID is %d\n",
+			dev_err_ratelimited(codec->dev, "%s: Invalid RX%u port, Dai ID is %d\n",
 				__func__,
 				(ch->port - WCD934X_RX_PORT_START_NUMBER),
 				dai->id);
@@ -7833,7 +7833,7 @@ static int tavil_set_prim_interpolator_rate(struct snd_soc_dai *dai,
 						WCD934X_RX_PORT_START_NUMBER;
 		if ((int_1_mix1_inp < INTn_1_INP_SEL_RX0) ||
 		    (int_1_mix1_inp > INTn_1_INP_SEL_RX7)) {
-			dev_err(codec->dev, "%s: Invalid RX%u port, Dai ID is %d\n",
+			dev_err_ratelimited(codec->dev, "%s: Invalid RX%u port, Dai ID is %d\n",
 				__func__,
 				(ch->port - WCD934X_RX_PORT_START_NUMBER),
 				dai->id);
@@ -7912,7 +7912,7 @@ static int tavil_set_interpolator_rate(struct snd_soc_dai *dai,
 		}
 	}
 	if ((i == ARRAY_SIZE(sr_val_tbl)) || (rate_val < 0)) {
-		dev_err(codec->dev, "%s: Unsupported sample rate: %d\n",
+		dev_err_ratelimited(codec->dev, "%s: Unsupported sample rate: %d\n",
 			__func__, sample_rate);
 		return -EINVAL;
 	}
@@ -7966,7 +7966,7 @@ static int tavil_hw_params(struct snd_pcm_substream *substream,
 	case SNDRV_PCM_STREAM_PLAYBACK:
 		ret = tavil_set_interpolator_rate(dai, params_rate(params));
 		if (ret) {
-			dev_err(tavil->dev, "%s: cannot set sample rate: %u\n",
+			dev_err_ratelimited(tavil->dev, "%s: cannot set sample rate: %u\n",
 				__func__, params_rate(params));
 			return ret;
 		}
@@ -7990,7 +7990,7 @@ static int tavil_hw_params(struct snd_pcm_substream *substream,
 			ret = tavil_set_decimator_rate(dai,
 						       params_rate(params));
 		if (ret) {
-			dev_err(tavil->dev, "%s: cannot set TX Decimator rate: %d\n",
+			dev_err_ratelimited(tavil->dev, "%s: cannot set TX Decimator rate: %d\n",
 				__func__, ret);
 			return ret;
 		}
@@ -8002,14 +8002,14 @@ static int tavil_hw_params(struct snd_pcm_substream *substream,
 			tavil->dai[dai->id].bit_width = 24;
 			break;
 		default:
-			dev_err(tavil->dev, "%s: Invalid format 0x%x\n",
+			dev_err_ratelimited(tavil->dev, "%s: Invalid format 0x%x\n",
 				__func__, params_width(params));
 			return -EINVAL;
 		};
 		tavil->dai[dai->id].rate = params_rate(params);
 		break;
 	default:
-		dev_err(tavil->dev, "%s: Invalid stream type %d\n", __func__,
+		dev_err_ratelimited(tavil->dev, "%s: Invalid stream type %d\n", __func__,
 			substream->stream);
 		return -EINVAL;
 	};
@@ -8239,7 +8239,7 @@ static int tavil_dig_core_power_collapse(struct tavil_priv *tavil,
 	if (req_state == POWER_COLLAPSE)
 	{
 		if (tavil->power_active_ref <= 0) {
-			dev_err(tavil->dev, "%s: No power_active_ref is existed %d\n",
+			dev_err_ratelimited(tavil->dev, "%s: No power_active_ref is existed %d\n",
 				__func__,tavil->power_active_ref);
 			goto unlock_mutex;
 		}
@@ -8305,7 +8305,7 @@ static int tavil_cdc_req_mclk_enable(struct tavil_priv *tavil,
 	if (enable) {
 		ret = clk_prepare_enable(tavil->wcd_ext_clk);
 		if (ret) {
-			dev_err(tavil->dev, "%s: ext clk enable failed\n",
+			dev_err_ratelimited(tavil->dev, "%s: ext clk enable failed\n",
 				__func__);
 			goto done;
 		}
@@ -8331,7 +8331,7 @@ static int __tavil_cdc_mclk_enable_locked(struct tavil_priv *tavil,
 	int ret = 0;
 
 	if (!tavil->wcd_ext_clk) {
-		dev_err(tavil->dev, "%s: wcd ext clock is NULL\n", __func__);
+		dev_err_ratelimited(tavil->dev, "%s: wcd ext clock is NULL\n", __func__);
 		return -EINVAL;
 	}
 
@@ -8496,7 +8496,7 @@ static int __tavil_codec_internal_rco_ctrl(struct snd_soc_codec *codec,
 		} else {
 			ret = tavil_cdc_req_mclk_enable(tavil, true);
 			if (ret) {
-				dev_err(codec->dev,
+				dev_err_ratelimited(codec->dev,
 					"%s: mclk_enable failed, err = %d\n",
 					__func__, ret);
 				goto done;
@@ -8514,7 +8514,7 @@ static int __tavil_codec_internal_rco_ctrl(struct snd_soc_codec *codec,
 	}
 
 	if (ret) {
-		dev_err(codec->dev, "%s: Error in %s RCO\n",
+		dev_err_ratelimited(codec->dev, "%s: Error in %s RCO\n",
 			__func__, (enable ? "enabling" : "disabling"));
 		ret = -EINVAL;
 	}
@@ -8751,7 +8751,7 @@ static irqreturn_t tavil_misc_irq(int irq, void *data)
 		/* DSD DC interrupt, reset DSD path */
 		tavil_dsd_reset(tavil->dsd_config);
 	} else {
-		dev_err(tavil->dev, "%s: Codec misc irq: %d, val: 0x%x\n",
+		dev_err_ratelimited(tavil->dev, "%s: Codec misc irq: %d, val: 0x%x\n",
 			__func__, irq, misc_val);
 	}
 
@@ -8898,7 +8898,7 @@ static int tavil_setup_irqs(struct tavil_priv *tavil)
 	ret = wcd9xxx_request_irq(core_res, WCD9XXX_IRQ_SLIMBUS,
 				  tavil_slimbus_irq, "SLIMBUS Slave", tavil);
 	if (ret)
-		dev_err(codec->dev, "%s: Failed to request irq %d\n", __func__,
+		dev_err_ratelimited(codec->dev, "%s: Failed to request irq %d\n", __func__,
 		       WCD9XXX_IRQ_SLIMBUS);
 	else
 		tavil_slim_interface_init_reg(codec);
@@ -8907,7 +8907,7 @@ static int tavil_setup_irqs(struct tavil_priv *tavil)
 	ret = wcd9xxx_request_irq(core_res, WCD934X_IRQ_MISC,
 				  tavil_misc_irq, "CDC MISC Irq", tavil);
 	if (ret)
-		dev_err(codec->dev, "%s: Failed to request cdc misc irq\n",
+		dev_err_ratelimited(codec->dev, "%s: Failed to request cdc misc irq\n",
 			__func__);
 
 	return ret;
@@ -8973,7 +8973,7 @@ static int tavil_handle_pdata(struct tavil_priv *tavil,
 	int rc = 0;
 
 	if (!pdata) {
-		dev_err(codec->dev, "%s: NULL pdata\n", __func__);
+		dev_err_ratelimited(codec->dev, "%s: NULL pdata\n", __func__);
 		return -ENODEV;
 	}
 
@@ -9003,7 +9003,7 @@ static int tavil_handle_pdata(struct tavil_priv *tavil,
 		break;
 	default:
 		/* should never happen */
-		dev_err(codec->dev, "%s: Invalid mclk_rate %d\n",
+		dev_err_ratelimited(codec->dev, "%s: Invalid mclk_rate %d\n",
 			__func__, pdata->mclk_rate);
 		rc = -EINVAL;
 		goto done;
@@ -9048,7 +9048,7 @@ static int tavil_handle_pdata(struct tavil_priv *tavil,
 		dmic_clk_drv = 3;
 		break;
 	default:
-		dev_err(codec->dev,
+		dev_err_ratelimited(codec->dev,
 			"%s: invalid dmic_clk_drv %d, using default\n",
 			__func__, pdata->dmic_clk_drv);
 		dmic_clk_drv = 0;
@@ -9122,7 +9122,7 @@ static int tavil_wdsp_initialize(struct snd_soc_codec *codec)
 
 	wcd_dsp_cntl_init(codec, &params, &tavil->wdsp_cntl);
 	if (!tavil->wdsp_cntl) {
-		dev_err(tavil->dev, "%s: wcd-dsp-control init failed\n",
+		dev_err_ratelimited(tavil->dev, "%s: wcd-dsp-control init failed\n",
 			__func__);
 		ret = -EINVAL;
 	}
@@ -9255,13 +9255,13 @@ static int tavil_post_reset_cb(struct wcd9xxx *wcd9xxx)
 	pdata = dev_get_platdata(codec->dev->parent);
 	ret = tavil_handle_pdata(tavil, pdata);
 	if (IS_ERR_VALUE(ret))
-		dev_err(codec->dev, "%s: invalid pdata\n", __func__);
+		dev_err_ratelimited(codec->dev, "%s: invalid pdata\n", __func__);
 
 	/* Initialize MBHC module */
 	mbhc = &tavil->mbhc->wcd_mbhc;
 	ret = tavil_mbhc_post_ssr_init(tavil->mbhc, codec);
 	if (ret) {
-		dev_err(codec->dev, "%s: mbhc initialization failed\n",
+		dev_err_ratelimited(codec->dev, "%s: mbhc initialization failed\n",
 			__func__);
 		goto done;
 	} else {
@@ -9276,7 +9276,7 @@ static int tavil_post_reset_cb(struct wcd9xxx *wcd9xxx)
 	tavil_cleanup_irqs(tavil);
 	ret = tavil_setup_irqs(tavil);
 	if (ret) {
-		dev_err(codec->dev, "%s: tavil irq setup failed %d\n",
+		dev_err_ratelimited(codec->dev, "%s: tavil irq setup failed %d\n",
 			__func__, ret);
 		goto done;
 	}
@@ -9316,7 +9316,7 @@ static int tavil_soc_codec_probe(struct snd_soc_codec *codec)
 	/* Resource Manager post Init */
 	ret = wcd_resmgr_post_init(tavil->resmgr, &tavil_resmgr_cb, codec);
 	if (ret) {
-		dev_err(codec->dev, "%s: wcd resmgr post init failed\n",
+		dev_err_ratelimited(codec->dev, "%s: wcd resmgr post init failed\n",
 			__func__);
 		goto err;
 	}
@@ -9338,7 +9338,7 @@ static int tavil_soc_codec_probe(struct snd_soc_codec *codec)
 	ret = wcd_cal_create_hwdep(tavil->fw_data,
 				   WCD9XXX_CODEC_HWDEP_NODE, codec);
 	if (IS_ERR_VALUE(ret)) {
-		dev_err(codec->dev, "%s hwdep failed %d\n", __func__, ret);
+		dev_err_ratelimited(codec->dev, "%s hwdep failed %d\n", __func__, ret);
 		goto err_hwdep;
 	}
 
@@ -9358,7 +9358,7 @@ static int tavil_soc_codec_probe(struct snd_soc_codec *codec)
 	pdata = dev_get_platdata(codec->dev->parent);
 	ret = tavil_handle_pdata(tavil, pdata);
 	if (IS_ERR_VALUE(ret)) {
-		dev_err(codec->dev, "%s: bad pdata\n", __func__);
+		dev_err_ratelimited(codec->dev, "%s: bad pdata\n", __func__);
 		goto err_hwdep;
 	}
 
@@ -9392,7 +9392,7 @@ static int tavil_soc_codec_probe(struct snd_soc_codec *codec)
 
 	ret = tavil_setup_irqs(tavil);
 	if (ret) {
-		dev_err(tavil->dev, "%s: tavil irq setup failed %d\n",
+		dev_err_ratelimited(tavil->dev, "%s: tavil irq setup failed %d\n",
 			__func__, ret);
 		goto err_pdata;
 	}
@@ -9510,7 +9510,7 @@ static int tavil_suspend(struct device *dev)
 	struct tavil_priv *tavil = platform_get_drvdata(pdev);
 
 	if (!tavil) {
-		dev_err(dev, "%s: tavil private data is NULL\n", __func__);
+		dev_err_ratelimited(dev, "%s: tavil private data is NULL\n", __func__);
 		return -EINVAL;
 	}
 	dev_dbg(dev, "%s: system suspend\n", __func__);
@@ -9526,7 +9526,7 @@ static int tavil_resume(struct device *dev)
 	struct tavil_priv *tavil = platform_get_drvdata(pdev);
 
 	if (!tavil) {
-		dev_err(dev, "%s: tavil private data is NULL\n", __func__);
+		dev_err_ratelimited(dev, "%s: tavil private data is NULL\n", __func__);
 		return -EINVAL;
 	}
 	dev_dbg(dev, "%s: system resume\n", __func__);
@@ -9563,13 +9563,13 @@ static int tavil_swrm_read(void *handle, int reg)
 	ret = regmap_bulk_write(wcd9xxx->regmap, swr_rd_addr_base,
 				 (u8 *)&reg, 4);
 	if (ret < 0) {
-		dev_err(tavil->dev, "%s: RD Addr Failure\n", __func__);
+		dev_err_ratelimited(tavil->dev, "%s: RD Addr Failure\n", __func__);
 		goto done;
 	}
 	ret = regmap_bulk_read(wcd9xxx->regmap, swr_rd_data_base,
 				(u8 *)&val, 4);
 	if (ret < 0) {
-		dev_err(tavil->dev, "%s: RD Data Failure\n", __func__);
+		dev_err_ratelimited(tavil->dev, "%s: RD Data Failure\n", __func__);
 		goto done;
 	}
 	ret = val;
@@ -9620,7 +9620,7 @@ static int tavil_swrm_bulk_write(void *handle, u32 *reg, u32 *val, size_t len)
 	ret = wcd9xxx_slim_bulk_write(wcd9xxx, bulk_reg,
 			 (len * 2), false);
 	if (ret) {
-		dev_err(tavil->dev, "%s: swrm bulk write failed, ret: %d\n",
+		dev_err_ratelimited(tavil->dev, "%s: swrm bulk write failed, ret: %d\n",
 			__func__, ret);
 	}
 	mutex_unlock(&tavil->swr.write_mutex);
@@ -9659,7 +9659,7 @@ static int tavil_swrm_write(void *handle, int reg, int val)
 	mutex_lock(&tavil->swr.write_mutex);
 	ret = wcd9xxx_slim_bulk_write(wcd9xxx, bulk_reg, 2, false);
 	if (ret < 0)
-		dev_err(tavil->dev, "%s: WR Data Failure\n", __func__);
+		dev_err_ratelimited(tavil->dev, "%s: WR Data Failure\n", __func__);
 	mutex_unlock(&tavil->swr.write_mutex);
 
 	return ret;
@@ -9731,7 +9731,7 @@ static int tavil_swrm_handle_irq(void *handle,
 					  swrm_irq_handler,
 					  "Tavil SWR Master", swrm_handle);
 		if (ret)
-			dev_err(tavil->dev, "%s: Failed to request irq %d\n",
+			dev_err_ratelimited(tavil->dev, "%s: Failed to request irq %d\n",
 				__func__, WCD934X_IRQ_SOUNDWIRE);
 	} else
 		wcd9xxx_free_irq(&wcd9xxx->core_res, WCD934X_IRQ_SOUNDWIRE,
@@ -9752,7 +9752,7 @@ static void tavil_codec_add_spi_device(struct tavil_priv *tavil,
 	rc = of_property_read_u32(node, "qcom,master-bus-num",
 				  &prop_value);
 	if (IS_ERR_VALUE(rc)) {
-		dev_err(tavil->dev, "%s: prop %s not found in node %s",
+		dev_err_ratelimited(tavil->dev, "%s: prop %s not found in node %s",
 			__func__, "qcom,master-bus-num", node->full_name);
 		goto done;
 	}
@@ -9760,7 +9760,7 @@ static void tavil_codec_add_spi_device(struct tavil_priv *tavil,
 	/* Get the reference to SPI master */
 	master = spi_busnum_to_master(prop_value);
 	if (!master) {
-		dev_err(tavil->dev, "%s: Invalid spi_master for bus_num %u\n",
+		dev_err_ratelimited(tavil->dev, "%s: Invalid spi_master for bus_num %u\n",
 			__func__, prop_value);
 		goto done;
 	}
@@ -9768,7 +9768,7 @@ static void tavil_codec_add_spi_device(struct tavil_priv *tavil,
 	/* Allocate the spi device */
 	spi = spi_alloc_device(master);
 	if (!spi) {
-		dev_err(tavil->dev, "%s: spi_alloc_device failed\n",
+		dev_err_ratelimited(tavil->dev, "%s: spi_alloc_device failed\n",
 			__func__);
 		goto err_spi_alloc_dev;
 	}
@@ -9776,7 +9776,7 @@ static void tavil_codec_add_spi_device(struct tavil_priv *tavil,
 	/* Initialize device properties */
 	if (of_modalias_node(node, spi->modalias,
 			     sizeof(spi->modalias)) < 0) {
-		dev_err(tavil->dev, "%s: cannot find modalias for %s\n",
+		dev_err_ratelimited(tavil->dev, "%s: cannot find modalias for %s\n",
 			__func__, node->full_name);
 		goto err_dt_parse;
 	}
@@ -9784,7 +9784,7 @@ static void tavil_codec_add_spi_device(struct tavil_priv *tavil,
 	rc = of_property_read_u32(node, "qcom,chip-select",
 				  &prop_value);
 	if (IS_ERR_VALUE(rc)) {
-		dev_err(tavil->dev, "%s: prop %s not found in node %s",
+		dev_err_ratelimited(tavil->dev, "%s: prop %s not found in node %s",
 			__func__, "qcom,chip-select", node->full_name);
 		goto err_dt_parse;
 	}
@@ -9793,7 +9793,7 @@ static void tavil_codec_add_spi_device(struct tavil_priv *tavil,
 	rc = of_property_read_u32(node, "qcom,max-frequency",
 				  &prop_value);
 	if (IS_ERR_VALUE(rc)) {
-		dev_err(tavil->dev, "%s: prop %s not found in node %s",
+		dev_err_ratelimited(tavil->dev, "%s: prop %s not found in node %s",
 			__func__, "qcom,max-frequency", node->full_name);
 		goto err_dt_parse;
 	}
@@ -9803,7 +9803,7 @@ static void tavil_codec_add_spi_device(struct tavil_priv *tavil,
 
 	rc = spi_add_device(spi);
 	if (IS_ERR_VALUE(rc)) {
-		dev_err(tavil->dev, "%s: spi_add_device failed\n", __func__);
+		dev_err_ratelimited(tavil->dev, "%s: spi_add_device failed\n", __func__);
 		goto err_dt_parse;
 	}
 
@@ -9847,7 +9847,7 @@ static void tavil_add_child_devices(struct work_struct *work)
 		return;
 	}
 	if (!wcd9xxx->dev->of_node) {
-		dev_err(wcd9xxx->dev, "%s: DT node for wcd9xxx does not exist\n",
+		dev_err_ratelimited(wcd9xxx->dev, "%s: DT node for wcd9xxx does not exist\n",
 			__func__);
 		return;
 	}
@@ -9875,7 +9875,7 @@ static void tavil_add_child_devices(struct work_struct *work)
 
 		pdev = platform_device_alloc(plat_dev_name, -1);
 		if (!pdev) {
-			dev_err(wcd9xxx->dev, "%s: pdev memory alloc failed\n",
+			dev_err_ratelimited(wcd9xxx->dev, "%s: pdev memory alloc failed\n",
 				__func__);
 			ret = -ENOMEM;
 			goto err_mem;
@@ -9887,7 +9887,7 @@ static void tavil_add_child_devices(struct work_struct *work)
 			ret = platform_device_add_data(pdev, platdata,
 						       sizeof(*platdata));
 			if (ret) {
-				dev_err(&pdev->dev,
+				dev_err_ratelimited(&pdev->dev,
 					"%s: cannot add plat data ctrl:%d\n",
 					__func__, ctrl_num);
 				goto err_pdev_add;
@@ -9896,7 +9896,7 @@ static void tavil_add_child_devices(struct work_struct *work)
 
 		ret = platform_device_add(pdev);
 		if (ret) {
-			dev_err(&pdev->dev,
+			dev_err_ratelimited(&pdev->dev,
 				"%s: Cannot add platform device\n",
 				__func__);
 			goto err_pdev_add;
@@ -9908,7 +9908,7 @@ static void tavil_add_child_devices(struct work_struct *work)
 					struct tavil_swr_ctrl_data),
 					GFP_KERNEL);
 			if (!temp) {
-				dev_err(wcd9xxx->dev, "out of memory\n");
+				dev_err_ratelimited(wcd9xxx->dev, "out of memory\n");
 				ret = -ENOMEM;
 				goto err_pdev_add;
 			}
@@ -10078,7 +10078,7 @@ static int tavil_probe(struct platform_device *pdev)
 	resmgr = wcd_resmgr_init(&tavil->wcd9xxx->core_res, NULL);
 	if (IS_ERR(resmgr)) {
 		ret = PTR_ERR(resmgr);
-		dev_err(&pdev->dev, "%s: Failed to initialize wcd resmgr\n",
+		dev_err_ratelimited(&pdev->dev, "%s: Failed to initialize wcd resmgr\n",
 			__func__);
 		goto err_resmgr;
 	}
@@ -10094,7 +10094,7 @@ static int tavil_probe(struct platform_device *pdev)
 	/* Register for Clock */
 	wcd_ext_clk = clk_get(tavil->wcd9xxx->dev, "wcd_clk");
 	if (IS_ERR(wcd_ext_clk)) {
-		dev_err(tavil->wcd9xxx->dev, "%s: clk get %s failed\n",
+		dev_err_ratelimited(tavil->wcd9xxx->dev, "%s: clk get %s failed\n",
 			__func__, "wcd_ext_clk");
 		goto err_clk;
 	}
@@ -10120,7 +10120,7 @@ static int tavil_probe(struct platform_device *pdev)
 	ret = snd_soc_register_codec(&pdev->dev, &soc_codec_dev_tavil,
 				  tavil_dai, ARRAY_SIZE(tavil_dai));
 	if (ret) {
-		dev_err(&pdev->dev, "%s: Codec registration failed\n",
+		dev_err_ratelimited(&pdev->dev, "%s: Codec registration failed\n",
 		 __func__);
 		goto err_cdc_reg;
 	}
