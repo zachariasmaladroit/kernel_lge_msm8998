@@ -5875,6 +5875,9 @@ CONFIG_DEFAULT_NOOP=y
 # CONFIG_DEFAULT_ZEN is not set
 CONFIG_DEFAULT_IOSCHED="noop"
 
+# CPU scheduler tweaks & changes
+CONFIG_SCHED_CHILD_RUNS_FIRST=y
+
 # performance & latency cutdown tweaking
 # CONFIG_ZEN_INTERACTIVE is not set
 # CONFIG_SCSI_MQ_DEFAULT is not set # broken on 4.4 Android ?
