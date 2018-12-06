@@ -5791,6 +5791,7 @@ CONFIG_TRACER_PKT=y
 # CONFIG_QCOM_MEMORY_DUMP_V2 is not set
 # CONFIG_USB_DWC3_DEBUG_FS is not set
 # CONFIG_MSM_SMEM_LOGGING is not set
+# CONFIG_DEBUG_MONITORS is not set
 
 # disable for debug, security, attack surface
 # CONFIG_MSM_RDBG is not set # remote debugger driver (=m by default)
