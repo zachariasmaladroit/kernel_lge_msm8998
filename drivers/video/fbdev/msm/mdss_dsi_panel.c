@@ -903,7 +903,7 @@ static void mdss_dsi_panel_bl_ctrl(struct mdss_panel_data *pdata,
 	 * is less than or equal to the floor value.
 	 */
 	if (brightness_floor && bl_level <= brightness_floor)
-		bl_level = pdata->panel_info.bl_min;
+		bl_level = 1;
 
 	ctrl_pdata = container_of(pdata, struct mdss_dsi_ctrl_pdata,
 				panel_data);
