@@ -5747,6 +5747,7 @@ CONFIG_CHR_DEV_SCH=y # SCSI media changer (jukeboxes ?!)
 # CONFIG_USB_STORAGE_ONETOUCH is not set
 # CONFIG_USB_STORAGE_KARMA is not set
 # CONFIG_USB_STORAGE_CYPRESS_ATACB is not set
+# CONFIG_ETHERNET is not set # requires: 'HACK: gadget: Makefile: compile rmnet_ctrl for QTI' & 'HACK: gadget: Makefile: re-fix rmnet compilation'
 
 # media tuners (DVB, etc.)
 # CONFIG_MEDIA_DIGITAL_TV_SUPPORT is not set
