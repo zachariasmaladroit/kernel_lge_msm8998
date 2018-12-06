@@ -5668,7 +5668,7 @@ CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y # needs more commits
 # to the trace function. This technique lowers overhead and stress
 # on the branch prediction of the processor.
 #
-CONFIG_JUMP_LABEL=y
+# CONFIG_JUMP_LABEL is not set # assumedly leads to latency spikes, thus discouraged
 
 # add additional drivers that might be needed
 # CONFIG_RELAY is not set
