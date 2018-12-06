@@ -125,9 +125,6 @@ config KERNEL_TEXT_RDONLY
 config ARM64_STRICT_BREAK_BEFORE_MAKE
 	bool "Enforce strict break-before-make on page table updates "
 
-config DEBUG_MONITORS
-	bool "Support self-hosted debugging"
-
 source "drivers/hwtracing/coresight/Kconfig"
 
 endmenu

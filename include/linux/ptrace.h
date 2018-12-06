@@ -261,7 +261,7 @@ static inline void ptrace_release_task(struct task_struct *task)
  * to document the interface for all arch definitions.
  */
 
-#if !defined(arch_has_single_step) || !defined(CONFIG_DEBUG_MONITORS)
+#ifndef arch_has_single_step
 /**
  * arch_has_single_step - does this CPU support user-mode single-step?
  *
@@ -271,9 +271,7 @@ static inline void ptrace_release_task(struct task_struct *task)
  * supports instruction single-step for user mode.
  * It can be a constant or it can test a CPU feature bit.
  */
-#ifndef arch_has_single_step
 #define arch_has_single_step()		(0)
-#endif
 
 /**
  * user_enable_single_step - single-step in user-mode task

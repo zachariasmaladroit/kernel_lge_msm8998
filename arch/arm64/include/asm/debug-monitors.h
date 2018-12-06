@@ -103,16 +103,15 @@ struct break_hook {
 	int (*fn)(struct pt_regs *regs, unsigned int esr);
 };
 
-enum dbg_active_el {
-	DBG_ACTIVE_EL0 = 0,
-	DBG_ACTIVE_EL1,
-};
-
-#ifdef CONFIG_DEBUG_MONITORS
 void register_break_hook(struct break_hook *hook);
 void unregister_break_hook(struct break_hook *hook);
 
 u8 debug_monitors_arch(void);
+
+enum dbg_active_el {
+	DBG_ACTIVE_EL0 = 0,
+	DBG_ACTIVE_EL1,
+};
 
 void enable_debug_monitors(enum dbg_active_el el);
 void disable_debug_monitors(enum dbg_active_el el);
@@ -124,26 +123,6 @@ void kernel_enable_single_step(struct pt_regs *regs);
 void kernel_disable_single_step(void);
 int kernel_active_single_step(void);
 
-int aarch32_break_handler(struct pt_regs *regs);
-#else
-static inline void register_break_hook(struct break_hook *hook) {}
-static inline void unregister_break_hook(struct break_hook *hook) {}
-
-static inline u8 debug_monitors_arch(void) { return 0; }
-
-static inline void enable_debug_monitors(enum dbg_active_el el) {}
-static inline void disable_debug_monitors(enum dbg_active_el el) {}
-
-static inline void user_rewind_single_step(struct task_struct *task) {}
-static inline void user_fastforward_single_step(struct task_struct *task) {}
-
-static inline void kernel_enable_single_step(struct pt_regs *regs) {}
-static inline void kernel_disable_single_step(void) {}
-static inline int kernel_active_single_step(void) { return 0; }
-
-static inline int aarch32_break_handler(struct pt_regs *regs) { return 0; }
-#endif
-
 #ifdef CONFIG_HAVE_HW_BREAKPOINT
 int reinstall_suspended_bps(struct pt_regs *regs);
 #else
@@ -152,6 +131,8 @@ static inline int reinstall_suspended_bps(struct pt_regs *regs)
 	return -ENODEV;
 }
 #endif
+
+int aarch32_break_handler(struct pt_regs *regs);
 
 #endif	/* __ASSEMBLY */
 #endif	/* __KERNEL__ */
