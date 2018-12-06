@@ -5884,6 +5884,7 @@ CONFIG_SCHED_CHILD_RUNS_FIRST=y
 # CONFIG_MANDATORY_FILE_LOCKING is not set
 # CONFIG_SLUB_CPU_PARTIAL is not set # more indeterminism in the latency of the free , taking of locks that may cause latency spikes
 # CONFIG_VM_EVENT_COUNTERS is not set
+# CONFIG_CONFIG_AUDIT is not set # SELinux auditing overhead
 
 CONFIG_CRYPTO_PCRYPT=y
 
