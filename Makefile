@@ -626,6 +626,10 @@ all: vmlinux
 ARCH_CPPFLAGS :=
 ARCH_AFLAGS :=
 ARCH_CFLAGS :=
+
+# Needed to unbreak GCC 7.x and above
+KBUILD_CFLAGS   += $(call cc-option,-fno-store-merging,)
+
 include arch/$(SRCARCH)/Makefile
 
 KBUILD_CFLAGS	+= $(call cc-option,-fno-delete-null-pointer-checks,)
