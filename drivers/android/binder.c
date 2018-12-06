@@ -2775,8 +2775,6 @@ static void binder_transaction(struct binder_proc *proc,
 			 * the transaction, and nothing is queued to the
 			 * todo list while the thread is on waiting_threads.
 			 */
-			binder_user_error("%d:%d new transaction not allowed when there is a transaction on thread todo\n",
-					  proc->pid, thread->pid);
 			binder_inner_proc_unlock(proc);
 			return_error = BR_FAILED_REPLY;
 			return_error_param = -EPROTO;
@@ -4229,8 +4227,6 @@ static int binder_ioctl_get_node_info_for_ref(struct binder_proc *proc,
 
 	if (info->strong_count || info->weak_count || info->reserved1 ||
 	    info->reserved2 || info->reserved3) {
-		binder_user_error("%d BINDER_GET_NODE_INFO_FOR_REF: only handle may be non-zero.",
-				  proc->pid);
 		return -EINVAL;
 	}
 
