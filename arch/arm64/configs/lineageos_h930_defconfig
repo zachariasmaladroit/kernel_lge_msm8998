@@ -6162,6 +6162,9 @@ CONFIG_DYNAMIC_FSYNC_BG_SYNC=y
 CONFIG_SUSPEND_SKIP_SYNC=y
 # CONFIG_PM_SUSPEND_BG_SYNC is not set
 
+# transparent hugepages | mutually exclusive with RT_FULL but perhaps beneficial for java/Android
+# CONFIG_TRANSPARENT_HUGEPAGE is not set
+
 # rt-kernel/rt-devel
 # CONFIG_INTERRUPT_OFF_HIST is not set
 # CONFIG_PREEMPT_OFF_HIST is not set
