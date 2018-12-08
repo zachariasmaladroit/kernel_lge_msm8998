@@ -59,9 +59,7 @@ spinlock_t msm_eventq_lock;
 static struct pid *msm_pid;
 spinlock_t msm_pid_lock;
 
-#if 0
 static uint32_t gpu_limit;
-#endif
 
 /*
  * It takes 20 bytes + NULL character to write the
@@ -505,14 +503,12 @@ int msm_create_session(unsigned int session_id, struct video_device *vdev)
 	mutex_init(&session->close_lock);
 	rwlock_init(&session->stream_rwlock);
 
-#if 0
 	if (gpu_limit) {
 		session->sysfs_pwr_limit = kgsl_pwr_limits_add(KGSL_DEVICE_3D0);
 		if (session->sysfs_pwr_limit)
 			kgsl_pwr_limits_set_freq(session->sysfs_pwr_limit,
 				gpu_limit);
 	}
-#endif
 
 	return 0;
 }
@@ -682,12 +678,10 @@ int msm_destroy_session(unsigned int session_id)
 	if (!session)
 		return -EINVAL;
 
-#if 0
 	if (gpu_limit && session->sysfs_pwr_limit) {
 		kgsl_pwr_limits_set_default(session->sysfs_pwr_limit);
 		kgsl_pwr_limits_del(session->sysfs_pwr_limit);
 	}
-#endif
 
 	msm_destroy_session_streams(session);
 	msm_remove_session_cmd_ack_q(session);
@@ -1551,10 +1545,8 @@ static int msm_probe(struct platform_device *pdev)
 		goto v4l2_fail;
 	}
 
-#if 0
 	of_property_read_u32(pdev->dev.of_node,
 		"qcom,gpu-limit", &gpu_limit);
-#endif
 
 	goto probe_end;
 
