@@ -5855,8 +5855,8 @@ CONFIG_NO_HZ_FULL_ALL=y
 CONFIG_NO_HZ=y
 CONFIG_HIGH_RES_TIMERS=y
 
-# AdrenoIdler for msm_adreno_tz, needs STATE_NOTIFIER
-# CONFIG_ADRENO_IDLER is not set
+# AdrenoIdler for msm_adreno_tz, needs STATE_NOTIFIER (in some implementations)
+CONFIG_ADRENO_IDLER=y
 
 # state notifier, needed for cpufreq governors, adreno-idler, etc.
 CONFIG_STATE_NOTIFIER=y
