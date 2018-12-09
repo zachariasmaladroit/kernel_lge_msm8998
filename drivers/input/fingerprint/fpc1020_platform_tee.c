@@ -25,7 +25,6 @@
  */
 
 #include <linux/atomic.h>
-#include <linux/cpu_input_boost.h>
 #include <linux/delay.h>
 #include <linux/gpio.h>
 #include <linux/interrupt.h>
@@ -36,7 +35,6 @@
 #include <linux/of_gpio.h>
 #include <linux/platform_device.h>
 #include <linux/regulator/consumer.h>
-#include <linux/state_notifier.h>
 #include <linux/wakelock.h>
 #include <linux/input.h>
 #define FPC_TTW_HOLD_TIME 1000
@@ -438,9 +436,6 @@ static irqreturn_t fpc1020_irq_handler(int irq, void *handle)
 	}
 
 	sysfs_notify(&fpc1020->input->dev.kobj, NULL, dev_attr_irq.attr.name);
-
-	if (state_suspended)
-		cpu_input_boost_kick_wake();
 
 	return IRQ_HANDLED;
 }
