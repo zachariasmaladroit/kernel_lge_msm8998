@@ -355,12 +355,6 @@ config CPU_FREQ_GOV_CULTIVATION
 	help
 	  'cultivation' - another tuned interactive with extra options
 
-config FINGERPRINT_BOOST
-	bool "Fingerprint Boost"
-	default y
-	help
-	  Boosts available CPUs to max frequency on fingerprint sensor input.
-
 config CPU_FREQ_GOV_SCHED
 	bool "'sched' cpufreq governor"
 	depends on CPU_FREQ
