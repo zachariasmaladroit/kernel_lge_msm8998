@@ -411,7 +411,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Wno-missing-field-initializers \
 		   -fdelete-null-pointer-checks -fisolate-erroneous-paths-dereference \
 		   -fivopts \
-		   -fgcse -fgcse-lm -fgcse-sm -fgcse-after-reload \
+		   -fgcse -fgcse-lm -fgcse-sm -fgcse-las -fgcse-after-reload \
 		   -fsplit-paths \
 		   -flive-range-shrinkage -ftree-vrp \
 		   -fipa-cp -fipa-cp-clone -fipa-bit-cp -fipa-vrp -fipa-icf \
