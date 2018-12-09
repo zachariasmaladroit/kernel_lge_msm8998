@@ -51,7 +51,6 @@
 #include <linux/freezer.h>
 #include <linux/zcache.h>
 #include <linux/sched/rt.h>
-#include <linux/devfreq_boost.h>
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/almk.h>
@@ -683,8 +682,6 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	}
 
 	selected_oom_score_adj = min_score_adj;
-
-	devfreq_boost_kick_max(DEVFREQ_MSM_CPUBW, 250);
 
 	rcu_read_lock();
 	for_each_process(tsk) {
