@@ -6160,6 +6160,7 @@ CONFIG_SPI_SLAVE=y # SPI slave protocol handlers
 # audio mods
 # headphone, mic, earpiece gain control
 CONFIG_SOUND_CONTROL=y
+# CONFIG_MSM_ULTRASOUND is not set
 
 # dynamic fsync
 CONFIG_DYNAMIC_FSYNC=y
