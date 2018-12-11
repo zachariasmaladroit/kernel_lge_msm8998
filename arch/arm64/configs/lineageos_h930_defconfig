@@ -6158,7 +6158,7 @@ CONFIG_BT_BDA=y
 CONFIG_SPI_SLAVE=y # SPI slave protocol handlers
 
 # audio mods
-# mic gain control (for now)
+# headphone, mic, earpiece gain control
 CONFIG_SOUND_CONTROL=y
 
 # dynamic fsync
