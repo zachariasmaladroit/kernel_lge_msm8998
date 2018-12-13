@@ -163,7 +163,8 @@ void simple_lmk_stop_reclaim(void)
 static int __init simple_lmk_init(void)
 {
 	simple_lmk_wq = alloc_workqueue("simple_lmk",
-				WQ_HIGHPRI | WQ_UNBOUND | WQ_FREEZABLE, 0);
+					WQ_HIGHPRI | WQ_FREEZABLE |
+					WQ_MEM_RECLAIM | WQ_UNBOUND, 0);
 	BUG_ON(!simple_lmk_wq);
 
 	return 0;
