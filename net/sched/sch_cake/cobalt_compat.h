@@ -87,12 +87,12 @@ static inline void qdisc_qstats_drop(struct Qdisc *sch)
 		(config_enabled(option##_MODULE) && config_enabled(MODULE)))
 #endif
 
-#if KERNEL_VERSION(4, 4, 114) > LINUX_VERSION_CODE
+/*#if KERNEL_VERSION(4, 4, 114) > LINUX_VERSION_CODE
 static inline unsigned int __tcp_hdrlen(const struct tcphdr *th)
 {
 	return th->doff * 4;
 }
-#endif
+#endif*/
 
 #if KERNEL_VERSION(4, 7, 0) > LINUX_VERSION_CODE
 #define nla_put_u64_64bit(skb, attrtype, value, padattr) nla_put_u64(skb, attrtype, value)
