@@ -5507,6 +5507,7 @@ CONFIG_CC_STACKPROTECTOR_STRONG=y
 # Kernel (self)protection
 CONFIG_DEFAULT_MMAP_MIN_ADDR=32768 # Disallow allocating the first 32k of memory (cannot be 64k due to ARM loader).
 CONFIG_DEBUG_RODATA=y
+CONFIG_DEBUG_ALIGN_RODATA=y # This prevents sections from being split into pages and avoids a potential TLB penalty.
 # DEBUG_SET_MODULE_RONX is not set # for Stock ROM "Set loadable kernel module data as NX and text as RO"
 CONFIG_SCHED_STACK_END_CHECK=y # The runtime overhead introduced is minimal.
 CONFIG_STRICT_DEVMEM=y # If this option is disabled,
@@ -5649,9 +5650,6 @@ CONFIG_WLAN_FEATURE_FILS=y
 # CONFIG_FEATURE_TSO_DEBUG is not set
 # CONFIG_WLAN_NAPI_DEBUG is not set
 
-# TTBR0 PAN emulation
-# CONFIG_ARM64_SW_TTBR0_PAN is not set
-
 # disable workarounds NOT applicable to our hardware (modified later revision cortex A53, A73)
 
 # keep legacy emulation, compatibility w.r.t. ARMv8
@@ -5697,10 +5695,12 @@ CONFIG_WIL6210_PLATFORM_MSM=y
 # CONFIG_MSM_11AD is not set
 
 # Prior to v4.1, assists heap memory attacks; best to keep interface disabled.
-# CONFIG_INET_DIAG is not set
+CONFIG_INET_DIAG=y
+CONFIG_INET_TCP_DIAG=y
+CONFIG_INET_UDP_DIAG=y # if unsure, say Y.
+CONFIG_INET_DIAG_DESTROY=y
 
 # disable unnecessary/not applicable components, speed up boot & operation
-# CONFIG_SEEMP_CORE is not set
 # CONFIG_CPU_IDLE_GOV_LADDER is not set
 # CONFIG_VGA_ARB is not set
 # CONFIG_SND_SUPPORT_OLD_API is not set
@@ -6043,7 +6043,7 @@ CONFIG_RSEQ=y
 CONFIG_AIO=y
 
 # network filesystems - NFS, CIFS - enable if needed - security (!)
-# CONFIG_NETWORK_FILESYSTEMS is not set
+CONFIG_NETWORK_FILESYSTEMS=y # tshoot
 
 # IP tunnel stuff
 CONFIG_NET_IP_TUNNEL=y
@@ -6113,8 +6113,6 @@ CONFIG_BLK_DEV_BSG=y # spr # eval
 # CONFIG_PM_DEBUG is not set # spr (non-perf)
 # CONFIG_DPM_WATCHDOG is not set # spr (=y)
 CONFIG_DPM_WATCHDOG_TIMEOUT=10 # spr , way too strict
-# CONFIG_INET_DIAG is not set # spr (=y)
-# CONFIG_INET_DIAG_DESTROY=y
 # CONFIG_L2TP_DEBUGFS is not set # spr (=y)
 # CONFIG_DNS_RESOLVER is not set # spr (non-perf)
 # CONFIG_REGMAP_ALLOW_WRITE_DEBUGFS is not set # spr (non-perf), DANGEROUS! "Regmap, allow direct register writes through debugfs"
@@ -6229,5 +6227,14 @@ CONFIG_DEFAULT_CAKE=y
 CONFIG_USB_NET_DRIVERS=y # needed by LGE_USB_SUPPORT_LIST_NETWORK (USB_NET_DRIVERS && USB_NET_CDC_SUBSET) 
 CONFIG_USB_NET_CDC_SUBSET=y
 
+# tshoot for bringup, etc.
+CONFIG_USB_F_CDEV=y
+CONFIG_USB_CONFIGFS_F_CDEV=y
+
 # LGE_USB_SUPPORT_LIST_INPUT
 CONFIG_INPUT_MOUSE=y
+
+# tshoot security features
+# CONFIG_SEEMP_CORE is not set
+# TTBR0 PAN emulation
+# CONFIG_ARM64_SW_TTBR0_PAN is not set
