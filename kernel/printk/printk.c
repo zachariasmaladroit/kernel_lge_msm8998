@@ -1199,6 +1199,11 @@ static int syslog_print(char __user *buf, int size)
 	struct printk_log *msg;
 	int len = 0;
 
+if (printk_mode == 0) {
+//	kfree(text); // no kfree without kmalloc !
+	return len;
+} else {
+
 	text = kmalloc(LOG_LINE_MAX + PREFIX_MAX, GFP_KERNEL);
 	if (!text)
 		return -ENOMEM;
@@ -1256,12 +1261,18 @@ static int syslog_print(char __user *buf, int size)
 	kfree(text);
 	return len;
 }
+}
 
 static int syslog_print_all(char __user *buf, int size, bool clear)
 {
 	char *text;
 	int len = 0;
 	int attempts = 0;
+
+if (printk_mode == 0) {
+//	kfree(text); // no kfree without kmalloc !
+	return len;
+} else {
 
 	text = kmalloc(LOG_LINE_MAX + PREFIX_MAX, GFP_KERNEL);
 	if (!text)
@@ -1375,6 +1386,7 @@ out:
 
 	kfree(text);
 	return len;
+}
 }
 
 int do_syslog(int type, char __user *buf, int len, int source)
