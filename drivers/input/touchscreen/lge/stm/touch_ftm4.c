@@ -2081,6 +2081,11 @@ static void resume_touch_screen(struct device *dev, bool restore_prev)
 	mutex_lock(&suspend_resume_lock);
 	cancel_delayed_work(&d->touch_off_work);
 
+	if (!sovc_scr_suspended) {
+		mutex_unlock(&suspend_resume_lock);
+		return;
+	}
+
 	if (restore_prev) {
 		restore_touch_prev_state(dev, false);
 	} else {
