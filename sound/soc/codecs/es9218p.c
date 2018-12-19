@@ -3049,13 +3049,10 @@ static int es9218_mute(struct snd_soc_dai *dai, int mute)
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
     if (sovc_switch) {
         mutex_lock(&sovc_playing_state_lock);
-        if (mute && sovc_tmp_onoff) {
+        if (mute && sovc_tmp_onoff)
             sovc_notifier_call_chain(SOVC_EVENT_STOPPED, NULL);
-            sovc_hifi_mode = false;
-        } else if (!mute && !sovc_tmp_onoff) {
+        else if (!mute && !sovc_tmp_onoff)
             sovc_notifier_call_chain(SOVC_EVENT_PLAYING, NULL);
-            sovc_hifi_mode = true;
-        }
         mutex_unlock(&sovc_playing_state_lock);
     }
 #endif

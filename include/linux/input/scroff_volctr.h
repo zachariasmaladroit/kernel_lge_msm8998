@@ -35,7 +35,6 @@ extern bool sovc_ignore;
 
 extern struct mutex sovc_playing_state_lock;
 
-extern bool sovc_hifi_mode;
 extern bool sovc_state_playing(void);
 
 #endif /* _LINUX_SCROFF_VOLCTR_H */
