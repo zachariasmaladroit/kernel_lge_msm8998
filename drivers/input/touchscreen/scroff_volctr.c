@@ -106,6 +106,8 @@ bool es9218p_playing = false;
 bool tfa9872_playing = false;
 bool sovc_tmp_userspace_playing = false;
 
+static void unregister_sovc(void);
+
 static bool registered = false;
 static DEFINE_MUTEX(reg_lock);
 
@@ -535,7 +537,7 @@ err:
 	return rc;
 }
 
-void unregister_sovc(void)
+static void unregister_sovc(void)
 {
 	mutex_lock(&reg_lock);
 
