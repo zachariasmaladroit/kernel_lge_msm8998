@@ -58,6 +58,10 @@
 #define PRIORITY_QUEUE (QUEUE_0)
 #define SYNC_QUEUE (QUEUE_1)
 
+static struct mutex msm_cci_init_mutex =
+    __MUTEX_INITIALIZER(msm_cci_init_mutex);
+
+
 static struct v4l2_subdev *g_cci_subdev;
 
 static void msm_cci_dump_registers(struct cci_device *cci_dev,
@@ -1710,16 +1714,31 @@ static int32_t msm_cci_config(struct v4l2_subdev *sd,
 	struct cci_device *cci_dev = v4l2_get_subdevdata(sd);
 #endif
 
+//    struct cci_device *cci_dev;
+//    cci_dev = v4l2_get_subdevdata(sd);
+    if (!cci_dev || !cci_ctrl) {
+        pr_err("%s:%d failed: invalid params %pK %pK\n", __func__,
+            __LINE__, cci_dev, cci_ctrl);
+        rc = -EINVAL;
+        return rc;
+    }
+
 	CDBG("%s line %d cmd %d\n", __func__, __LINE__,
 		cci_ctrl->cmd);
 	switch (cci_ctrl->cmd) {
 	case MSM_CCI_INIT:
+
+		mutex_lock(cci_dev->cci_init_mutex);
+
 		rc = msm_cci_init(sd, cci_ctrl);
 
 #ifdef CONFIG_MACH_LGE
 		/*LGE_CHANGE, CST, check if cci is acquired */
 		if(!rc)
 			cci_ctrl->cci_info->cci_acquired = 1;
+
+		mutex_unlock(cci_dev->cci_init_mutex);
+
 		break;
 #endif
 
@@ -2188,6 +2207,9 @@ static int msm_cci_probe(struct platform_device *pdev)
 		kfree(new_cci_dev);
 		return -EFAULT;
 	}
+
+
+	new_cci_dev->cci_init_mutex = &msm_cci_init_mutex;
 
 	new_cci_dev->ref_count = 0;
 	new_cci_dev->base = msm_camera_get_reg_base(pdev, "cci", true);
