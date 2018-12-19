@@ -32,10 +32,6 @@ extern int sovc_ignore_start_y;
 extern int sovc_ignore_end_y;
 extern bool sovc_ignore;
 
-extern bool es9218p_playing;
-extern bool tfa9872_playing;
-extern bool sovc_tmp_userspace_playing;
-
 extern struct mutex sovc_playing_state_lock;
 
 extern bool sovc_hifi_mode;
