@@ -41,13 +41,6 @@
 
 #include    "es9218p.h"
 
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-#include <linux/input/scroff_volctr.h>
-#include <linux/input/sovc_notifier.h>
-
-static DEFINE_MUTEX(es9218p_state_lock);
-#endif
-
 #define     ES9218P_SYSFS               // use this feature only for user debug, not release
 #define     SHOW_LOGS                   // show debug logs only for debug mode, not release
 
@@ -888,12 +881,6 @@ static int es9218p_sabre_amp_start(struct i2c_client *client, int headset)
         es9218_hph_switch_gpio_H();
 #endif /* CONFIG_MACH_MSM8998_JOAN */
 
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-    mutex_lock(&es9218p_state_lock);
-    sovc_notifier_call_chain(SOVC_EVENT_PLAYING, NULL);
-    mutex_unlock(&es9218p_state_lock);
-#endif
-
     return ret;
 }
 
@@ -937,12 +924,6 @@ static int es9218p_sabre_amp_stop(struct i2c_client *client, int headset)
             ret = 1;
             break;
     }
-
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-    mutex_lock(&es9218p_state_lock);
-    sovc_notifier_call_chain(SOVC_EVENT_STOPPED, NULL);
-    mutex_unlock(&es9218p_state_lock);
-#endif
 
     return ret;
 }
