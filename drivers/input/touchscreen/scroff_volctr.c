@@ -357,8 +357,10 @@ static void sovc_track_input_callback(struct work_struct *unused)
 static int sovc_input_common_event(struct input_handle *handle, unsigned int type,
 				unsigned int code, int value)
 {
-	if (!sovc_switch || sovc_ignore ||
-	    !sovc_scr_suspended || !sovc_tmp_onoff)
+	if (!sovc_switch)
+		return 1;
+
+	if (!sovc_scr_suspended || !sovc_tmp_onoff)
 		return 1;
 
 	/* You can debug here with 'adb shell getevent -l' command. */
@@ -373,6 +375,10 @@ static int sovc_input_common_event(struct input_handle *handle, unsigned int typ
 				scroff_volctr_reset();
 			}
 			return 1;
+		case ABS_MT_POSITION_X:
+		case ABS_MT_POSITION_Y:
+			if (sovc_ignore)
+				return 1;
 		default:
 			break;
 	}
