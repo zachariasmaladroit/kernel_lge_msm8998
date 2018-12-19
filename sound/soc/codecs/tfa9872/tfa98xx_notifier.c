@@ -1,5 +1,5 @@
 /*
- * sound/soc/codecs/sovc_notifier.c
+ * sound/soc/codecs/tfa98xx_notifier.c
  *
  * Copyright (c) 2018, jollaman999 <admin@jollaman999>
  *
@@ -21,22 +21,22 @@
 #include <linux/notifier.h>
 #include <linux/export.h>
 
-static BLOCKING_NOTIFIER_HEAD(sovc_notifier_list);
+static BLOCKING_NOTIFIER_HEAD(tfa98xx_notifier_list);
 
-int sovc_register_client(struct notifier_block *nb)
+int tfa98xx_register_client(struct notifier_block *nb)
 {
-	return blocking_notifier_chain_register(&sovc_notifier_list, nb);
+	return blocking_notifier_chain_register(&tfa98xx_notifier_list, nb);
 }
-EXPORT_SYMBOL(sovc_register_client);
+EXPORT_SYMBOL(tfa98xx_register_client);
 
-int sovc_unregister_client(struct notifier_block *nb)
+int tfa98xx_unregister_client(struct notifier_block *nb)
 {
-	return blocking_notifier_chain_unregister(&sovc_notifier_list, nb);
+	return blocking_notifier_chain_unregister(&tfa98xx_notifier_list, nb);
 }
-EXPORT_SYMBOL(sovc_unregister_client);
+EXPORT_SYMBOL(tfa98xx_unregister_client);
 
-int sovc_notifier_call_chain(unsigned long val, void *v)
+int tfa98xx_notifier_call_chain(unsigned long val, void *v)
 {
-	return blocking_notifier_call_chain(&sovc_notifier_list, val, v);
+	return blocking_notifier_call_chain(&tfa98xx_notifier_list, val, v);
 }
-EXPORT_SYMBOL_GPL(sovc_notifier_call_chain);
+EXPORT_SYMBOL_GPL(tfa98xx_notifier_call_chain);
