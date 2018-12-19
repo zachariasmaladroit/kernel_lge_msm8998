@@ -2029,12 +2029,13 @@ static void ftm4_lpwg_force_cal_debug(struct device *dev)
 static void resume_touch_screen(struct device *dev)
 {
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
+	struct touch_core_data *ts = to_touch_core(dev);
 	struct ftm4_data *d = to_ftm4_data(dev);
 
 	cancel_delayed_work(&d->touch_off_work);
 
 	mutex_lock(&suspend_resume_lock);
-	if (!sovc_scr_suspended) {
+	if (ts->lpwg.screen) {
 		mutex_unlock(&suspend_resume_lock);
 		return;
 	}
@@ -2475,8 +2476,9 @@ static void restore_touch_suspend_state(struct device *dev)
 static void ftm4_touch_off(struct work_struct *work)
 {
 	struct ftm4_data *d = container_of(work, struct ftm4_data, touch_off_work.work);
+	struct touch_core_data *ts = to_touch_core(d->dev);
 
-	if (!sovc_scr_suspended)
+	if (ts->lpwg.screen)
 		return;
 
 	restore_touch_suspend_state(d->dev);
@@ -2487,9 +2489,10 @@ static int sovc_notifier_callback(struct notifier_block *self,
 {
 	struct ftm4_data *d =
 		container_of(self, struct ftm4_data, sovc_notif);
+	struct touch_core_data *ts = to_touch_core(d->dev);
 	unsigned int delay = SOVC_TOUCH_OFF_DELAY;
 
-	if (!sovc_switch || !sovc_scr_suspended)
+	if (!sovc_switch || ts->lpwg.screen)
 		return 0;
 
 	cancel_delayed_work(&d->touch_off_work);
