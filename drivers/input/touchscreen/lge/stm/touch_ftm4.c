@@ -2489,10 +2489,9 @@ static int sovc_notifier_callback(struct notifier_block *self,
 {
 	struct ftm4_data *d =
 		container_of(self, struct ftm4_data, sovc_notif);
-	struct touch_core_data *ts = to_touch_core(d->dev);
 	unsigned int delay = SOVC_TOUCH_OFF_DELAY;
 
-	if (!sovc_switch || !ts->lpwg.screen)
+	if (!sovc_switch)
 		return 0;
 
 	cancel_delayed_work(&d->touch_off_work);
