@@ -64,8 +64,6 @@ static bool swipe_tool_enabled = false;
 static int lpwg_abs_offset_y = 0;
 static int lpwg_abs_start_y = 0;
 static int lpwg_abs_end_y = 0;
-
-static bool touch_suspended = false;
 #endif
 
 /*
@@ -2086,7 +2084,6 @@ static void resume_touch_screen(struct device *dev, bool restore_prev)
 		return;
 	}
 
-
 	if (restore_prev) {
 		restore_touch_prev_state(dev, false);
 	} else {
@@ -2100,7 +2097,6 @@ static void resume_touch_screen(struct device *dev, bool restore_prev)
 	ftm4_interrupt_set(dev, INT_ENABLE);
 	ftm4_set_active_mode(dev);
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-	touch_suspended = false;
 	mutex_unlock(&suspend_resume_lock);
 #endif
 }
@@ -2132,7 +2128,6 @@ static void suspend_touch_screen(struct device *dev, int lpwg_mode,
 	} else if (state == TOUCH_SUSPEND_STATE_DEEP_SLEEP)
 		ftm4_set_deep_sleep_mode(dev);
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-	touch_suspended = true;
 	mutex_unlock(&suspend_resume_lock);
 #endif
 }
@@ -4286,7 +4281,7 @@ static int ftm4_event_handler(struct device *dev, u8 *data, u8 left_event)
 			}
 
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-			if (sovc_state_playing() && sovc_scr_suspended && !touch_suspended) {
+			if (sovc_switch && sovc_scr_suspended) {
 				if (swipe_tool_enabled) {
 					if (y >= lpwg_abs_start_y && y <= lpwg_abs_end_y)
 						ts->tdata[touch_id].y -= lpwg_abs_offset_y;
@@ -4314,17 +4309,13 @@ static int ftm4_event_handler(struct device *dev, u8 *data, u8 left_event)
 			ts->new_mask &= ~(1 << touch_id);
 			ftm4_update_tcount(dev);
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-			if (sovc_state_playing() && sovc_scr_suspended &&
-			    !touch_suspended && lpwg_status)
+			if (sovc_scr_suspended && sovc_state_playing() && lpwg_status)
 				is_touching = false;
 #endif
 			break;
 		case EVENTID_LPWG_EVENT:
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-			if (!sovc_state_playing())
-#endif
-				ftm4_lpwg_event_handler(dev,
-						&data[event_num * FTS_EVENT_SIZE]);
+			ftm4_lpwg_event_handler(dev,
+					&data[event_num * FTS_EVENT_SIZE]);
 			break;
 		case EVENTID_STATUS_EVENT:
 			ret = ftm4_status_event_handler(dev,
