@@ -763,8 +763,6 @@ static int sovc_fb_notifier_callback(struct notifier_block *self,
 		case FB_BLANK_NORMAL:
 		case FB_BLANK_VSYNC_SUSPEND:
 		case FB_BLANK_POWERDOWN:
-			if (is_executing)
-				return 0;
 			sovc_scr_suspended = true;
 			if (sovc_switch && (track_changed || sovc_tmp_onoff))
 				register_sovc();
