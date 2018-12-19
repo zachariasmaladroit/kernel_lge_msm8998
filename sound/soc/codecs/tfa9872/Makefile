@@ -74,5 +74,3 @@ endif
 
 # built-in driver
 obj-y	+= snd-soc-tfa98xx.o
-
-obj-$(CONFIG_TOUCHSCREEN_SCROFF_VOLCTR)	+= tfa98xx_notifier.o
