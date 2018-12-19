@@ -678,12 +678,15 @@ static int sovc_fb_notifier_callback(struct notifier_block *self,
 	if (event == FB_EVENT_BLANK) {
 		blank = evdata->data;
 
-		if (*blank == FB_BLANK_UNBLANK) {
+		switch (*blank) {
+		case FB_BLANK_UNBLANK:
 			sovc_scr_suspended = false;
 			track_changed = false;
 			unregister_sovc();
 			break;
-		} else {
+		case FB_BLANK_NORMAL:
+		case FB_BLANK_VSYNC_SUSPEND:
+		case FB_BLANK_POWERDOWN:
 			if (sovc_scr_suspended)
 				return 0;
 			sovc_scr_suspended = true;
