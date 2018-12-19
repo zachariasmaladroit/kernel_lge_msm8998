@@ -682,12 +682,14 @@ static int sovc_fb_notifier_callback(struct notifier_block *self,
 			sovc_scr_suspended = false;
 			track_changed = false;
 			unregister_sovc();
+			break;
 		} else {
 			if (sovc_scr_suspended)
 				return 0;
 			sovc_scr_suspended = true;
 			if (sovc_state_playing())
 				register_sovc();
+			break;
 		}
 	}
 
