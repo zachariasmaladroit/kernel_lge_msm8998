@@ -36,8 +36,6 @@ extern bool es9218p_playing;
 extern bool tfa9872_playing;
 extern bool sovc_tmp_userspace_playing;
 
-extern bool registered;
-
 extern struct mutex sovc_playing_state_lock;
 
 extern void unregister_sovc(void);
