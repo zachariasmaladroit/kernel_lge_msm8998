@@ -37,6 +37,4 @@ extern struct mutex sovc_playing_state_lock;
 extern bool sovc_hifi_mode;
 extern bool sovc_state_playing(void);
 
-extern unsigned int calc_feather(int coord, int prev_coord);
-
 #endif /* _LINUX_SCROFF_VOLCTR_H */
