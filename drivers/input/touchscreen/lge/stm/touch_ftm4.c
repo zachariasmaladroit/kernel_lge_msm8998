@@ -2499,7 +2499,6 @@ static int sovc_notifier_callback(struct notifier_block *self,
 	switch (event) {
 	case SOVC_EVENT_PLAYING:
 		resume_touch_screen(d->dev);
-		break;
 	case SOVC_EVENT_STOPPED:
 		if (sovc_force_off)
 			delay = 0;
