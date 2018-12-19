@@ -1229,7 +1229,7 @@ source "drivers/input/touchscreen/st/Kconfig"
 
 config TOUCHSCREEN_SCROFF_VOLCTR
 	tristate "Screen Off Volume & Track Control for touchscreens"
-	depends on SND_SOC_TFA9872 && SND_SOC_ES9218P
+	depends on SND_SOC_TFA9872
 	default n
 
 endif
