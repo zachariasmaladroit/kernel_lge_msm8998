@@ -67,7 +67,7 @@ MODULE_VERSION(DRIVER_VERSION);
 MODULE_LICENSE("GPLv2");
 
 /* Tuneables */
-#define SOVC_DEBUG			// Uncomment this to turn on the debug
+//#define SOVC_DEBUG			// Uncomment this to turn on the debug
 #define SOVC_DEFAULT		1	// Default On/Off
 #define SOVC_VOL_FEATHER	350	// Touch degree for volume control
 #define SOVC_TRACK_FEATHER	500	// Touch degree for track control
