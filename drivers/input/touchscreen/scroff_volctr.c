@@ -74,7 +74,7 @@ MODULE_LICENSE("GPLv2");
 #define SOVC_TIME_GAP		250	// Ignore touch after this time (ms)
 #define SOVC_VOL_REEXEC_FIRST_DELAY	250	// First re-exec delay for volume control (ms)
 #define SOVC_VOL_REEXEC_DELAY		200	// Re-exec delay for volume control (ms)
-#define SOVC_VOL_REEXEC_DELAY_HIFI	110	// Re-exec delay for Hi-Fi volume control (ms)
+#define SOVC_VOL_REEXEC_DELAY_HIFI	110	// Re-exec delay fot Hi-Fi volume control (ms)
 #define SOVC_TRACK_NEXT_REEXEC_DELAY		4000	// Re-exec delay for track-next control (ms)
 #define SOVC_TRACK_PREVIOUS_REEXEC_DELAY	2000	// Re-exec delay for track-previous control (ms)
 #define SOVC_AUTO_OFF_DELAY	2500	// Touch screen will be turned off when user pressing the screen (ms)
@@ -203,6 +203,7 @@ static void scroff_volctr_key(struct work_struct *scroff_volctr_key_work)
 #ifdef SOVC_DEBUG
 		pr_info(LOGTAG"TRACK_NEXT\n");
 #endif
+
 		track_changed = true;
 		input_event(sovc_input, EV_KEY, KEY_NEXTSONG, 1);
 		input_event(sovc_input, EV_SYN, 0, 0);
