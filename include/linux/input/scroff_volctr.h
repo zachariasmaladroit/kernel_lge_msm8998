@@ -33,8 +33,4 @@ extern int sovc_ignore_start_y;
 extern int sovc_ignore_end_y;
 extern bool sovc_ignore;
 
-extern struct mutex sovc_playing_state_lock;
-
-extern bool sovc_state_playing(void);
-
 #endif /* _LINUX_SCROFF_VOLCTR_H */

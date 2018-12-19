@@ -44,6 +44,8 @@
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
 #include <linux/input/scroff_volctr.h>
 #include <linux/input/sovc_notifier.h>
+
+static DEFINE_MUTEX(es9218p_state_lock);
 #endif
 
 #define     ES9218P_SYSFS               // use this feature only for user debug, not release
@@ -886,6 +888,12 @@ static int es9218p_sabre_amp_start(struct i2c_client *client, int headset)
         es9218_hph_switch_gpio_H();
 #endif /* CONFIG_MACH_MSM8998_JOAN */
 
+#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
+    mutex_lock(&es9218p_state_lock);
+    sovc_notifier_call_chain(SOVC_EVENT_PLAYING, NULL);
+    mutex_unlock(&es9218p_state_lock);
+#endif
+
     return ret;
 }
 
@@ -929,6 +937,12 @@ static int es9218p_sabre_amp_stop(struct i2c_client *client, int headset)
             ret = 1;
             break;
     }
+
+#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
+    mutex_lock(&es9218p_state_lock);
+    sovc_notifier_call_chain(SOVC_EVENT_STOPPED, NULL);
+    mutex_unlock(&es9218p_state_lock);
+#endif
 
     return ret;
 }
@@ -1754,13 +1768,6 @@ int es9218_sabre_headphone_off(void)
 #endif
 
     mutex_lock(&g_es9218_priv->power_lock);
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-    if (sovc_switch && sovc_tmp_onoff) {
-        mutex_lock(&sovc_playing_state_lock);
-        sovc_notifier_call_chain(SOVC_EVENT_STOPPED, NULL);
-        mutex_unlock(&sovc_playing_state_lock);
-    }
-#endif
     __es9218_sabre_headphone_off();
     mutex_unlock(&g_es9218_priv->power_lock);
     return 0;
@@ -3045,18 +3052,6 @@ static int es9218_mute(struct snd_soc_dai *dai, int mute)
 {
     //struct snd_soc_codec *codec = dai->codec;
     //struct es9218_priv *priv = codec->control_data;
-
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-    if (sovc_switch) {
-        mutex_lock(&sovc_playing_state_lock);
-        if (mute && sovc_tmp_onoff)
-            sovc_notifier_call_chain(SOVC_EVENT_STOPPED, NULL);
-        else if (!mute && !sovc_tmp_onoff)
-            sovc_notifier_call_chain(SOVC_EVENT_PLAYING, NULL);
-        mutex_unlock(&sovc_playing_state_lock);
-    }
-#endif
-
 #ifdef ENABLE_DOP_SOFT_MUTE
     pr_info("%s(): entry, mute_state = %d , power_state = %s\n", __func__, mute ,power_state[es9218_power_state]);
 
