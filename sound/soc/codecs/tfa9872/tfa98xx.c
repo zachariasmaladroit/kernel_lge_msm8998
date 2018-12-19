@@ -50,7 +50,7 @@
 
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
 #include <linux/input/scroff_volctr.h>
-#include <linux/input/sovc_notifier.h>
+#include <linux/tfa98xx_notifier.h>
 
 static DEFINE_MUTEX(tfa98xx_state_lock);
 #endif
@@ -2880,7 +2880,7 @@ static void tfa98xx_dsp_init(struct tfa98xx *tfa98xx)
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
 	if (sovc_switch) {
 		mutex_lock(&tfa98xx_state_lock);
-		sovc_notifier_call_chain(SOVC_EVENT_PLAYING, NULL);
+		tfa98xx_notifier_call_chain(TFA98XX_EVENT_PLAYING, NULL);
 		mutex_unlock(&tfa98xx_state_lock);
 	}
 #endif
@@ -3282,7 +3282,7 @@ static int tfa98xx_mute(struct snd_soc_dai *dai, int mute, int stream)
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
 	if (sovc_switch) {
 		mutex_lock(&tfa98xx_state_lock);
-		sovc_notifier_call_chain(SOVC_EVENT_STOPPED, NULL);
+		tfa98xx_notifier_call_chain(TFA98XX_EVENT_STOPPED, NULL);
 		mutex_unlock(&tfa98xx_state_lock);
 	}
 #endif

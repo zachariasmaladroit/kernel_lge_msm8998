@@ -34,19 +34,6 @@
 #include "touch_ftm4.h"
 #include "touch_ftm4_prd.h"
 
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-#include <linux/input/scroff_volctr.h>
-#include <linux/input/sovc_notifier.h>
-
-enum {
-	TOUCH_SUSPEND_STATE_RESUME,
-	TOUCH_SUSPEND_STATE_LOW_POWER,
-	TOUCH_SUSPEND_STATE_DEEP_SLEEP,
-};
-
-static int touch_suspend_state = TOUCH_SUSPEND_STATE_RESUME;
-#endif
-
 /*
  *  Include to Local Function
  */
@@ -1988,10 +1975,6 @@ static void ftm4_set_low_power_mode(struct device *dev)
 
 	TOUCH_I("%s: start\n", __func__);
 
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-	touch_suspend_state = TOUCH_SUSPEND_STATE_LOW_POWER;
-#endif
-
 	ftm4_command(dev, FTS_CMD_LOWPOWER_MODE);
 	touch_msleep(50);
 
@@ -2003,10 +1986,6 @@ static void ftm4_set_deep_sleep_mode(struct device *dev)
 	TOUCH_TRACE();
 
 	TOUCH_I("%s: start\n", __func__);
-
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-	touch_suspend_state = TOUCH_SUSPEND_STATE_DEEP_SLEEP;
-#endif
 
 	ftm4_command(dev, SENSEOFF);
 
@@ -2033,26 +2012,6 @@ static void ftm4_lpwg_force_cal_debug(struct device *dev)
 	TOUCH_I("lpwg_force_cal_debug: %s\n",
 			atomic_read(&ts->state.debug_option_mask)
 				& DEBUG_OPTION_2 ? "disable" : "enable");
-}
-
-static void resume_touch_screen(struct device *dev)
-{
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-	struct touch_core_data *ts = to_touch_core(dev);
-	struct ftm4_data *d = to_ftm4_data(dev);
-
-	cancel_delayed_work(&d->touch_off_work);
-
-	if (touch_suspend_state == TOUCH_SUSPEND_STATE_RESUME)
-		return;
-#endif
-	ftm4_system_reset(dev);
-	ftm4_wait_for_ready(dev);
-	ftm4_interrupt_set(dev, INT_ENABLE);
-	ftm4_set_active_mode(dev);
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-	touch_suspend_state = TOUCH_SUSPEND_STATE_RESUME;
-#endif
 }
 
 static int ftm4_lpwg_mode(struct device *dev)
@@ -2084,16 +2043,7 @@ static int ftm4_lpwg_mode(struct device *dev)
 			ftm4_lpwg_control(dev, LPWG_DOUBLE_TAP);
 			ftm4_swipe_enable(dev, true);
 			ftm4_gesture_set(dev, true);
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-			if (sovc_switch && sovc_tmp_onoff)
-				resume_touch_screen(dev);
-			else {
-				cancel_delayed_work(&d->touch_off_work);
-#endif
-				ftm4_set_low_power_mode(dev);
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-			}
-#endif
+			ftm4_set_low_power_mode(dev);
 			return 0;
 		}
 		if (ts->lpwg.screen) {
@@ -2121,34 +2071,16 @@ static int ftm4_lpwg_mode(struct device *dev)
 				ftm4_lpwg_control(dev, LPWG_NONE);
 				ftm4_swipe_enable(dev, false);
 				ftm4_gesture_set(dev, false);
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-				if (sovc_switch && sovc_tmp_onoff)
-					resume_touch_screen(dev);
-				else {
-					cancel_delayed_work(&d->touch_off_work);
-#endif
-					ftm4_set_deep_sleep_mode(dev);
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-				}
-#endif
+				ftm4_set_deep_sleep_mode(dev);
 			} else {
 				ftm4_lpwg_control(dev, ts->lpwg.mode);
 				ftm4_swipe_enable(dev, true);
 				ftm4_gesture_set(dev, true);
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-				if (sovc_switch && sovc_tmp_onoff)
-					resume_touch_screen(dev);
-				else {
-					cancel_delayed_work(&d->touch_off_work);
-#endif
-					ftm4_set_low_power_mode(dev);
-					if (d->lpwg_abs.enable) {
-						TOUCH_I("%s: enable lpwg_abs\n", __func__);
-						ftm4_lpwg_abs_enable(d->dev, d->lpwg_abs.enable);
-					}
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
+				ftm4_set_low_power_mode(dev);
+				if (d->lpwg_abs.enable) {
+					TOUCH_I("%s: enable lpwg_abs\n", __func__);
+					ftm4_lpwg_abs_enable(d->dev, d->lpwg_abs.enable);
 				}
-#endif
 			}
 		}
 		return 0;
@@ -2161,7 +2093,10 @@ static int ftm4_lpwg_mode(struct device *dev)
 		ftm4_lpwg_control(dev, LPWG_NONE);
 		ftm4_swipe_enable(dev, false);
 		ftm4_gesture_set(dev, false);
-		resume_touch_screen(dev);
+		ftm4_system_reset(dev);
+		ftm4_wait_for_ready(dev);
+		ftm4_interrupt_set(dev, INT_ENABLE);
+		ftm4_set_active_mode(dev);
 		if (ts->lpwg.qcover == HALL_NEAR) {
 			TOUCH_I("%s: resume ts->lpwg.qcover == HALL_NEAR\n",
 					__func__);
@@ -2189,13 +2124,7 @@ static int ftm4_lpwg_mode(struct device *dev)
 			ftm4_lpwg_control(dev, ts->lpwg.mode);
 			ftm4_swipe_enable(dev, true);
 			ftm4_gesture_set(dev, true);
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-			if (sovc_switch && sovc_tmp_onoff) {
-				ftm4_swipe_enable(dev, false);
-				resume_touch_screen(dev);
-			} else
-#endif
-				ftm4_set_low_power_mode(dev);
+			ftm4_set_low_power_mode(dev);
 		}
 	}
 
@@ -2456,77 +2385,6 @@ static void ftm4_init_locks(struct ftm4_data *d)
 	mutex_init(&d->io_lock);
 }
 
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-static void retore_touch_suspend_state(struct ftm4_data *d, int state)
-{
-	if (state == TOUCH_SUSPEND_STATE_LOW_POWER)
-		ftm4_set_low_power_mode(d->dev);
-	else if (state == TOUCH_SUSPEND_STATE_DEEP_SLEEP)
-		ftm4_set_deep_sleep_mode(d->dev);
-}
-static void ftm4_touch_off(struct work_struct *work)
-{
-	struct ftm4_data *d =
-		container_of(work, struct ftm4_data, touch_off_work.work);
-
-	if (touch_suspend_state == TOUCH_SUSPEND_STATE_RESUME)
-		return;
-
-	retore_touch_suspend_state(d, touch_suspend_state);
-}
-
-static int sovc_notifier_callback(struct notifier_block *self,
-				unsigned long event, void *data)
-{
-	struct ftm4_data *d =
-		container_of(self, struct ftm4_data, sovc_notif);
-	unsigned int delay = SOVC_TOUCH_OFF_DELAY;
-
-	if (!sovc_switch)
-		return 0;
-
-	cancel_delayed_work(&d->touch_off_work);
-
-	switch (event) {
-	case SOVC_EVENT_PLAYING:
-		resume_touch_screen(d->dev);
-	case SOVC_EVENT_STOPPED:
-		if (sovc_force_off)
-			delay = 0;
-		queue_delayed_work(d->touch_off_workqueue,
-				&d->touch_off_work,
-				msecs_to_jiffies(delay));
-		break;
-	}
-
-	return 0;
-}
-
-static void configure_sovc(struct ftm4_data *d)
-{
-	int ret = 0;
-
-	d->sovc_notif.notifier_call = sovc_notifier_callback;
-	ret = sovc_register_client(&d->sovc_notif);
-	if (ret)
-		TOUCH_I("%s: Unable to register sovc_notifier: %d\n", __func__, ret);
-
-	d->touch_off_workqueue =
-			alloc_workqueue("sovc_touch_off_workqueue",
-			WQ_UNBOUND | WQ_HIGHPRI | __WQ_ORDERED, 1);
-
-	INIT_DELAYED_WORK(&d->touch_off_work,
-			ftm4_touch_off);
-
-	return;
-}
-
-static void remove_sovc(struct ftm4_data *d)
-{
-	sovc_unregister_client(&d->sovc_notif);
-}
-#endif
-
 static void ftm4_get_dts(struct device *dev)
 {
 	struct touch_core_data *ts = to_touch_core(dev);
@@ -2588,10 +2446,6 @@ static int ftm4_probe(struct device *dev)
 	ftm4_init_works(d);
 	ftm4_init_locks(d);
 
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-	configure_sovc(d);
-#endif
-
 	ftm4_get_tci_info(dev);
 	ftm4_get_swipe_info(dev);
 	ftm4_get_lpwg_abs_info(dev);
@@ -2610,10 +2464,6 @@ static int ftm4_remove(struct device *dev)
 	TOUCH_TRACE();
 
 	pm_qos_remove_request(&d->pm_qos_req);
-
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-	remove_sovc(d);
-#endif
 
 	return 0;
 }
@@ -4138,15 +3988,6 @@ static int ftm4_event_handler(struct device *dev, u8 *data, u8 left_event)
 			ts->tdata[touch_id].width_minor = w_minor;
 			ts->tdata[touch_id].orientation = orient;
 
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-			if (sovc_switch && sovc_tmp_onoff) {
-				if (y >= sovc_ignore_start_y && y <= sovc_ignore_end_y)
-					sovc_ignore = true;
-				else
-					sovc_ignore = false;
-			}
-#endif
-
 			TOUCH_D(ABS, "[ID:%2d  X:%4d  Y:%4d  Z:%4d  WM:%4d  Wm:%4d  Orient:%2d  tc:%2d]\n",
 					ts->tdata[touch_id].id,
 					ts->tdata[touch_id].x,
@@ -4458,11 +4299,6 @@ static ssize_t store_swipe_tool(struct device *dev,
 	if (enable) {
 		end_x = start_x + width - 1;
 		end_y = start_y + height - 1;
-
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-		sovc_ignore_start_y = start_y;
-		sovc_ignore_end_y = end_y;
-#endif
 
 		d->swipe.mode |= mask;
 

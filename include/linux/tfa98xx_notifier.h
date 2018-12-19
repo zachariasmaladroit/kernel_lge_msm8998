@@ -1,5 +1,5 @@
 /*
- * include/linux/input/sovc_notifier.h
+ * include/linux/input/tfa98xx_notifier.h
  *
  * Copyright (c) 2018, jollaman999 <admin@jollaman999.com>
  *
@@ -18,16 +18,16 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _LINUX_SOVC_NOTIFIER_H
-#define _LINUX_SOVC_NOTIFIER_H
+#ifndef _LINUX_TFA98XX_NOTIFIER_H
+#define _LINUX_TFA98XX_NOTIFIER_H
 
 #include <linux/notifier.h>
 
-#define SOVC_EVENT_PLAYING		0x01
-#define SOVC_EVENT_STOPPED		0x02
+#define TFA98XX_EVENT_PLAYING		0x01
+#define TFA98XX_EVENT_STOPPED		0x02
 
-int sovc_register_client(struct notifier_block *nb);
-int sovc_unregister_client(struct notifier_block *nb);
-int sovc_notifier_call_chain(unsigned long val, void *v);
+int tfa98xx_register_client(struct notifier_block *nb);
+int tfa98xx_unregister_client(struct notifier_block *nb);
+int tfa98xx_notifier_call_chain(unsigned long val, void *v);
 
-#endif /* _LINUX_SOVC_NOTIFIER_H */
+#endif /* _LINUX_TFA98XX_NOTIFIER_H */

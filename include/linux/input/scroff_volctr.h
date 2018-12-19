@@ -21,16 +21,12 @@
 #ifndef _LINUX_SCROFF_VOLCTR_H
 #define _LINUX_SCROFF_VOLCTR_H
 
-#define SOVC_TOUCH_OFF_DELAY	5000	// Touch off delay time (ms)
-
 extern int sovc_switch;
 extern int sovc_tmp_onoff;
 extern bool sovc_force_off;
 extern bool track_changed;
 extern bool sovc_scr_suspended;
 
-extern int sovc_ignore_start_y;
-extern int sovc_ignore_end_y;
-extern bool sovc_ignore;
+extern void sovc_press_power_key_trigger(int delay);
 
 #endif /* _LINUX_SCROFF_VOLCTR_H */
