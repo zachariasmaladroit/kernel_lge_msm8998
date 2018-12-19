@@ -4119,6 +4119,15 @@ static void ftm4_lpwg_abs_filter(struct device *dev, u8 touch_id)
 }
 
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
+static unsigned int calc_feather(int coord, int prev_coord)
+{
+	int calc_coord = 0;
+	calc_coord = coord-prev_coord;
+	if (calc_coord < 0)
+		calc_coord = calc_coord * (-1);
+	return calc_coord;
+}
+
 static void new_touch(int x, int y)
 {
 	tap_time_pre = ktime_to_ms(ktime_get_real());
