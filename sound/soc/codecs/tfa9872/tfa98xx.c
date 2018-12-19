@@ -2878,11 +2878,9 @@ static void tfa98xx_dsp_init(struct tfa98xx *tfa98xx)
 	}
 
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-	if (sovc_switch) {
-		mutex_lock(&tfa98xx_state_lock);
-		tfa98xx_notifier_call_chain(TFA98XX_EVENT_PLAYING, NULL);
-		mutex_unlock(&tfa98xx_state_lock);
-	}
+	mutex_lock(&tfa98xx_state_lock);
+	tfa98xx_notifier_call_chain(TFA98XX_EVENT_PLAYING, NULL);
+	mutex_unlock(&tfa98xx_state_lock);
 #endif
 
 	mutex_lock(&tfa98xx->dsp_lock);
@@ -3280,11 +3278,9 @@ static int tfa98xx_mute(struct snd_soc_dai *dai, int mute, int stream)
 	dev_dbg(&tfa98xx->i2c->dev, "%s: state: %d (stream = %d)\n", __func__, mute, stream);
 
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-	if (sovc_switch) {
-		mutex_lock(&tfa98xx_state_lock);
-		tfa98xx_notifier_call_chain(TFA98XX_EVENT_STOPPED, NULL);
-		mutex_unlock(&tfa98xx_state_lock);
-	}
+	mutex_lock(&tfa98xx_state_lock);
+	tfa98xx_notifier_call_chain(TFA98XX_EVENT_STOPPED, NULL);
+	mutex_unlock(&tfa98xx_state_lock);
 #endif
 
 	if (!(tfa98xx->flags & TFA98XX_FLAG_DSP_START_ON_MUTE))
