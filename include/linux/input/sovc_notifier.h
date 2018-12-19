@@ -25,7 +25,6 @@
 
 #define SOVC_EVENT_PLAYING		0x01
 #define SOVC_EVENT_STOPPED		0x02
-#define SOVC_EVENT_TRACK_CHANGED	0x03
 
 int sovc_register_client(struct notifier_block *nb);
 int sovc_unregister_client(struct notifier_block *nb);
