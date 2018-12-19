@@ -4307,7 +4307,8 @@ static int ftm4_event_handler(struct device *dev, u8 *data, u8 left_event)
 			ts->new_mask &= ~(1 << touch_id);
 			ftm4_update_tcount(dev);
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-			if (sovc_scr_suspended && sovc_state_playing() && lpwg_status)
+			if (sovc_scr_suspended && sovc_switch &&
+			    (track_changed || sovc_tmp_onoff) && lpwg_status)
 				is_touching = false;
 #endif
 			break;
