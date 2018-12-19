@@ -2086,6 +2086,7 @@ static void resume_touch_screen(struct device *dev, bool restore_prev)
 		return;
 	}
 
+
 	if (restore_prev) {
 		restore_touch_prev_state(dev, false);
 	} else {
@@ -4630,9 +4631,6 @@ static ssize_t store_swipe_tool(struct device *dev,
 		d->swipe.info[SWIPE_L].start_area.y2 = end_y;
 	} else {
 		d->swipe.mode &= (~mask);
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-		sovc_ignore = false;
-#endif
 	}
 
 	mutex_lock(&ts->lock);
