@@ -2518,6 +2518,7 @@ static int sovc_notifier_callback(struct notifier_block *self,
 {
 	struct ftm4_data *d =
 		container_of(self, struct ftm4_data, sovc_notif);
+	unsigned int delay = SOVC_TOUCH_OFF_DELAY;
 
 	if (!sovc_switch || !sovc_scr_suspended)
 		return 0;
@@ -2528,9 +2529,11 @@ static int sovc_notifier_callback(struct notifier_block *self,
 		cancel_delayed_work(&d->touch_off_work);
 		break;
 	case SOVC_EVENT_STOPPED:
+		if (sovc_force_off)
+			delay = 0;
 		queue_delayed_work(d->touch_off_workqueue,
 				&d->touch_off_work,
-				msecs_to_jiffies(SOVC_TOUCH_OFF_DELAY));
+				msecs_to_jiffies(delay));
 		break;
 	}
 
