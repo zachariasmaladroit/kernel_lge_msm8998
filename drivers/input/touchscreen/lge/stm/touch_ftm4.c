@@ -2031,9 +2031,9 @@ static void resume_touch_screen(struct device *dev)
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
 	struct ftm4_data *d = to_ftm4_data(dev);
 
-	mutex_lock(&suspend_resume_lock);
 	cancel_delayed_work(&d->touch_off_work);
 
+	mutex_lock(&suspend_resume_lock);
 	if (!sovc_scr_suspended) {
 		mutex_unlock(&suspend_resume_lock);
 		return;
@@ -2061,8 +2061,9 @@ static void suspend_touch_screen(struct device *dev, int lpwg_mode,
 	struct ftm4_data *d = to_ftm4_data(dev);
 
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-	mutex_lock(&suspend_resume_lock);
 	cancel_delayed_work(&d->touch_off_work);
+
+	mutex_lock(&suspend_resume_lock);
 #endif
 	prev_lpwg_mode = lpwg_mode;
 	prev_swipe = swipe;
@@ -2458,9 +2459,9 @@ static void restore_touch_suspend_state(struct device *dev)
 {
 	struct ftm4_data *d = to_ftm4_data(dev);
 
-	mutex_lock(&suspend_resume_lock);
 	cancel_delayed_work(&d->touch_off_work);
 
+	mutex_lock(&suspend_resume_lock);
 	ftm4_lpwg_control(dev, prev_lpwg_mode);
 	ftm4_swipe_enable(dev, prev_swipe);
 	ftm4_gesture_set(dev, prev_gesture);
