@@ -59,11 +59,6 @@ static int touch_nr = 0, x_pre = 0, y_pre = 0;
 static bool is_touching = false;
 static struct input_dev * doubletap2wake_pwrdev;
 static DEFINE_MUTEX(pwrkeyworklock);
-
-static bool swipe_tool_enabled = false;
-static int lpwg_abs_offset_y = 0;
-static int lpwg_abs_start_y = 0;
-static int lpwg_abs_end_y = 0;
 #endif
 
 /*
@@ -4280,14 +4275,10 @@ static int ftm4_event_handler(struct device *dev, u8 *data, u8 left_event)
 
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
 			if (sovc_state_playing() && sovc_scr_suspended) {
-				if (swipe_tool_enabled) {
-					if (y >= lpwg_abs_start_y && y <= lpwg_abs_end_y)
-						ts->tdata[touch_id].y -= lpwg_abs_offset_y;
-					if (y >= sovc_ignore_start_y && y <= sovc_ignore_end_y)
-						sovc_ignore = true;
-					else
-						sovc_ignore = false;
-				}
+				if (y >= sovc_ignore_start_y && y <= sovc_ignore_end_y)
+					sovc_ignore = true;
+				else
+					sovc_ignore = false;
 				if (lpwg_status)
 					detect_doubletap2wake(x, y);
 			}
@@ -4587,10 +4578,6 @@ static ssize_t store_swipe_tool(struct device *dev,
 		return count;
 	}
 
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-	swipe_tool_enabled = enable;
-#endif
-
 	if (enable) {
 		end_x = start_x + width - 1;
 		end_y = start_y + height - 1;
@@ -4673,12 +4660,6 @@ static ssize_t store_lpwg_abs(struct device *dev,
 		TOUCH_E("invalid enable(%d)\n", enable);
 		return count;
 	}
-
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-	lpwg_abs_offset_y = offset_y;
-	lpwg_abs_start_y = start_y;
-	lpwg_abs_end_y = start_y + height - 1;
-#endif
 
 	if (enable) {
 		end_x = start_x + width - 1;
