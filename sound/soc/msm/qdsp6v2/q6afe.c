@@ -94,12 +94,6 @@ static struct wlock wl;
 
 #if defined(CONFIG_SND_SOC_TFA9872)
 static uint32_t adsp_afe_tfadsp_status = 0;
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-bool tfa9872_playing = false;
-EXPORT_SYMBOL_GPL(tfa9872_playing);
-
-extern bool es9218p_playing;
-#endif
 #endif
 
 struct afe_ctl {
@@ -497,7 +491,6 @@ static int32_t afe_callback(struct apr_client_data *data, void *priv)
 					__func__, payload[1]);
 				adsp_afe_tfadsp_status = AFE_EVENT_TFADSP_STATE_INIT;
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-				tfa9872_playing = true;
 				if (sovc_switch && !sovc_tmp_onoff) {
 					mutex_lock(&sovc_playing_state_lock);
 					sovc_notifier_call_chain(SOVC_EVENT_PLAYING, NULL);
@@ -508,8 +501,7 @@ static int32_t afe_callback(struct apr_client_data *data, void *priv)
 				pr_info("%s: AFE_EVENT_TFADSP_STATE_CLOSE data = 0x%x\n",
 					__func__, payload[1]);
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-				tfa9872_playing = false;
-				if (sovc_switch && sovc_tmp_onoff && !es9218p_playing) {
+				if (sovc_switch && sovc_tmp_onoff) {
 					mutex_lock(&sovc_playing_state_lock);
 					sovc_notifier_call_chain(SOVC_EVENT_STOPPED, NULL);
 					mutex_unlock(&sovc_playing_state_lock);
