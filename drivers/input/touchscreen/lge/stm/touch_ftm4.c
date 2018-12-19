@@ -21,10 +21,6 @@
 #include <linux/interrupt.h>
 #include <linux/irq.h>
 #include <linux/firmware.h>
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-#include <linux/hrtimer.h>
-#include <asm-generic/cputime.h>
-#endif
 
 /*
  *  Include to touch core Header File
@@ -48,17 +44,6 @@ enum {
 };
 
 static struct mutex suspend_resume_lock;
-
-#define DT2W_FEATHER		200
-#define DT2W_TIME_GAP		200
-
-extern int lpwg_status;
-
-static s64 tap_time_pre = 0;
-static int touch_nr = 0, x_pre = 0, y_pre = 0;
-static bool is_touching = false;
-static struct input_dev * doubletap2wake_pwrdev;
-static DEFINE_MUTEX(pwrkeyworklock);
 #endif
 
 /*
@@ -2539,27 +2524,12 @@ static void configure_sovc(struct ftm4_data *d)
 	INIT_DELAYED_WORK(&d->touch_off_work,
 			ftm4_touch_off);
 
-	doubletap2wake_pwrdev = input_allocate_device();
-	if (!doubletap2wake_pwrdev)
-		TOUCH_E("Can't allocate suspend autotest power button\n");
-
-	input_set_capability(doubletap2wake_pwrdev, EV_KEY, KEY_POWER);
-	doubletap2wake_pwrdev->name = "dt2w_pwrkey";
-	doubletap2wake_pwrdev->phys = "dt2w_pwrkey/input0";
-
-	ret = input_register_device(doubletap2wake_pwrdev);
-	if (ret) {
-		TOUCH_E("%s: input_register_device err=%d\n", __func__, ret);
-		input_free_device(doubletap2wake_pwrdev);
-	}
-
 	return;
 }
 
 static void remove_sovc(struct ftm4_data *d)
 {
 	sovc_unregister_client(&d->sovc_notif);
-	input_free_device(doubletap2wake_pwrdev);
 }
 #endif
 
@@ -4102,78 +4072,6 @@ static void ftm4_lpwg_abs_filter(struct device *dev, u8 touch_id)
 	ts->tdata[touch_id].y = new_y;
 }
 
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-static unsigned int calc_feather(int coord, int prev_coord)
-{
-	int calc_coord = 0;
-	calc_coord = coord-prev_coord;
-	if (calc_coord < 0)
-		calc_coord = calc_coord * (-1);
-	return calc_coord;
-}
-
-static void new_touch(int x, int y)
-{
-	tap_time_pre = ktime_to_ms(ktime_get_real());
-	x_pre = x;
-	y_pre = y;
-	touch_nr++;
-}
-
-static void doubletap2wake_reset(void)
-{
-	touch_nr = 0;
-	tap_time_pre = 0;
-	x_pre = 0;
-	y_pre = 0;
-}
-
-static void doubletap2wake_presspwr(struct work_struct * doubletap2wake_presspwr_work)
-{
-	if (!mutex_trylock(&pwrkeyworklock))
-		return;
-	input_event(doubletap2wake_pwrdev, EV_KEY, KEY_POWER, 1);
-	input_event(doubletap2wake_pwrdev, EV_SYN, 0, 0);
-	input_event(doubletap2wake_pwrdev, EV_KEY, KEY_POWER, 0);
-	input_event(doubletap2wake_pwrdev, EV_SYN, 0, 0);
-	mutex_unlock(&pwrkeyworklock);
-}
-static DECLARE_WORK(doubletap2wake_presspwr_work, doubletap2wake_presspwr);
-
-static void doubletap2wake_pwrtrigger(void)
-{
-	schedule_work(&doubletap2wake_presspwr_work);
-}
-
-static void detect_doubletap2wake(int x, int y)
-{
-	if (!is_touching) {
-		is_touching = true;
-
-		if (touch_nr == 0) {
-			new_touch(x, y);
-		} else if (touch_nr == 1) {
-			if (((calc_feather(x, x_pre) < DT2W_FEATHER) && (calc_feather(y, y_pre) < DT2W_FEATHER))
-			&& ((ktime_to_ms(ktime_get_real()) - tap_time_pre) < DT2W_TIME_GAP)) {
-				tap_time_pre = ktime_to_ms(ktime_get_real());
-				touch_nr++;
-			} else {
-				doubletap2wake_reset();
-				new_touch(x, y);
-			}
-		} else {
-			doubletap2wake_reset();
-			new_touch(x, y);
-		}
-
-		if (touch_nr > 1) {
-			doubletap2wake_pwrtrigger();
-			doubletap2wake_reset();
-		}
-	}
-}
-#endif
-
 static int ftm4_event_handler(struct device *dev, u8 *data, u8 left_event)
 {
 	struct touch_core_data *ts = to_touch_core(dev);
@@ -4252,8 +4150,6 @@ static int ftm4_event_handler(struct device *dev, u8 *data, u8 left_event)
 					sovc_ignore = true;
 				else
 					sovc_ignore = false;
-				if (sovc_scr_suspended && lpwg_status)
-					detect_doubletap2wake(x, y);
 			}
 #endif
 
@@ -4289,11 +4185,6 @@ static int ftm4_event_handler(struct device *dev, u8 *data, u8 left_event)
 
 			ts->new_mask &= ~(1 << touch_id);
 			ftm4_update_tcount(dev);
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-			if (sovc_scr_suspended && sovc_switch &&
-			    (track_changed || sovc_tmp_onoff) && lpwg_status)
-				is_touching = false;
-#endif
 			break;
 		case EVENTID_LPWG_EVENT:
 			ftm4_lpwg_event_handler(dev,
