@@ -2117,7 +2117,7 @@ static int ftm4_lpwg_mode(struct device *dev)
 			suspend_touch_screen(dev, LPWG_DOUBLE_TAP,
 					     true, true, TOUCH_SUSPEND_STATE_LOW_POWER);
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-			if (sovc_switch && (track_changed || sovc_tmp_onoff))
+			if (sovc_switch && sovc_tmp_onoff)
 				resume_touch_screen(dev);
 #endif
 			return 0;
@@ -2144,14 +2144,14 @@ static int ftm4_lpwg_mode(struct device *dev)
 				suspend_touch_screen(dev, LPWG_NONE,
 						     false, false, TOUCH_SUSPEND_STATE_DEEP_SLEEP);
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-				if (sovc_switch && (track_changed || sovc_tmp_onoff))
+				if (sovc_switch && sovc_tmp_onoff)
 					resume_touch_screen(dev);
 #endif
 			} else {
 				suspend_touch_screen(dev, ts->lpwg.mode,
 						     true, true, TOUCH_SUSPEND_STATE_LOW_POWER);
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-				if (sovc_switch && (track_changed || sovc_tmp_onoff))
+				if (sovc_switch && sovc_tmp_onoff)
 					resume_touch_screen(dev);
 #endif
 			}
@@ -2190,7 +2190,7 @@ static int ftm4_lpwg_mode(struct device *dev)
 			suspend_touch_screen(dev, ts->lpwg.mode,
 					     true, true, TOUCH_SUSPEND_STATE_LOW_POWER);
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-			if (sovc_switch && (track_changed || sovc_tmp_onoff)) {
+			if (sovc_switch && sovc_tmp_onoff) {
 				ftm4_swipe_enable(dev, false);
 				resume_touch_screen(dev);
 			}
@@ -4151,7 +4151,7 @@ static int ftm4_event_handler(struct device *dev, u8 *data, u8 left_event)
 			ts->tdata[touch_id].orientation = orient;
 
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-			if (sovc_switch && (track_changed || sovc_tmp_onoff)) {
+			if (sovc_switch && sovc_tmp_onoff) {
 				if (y >= sovc_ignore_start_y && y <= sovc_ignore_end_y)
 					sovc_ignore = true;
 				else
