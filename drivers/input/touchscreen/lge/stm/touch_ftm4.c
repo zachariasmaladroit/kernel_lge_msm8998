@@ -4281,7 +4281,7 @@ static int ftm4_event_handler(struct device *dev, u8 *data, u8 left_event)
 			}
 
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-			if (sovc_switch && sovc_scr_suspended) {
+			if (sovc_state_playing() && sovc_scr_suspended) {
 				if (swipe_tool_enabled) {
 					if (y >= lpwg_abs_start_y && y <= lpwg_abs_end_y)
 						ts->tdata[touch_id].y -= lpwg_abs_offset_y;
