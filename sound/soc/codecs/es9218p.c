@@ -100,6 +100,13 @@ static int g_right_fade_vol = 0;
 bool lge_ess_fade_inout_init = false;
 #endif  /* CONFIG_SND_SOC_LGE_ESS_DIGITAL_FILTER */
 
+#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
+bool es9218p_playing = false;
+EXPORT_SYMBOL_GPL(es9218p_playing);
+
+extern bool tfa9872_playing;
+#endif
+
 struct es9218_reg {
     unsigned char   num;
     unsigned char   value;
@@ -3054,7 +3061,7 @@ static int es9218_mute(struct snd_soc_dai *dai, int mute)
         if (mute) {
             es9218p_playing = false;
             sovc_hifi_mode = false;
-            if (sovc_tmp_onoff && !tfa9872_playing && !sovc_tmp_userspace_playing)
+            if (sovc_tmp_onoff && !tfa9872_playing)
                 sovc_notifier_call_chain(SOVC_EVENT_STOPPED, NULL);
         } else {
             es9218p_playing = true;

@@ -97,14 +97,11 @@ static bool is_new_touch_x = false, is_new_touch_y = false;
 static bool is_executing = false;
 static struct input_dev *sovc_input;
 static DEFINE_MUTEX(keyworklock);
+static DEFINE_MUTEX(sovc_tmp_lock);
 static struct workqueue_struct *sovc_volume_input_wq;
 static struct workqueue_struct *sovc_track_input_wq;
 static struct work_struct sovc_volume_input_work;
 static struct work_struct sovc_track_input_work;
-
-bool es9218p_playing = false;
-bool tfa9872_playing = false;
-bool sovc_tmp_userspace_playing = false;
 
 static void unregister_sovc(void);
 
@@ -622,29 +619,37 @@ static ssize_t sovc_scroff_volctr_temp_dump(struct device *dev,
 {
 	int rc, val;
 
+	mutex_lock(&sovc_tmp_lock);
+
 	rc = kstrtoint(buf, 10, &val);
 	if (rc)
-		return -EINVAL;
+		goto invalid_value;
 
 	if (val == 0 || val == 1) {
-		if (val) {
-			sovc_tmp_userspace_playing = true;
-			if (sovc_switch && !sovc_tmp_onoff) {
-				mutex_lock(&sovc_playing_state_lock);
-				sovc_notifier_call_chain(SOVC_EVENT_PLAYING, NULL);
-				mutex_unlock(&sovc_playing_state_lock);
-			}
-		} else {
-			sovc_tmp_userspace_playing = false;
-			if (sovc_switch && sovc_tmp_onoff && !es9218p_playing && !tfa9872_playing) {
-				mutex_lock(&sovc_playing_state_lock);
-				sovc_notifier_call_chain(SOVC_EVENT_STOPPED, NULL);
-				mutex_unlock(&sovc_playing_state_lock);
-			}
-		}
-	}
+		if (val == sovc_tmp_onoff)
+			goto out;
+		if (val == 0 && track_changed)
+			goto out;
+		sovc_tmp_onoff = val;
+	} else
+		goto invalid_value;
 
+	if (sovc_tmp_onoff)
+		track_changed = false;
+
+	if (sovc_switch && sovc_scr_suspended) {
+		if (sovc_tmp_onoff) {
+			register_sovc();
+		}
+	} else
+		unregister_sovc();
+
+out:
+	mutex_unlock(&sovc_tmp_lock);
 	return count;
+invalid_value:
+	mutex_unlock(&sovc_tmp_lock);
+	return -EINVAL;
 }
 
 static DEVICE_ATTR(scroff_volctr_temp, (S_IWUSR|S_IRUGO),
@@ -722,14 +727,19 @@ static int sovc_notifier_callback(struct notifier_block *self,
 		pr_info(LOGTAG"SOVC_EVENT: Playing\n");
 #endif
 		track_changed = false;
+		mutex_lock(&sovc_tmp_lock);
 		sovc_tmp_onoff = 1;
+		mutex_unlock(&sovc_tmp_lock);
 		break;
 	case SOVC_EVENT_STOPPED:
 #ifdef SOVC_DEBUG
 		pr_info(LOGTAG"SOVC_EVENT: Stopped\n");
 #endif
-		if (!track_changed)
+		if (!track_changed) {
+			mutex_lock(&sovc_tmp_lock);
 			sovc_tmp_onoff = 0;
+			mutex_unlock(&sovc_tmp_lock);
+		}
 		break;
 	}
 
