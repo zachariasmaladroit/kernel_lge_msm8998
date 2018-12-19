@@ -4303,7 +4303,7 @@ static int ftm4_event_handler(struct device *dev, u8 *data, u8 left_event)
 			break;
 		case EVENTID_LPWG_EVENT:
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-			if (!sovc_state_playing() || !registered)
+			if (!sovc_state_playing())
 #endif
 				ftm4_lpwg_event_handler(dev,
 						&data[event_num * FTS_EVENT_SIZE]);

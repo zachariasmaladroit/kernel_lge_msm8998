@@ -106,7 +106,7 @@ bool es9218p_playing = false;
 bool tfa9872_playing = false;
 bool sovc_tmp_userspace_playing = false;
 
-bool registered = false;
+static bool registered = false;
 static DEFINE_MUTEX(reg_lock);
 
 struct mutex sovc_playing_state_lock;
