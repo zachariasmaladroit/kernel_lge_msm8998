@@ -2503,8 +2503,6 @@ static void ftm4_touch_off(struct work_struct *work)
 	if (!sovc_scr_suspended)
 		return;
 
-	unregister_sovc();
-
 	mutex_lock(&suspend_resume_lock);
 	restore_touch_prev_state(d->dev, true);
 	mutex_unlock(&suspend_resume_lock);
