@@ -199,15 +199,12 @@ static void scroff_volctr_key(struct work_struct *scroff_volctr_key_work)
 #ifdef SOVC_DEBUG
 		pr_info(LOGTAG"TRACK_NEXT\n");
 #endif
-
 		track_changed = true;
 		input_event(sovc_input, EV_KEY, KEY_NEXTSONG, 1);
 		input_event(sovc_input, EV_SYN, 0, 0);
 		msleep(SOVC_KEY_PRESS_DUR);
 		input_event(sovc_input, EV_KEY, KEY_NEXTSONG, 0);
 		input_event(sovc_input, EV_SYN, 0, 0);
-
-		sovc_notifier_call_chain(SOVC_EVENT_TRACK_CHANGED, NULL);
 		break;
 	case TRACK_PREVIOUS:
 #ifdef SOVC_DEBUG
@@ -219,8 +216,6 @@ static void scroff_volctr_key(struct work_struct *scroff_volctr_key_work)
 		msleep(SOVC_KEY_PRESS_DUR);
 		input_event(sovc_input, EV_KEY, KEY_PREVIOUSSONG, 0);
 		input_event(sovc_input, EV_SYN, 0, 0);
-
-		sovc_notifier_call_chain(SOVC_EVENT_TRACK_CHANGED, NULL);
 		break;
 	}
 
@@ -803,6 +798,7 @@ static int sovc_notifier_callback(struct notifier_block *self,
 #ifdef SOVC_DEBUG
 		pr_info(LOGTAG"SOVC_EVENT: Playing\n");
 #endif
+
 		track_changed = false;
 		mutex_lock(&sovc_tmp_lock);
 		sovc_tmp_onoff = 1;
@@ -812,6 +808,7 @@ static int sovc_notifier_callback(struct notifier_block *self,
 #ifdef SOVC_DEBUG
 		pr_info(LOGTAG"SOVC_EVENT: Stopped\n");
 #endif
+
 		if (!track_changed && !sovc_force_off) {
 			mutex_lock(&sovc_tmp_lock);
 			sovc_tmp_onoff = 0;

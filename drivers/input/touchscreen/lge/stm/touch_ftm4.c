@@ -2519,11 +2519,9 @@ static int sovc_notifier_callback(struct notifier_block *self,
 	if (!sovc_switch || !sovc_scr_suspended)
 		return 0;
 
+	cancel_delayed_work(&d->touch_off_work);
+
 	switch (event) {
-	case SOVC_EVENT_PLAYING:
-	case SOVC_EVENT_TRACK_CHANGED:
-		cancel_delayed_work(&d->touch_off_work);
-		break;
 	case SOVC_EVENT_STOPPED:
 		if (sovc_force_off)
 			delay = 0;
