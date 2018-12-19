@@ -681,6 +681,10 @@ static int sovc_fb_notifier_callback(struct notifier_block *self,
 	if (event == FB_EVENT_BLANK) {
 		blank = evdata->data;
 
+#ifdef SOVC_DEBUG
+		pr_info(LOGTAG"FB Mode: %d\n", *blank);
+#endif
+
 		switch (*blank) {
 		case FB_BLANK_UNBLANK:
 			sovc_scr_suspended = false;
