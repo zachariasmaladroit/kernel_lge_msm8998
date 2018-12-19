@@ -4267,10 +4267,8 @@ static int ftm4_event_handler(struct device *dev, u8 *data, u8 left_event)
 				d->palm = PALM_PRESSED;
 			}
 
-			if (d->lpwg_abs.enable)
-				ftm4_lpwg_abs_filter(dev, touch_id);
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-			else if (sovc_switch && sovc_scr_suspended && !touch_suspended) {
+			if (sovc_state_playing() && sovc_scr_suspended && !touch_suspended) {
 				if (swipe_tool_enabled) {
 					if (y >= lpwg_abs_start_y && y <= lpwg_abs_end_y)
 						ts->tdata[touch_id].y -= lpwg_abs_offset_y;
@@ -4283,6 +4281,10 @@ static int ftm4_event_handler(struct device *dev, u8 *data, u8 left_event)
 					detect_doubletap2wake(x, y);
 			}
 #endif
+
+			if (d->lpwg_abs.enable)
+				ftm4_lpwg_abs_filter(dev, touch_id);
+
 			break;
 		case EVENTID_LEAVE_POINTER:
 			if (d->palm == PALM_PRESSED) {
@@ -4294,7 +4296,7 @@ static int ftm4_event_handler(struct device *dev, u8 *data, u8 left_event)
 			ts->new_mask &= ~(1 << touch_id);
 			ftm4_update_tcount(dev);
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-			if (sovc_switch && sovc_scr_suspended &&
+			if (sovc_state_playing() && sovc_scr_suspended &&
 			    !touch_suspended && lpwg_status)
 				is_touching = false;
 #endif
