@@ -963,8 +963,7 @@ struct ufs_hba {
 	struct pinctrl *pctrl;
 
 	int			latency_hist_enabled;
-	struct io_latency_state io_lat_read;
-	struct io_latency_state io_lat_write;
+	struct io_latency_state io_lat_s;
 	bool restore_needed;
 };
 
