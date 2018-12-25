@@ -8043,14 +8043,11 @@ static int ufshcd_config_vreg(struct device *dev,
 		struct ufs_vreg *vreg, bool on)
 {
 	int ret = 0;
-	struct regulator *reg;
-	const char *name;
+	struct regulator *reg = vreg->reg;
+	const char *name = vreg->name;
 	int min_uV, uA_load;
 
 	BUG_ON(!vreg);
-
-	reg = vreg->reg;
-	name = vreg->name;
 
 	if (regulator_count_voltages(reg) > 0) {
 		min_uV = on ? vreg->min_uV : 0;
