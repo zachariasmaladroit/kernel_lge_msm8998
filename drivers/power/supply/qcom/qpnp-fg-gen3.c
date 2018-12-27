@@ -2219,38 +2219,12 @@ static int fg_set_recharge_voltage(struct fg_chip *chip, int voltage_mv)
 	return 0;
 }
 
-static int fg_configure_full_soc(struct fg_chip *chip, int bsoc)
-{
-	int rc;
-	u8 full_soc[2] = {0xFF, 0xFF};
-
-	/*
-	 * Once SOC masking condition is cleared, FULL_SOC and MONOTONIC_SOC
-	 * needs to be updated to reflect the same. Write battery SOC to
-	 * FULL_SOC and write a full value to MONOTONIC_SOC.
-	 */
-	rc = fg_sram_write(chip, FULL_SOC_WORD, FULL_SOC_OFFSET,
-			(u8 *)&bsoc, 2, FG_IMA_ATOMIC);
-	if (rc < 0) {
-		pr_err("failed to write full_soc rc=%d\n", rc);
-		return rc;
-	}
-
-	rc = fg_sram_write(chip, MONOTONIC_SOC_WORD, MONOTONIC_SOC_OFFSET,
-			full_soc, 2, FG_IMA_ATOMIC);
-	if (rc < 0) {
-		pr_err("failed to write monotonic_soc rc=%d\n", rc);
-		return rc;
-	}
-
-	return 0;
-}
-
 #define AUTO_RECHG_VOLT_LOW_LIMIT_MV	3700
 static int fg_charge_full_update(struct fg_chip *chip)
 {
 	union power_supply_propval prop = {0, };
 	int rc, msoc, bsoc, recharge_soc, msoc_raw;
+	u8 full_soc[2] = {0xFF, 0xFF};
 
 	if (!chip->dt.hold_soc_while_full)
 		return 0;
@@ -2325,6 +2299,8 @@ static int fg_charge_full_update(struct fg_chip *chip)
 			chip->last_msoc = msoc;
 		}
 
+		chip->charge_full = false;
+
 		/*
 		 * Raise the recharge voltage so that VBAT_LT_RECHG signal
 		 * will be asserted soon as battery SOC had dropped below
@@ -2337,23 +2313,35 @@ static int fg_charge_full_update(struct fg_chip *chip)
 				rc);
 			goto out;
 		}
-
-		/*
-		 * If charge_done is still set, wait for recharging or
-		 * discharging to happen.
-		 */
-		if (chip->charge_done)
-			goto out;
-
-		rc = fg_configure_full_soc(chip, bsoc);
-		if (rc < 0)
-			goto out;
-
-		chip->charge_full = false;
 		fg_dbg(chip, FG_STATUS, "msoc_raw = %d bsoc: %d recharge_soc: %d delta_soc: %d\n",
 			msoc_raw, bsoc >> 8, recharge_soc, chip->delta_soc);
+	} else {
+		goto out;
 	}
 
+	if (!chip->charge_full)
+		goto out;
+
+	/*
+	 * During JEITA conditions, charge_full can happen early. FULL_SOC
+	 * and MONOTONIC_SOC needs to be updated to reflect the same. Write
+	 * battery SOC to FULL_SOC and write a full value to MONOTONIC_SOC.
+	 */
+	rc = fg_sram_write(chip, FULL_SOC_WORD, FULL_SOC_OFFSET, (u8 *)&bsoc, 2,
+			FG_IMA_ATOMIC);
+	if (rc < 0) {
+		pr_err("failed to write full_soc rc=%d\n", rc);
+		goto out;
+	}
+
+	rc = fg_sram_write(chip, MONOTONIC_SOC_WORD, MONOTONIC_SOC_OFFSET,
+			full_soc, 2, FG_IMA_ATOMIC);
+	if (rc < 0) {
+		pr_err("failed to write monotonic_soc rc=%d\n", rc);
+		goto out;
+	}
+
+	fg_dbg(chip, FG_STATUS, "Set charge_full to true @ soc %d\n", msoc);
 out:
 	mutex_unlock(&chip->charge_full_lock);
 	return rc;
@@ -6781,25 +6769,11 @@ static int fg_gen3_resume(struct device *dev)
 	return 0;
 }
 
-static const struct dev_pm_ops fg_gen3_pm_ops = {
-	.suspend	= fg_gen3_suspend,
-	.resume		= fg_gen3_resume,
-};
-
-static int fg_gen3_remove(struct platform_device *pdev)
-{
-	struct fg_chip *chip = dev_get_drvdata(&pdev->dev);
-
-	fg_cleanup(chip);
-	return 0;
-}
-
+#ifdef CONFIG_LGE_PM
 static void fg_gen3_shutdown(struct platform_device *pdev)
 {
-	struct fg_chip *chip = dev_get_drvdata(&pdev->dev);
-	int rc, bsoc;
+	struct fg_chip *chip = platform_get_drvdata(pdev);
 
-#ifdef CONFIG_LGE_PM
 	fg_masked_write(chip, BATT_INFO_TM_MISC1(chip),
 			ESR_REQ_CTL_BIT | ESR_REQ_CTL_EN_BIT,
 			0);
@@ -6811,24 +6785,20 @@ static void fg_gen3_shutdown(struct platform_device *pdev)
 	fg_sram_masked_write(chip, ESR_EXTRACTION_ENABLE_WORD,
 			ESR_EXTRACTION_ENABLE_OFFSET, BIT(0), 0,
 			FG_IMA_DEFAULT);
+}
 #endif
 
-	if (chip->charge_full) {
-		rc = fg_get_sram_prop(chip, FG_SRAM_BATT_SOC, &bsoc);
-		if (rc < 0) {
-			pr_err("Error in getting BATT_SOC, rc=%d\n", rc);
-			return;
-		}
+static const struct dev_pm_ops fg_gen3_pm_ops = {
+	.suspend	= fg_gen3_suspend,
+	.resume		= fg_gen3_resume,
+};
 
-		/* We need 2 most significant bytes here */
-		bsoc = (u32)bsoc >> 16;
+static int fg_gen3_remove(struct platform_device *pdev)
+{
+	struct fg_chip *chip = dev_get_drvdata(&pdev->dev);
 
-		rc = fg_configure_full_soc(chip, bsoc);
-		if (rc < 0) {
-			pr_err("Error in configuring full_soc, rc=%d\n", rc);
-			return;
-		}
-	}
+	fg_cleanup(chip);
+	return 0;
 }
 
 static const struct of_device_id fg_gen3_match_table[] = {
@@ -6845,7 +6815,9 @@ static struct platform_driver fg_gen3_driver = {
 	},
 	.probe		= fg_gen3_probe,
 	.remove		= fg_gen3_remove,
+#ifdef CONFIG_LGE_PM
 	.shutdown 	= fg_gen3_shutdown,
+#endif
 };
 
 static int __init fg_gen3_init(void)
