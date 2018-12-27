@@ -238,6 +238,8 @@ struct printk_log {
 	u8 facility;		/* syslog facility */
 	u8 flags:5;		/* internal record flags */
 	u8 level:3;		/* syslog level */
+	unsigned int cpu;
+	pid_t pid;
 }
 #ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
 __packed __aligned(4)
@@ -1070,6 +1072,43 @@ static size_t print_time(u64 ts, char *buf)
 		       (unsigned long)ts, rem_nsec / 1000);
 }
 
+static bool printk_cpu = IS_ENABLED(CONFIG_PRINTK_CPU_ID);
+module_param_named(cpu, printk_cpu, bool, 0644);
+
+static bool printk_pid = IS_ENABLED(CONFIG_PRINTK_PID);
+module_param_named(pid, printk_pid, bool, 0644);
+
+static size_t print_cpu(unsigned int cpu, char *buf)
+{
+	if (!printk_cpu)
+		return 0;
+
+	if (!buf)
+		return snprintf(NULL, 0, "c%u ", cpu);
+
+	return sprintf(buf, "c%u ", cpu);
+}
+
+static size_t print_pid(pid_t pid, char *buf)
+{
+	if (!printk_pid)
+		return 0;
+
+	if (!buf)
+		return snprintf(NULL, 0, "%6u ", pid);
+
+	return sprintf(buf, "%6u ", pid);
+}
+
+static void update_msg_ext(unsigned int cpu, pid_t pid)
+{
+	if (!last_msg)
+		return;
+
+	last_msg->cpu = cpu;
+	last_msg->pid = pid;
+}
+
 static size_t print_prefix(const struct printk_log *msg, bool syslog, char *buf)
 {
 	size_t len = 0;
@@ -1090,6 +1129,8 @@ static size_t print_prefix(const struct printk_log *msg, bool syslog, char *buf)
 	}
 
 	len += print_time(msg->ts_nsec, buf ? buf + len : NULL);
+	len += print_cpu(msg->cpu, buf ? buf + len : NULL);
+	len += print_pid(msg->pid, buf ? buf + len : NULL);
 	return len;
 }
 
@@ -1618,6 +1659,8 @@ static struct cont {
 	u8 facility;			/* log facility of first message */
 	enum log_flags flags;		/* prefix, newline flags */
 	bool flushed:1;			/* buffer sealed and committed */
+	unsigned int cpu;
+	pid_t pid;
 } cont;
 
 static void cont_flush(enum log_flags flags)
