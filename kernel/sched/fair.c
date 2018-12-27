@@ -5714,15 +5714,16 @@ static inline bool cpu_in_sg(struct sched_group *sg, int cpu)
  * select_energy_cpu_idx(): estimate the energy impact of changing the
  * utilization distribution.
  *
- * eenv::next_idx returns the index of a CPU candidate specified by the
+ * The eenv parameter specifies the changes: utilisation amount and a pair of
+ * possible CPU candidates (the previous CPU and a different target CPU).
+ *
+ * This function returns the index of a CPU candidate specified by the
  * energy_env which corresponds to the first CPU saving energy.
  * Thus, 0 (EAS_CPU_PRV) means that non of the CPU candidate is more energy
- * efficient than running on prev_cpu.  A value greater than zero means that
- * the first energy-efficient CPU is the one represented by
- * eenv->cpu[eenv->next_idx].cpu_id.
- *
- * The function returns negative value in case of abort due to error
- * conditions during the computations, success returns 0.
+ * efficient than running on prev_cpu. This is also the value returned in case
+ * of abort due to error conditions during the computations.
+ * A value greater than zero means that the first energy-efficient CPU is the
+ * one represented by eenv->cpu[eenv->next_idx].cpu_id.
  */
 static inline int select_energy_cpu_idx(struct energy_env *eenv)
 {
@@ -5734,10 +5735,8 @@ static inline int select_energy_cpu_idx(struct energy_env *eenv)
 
 	sd_cpu = eenv->cpu[EAS_CPU_PRV].cpu_id;
 	sd = rcu_dereference(per_cpu(sd_ea, sd_cpu));
-	if (!sd) {
-		eenv->next_idx = EAS_CPU_PRV;
-		return -1;
-	}
+	if (!sd)
+		return EAS_CPU_PRV;
 
 	sg = sd->groups;
 	do {
@@ -5747,10 +5746,8 @@ static inline int select_energy_cpu_idx(struct energy_env *eenv)
 
 		eenv->sg_top = sg;
 		/* energy is unscaled to reduce rounding errors */
-		if (compute_energy(eenv) == -EINVAL) {
-			eenv->next_idx = EAS_CPU_PRV;
-			return -EINVAL;
-		}
+		if (compute_energy(eenv) == -EINVAL)
+			return EAS_CPU_PRV;
 
 	} while (sg = sg->next, sg != sd->groups);
 
@@ -5796,7 +5793,7 @@ static inline int select_energy_cpu_idx(struct energy_env *eenv)
 		}
 	}
 
-	return 0;
+	return eenv->next_idx;
 }
 
 /*
@@ -6795,21 +6792,22 @@ select_energy_cpu_brute(struct task_struct *p, int prev_cpu, int sync)
 		if (backup_cpu >= 0)
 			cpumask_set_cpu(backup_cpu, &eenv.cpus_mask);
 
-        select_energy_cpu_idx(&eenv);
-
 		/* Check if EAS_CPU_NXT is a more energy efficient CPU */
-        if (eenv.next_idx != EAS_CPU_PRV) {
+		if (select_energy_cpu_idx(&eenv) != EAS_CPU_PRV) {
 			schedstat_inc(p, se.statistics.nr_wakeups_secb_nrg_sav);
 			schedstat_inc(this_rq(), eas_stats.secb_nrg_sav);
+			target_cpu = eenv.cpu[eenv.next_idx].cpu_id;
 			goto unlock;
-		} else {
-    		schedstat_inc(p->se.statistics.nr_wakeups_secb_no_nrg_sav);
-    		schedstat_inc(this_rq()->eas_stats.secb_no_nrg_sav);
+		}
+
+		schedstat_inc(p, se.statistics.nr_wakeups_secb_no_nrg_sav);
+		schedstat_inc(this_rq(), eas_stats.secb_no_nrg_sav);
+		target_cpu = prev_cpu;
+		goto unlock;
 	}
-    target_cpu = eenv.cpu[eenv.next_idx].cpu_id;
+
 	schedstat_inc(p, se.statistics.nr_wakeups_secb_count);
 	schedstat_inc(this_rq(), eas_stats.secb_count);
-    goto unlock;
 
 unlock:
 	rcu_read_unlock();
