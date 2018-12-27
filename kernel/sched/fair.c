@@ -5552,7 +5552,7 @@ static void calc_sg_energy(struct energy_env *eenv, int cpu)
 	int total_energy = 0;
 
 	/* Compute ACTIVE energy */
-	cap_idx = eenv->cpu[cpu].cap_idx;
+	cap_idx = find_new_capacity(eenv, cpu);
 	busy_power = sg->sge->cap_states[cap_idx].power;
 	/*
 	 * in order to calculate cpu_norm_util, we need to know which
@@ -5697,8 +5697,6 @@ static int compute_task_energy(struct energy_env *eenv, int cpu)
 			eenv->sg_cap = sd_cap->parent->groups;
 		else
 			eenv->sg_cap = sd_cap->groups;
-
-		find_new_capacity(eenv, cpu);
 
 		/* energy is unscaled to reduce rounding errors */
 		if (compute_energy(eenv, cpu) == -EINVAL) {
