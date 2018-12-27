@@ -191,7 +191,7 @@ CONFIG_TIMERFD=y
 CONFIG_EVENTFD=y
 # CONFIG_BPF_SYSCALL is not set
 CONFIG_SHMEM=y
-# CONFIG_AIO is not set
+
 CONFIG_ADVISE_SYSCALLS=y
 # CONFIG_USERFAULTFD is not set
 CONFIG_PCI_QUIRKS=y
@@ -4269,9 +4269,7 @@ CONFIG_STAGING=y
 CONFIG_ASHMEM=y
 CONFIG_ANDROID_TIMED_OUTPUT=y
 CONFIG_ANDROID_TIMED_GPIO=y
-CONFIG_ANDROID_LOW_MEMORY_KILLER=y
-CONFIG_ANDROID_LOW_MEMORY_KILLER_AUTODETECT_OOM_ADJ_VALUES=y
-CONFIG_ANDROID_LMK_ADJ_RBTREE=y
+
 CONFIG_SYNC=y
 CONFIG_SW_SYNC=y
 # CONFIG_SW_SYNC_USER is not set
@@ -5766,3 +5764,431 @@ CONFIG_SDFAT_TEXFAT_WRAPPER=y
 # CONFIG_SDFAT_DEBUG is not set
 # CONFIG_SDFAT_DBG_MSG is not set
 # CONFIG_SDFAT_STATISTICS is not set
+
+# BOOTCHART, scheduler (CPU), I/O load breakdown
+# CONFIG_SCHED_INFO is not set
+# CONFIG_SCHEDSTATS is not set # overhead # recommended =y for scheduler tweaking
+
+# core_ctl, pointless without hotplug
+# CONFIG_SCHED_CORE_CTL is not set
+
+# raise size of kernel log
+CONFIG_LOG_BUF_SHIFT=22
+CONFIG_LOG_CPU_MAX_BUF_SHIFT=21
+
+# security frameworks & related
+CONFIG_SECURITY_YAMA=y
+
+# SSP stackprotector, degrades sound quality, let's set protection to "regular"
+CONFIG_HAVE_CC_STACKPROTECTOR=y
+CONFIG_CC_STACKPROTECTOR=y
+# CONFIG_CC_STACKPROTECTOR_NONE is not set
+# CONFIG_CC_STACKPROTECTOR_REGULAR is not set
+CONFIG_CC_STACKPROTECTOR_STRONG=y
+
+# Kernel (self)protection
+CONFIG_DEFAULT_MMAP_MIN_ADDR=32768 # Disallow allocating the first 32k of memory (cannot be 64k due to ARM loader).
+CONFIG_DEBUG_RODATA=y
+CONFIG_DEBUG_ALIGN_RODATA=y # This prevents sections from being split into pages and avoids a potential TLB penalty.
+# DEBUG_SET_MODULE_RONX is not set # for Stock ROM "Set loadable kernel module data as NX and text as RO"
+CONFIG_SCHED_STACK_END_CHECK=y # The runtime overhead introduced is minimal.
+CONFIG_STRICT_DEVMEM=y # If this option is disabled,
+# you allow userspace (root) access to all of memory, including kernel and userspace memory. Accidental
+# access to this is obviously disastrous, but specific access can be used by people debugging the kernel.
+#
+# data integrity/DEBUG (in combination with the below, follow-up checks)
+# CONFIG_PANIC_ON_DATA_CORRUPTION=y # NOT needed in production/stable (?)
+# CONFIG_DEBUG_CREDENTIALS=y # (+ SELinux, checks to see that this number never exceeds the usage count of the cred struct)
+# CONFIG_DEBUG_NOTIFIERS is not set # modules, This is a relatively cheap check
+# CONFIG_DEBUG_LIST=y
+# CONFIG_DEBUG_SG=y # This can help find problems with drivers that do not properly initialize their sg tables.
+
+# CONFIG_FREE_PAGES_RDONLY is not set # spr (non-perf) , needs CONFIG_FORCE_PAGES=y (?!)
+# CONFIG_ARM64_STRICT_BREAK_BEFORE_MAKE is not set # spr (non-perf) , arch/arm64/include/asm/pgtable.h
+
+# keep legacy emulation, compatibility w.r.t. ARMv8
+# disabling breaks WeChat (crash on startup) and others ...
+# CONFIG_ARMV8_DEPRECATED is not set
+CONFIG_SWP_EMULATION=y
+CONFIG_CP15_BARRIER_EMULATION=y
+CONFIG_SETEND_EMULATION=y
+
+# Wakelock Blocker
+# needs to be set up, doesn't block anything by default
+#
+CONFIG_BOEFFLA_WL_BLOCKER=y
+
+# PM / Sleep: Use workqueue for user space wakeup sources garbage collector
+CONFIG_PM_WAKELOCKS_GC=y
+
+# Jump labels:
+# the kernel will compile trace point locations with just a nop instruction.
+# When trace points are enabled, the nop will be converted to a jump
+# to the trace function. This technique lowers overhead and stress
+# on the branch prediction of the processor.
+#
+# CONFIG_JUMP_LABEL is not set # assumedly leads to latency spikes, thus discouraged
+
+# add additional drivers that might be needed
+# CONFIG_RELAY is not set
+
+# Prior to v4.1, assists heap memory attacks; best to keep interface disabled.
+CONFIG_INET_DIAG=y
+CONFIG_INET_TCP_DIAG=y
+CONFIG_INET_UDP_DIAG=y # if unsure, say Y.
+CONFIG_INET_DIAG_DESTROY=y
+
+# disable unnecessary/not applicable components, speed up boot & operation
+# CONFIG_CPU_IDLE_GOV_LADDER is not set
+# CONFIG_VGA_ARB is not set
+# CONFIG_SND_SUPPORT_OLD_API is not set
+# CONFIG_SND_VERBOSE_PROCFS is not set
+# CONFIG_SND_DRIVERS is not set
+# CONFIG_MSM_BOOT_STATS is not set # default =y
+# CONFIG_SCHED_AUTOGROUP is not set # so it's obviously not necessarily to work on stock ROMs
+CONFIG_QCOM_RTB=y
+CONFIG_QCOM_RTB_SEPARATE_CPUS=y
+# CONFIG_MMC_PERF_PROFILING is not set
+# CONFIG_IOSCHED_TEST is not set
+# CONFIG_MSM_GLADIATOR_ERP_V2 is not set
+# CONFIG_PANIC_ON_GLADIATOR_ERROR_V2 is not set
+# CONFIG_MSM_GLADIATOR_ERROR_V2_MAIN_LOGGER_ONLY is not set
+# CONFIG_MSM_GLADIATOR_HANG_DETECT is not set
+# CONFIG_MSM_CORE_HANG_DETECT is not set
+# CONFIG_EDAC_SUPPORT is not set
+# CONFIG_EDAC is not set # missing dts/dtb entries, so NOP ?
+CONFIG_EDAC_LEGACY_SYSFS=y
+# CONFIG_EDAC_DEBUG is not set
+# CONFIG_EDAC_MM_EDAC is not set # (default =y)
+# CONFIG_EDAC_CORTEX_ARM64 is not set # (default =y)
+# CONFIG_EDAC_CORTEX_ARM64_PANIC_ON_CE is not set
+# CONFIG_EDAC_CORTEX_ARM64_DBE_IRQ_ONLY is not set
+# CONFIG_EDAC_CORTEX_ARM64_PANIC_ON_UE is not set # "Panic on uncorrectable errors",
+# For production builds, you should probably say 'N' here. This can reduce debugging times on hardware which may be
+#	   operating at voltages or frequencies outside normal specification.
+# CONFIG_MPC_UT_FRAMEWORK is not set # qcacld-3.0 $(HDD_SRC_DIR)/wlan_hdd_conc_ut.o , # Enable Unit test framework for multiport concurrency
+CONFIG_QCOM_DCC=y # QCOM Data Capture and Compare enigne support
+# CONFIG_QCOM_CPUSS_DUMP is not set
+CONFIG_BLK_DEV_MD=y
+CONFIG_MD_LINEAR=y # "linear harddrive mode", "JBOD"
+# CONFIG_V4L_PLATFORM_DRIVERS # eval
+CONFIG_MSM_SMP2P_TEST=y
+# CONFIG_FW_CACHE is not set # needs: 'firmware_class: make firmware caching configurable', Enable firmware caching during suspend
+# CONFIG_SKY2 is not set
+# CONFIG_SMSC911X is not set
+CONFIG_CHR_DEV_SCH=y # SCSI media changer (jukeboxes ?!)
+# CONFIG_USB_STORAGE_REALTEK is not set # necessary/needed ?
+# CONFIG_REALTEK_AUTOPM=y
+# CONFIG_USB_STORAGE_DATAFAB is not set 
+# CONFIG_USB_STORAGE_FREECOM is not set
+# CONFIG_USB_STORAGE_ISD200 is not set
+# CONFIG_USB_STORAGE_USBAT is not set
+# CONFIG_USB_STORAGE_SDDR09 is not set
+# CONFIG_USB_STORAGE_SDDR55 is not set
+# CONFIG_USB_STORAGE_JUMPSHOT is not set
+# CONFIG_USB_STORAGE_ALAUDA is not set
+# CONFIG_USB_STORAGE_ONETOUCH is not set
+# CONFIG_USB_STORAGE_KARMA is not set
+# CONFIG_USB_STORAGE_CYPRESS_ATACB is not set
+
+# media tuners (DVB, etc.)
+# CONFIG_MEDIA_DIGITAL_TV_SUPPORT is not set
+# CONFIG_DVB_CORE is not set
+# CONFIG_DVB_NET is not set
+# CONFIG_TTPCI_EEPROM is not set
+CONFIG_DVB_MAX_ADAPTERS=8
+# CONFIG_DVB_DYNAMIC_MINORS is not set
+# CONFIG_LGE_BROADCAST_ISDBT_JAPAN is not set
+CONFIG_MEDIA_SUBDRV_AUTOSELECT=y
+# CONFIG_MEDIA_TUNER is not set
+# CONFIG_MEDIA_TUNER_SIMPLE is not set
+# CONFIG_MEDIA_TUNER_TDA8290 is not set
+# CONFIG_MEDIA_TUNER_TDA827X is not set
+# CONFIG_MEDIA_TUNER_TDA18271 is not set
+# CONFIG_MEDIA_TUNER_TDA9887 is not set
+# CONFIG_MEDIA_TUNER_MT20XX is not set
+# CONFIG_MEDIA_TUNER_XC2028 is not set
+# CONFIG_MEDIA_TUNER_XC5000 is not set
+# CONFIG_MEDIA_TUNER_XC4000 is not set
+# CONFIG_MEDIA_TUNER_MC44S803 is not set
+
+# disable debug, logs stuff
+CONFIG_LGE_PM_DEBUG=y
+# CONFIG_IPC_LOGGING is not set # we shouldn't need this (forcing us into being a DEBUG kernel)
+CONFIG_DEBUG_BUGVERBOSE=y # we REALLY need this
+# CONFIG_MSM_SDE_ROTATOR_EVTLOG_DEBUG is not set
+# CONFIG_FB_MSM_MDSS_XLOG_DEBUG is not set
+# CONFIG_IOMMU_DEBUG is not set
+# CONFIG_IOMMU_TESTS is not set
+# CONFIG_ICNSS_DEBUG is not set
+# CONFIG_FEATURE_TSO_DEBUG is not set
+# CONFIG_ALLOW_DEV_COREDUMP is not set # this totally disables any coredump whatsoever (=off)
+# CONFIG_WLAN_FEATURE_MEMDUMP is not set
+CONFIG_MSM_RPM_RBCPR_STATS_V2_LOG=y
+CONFIG_MSM_RPM_LOG=y
+CONFIG_MSM_RPM_STATS_LOG=y # needed for power-libperfmgr / permgr
+# CONFIG_MSM_TZ_LOG is not set
+CONFIG_TRACER_PKT=y
+# CONFIG_QCOM_REMOTEQDSS is not set # Allow debug tools to enable events on other processors
+# CONFIG_QCOM_COMMON_LOG is not set # default (=n)
+# CONFIG_QCOM_MEMORY_DUMP_V2 is not set
+# CONFIG_USB_DWC3_DEBUG_FS is not set
+# CONFIG_MSM_SMEM_LOGGING is not set
+
+# disable for debug, security, attack surface
+# CONFIG_MSM_RDBG is not set # remote debugger driver (=m by default)
+# CONFIG_MAGIC_SYSRQ is not set
+
+# disable debug/strip/shrink kernel
+CONFIG_KALLSYMS_ALL=y # needed on Stock for successful booting
+CONFIG_DEBUG_INFO_REDUCED=y # deps ?
+CONFIG_STRIP_ASM_SYMS=y # eval
+
+# profiling, tracing
+# ...
+
+#
+# Timers subsystem
+#
+CONFIG_TICK_ONESHOT=y
+CONFIG_NO_HZ_COMMON=y
+# CONFIG_HZ_PERIODIC is not set
+# CONFIG_NO_HZ_IDLE is not set
+CONFIG_NO_HZ_FULL=y
+CONFIG_NO_HZ_FULL_ALL=y
+CONFIG_NO_HZ=y
+CONFIG_HIGH_RES_TIMERS=y
+
+# i/o schedulers
+CONFIG_IOSCHED_NOOP=y
+# CONFIG_IOSCHED_TEST is not set
+CONFIG_IOSCHED_DEADLINE=y
+CONFIG_IOSCHED_CFQ=y
+CONFIG_IOSCHED_FIOPS=y
+CONFIG_IOSCHED_SIO=y
+CONFIG_IOSCHED_ZEN=y
+CONFIG_IOSCHED_BFQ=y
+# CONFIG_DEFAULT_DEADLINE is not set
+# CONFIG_DEFAULT_CFQ is not set
+CONFIG_DEFAULT_NOOP=y
+# CONFIG_DEFAULT_SIO is not set
+# CONFIG_DEFAULT_FIOPS is not set
+# CONFIG_DEFAULT_ZEN is not set
+CONFIG_DEFAULT_IOSCHED="noop"
+
+# CPU scheduler tweaks & changes
+CONFIG_SCHED_CHILD_RUNS_FIRST=y
+
+# performance & latency cutdown tweaking
+# CONFIG_ZEN_INTERACTIVE is not set
+# CONFIG_SCSI_MQ_DEFAULT is not set # broken on 4.4 Android ?
+# CONFIG_MANDATORY_FILE_LOCKING is not set
+# CONFIG_SLUB_CPU_PARTIAL is not set # more indeterminism in the latency of the free , taking of locks that may cause latency spikes
+# CONFIG_VM_EVENT_COUNTERS is not set
+# CONFIG_CONFIG_AUDIT is not set # SELinux auditing overhead
+
+# crypto stuff
+CONFIG_CRYPTO_PCRYPT=y
+
+# zram, CMA, GCMA, z3fold, etc.
+# ..
+
+# build drivers INto the kernel
+# CONFIG_USB_GSPCA is not set # most likely NOT needed , disable it
+
+#
+# RCU Subsystem
+#
+CONFIG_PREEMPT_RCU=y
+CONFIG_RCU_EXPERT=y
+CONFIG_SRCU=y
+# CONFIG_TASKS_RCU is not set
+CONFIG_RCU_STALL_COMMON=y
+CONFIG_RCU_FANOUT=64
+CONFIG_RCU_FANOUT_LEAF=16
+CONFIG_RCU_FAST_NO_HZ=y
+# CONFIG_TREE_RCU_TRACE is not set
+# CONFIG_RCU_BOOST is not set # eval
+CONFIG_RCU_BOOST_DELAY=331
+CONFIG_RCU_KTHREAD_PRIO=51
+CONFIG_RCU_NOCB_CPU=y
+# CONFIG_RCU_NOCB_CPU_NONE is not set
+# CONFIG_RCU_NOCB_CPU_ZERO is not set
+CONFIG_RCU_NOCB_CPU_ALL=y
+CONFIG_RCU_EXPEDITE_BOOT=y
+
+# ION
+CONFIG_ION=y
+# CONFIG_ION_TEST is not set
+# CONFIG_ION_DUMMY is not set
+CONFIG_ION_MSM=y
+# CONFIG_ALLOC_BUFFERS_IN_4K_CHUNKS is not set # default =y
+
+# Memory Subsystem changes & tweaks
+CONFIG_PROCESS_RECLAIM=y # default =y , so something uses it properly ?
+# CONFIG_HSWAP is not set
+# CONFIG_BOOST_DYING_TASK is not set
+# CONFIG_MEMCG is not set
+# CONFIG_MEMCG_SWAP is not set
+CONFIG_ANDROID_LOW_MEMORY_KILLER=y
+CONFIG_ANDROID_LOW_MEMORY_KILLER_AUTODETECT_OOM_ADJ_VALUES=y
+CONFIG_ANDROID_LMK_ADJ_RBTREE=y
+# CONFIG_ANDROID_SIMPLE_LMK is not set # needs work
+CONFIG_ANDROID_SIMPLE_LMK=y
+CONFIG_ANDROID_SIMPLE_LMK_MINFREE=64
+CONFIG_ANDROID_SIMPLE_LMK_KSWAPD_TIMEOUT=100
+CONFIG_ANDROID_SIMPLE_LMK_OOM_TIMEOUT=50
+
+# RSEQ
+# ...
+
+# AIO
+# CONFIG_AIO has legitimate use for the functionfs
+# driver, which is used with adb and mtp. It is now required to be enabled
+# for better performance with those services.
+CONFIG_AIO=y
+
+# network filesystems - NFS, CIFS - enable if needed - security (!)
+# CONFIG_NETWORK_FILESYSTEMS is not set # tshoot
+
+# IP tunnel stuff
+CONFIG_NET_IP_TUNNEL=y
+# CONFIG_IP_MROUTE is not set
+CONFIG_NET_IPVTI=y
+CONFIG_NET_UDP_TUNNEL=y
+# CONFIG_NET_FOU is not set
+# CONFIG_NET_FOU_IP_TUNNELS is not set
+
+# [eval]joan_spr_us/joan_vzv
+CONFIG_MACH_LGE=y
+CONFIG_MACH_MSM8998_JOAN=y
+CONFIG_MACH_MSM8998_JOAN_GLOBAL_COM=y
+# CONFIG_MACH_MSM8998_JOAN_SPR_US is not set
+# CONFIG_MACH_MSM8998_JOAN_TMO_US is not set # config similar to sprint
+# CONFIG_MACH_MSM8998_JOAN_VZW is not set
+
+# CONFIG_TOUCHSCREEN_FTS=y # for tmo_us-perf (config doesn't exist !)
+
+# "feature for usb diag access lock" - perhaps shouldn't even used in production ...
+CONFIG_LGE_USB_DIAG_LOCK=y
+# CONFIG_LGE_USB_DIAG_LOCK_SPR is not set # SET on spr_us
+# CONFIG_LGE_USB_DIAG_LOCK_TRF is not set
+# CONFIG_LGE_USB_DIAG_LOCK_VZW is not set # NOT set on vzw ?!
+
+CONFIG_LGE_PM_BATT_MANAGER=y # GLOBAL # NOT spr, vzw
+CONFIG_IDTP9223_CHARGER_WPC_ONLY=y # GLOBAL # NOT spr, vzw
+
+# CONFIG_LGE_PM_LGE_POWER_CLASS_VZW_REQ is not set # vzw ONLY
+
+CONFIG_USB_ANNOUNCE_NEW_DEVICES=y # off for spr ?
+CONFIG_USB_SERIAL=y # off for spr ?
+
+CONFIG_USB_HOST_NOTIFY=y # off for spr/vzw ?
+CONFIG_USB_CONFIGFS_F_CCID=y # off for spr ? , =y vzw
+
+# CONFIG_LGE_USB_GADGET_AUTORUN_VZW is not set # vzw ONLY
+CONFIG_LGE_USB_GADGET=y # ALL
+
+
+# disable LG stuff
+CONFIG_LGE_DM_APP=y # global_com, spr_us - NOT vzw
+
+# CONFIG_MDFPP_CCAUDIT is not set # main branch config , spr/vzw (=y)
+# CONFIG_SDP is not set
+# CONFIG_CRYPTO_DEV_KEY_INTEGRITY_CHECK is not set
+
+CONFIG_SYSTEM_TRUSTED_KEYS="verity.x509.pem" # joan_global_com ONLY
+CONFIG_SD_ENCRYPTION_MANAGER=y # joan_global_com ONLY , no spr/vzw
+
+#klcm , SPR_US/VZW ONLY
+# CONFIG_CRYPTODEV is not set
+# CONFIG_LGCRYPTO_FIPS_ENABLE is not set
+# CONFIG_LGECRYPTO_FIPS_ADDED_SIGNATURE_SIZE=710
+# CONFIG_LGE_PKM is not set
+
+# tmo/vzw ONLY
+# CONFIG_TRUSTONIC_TEE is not set
+# CONFIG_LGE_QSDL_SUPPORT is not set # NOT for tmo_us ?
+
+# LG_VPN_V36 (SPR_US/VZW)
+# CONFIG_LG_VPN_V36 is not set
+# CONFIG_VPNCLIENT_SECURITY is not set # spr (=m)
+
+CONFIG_IKCONFIG_PROC=y # spr
+CONFIG_BLK_DEV_BSG=y # spr # eval
+# CONFIG_PM_DEBUG is not set # spr (non-perf)
+# CONFIG_DPM_WATCHDOG is not set # spr (=y)
+CONFIG_DPM_WATCHDOG_TIMEOUT=10 # spr , way too strict
+# CONFIG_L2TP_DEBUGFS is not set # spr (=y)
+# CONFIG_DNS_RESOLVER is not set # spr (non-perf)
+# CONFIG_REGMAP_ALLOW_WRITE_DEBUGFS is not set # spr (non-perf), DANGEROUS! "Regmap, allow direct register writes through debugfs"
+# CONFIG_SCSI_LOGGING is not set # spr (=y) [needs to be enabled via /proc/sys/dev/scsi/logging_level
+# CONFIG_SCSI_UFSHCD_CMD_LOGGING is not set # spr (=y)
+
+# CONFIG_VIDEO_ADV_DEBUG is not set # spr (non-perf)
+# CONFIG_MSM_CAMERA_DEBUG is not set # spr (non-perf)
+# CONFIG_MSMB_CAMERA_DEBUG is not set # spr (non-perf)
+# CONFIG_ESOC_DEBUG is not set # spr (=y)
+# CONFIG_ESOC_MDM_DBG_ENG is not set # spr (=y)
+# CONFIG_EFIVAR_FS is not set # pointless ?
+# CONFIG_PAGE_OWNER is not set # spr (=y) "Eats a fair amount of memory if enabled."
+# CONFIG_PAGE_OWNER_ENABLE_DEFAULT is not set # spr (=y)
+
+# CONFIG_BOOTPARAM_HARDLOCKUP_PANIC is not set # EVAL
+# CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC is not set # EVAL
+# CONFIG_PANIC_ON_SCHED_BUG is not set # EVAL
+# CONFIG_PANIC_ON_RT_THROTTLING is not set # EVAL
+# CONFIG_DEFAULT_HUNG_TASK_TIMEOUT=140
+# CONFIG_RCU_CPU_STALL_TIMEOUT=100
+
+# CONFIG_PAGE_POISONING is not set # spr (non-perf), "This results in a large slowdown, but helps to find certain types of memory corruption."
+# CONFIG_PAGE_POISONING_ENABLE_DEFAULT is not set
+
+# XZ/LZMA(2) data compression
+CONFIG_XZ_DEC=y
+CONFIG_XZ_DEC_BCJ=y # branch/call/jump filters
+
+# zstd
+# ...
+
+# SERIAL_MSM_CONSOLE
+CONFIG_SERIAL_MSM=y
+CONFIG_SERIAL_MSM_CONSOLE=y
+
+# lge-oreo, stock config; and other discoveries
+CONFIG_BT_BDA=y
+CONFIG_SPI_SLAVE=y # SPI slave protocol handlers
+
+# audio mods
+# headphone, mic, earpiece gain control
+CONFIG_SOUND_CONTROL=y
+# CONFIG_MSM_ULTRASOUND is not set
+
+# transparent hugepages | mutually exclusive with RT_FULL but perhaps beneficial for java/Android
+# CONFIG_TRANSPARENT_HUGEPAGE is not set
+
+# rt-kernel/rt-devel
+# CONFIG_INTERRUPT_OFF_HIST is not set
+# CONFIG_PREEMPT_OFF_HIST is not set
+# CONFIG_WAKEUP_LATENCY_HIST is not set
+# CONFIG_MISSED_TIMER_OFFSETS_HIST is not set
+# CONFIG_HWLAT_DETECTOR is not set
+# CONFIG_PREEMPT__LL is not set # former default
+# CONFIG_PREEMPT_RTB is not set
+# CONFIG_PREEMPT_RT_FULL is not set # when it's done
+
+# LGE_USB_SUPPORT_LIST_NETWORK
+CONFIG_USB_NET_DRIVERS=y # needed by LGE_USB_SUPPORT_LIST_NETWORK (USB_NET_DRIVERS && USB_NET_CDC_SUBSET) 
+CONFIG_USB_NET_CDC_SUBSET=y
+
+# tshoot for bringup, etc.
+CONFIG_USB_F_CDEV=y
+CONFIG_USB_CONFIGFS_F_CDEV=y
+
+# LGE_USB_SUPPORT_LIST_INPUT
+CONFIG_INPUT_MOUSE=y
+
+# tshoot security features
+# CONFIG_SEEMP_CORE is not set
+# TTBR0 PAN emulation
+# CONFIG_ARM64_SW_TTBR0_PAN is not set
