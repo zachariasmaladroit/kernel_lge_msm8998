@@ -6735,8 +6735,8 @@ select_energy_cpu_brute(struct task_struct *p, int prev_cpu, int sync)
 
 	target_cpu = prev_cpu;
 	if (next_cpu == prev_cpu) {
-		schedstat_inc(p, se.statistics.nr_wakeups_secb_count);
-		schedstat_inc(this_rq(), eas_stats.secb_count);
+		schedstat_inc(p->se.statistics.nr_wakeups_secb_count);
+		schedstat_inc(this_rq()->eas_stats.secb_count);
 		goto unlock;
 	}
 
@@ -6752,8 +6752,8 @@ select_energy_cpu_brute(struct task_struct *p, int prev_cpu, int sync)
 #endif
 	/* Not enough spare capacity on previous cpu */
 	if (__cpu_overutilized(prev_cpu, delta)) {
-		schedstat_inc(p, se.statistics.nr_wakeups_secb_insuff_cap);
-		schedstat_inc(this_rq(), eas_stats.secb_insuff_cap);
+		schedstat_inc(p->se.statistics.nr_wakeups_secb_insuff_cap);
+		schedstat_inc(this_rq()->eas_stats.secb_insuff_cap);
 		target_cpu = next_cpu;
 		goto unlock;
 	}
@@ -6773,11 +6773,11 @@ select_energy_cpu_brute(struct task_struct *p, int prev_cpu, int sync)
 
 	/* Check if eenv::next_cpu is a more energy efficient CPU */
 	if (eenv->next_cpu != eenv->prev_cpu) {
-		schedstat_inc(p, se.statistics.nr_wakeups_secb_nrg_sav);
-		schedstat_inc(this_rq(), eas_stats.secb_nrg_sav);
+		schedstat_inc(p->se.statistics.nr_wakeups_secb_nrg_sav);
+		schedstat_inc(this_rq()->eas_stats.secb_nrg_sav);
 	} else {
-		schedstat_inc(p, se.statistics.nr_wakeups_secb_no_nrg_sav);
-		schedstat_inc(this_rq(), eas_stats.secb_no_nrg_sav);
+		schedstat_inc(p->se.statistics.nr_wakeups_secb_no_nrg_sav);
+		schedstat_inc(this_rq()->eas_stats.secb_no_nrg_sav);
     }
     
 	target_cpu = eenv->next_cpu;
