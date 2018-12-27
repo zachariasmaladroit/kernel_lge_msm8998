@@ -112,6 +112,3 @@ all.config
 
 # Kdevelop4
 *.kdev4
-
-# msm ipa driver
-ipa_common
