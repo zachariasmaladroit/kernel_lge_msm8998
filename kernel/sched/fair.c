@@ -5541,7 +5541,7 @@ end:
  * The required scaling will be performed just one time, by the calling
  * functions, once we accumulated the contributons for all the SGs.
  */
-static void calc_sg_energy(struct energy_env *eenv, int cpu)
+static void calc_sg_energy(struct energy_env *eenv)
 {
 	struct sched_group *sg = eenv->sg;
 	int busy_energy, idle_energy;
@@ -5550,27 +5550,31 @@ static void calc_sg_energy(struct energy_env *eenv, int cpu)
 	unsigned long sg_util;
 	int cap_idx, idle_idx;
 	int total_energy = 0;
+	int cpu;
 
-	/* Compute ACTIVE energy */
-	cap_idx = find_new_capacity(eenv, cpu);
-	busy_power = sg->sge->cap_states[cap_idx].power;
-	/*
-	 * in order to calculate cpu_norm_util, we need to know which
-	 * capacity level the group will be at, so calculate that first
-	 */
-	sg_util = group_norm_util(eenv, cpu);
+	for_each_cpu(cpu, &eenv->cpus_mask) {
 
-	busy_energy   = sg_util * busy_power;
+		/* Compute ACTIVE energy */
+		cap_idx = find_new_capacity(eenv, cpu);
+		busy_power = sg->sge->cap_states[cap_idx].power;
+		/*
+		 * in order to calculate cpu_norm_util, we need to know which
+		 * capacity level the group will be at, so calculate that first
+		 */
+		sg_util = group_norm_util(eenv, cpu);
 
-	/* Compute IDLE energy */
-	idle_idx = group_idle_state(eenv, cpu);
-	idle_power = sg->sge->idle_states[idle_idx].power;
+		busy_energy   = sg_util * busy_power;
 
-	idle_energy   = SCHED_CAPACITY_SCALE - sg_util;
-	idle_energy  *= idle_power;
+		/* Compute IDLE energy */
+		idle_idx = group_idle_state(eenv, cpu);
+		idle_power = sg->sge->idle_states[idle_idx].power;
 
-	total_energy = busy_energy + idle_energy;
-	eenv->cpu[cpu].energy += total_energy;
+		idle_energy   = SCHED_CAPACITY_SCALE - sg_util;
+		idle_energy  *= idle_power;
+
+		total_energy = busy_energy + idle_energy;
+		eenv->cpu[cpu].energy += total_energy;
+	}
 }
 
 /*
@@ -5580,7 +5584,7 @@ static void calc_sg_energy(struct energy_env *eenv, int cpu)
  * NOTE: compute_energy() may fail when racing with sched_domain updates, in
  *       which case we abort by returning -EINVAL.
  */
-static int compute_energy(struct energy_env *eenv, int candidate)
+static int compute_energy(struct energy_env *eenv)
 {
 	struct cpumask visit_cpus;
 	int cpu_count;
@@ -5632,7 +5636,7 @@ static int compute_energy(struct energy_env *eenv, int candidate)
 				 * CPUs in the current visited SG.
 				 */
 				eenv->sg = sg;
-				calc_sg_energy(eenv, candidate);
+				calc_sg_energy(eenv);
 
 				/* remove CPUs we have just visited */
 				if (!sd->child) {
@@ -5707,22 +5711,20 @@ static inline int select_energy_cpu_idx(struct energy_env *eenv)
 		return -1;
 	}
 
-	for_each_cpu(cpu, &eenv->cpus_mask) {
-		sg = sd->groups;
-		do {
-			/* Skip SGs which do not contains a candidate CPU */
-			if (!cpumask_intersects(&eenv->cpus_mask, sched_group_cpus(sg)))
-				continue;
+	sg = sd->groups;
+	do {
+		/* Skip SGs which do not contains a candidate CPU */
+		if (!cpumask_intersects(&eenv->cpus_mask, sched_group_cpus(sg)))
+			continue;
 
-			eenv->sg_top = sg;
-			/* energy is unscaled to reduce rounding errors */
-			if (compute_energy(eenv, cpu) == -EINVAL) {
-				eenv->next_cpu = eenv->prev_cpu;
-				return -EINVAL;
-			}
+		eenv->sg_top = sg;
+		/* energy is unscaled to reduce rounding errors */
+		if (compute_energy(eenv) == -EINVAL) {
+			eenv->next_cpu = eenv->prev_cpu;
+			return -EINVAL;
+		}
 
-		} while (sg = sg->next, sg != sd->groups);
-	}
+	} while (sg = sg->next, sg != sd->groups);
 
 	/* Scale energy before comparisons */
 	for_each_cpu(cpu, &eenv->cpus_mask)
