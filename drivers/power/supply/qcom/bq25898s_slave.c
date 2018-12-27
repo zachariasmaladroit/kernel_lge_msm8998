@@ -746,8 +746,7 @@ void bq2589x_adapter_in_handler(void)
 	}
 	else if (vbat < 3500){
 		bq->prechg = true;
-		queue_delayed_work(system_power_efficient_wq,
-			&bq->monitor_work, MONITOR_WORK_TIME_SEC * HZ);
+		schedule_delayed_work(&bq->monitor_work, MONITOR_WORK_TIME_SEC * HZ);
 		return;
 	}
 	
@@ -773,8 +772,7 @@ void bq2589x_adapter_in_handler(void)
 		dev_err(bq->dev, "%s:Failed to enable watchdog timer:%d\n", __func__, ret);
 	}
 	dev_info(bq->dev, "%s: end\n", __func__);
-	queue_delayed_work(system_power_efficient_wq,
-			&bq->monitor_work, MONITOR_WORK_TIME_SEC * HZ);
+	schedule_delayed_work(&bq->monitor_work, MONITOR_WORK_TIME_SEC * HZ);
 }
 EXPORT_SYMBOL_GPL(bq2589x_adapter_in_handler);
 
@@ -825,21 +823,18 @@ static void bq2589x_monitor_workfunc(struct work_struct *work)
 
 		if (vbat_volt < 0){
 			dev_err(bq->dev, "Failed to read battery voltage");
-			queue_delayed_work(system_power_efficient_wq,
-					&bq->monitor_work, MONITOR_WORK_TIME_SEC * HZ);
+			schedule_delayed_work(&bq->monitor_work, MONITOR_WORK_TIME_SEC * HZ);
 			return;
 		}
 		else if (vbat_volt < 3500) {
-			queue_delayed_work(system_power_efficient_wq,
-						&bq->monitor_work, MONITOR_WORK_TIME_SEC * HZ);
+			schedule_delayed_work(&bq->monitor_work, MONITOR_WORK_TIME_SEC * HZ);
 			return;
 		}
 		else {
 			ret = bq2589x_enable_charger(bq);
 			if (ret < 0) {
 				dev_err(bq->dev, "%s:Failed to enable charging:%d\n", __func__, ret);
-				queue_delayed_work(system_power_efficient_wq,
-							&bq->monitor_work, MONITOR_WORK_TIME_SEC * HZ);
+				schedule_delayed_work(&bq->monitor_work, MONITOR_WORK_TIME_SEC * HZ);
 				return ;
 			}
 			else {
@@ -852,8 +847,7 @@ static void bq2589x_monitor_workfunc(struct work_struct *work)
 			}
 
 			bq->prechg = false;
-			queue_delayed_work(system_power_efficient_wq,
-						&bq->monitor_work, MONITOR_WORK_TIME_SEC * HZ);
+			schedule_delayed_work(&bq->monitor_work, MONITOR_WORK_TIME_SEC * HZ);
 			return;
 		}
 	}
@@ -871,7 +865,7 @@ static void bq2589x_monitor_workfunc(struct work_struct *work)
 	if (ret == 0 && (status & BQ25898S_IDPM_STAT_MASK))
 		dev_info(bq->dev, "%s:IINDPM occurred\n", __func__);
 
-	queue_delayed_work(system_power_efficient_wq, &bq->monitor_work, MONITOR_WORK_TIME_SEC * HZ);
+	schedule_delayed_work(&bq->monitor_work, MONITOR_WORK_TIME_SEC * HZ);
 	dev_info(bq->dev, "%s: end\n", __func__);
 }
 
