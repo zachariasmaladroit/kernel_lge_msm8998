@@ -5582,69 +5582,83 @@ static void calc_sg_energy(struct energy_env *eenv, int cpu)
  */
 static int compute_energy(struct energy_env *eenv, int candidate)
 {
+	struct cpumask visit_cpus;
 	int cpu_count;
-	int cpu;
-	struct sched_domain *sd;
 
 	WARN_ON(!eenv->sg_top->sge);
 
+	cpumask_copy(&visit_cpus, sched_group_cpus(eenv->sg_top));
 	/* If a cpu is hotplugged in while we are in this function,
+	 * it does not appear in the existing visit_cpus mask
 	 * which came from the sched_group pointer of the
 	 * sched_domain pointed at by sd_ea for either the prev
 	 * or next cpu and was dereferenced in __energy_diff.
-	 * Since we will dereference sd later as we iterate
+	 * Since we will dereference sd_scs later as we iterate
 	 * through the CPUs we expect to visit, new CPUs can
-	 * be present which are not in the eenv::sg_top mask.
+	 * be present which are not in the visit_cpus mask.
 	 * Guard this with cpu_count.
 	 */
-	cpu_count = cpumask_weight(sched_group_cpus(eenv->sg_top));
-	cpu = cpumask_first(sched_group_cpus(eenv->sg_top));
- 
+	cpu_count = cpumask_weight(&visit_cpus);
 
-	for_each_domain(cpu, sd) {
-		struct sched_group *sg = sd->groups;
- 
+	while (!cpumask_empty(&visit_cpus)) {
+		int cpu = cpumask_first(&visit_cpus);
+		struct sched_domain *sd;
 
-		do {
-			if (!cpumask_intersects(sched_group_cpus(eenv->sg_top),
-						sched_group_cpus(sg)))
-				continue;
- 
-			/*
-			 * Compute the energy for all the candidate
-			 * CPUs in the current visited SG.
-			 */
-			eenv->sg = sg;
-			calc_sg_energy(eenv, candidate);
+		for_each_domain(cpu, sd) {
+			struct sched_group *sg = sd->groups;
 
-			if (!sd->child) {
- 				/*
-    			 * cpu_count here is the number of cpus we
-				 * expect to visit in this calculation. If
-				 * we race against hotplug, we can have extra
-				 * cpus added to the groups we are iterating
-				 * which do not appear in the eenv::sg_top mask.
-				 * In that case we are not able to calculate
-				 * energy without restarting so we will bail
-				 * out and use prev_cpu this time.
- 				 */
-				if (!cpu_count)
-					return -EINVAL;
-				cpu_count--;
-			}
-		} while (sg = sg->next, sg != sd->groups);
- 	}
- 
-	/*
-	 * If we raced with hotplug and got an sd NULL-pointer;
-	 * returning a wrong energy estimation is better than
-	 * entering an infinite loop.
-	 * Specifically: If a cpu is unplugged after we took
-	 * the eenv::sg_top mask, it no longer has an sd pointer,
-	 * so when we dereference it, we get NULL.
-	 */
-	if (cpu_count)
-		return -EINVAL;
+			/* Has this sched_domain already been visited? */
+			if (sd->child && group_first_cpu(sg) != cpu)
+				break;
+
+			do {
+				/*
+				 * Compute the energy for all the candidate
+				 * CPUs in the current visited SG.
+				 */
+				eenv->sg = sg;
+				calc_sg_energy(eenv, candidate);
+
+				/* remove CPUs we have just visited */
+				if (!sd->child) {
+					/*
+					 * cpu_count here is the number of
+					 * cpus we expect to visit in this
+					 * calculation. If we race against
+					 * hotplug, we can have extra cpus
+					 * added to the groups we are
+					 * iterating which do not appear in
+					 * the visit_cpus mask. In that case
+					 * we are not able to calculate energy
+					 * without restarting so we will bail
+					 * out and use prev_cpu this time.
+					 */
+					if (!cpu_count)
+						return -EINVAL;
+					cpumask_xor(&visit_cpus, &visit_cpus, sched_group_cpus(sg));
+					cpu_count--;
+				}
+
+				if (cpumask_equal(sched_group_cpus(sg), sched_group_cpus(eenv->sg_top)))
+					goto next_cpu;
+
+			} while (sg = sg->next, sg != sd->groups);
+		}
+
+		/*
+		 * If we raced with hotplug and got an sd NULL-pointer;
+		 * returning a wrong energy estimation is better than
+		 * entering an infinite loop.
+		 * Specifically: If a cpu is unplugged after we took
+		 * the visit_cpus mask, it no longer has an sd_scs
+		 * pointer, so when we dereference it, we get NULL.
+		 */
+		if (cpumask_test_cpu(cpu, &visit_cpus))
+			return -EINVAL;
+next_cpu:
+		cpumask_clear_cpu(cpu, &visit_cpus);
+		continue;
+	}
 
 	return 0;
 }
