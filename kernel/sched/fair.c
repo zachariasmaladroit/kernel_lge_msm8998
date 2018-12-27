@@ -6548,11 +6548,8 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 				int idle_idx = idle_get_state_idx(cpu_rq(i));
 
 				/* Select idle CPU with lower cap_orig */
-				if (capacity_orig < best_idle_min_cap_orig)
-					goto found_best_idle_cpu;
-				else if (capacity_orig > best_idle_min_cap_orig)
+				if (capacity_orig > best_idle_min_cap_orig)
 					continue;
-
 				/* Favor CPUs that won't end up running at a
 				 * high OPP.
 				 */
@@ -6570,7 +6567,6 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 				    best_idle_cstate <= idle_idx)
 					continue;
 
-found_best_idle_cpu:
 				/* Keep track of best idle CPU */
 				best_idle_min_cap_orig = capacity_orig;
 				target_idle_max_spare_cap = capacity_orig -
