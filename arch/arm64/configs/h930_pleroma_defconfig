@@ -482,7 +482,7 @@ CONFIG_LGE_ADAPTIVE_READAHEAD=y
 CONFIG_SECCOMP=y
 # CONFIG_XEN is not set
 CONFIG_FORCE_MAX_ZONEORDER=11
-CONFIG_HARDEN_BRANCH_PREDICTOR=y
+
 CONFIG_ARMV8_DEPRECATED=y
 CONFIG_SWP_EMULATION=y
 CONFIG_CP15_BARRIER_EMULATION=y
@@ -5986,6 +5986,7 @@ CONFIG_SCHED_CHILD_RUNS_FIRST=y
 # CONFIG_SLUB_CPU_PARTIAL is not set # more indeterminism in the latency of the free , taking of locks that may cause latency spikes
 # CONFIG_VM_EVENT_COUNTERS is not set
 # CONFIG_CONFIG_AUDIT is not set # SELinux auditing overhead
+# CONFIG_HARDEN_BRANCH_PREDICTOR is not set # SPECTRE mitigation, incurs a HEAVY performance hit (esp. emulators)
 
 # crypto stuff
 CONFIG_CRYPTO_PCRYPT=y
