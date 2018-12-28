@@ -5765,6 +5765,10 @@ CONFIG_SDFAT_TEXFAT_WRAPPER=y
 # CONFIG_SDFAT_DBG_MSG is not set
 # CONFIG_SDFAT_STATISTICS is not set
 
+# BOOTCHART, scheduler (CPU), I/O load breakdown
+# CONFIG_SCHED_INFO is not set
+# CONFIG_SCHEDSTATS is not set # overhead # recommended =y for scheduler tweaking
+
 # core_ctl, pointless without hotplug
 # CONFIG_SCHED_CORE_CTL is not set
 
@@ -5840,6 +5844,7 @@ CONFIG_INET_DIAG_DESTROY=y
 # CONFIG_SND_SUPPORT_OLD_API is not set
 # CONFIG_SND_VERBOSE_PROCFS is not set
 # CONFIG_SND_DRIVERS is not set
+# CONFIG_MSM_BOOT_STATS is not set # default =y
 # CONFIG_SCHED_AUTOGROUP is not set # so it's obviously not necessarily to work on stock ROMs
 CONFIG_QCOM_RTB=y
 CONFIG_QCOM_RTB_SEPARATE_CPUS=y
@@ -5852,7 +5857,7 @@ CONFIG_QCOM_RTB_SEPARATE_CPUS=y
 # CONFIG_MSM_CORE_HANG_DETECT is not set
 # CONFIG_EDAC_SUPPORT is not set
 # CONFIG_EDAC is not set # missing dts/dtb entries, so NOP ?
-# CONFIG_EDAC_LEGACY_SYSFS is not set
+CONFIG_EDAC_LEGACY_SYSFS=y
 # CONFIG_EDAC_DEBUG is not set
 # CONFIG_EDAC_MM_EDAC is not set # (default =y)
 # CONFIG_EDAC_CORTEX_ARM64 is not set # (default =y)
@@ -5861,7 +5866,7 @@ CONFIG_QCOM_RTB_SEPARATE_CPUS=y
 # CONFIG_EDAC_CORTEX_ARM64_PANIC_ON_UE is not set # "Panic on uncorrectable errors",
 # For production builds, you should probably say 'N' here. This can reduce debugging times on hardware which may be
 #	   operating at voltages or frequencies outside normal specification.
-CONFIG_MPC_UT_FRAMEWORK=y # eval # qcacld-3.0 $(HDD_SRC_DIR)/wlan_hdd_conc_ut.o , # Enable Unit test framework for multiport concurrency
+# CONFIG_MPC_UT_FRAMEWORK is not set # qcacld-3.0 $(HDD_SRC_DIR)/wlan_hdd_conc_ut.o , # Enable Unit test framework for multiport concurrency
 CONFIG_QCOM_DCC=y # QCOM Data Capture and Compare enigne support
 # CONFIG_QCOM_CPUSS_DUMP is not set
 CONFIG_BLK_DEV_MD=y
@@ -5909,7 +5914,7 @@ CONFIG_MEDIA_SUBDRV_AUTOSELECT=y
 
 # disable debug, logs stuff
 CONFIG_LGE_PM_DEBUG=y
-CONFIG_IPC_LOGGING=y # we shouldn't need this (forcing us into being a DEBUG kernel)
+# CONFIG_IPC_LOGGING is not set # we shouldn't need this (forcing us into being a DEBUG kernel)
 CONFIG_DEBUG_BUGVERBOSE=y # we REALLY need this
 # CONFIG_MSM_SDE_ROTATOR_EVTLOG_DEBUG is not set
 # CONFIG_FB_MSM_MDSS_XLOG_DEBUG is not set
@@ -5924,11 +5929,11 @@ CONFIG_MSM_RPM_LOG=y
 CONFIG_MSM_RPM_STATS_LOG=y # needed for power-libperfmgr / permgr
 # CONFIG_MSM_TZ_LOG is not set
 CONFIG_TRACER_PKT=y
-# CONFIG_QCOM_REMOTEQDSS is not set # default =m Allow debug tools to enable events on other processors
+# CONFIG_QCOM_REMOTEQDSS is not set # Allow debug tools to enable events on other processors
 # CONFIG_QCOM_COMMON_LOG is not set # default (=n)
-CONFIG_QCOM_MEMORY_DUMP_V2=y
-CONFIG_USB_DWC3_DEBUG_FS=y
-CONFIG_MSM_SMEM_LOGGING=y
+# CONFIG_QCOM_MEMORY_DUMP_V2 is not set
+# CONFIG_USB_DWC3_DEBUG_FS is not set
+# CONFIG_MSM_SMEM_LOGGING is not set
 
 # disable for debug, security, attack surface
 # CONFIG_MSM_RDBG is not set # remote debugger driver (=m by default)
@@ -5937,7 +5942,7 @@ CONFIG_MSM_SMEM_LOGGING=y
 # disable debug/strip/shrink kernel
 CONFIG_KALLSYMS_ALL=y # needed on Stock for successful booting
 CONFIG_DEBUG_INFO_REDUCED=y # deps ?
-# CONFIG_STRIP_ASM_SYMS is not set # eval
+CONFIG_STRIP_ASM_SYMS=y # eval
 
 # profiling, tracing
 # ...
@@ -5948,9 +5953,9 @@ CONFIG_DEBUG_INFO_REDUCED=y # deps ?
 CONFIG_TICK_ONESHOT=y
 CONFIG_NO_HZ_COMMON=y
 # CONFIG_HZ_PERIODIC is not set
-CONFIG_NO_HZ_IDLE=y
-# CONFIG_NO_HZ_FULL is not set # booting ? needs changes ?
-# CONFIG_NO_HZ_FULL_ALL is not set
+# CONFIG_NO_HZ_IDLE is not set
+CONFIG_NO_HZ_FULL=y
+CONFIG_NO_HZ_FULL_ALL=y
 CONFIG_NO_HZ=y
 CONFIG_HIGH_RES_TIMERS=y
 
