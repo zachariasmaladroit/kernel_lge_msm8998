@@ -6043,7 +6043,7 @@ CONFIG_RSEQ=y
 CONFIG_AIO=y
 
 # network filesystems - NFS, CIFS - enable if needed - security (!)
-CONFIG_NETWORK_FILESYSTEMS=y # tshoot
+# CONFIG_NETWORK_FILESYSTEMS is not set # tshoot
 
 # IP tunnel stuff
 CONFIG_NET_IP_TUNNEL=y
