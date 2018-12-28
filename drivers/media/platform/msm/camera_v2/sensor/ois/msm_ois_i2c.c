@@ -152,8 +152,19 @@ int32_t load_bin(uint8_t *ois_bin, uint32_t filesize, char *filename)
 	fd1 = sys_open(fs_name_buf1, O_RDONLY, 0);
 	if (fd1 < 0) {
 		printk("%s: File not exist (filename: %s)\n",__func__, fs_name_buf1);
-		rc = OIS_INIT_LOAD_BIN_ERROR;
-		goto END;
+		printk("%s: Trying with /vendor/firmware/ ...\n",__func__);
+
+		memset(fs_name_buf1, 0x00, sizeof(fs_name_buf1));
+		sprintf(fs_name_buf1, "/vendor/firmware/%s", filename);
+
+		fd1 = sys_open(fs_name_buf1, O_RDONLY, 0);
+		if (fd1 < 0) {
+			printk("%s: File not exist (filename: %s)\n",__func__, fs_name_buf1);
+			printk("%s: Failed all of file paths!\n",__func__);
+
+			rc = OIS_INIT_LOAD_BIN_ERROR;
+			goto END;
+		}
 	}
 
 	if ((unsigned)sys_lseek(fd1, (off_t)0, 2) != filesize) {
