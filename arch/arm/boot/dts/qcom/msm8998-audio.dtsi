@@ -32,6 +32,7 @@
 	};
 
 	snd_9335: sound-9335 {
+		status = "disabled";
 		compatible = "qcom,msm8998-asoc-snd-tasha";
 		qcom,model = "msm8998-tasha-snd-card";
 		qcom,ext-disp-audio-rx;
