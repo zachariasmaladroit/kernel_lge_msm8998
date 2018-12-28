@@ -461,10 +461,6 @@ CONFIG_LGE_ADAPTIVE_READAHEAD=y
 CONFIG_SECCOMP=y
 # CONFIG_XEN is not set
 CONFIG_FORCE_MAX_ZONEORDER=11
-CONFIG_ARMV8_DEPRECATED=y
-CONFIG_SWP_EMULATION=y
-CONFIG_CP15_BARRIER_EMULATION=y
-CONFIG_SETEND_EMULATION=y
 
 #
 # ARMv8.1 architectural features
@@ -5654,6 +5650,10 @@ CONFIG_WLAN_FEATURE_FILS=y
 
 # keep legacy emulation, compatibility w.r.t. ARMv8
 # disabling breaks WeChat (crash on startup) and others ...
+# CONFIG_ARMV8_DEPRECATED is not set
+CONFIG_SWP_EMULATION=y
+CONFIG_CP15_BARRIER_EMULATION=y
+CONFIG_SETEND_EMULATION=y
 
 # Wakelock Blocker
 # needs to be set up, doesn't block anything by default
