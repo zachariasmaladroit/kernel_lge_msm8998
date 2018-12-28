@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/arm64 4.4.169_jolla_kernel_joan_v2.2 Kernel Configuration
+# Linux/arm64 4.4.169_jolla_kernel_joan_v2.3 Kernel Configuration
 #
 CONFIG_ARM64=y
 CONFIG_64BIT=y
