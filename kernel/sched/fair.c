@@ -2614,6 +2614,12 @@ int sched_set_wake_up_idle(struct task_struct *p, int wake_up_idle)
 }
 EXPORT_SYMBOL(sched_set_wake_up_idle);
 
+int core_ctl_set_boost(bool boost)
+{
+	return 0;
+}
+EXPORT_SYMBOL(core_ctl_set_boost);
+
 #ifdef CONFIG_SMP
 /* Precomputed fixed inverse multiplies for multiplication by y^n */
 static const u32 runnable_avg_yN_inv[] = {
