@@ -20,6 +20,9 @@ static const int bypass_purgatory = 1;
 
 #include <asm/cacheflush.h>
 #include <asm/system_misc.h>
+#ifdef CONFIG_KEXEC_HARDBOOT
+#include <asm/io.h>
+#endif
 
 /* Global variables for the relocate_kernel routine. */
 extern const unsigned char relocate_new_kernel[];
