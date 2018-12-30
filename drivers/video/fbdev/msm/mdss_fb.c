@@ -95,6 +95,9 @@
  */
 #define MDP_TIME_PERIOD_CALC_FPS_US	1000000
 
+static unsigned int cpu_input_boost_mdss_timeout = CONFIG_CPU_INPUT_BOOST_MDSS_TIMEOUT;
+module_param(cpu_input_boost_mdss_timeout, uint, 0644);
+
 static struct fb_info *fbi_list[MAX_FBI_LIST];
 static int fbi_list_index;
 
@@ -5357,7 +5360,7 @@ int mdss_fb_do_ioctl(struct fb_info *info, unsigned int cmd,
 	case MSMFB_ATOMIC_COMMIT:
 #ifdef CONFIG_CPU_INPUT_BOOST
 	if (!is_vidc_open()) {
-		if (time_before(jiffies, last_input_time + msecs_to_jiffies(5000))) {
+		if (cpu_input_boost_within_timeout(cpu_input_boost_mdss_timeout)) {
 			cpu_input_boost_kick_general(64);
 		}
 	}
