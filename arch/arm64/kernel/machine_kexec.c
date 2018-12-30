@@ -171,6 +171,7 @@ void machine_kexec_cleanup(struct kimage *image)
  */
 int machine_kexec_prepare(struct kimage *image)
 {
+	unsigned long *hardboot_page;
 	kexec_image_info(image);
 	fill_bypass(image);
 	if (bypass_purgatory) {
@@ -183,6 +184,10 @@ int machine_kexec_prepare(struct kimage *image)
 #ifdef CONFIG_KEXEC_HARDBOOT
 	arm64_kexec_hardboot = image->hardboot;
 #endif
+	// debug; please remove
+	hardboot_page = ioremap(KEXEC_HB_PAGE_ADDR, SZ_1M);
+	pr_info("Last hardboot status: %lx\n", hardboot_page[0]);
+	iounmap(hardboot_page);
 
 	return 0;
 }
