@@ -28,12 +28,6 @@
 
 #define KEXEC_ARCH KEXEC_ARCH_ARM64
 
-#ifdef CONFIG_KEXEC_HARDBOOT
-#define KEXEC_HB_PAGE_MAGIC 0x4a5db007
-// Hardboot: for V30 (joan). Address reserved in device tree.
-#define KEXEC_HB_PAGE_ADDR UL(0xAFF00000)
-#endif
-
 #if !defined(__ASSEMBLY__)
 
 /**
@@ -48,10 +42,6 @@ static inline void crash_setup_regs(struct pt_regs *newregs,
 {
 	/* Empty routine needed to avoid build errors. */
 }
-
-#ifdef CONFIG_KEXEC_HARDBOOT
-extern void (*kexec_hardboot_hook)(void);
-#endif
 
 #endif /* !defined(__ASSEMBLY__) */
 

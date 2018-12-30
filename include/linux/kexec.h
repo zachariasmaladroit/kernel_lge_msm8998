@@ -157,10 +157,6 @@ struct kimage {
 	/* If set, we are using file mode kexec syscall */
 	unsigned int file_mode:1;
 
-#ifdef CONFIG_KEXEC_HARDBOOT
-	unsigned int hardboot : 1;
-#endif
-
 #ifdef ARCH_HAS_KIMAGE_ARCH
 	struct kimage_arch arch;
 #endif
@@ -283,14 +279,10 @@ extern int kexec_load_disabled;
 #endif
 
 /* List of defined/legal kexec flags */
-#if defined(CONFIG_KEXEC_JUMP) && defined(CONFIG_KEXEC_HARDBOOT)
-#define KEXEC_FLAGS    (KEXEC_ON_CRASH | KEXEC_PRESERVE_CONTEXT | KEXEC_HARDBOOT)
-#elif defined(CONFIG_KEXEC_JUMP)
-#define KEXEC_FLAGS    (KEXEC_ON_CRASH | KEXEC_PRESERVE_CONTEXT)
-#elif defined(CONFIG_KEXEC_HARDBOOT)
-#define KEXEC_FLAGS    (KEXEC_ON_CRASH | KEXEC_HARDBOOT)
+#ifndef CONFIG_KEXEC_JUMP
+#define KEXEC_FLAGS    KEXEC_ON_CRASH
 #else
-#define KEXEC_FLAGS    (KEXEC_ON_CRASH)
+#define KEXEC_FLAGS    (KEXEC_ON_CRASH | KEXEC_PRESERVE_CONTEXT)
 #endif
 
 /* List of defined/legal kexec file flags */
