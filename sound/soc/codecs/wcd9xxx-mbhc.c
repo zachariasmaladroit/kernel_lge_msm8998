@@ -1325,7 +1325,7 @@ static void wcd9xxx_recalibrate(struct wcd9xxx_mbhc *mbhc,
 			wcd9xxx_mbhc_calc_thres(mbhc);
 			wcd9xxx_calibrate_hs_polling(mbhc);
 		} else {
-			pr_warn("%s: failed get new dce_z/sta_z 0x%x/0x%x\n",
+			pr_debug("%s: failed get new dce_z/sta_z 0x%x/0x%x\n",
 				__func__, dce_z, sta_z);
 		}
 
@@ -3452,7 +3452,7 @@ static irqreturn_t wcd9xxx_mech_plug_detect_irq(int irq, void *data)
 
 	pr_debug("%s: enter\n", __func__);
 	if (unlikely(wcd9xxx_lock_sleep(mbhc->resmgr->core_res) == false)) {
-		pr_warn("%s: failed to hold suspend\n", __func__);
+		pr_debug("%s: failed to hold suspend\n", __func__);
 		r = IRQ_NONE;
 	} else {
 		/* Call handler */
@@ -3696,7 +3696,7 @@ irqreturn_t wcd9xxx_dce_handler(int irq, void *data)
 	mbhc->mbhc_state = MBHC_STATE_POTENTIAL;
 
 	if (!mbhc->polling_active) {
-		pr_warn("%s: mbhc polling is not active, skip button press\n",
+		pr_debug("%s: mbhc polling is not active, skip button press\n",
 			__func__);
 		goto done;
 	}
