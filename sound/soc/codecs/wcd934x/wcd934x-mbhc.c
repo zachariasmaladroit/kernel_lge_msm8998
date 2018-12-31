@@ -365,18 +365,18 @@ static int tavil_mbhc_request_micbias(struct snd_soc_codec *codec,
 {
 	int ret;
 #ifdef CONFIG_MACH_LGE
-	pr_info("[LGE MBHC] enter en_status=%d, pullup_status=%d, req=%d \n", micb_ena_status, micb_pullup_status, req);
+	pr_debug("[LGE MBHC] enter en_status=%d, pullup_status=%d, req=%d \n", micb_ena_status, micb_pullup_status, req);
 	if((req == MICB_ENABLE) || (req == MICB_DISABLE)) {
 		if(micb_ena_status == req)
 		{
-			pr_info("[LGE MBHC] micb ena count=%d, req=%d is already applied \n", micb_ena_status, req);
+			pr_debug("[LGE MBHC] micb ena count=%d, req=%d is already applied \n", micb_ena_status, req);
 			return 0;
 		}
 	}
 	if((req == MICB_PULLUP_ENABLE) || (req == MICB_PULLUP_DISABLE)) {
 		if(micb_pullup_status == req)
 		{
-			pr_info("[LGE MBHC] pullup count=%d, req=%d is already applied \n", micb_pullup_status, req);
+			pr_debug("[LGE MBHC] pullup count=%d, req=%d is already applied \n", micb_pullup_status, req);
 			return 0;
 		}
 	}
@@ -401,7 +401,7 @@ static int tavil_mbhc_request_micbias(struct snd_soc_codec *codec,
 		micb_ena_status = req;//2, 3
 	else if((req == MICB_PULLUP_ENABLE) || (req == MICB_PULLUP_DISABLE))
 		micb_pullup_status = req;//0, 1
-	pr_info("[LGE MBHC] exit en_status=%d, pullup_status=%d \n", micb_ena_status, micb_pullup_status);
+	pr_debug("[LGE MBHC] exit en_status=%d, pullup_status=%d \n", micb_ena_status, micb_pullup_status);
 #endif
 	return ret;
 }
