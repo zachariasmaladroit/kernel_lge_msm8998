@@ -415,15 +415,9 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fsplit-paths \
 		   -flive-range-shrinkage -ftree-vrp \
 		   -fipa-cp -fipa-cp-clone -fipa-bit-cp -fipa-vrp -fipa-icf \
-		   -fipa-ra -fipa-sra \
 		   -floop-unroll-and-jam -floop-interchange -ftree-loop-distribution \
 		   -ftree-loop-distribute-patterns \
 		   -freorder-blocks -freorder-blocks-and-partition \
-		   -fdevirtualize -fdevirtualize-speculatively -flra-remat \
-		   -fshrink-wrap -fshrink-wrap-separate \
-		   -fno-schedule-insns \
-		   -fpredictive-commoning \
-		   -ftree-loop-im -funswitch-loops \
 		   -march=armv8-a+crc+crypto -mtune=cortex-a73 \
 		   -std=gnu89 $(call cc-option,-fno-PIE)
 
