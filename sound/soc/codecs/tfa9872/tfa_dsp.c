@@ -396,7 +396,7 @@ static void tfa_set_query_info (int dev_idx)
 	/* TODO use the getfeatures() for retrieving the features [artf103523]
 	handles_local[dev_idx].support_drc = SUPPORT_NOT_SET;*/
 
-	pr_info("%s: device type (0x%02x)\n", __func__, handles_local[dev_idx].rev);
+	pr_debug("%s: device type (0x%02x)\n", __func__, handles_local[dev_idx].rev);
 	switch (handles_local[dev_idx].rev & 0xff) {
 	case 0x72:
 		/* tfa9872 */
@@ -484,7 +484,7 @@ enum tfa98xx_error tfa_buffer_pool(int index, int size, int control)
 					handles_local[dev].buf_pool[index].in_use = 1;
 					return TFA98XX_ERROR_FAIL;
 				}
-				pr_info("%s: dev %d - buffer_pool[%d] - kmalloc allocated %d bytes\n", __func__, dev, index, size);
+				pr_debug("%s: dev %d - buffer_pool[%d] - kmalloc allocated %d bytes\n", __func__, dev, index, size);
 				handles_local[dev].buf_pool[index].size = size;
 				handles_local[dev].buf_pool[index].in_use = 0;
 			}
@@ -494,7 +494,7 @@ enum tfa98xx_error tfa_buffer_pool(int index, int size, int control)
 			for (dev = 0; dev < devcount; dev++) {
 				if (handles_local[dev].buf_pool[index].pool != NULL)
 					kfree(handles_local[dev].buf_pool[index].pool);
-				pr_info("%s: dev %d - buffer_pool[%d] - kfree\n", __func__, dev, index);
+				pr_debug("%s: dev %d - buffer_pool[%d] - kfree\n", __func__, dev, index);
 				handles_local[dev].buf_pool[index].pool = NULL;
 				handles_local[dev].buf_pool[index].size = 0;
 				handles_local[dev].buf_pool[index].in_use = 0;
@@ -502,7 +502,7 @@ enum tfa98xx_error tfa_buffer_pool(int index, int size, int control)
 			break;
 
 		default:
-			pr_info("%s: wrong control\n", __func__);
+			pr_debug("%s: wrong control\n", __func__);
 			break;
 	}
 
@@ -526,12 +526,12 @@ int tfa98xx_buffer_pool_access(tfa98xx_handle_t handle, int r_index, size_t g_si
 				return index;
 			}
 
-			pr_info("%s: dev %d - failed to get buffer_pool\n", __func__, handle);
+			pr_debug("%s: dev %d - failed to get buffer_pool\n", __func__, handle);
 			break;
 
 		case POOL_RETURN: // return
 			if (handles_local[handle].buf_pool[r_index].in_use == 0) {
-				pr_info("%s: dev %d - buffer_pool[%d] is not in use\n", __func__, handle, r_index);
+				pr_debug("%s: dev %d - buffer_pool[%d] is not in use\n", __func__, handle, r_index);
 				break;
 			}
 
@@ -543,7 +543,7 @@ int tfa98xx_buffer_pool_access(tfa98xx_handle_t handle, int r_index, size_t g_si
 			break;
 
 		default:
-			pr_info("%s: wrong control\n", __func__);
+			pr_debug("%s: wrong control\n", __func__);
 			break;
 	}
 
@@ -693,7 +693,7 @@ tfa_probe(unsigned char slave_address, tfa98xx_handle_t *p_handle)
 #endif
 		break;
 	default:
-		pr_info("Unknown slave adress! \n");
+		pr_debug("Unknown slave adress! \n");
 		/* wrong slave address */
 		error = TFA98XX_ERROR_BAD_PARAMETER;
 	}
@@ -896,7 +896,7 @@ enum tfa98xx_error tfa98xx_set_saam_use_case(int samstream)
 {
 	int dev, devcount = tfa98xx_cnt_max_device();
 
-	pr_info("%s: set saam_use_case=%d\n", __func__, samstream);
+	pr_debug("%s: set saam_use_case=%d\n", __func__, samstream);
 
 	if ( devcount < 1 ) {
 		pr_err("No or wrong container file loaded\n");
@@ -1071,7 +1071,7 @@ void tfa98xx_apply_deferred_calibration(tfa98xx_handle_t handle)
 		err = tfa_calibrate(handle);
 		controls->calib.wr_value = true;
 		if(err) {
-			pr_info("Deferred calibration failed: %d\n", err);
+			pr_debug("Deferred calibration failed: %d\n", err);
 		} else {
 			pr_debug("Deferred calibration ok\n");
 			controls->calib.triggered = false;
@@ -1289,7 +1289,7 @@ enum tfa98xx_error tfa98xx_set_mtp(tfa98xx_handle_t handle, uint16_t value,
 
 	if ( mtp_old == mtp_new) /* no change */ {
 		if (tfa98xx_runtime_verbose)
-			pr_info("No change in MTP. Value not written! \n");
+			pr_debug("No change in MTP. Value not written! \n");
 		return TFA98XX_ERROR_OK;
 	}
 	tfa98xx_key2(handle , 0); /* unlock */
@@ -1930,7 +1930,7 @@ enum tfa98xx_error dsp_msg_raw(tfa98xx_handle_t handle, int length, const char *
 	if (handles_local[handle].saam_use_case == 1
 		|| (handles_local[handle].stream_state & BIT_PSTREAM) == 0)
 	{
-		pr_info("%s: skip dsp_msg in SaaM (RaM / SaM only)\n", __func__);
+		pr_debug("%s: skip dsp_msg in SaaM (RaM / SaM only)\n", __func__);
 		return error;
 	}
 
@@ -2047,7 +2047,7 @@ enum tfa98xx_error dsp_msg_raw(tfa98xx_handle_t handle, int length, const char *
 						{
 							error = (*handles_local[handle].dev_ops.dsp_msg)(handle, packet_size + 4, (const char *)apr_buff);
 						} else {
-							pr_info("%s: skip dsp_msg when pstream is not active\n", __func__);
+							pr_debug("%s: skip dsp_msg when pstream is not active\n", __func__);
 						}
 						tfadsp_buf_offset += packet_size;
 						remaining_blob_size -= packet_size;
@@ -2100,7 +2100,7 @@ enum tfa98xx_error dsp_msg_raw(tfa98xx_handle_t handle, int length, const char *
 						{
 							error = (*handles_local[handle].dev_ops.dsp_msg)(handle, packet_size + 4, (const char *)apr_buff_last);
 						} else {
-							pr_info("%s: skip dsp_msg when pstream is not active\n", __func__);
+							pr_debug("%s: skip dsp_msg when pstream is not active\n", __func__);
 						}
 						tfadsp_buf_offset += packet_size;
 						remaining_blob_size = 0 ;
@@ -2123,7 +2123,7 @@ enum tfa98xx_error dsp_msg_raw(tfa98xx_handle_t handle, int length, const char *
 					{
 						error = (*handles_local[handle].dev_ops.dsp_msg)(handle, tfadsp_buf_size, (const char *)tfadsp_buf);
 					} else {
-						pr_info("%s: skip dsp_msg when pstream is not active\n", __func__);
+						pr_debug("%s: skip dsp_msg when pstream is not active\n", __func__);
 					}
 #endif //TFADSP_DSP_MSG_APR_PACKET_STRATEGY
 
@@ -2146,7 +2146,7 @@ enum tfa98xx_error dsp_msg_raw(tfa98xx_handle_t handle, int length, const char *
 			{
 				error = (*handles_local[handle].dev_ops.dsp_msg)(handle, tfadsp_buf_size, tfadsp_buf);
 			} else {
-				pr_info("%s: skip dsp_msg when pstream is not active\n", __func__);
+				pr_debug("%s: skip dsp_msg when pstream is not active\n", __func__);
 			}
 		}
 	} else {
@@ -2154,7 +2154,7 @@ enum tfa98xx_error dsp_msg_raw(tfa98xx_handle_t handle, int length, const char *
 		{
 			error = tfa_dsp_msg(handle, tfadsp_buf_size, tfadsp_buf); /* Use default */
 		} else {
-			pr_info("%s: skip dsp_msg when pstream is not active\n", __func__);
+			pr_debug("%s: skip dsp_msg when pstream is not active\n", __func__);
 		}
 	}
 #else // (TFADSP_DSP_MSG_BUFFERING)
@@ -2168,7 +2168,7 @@ enum tfa98xx_error dsp_msg_raw(tfa98xx_handle_t handle, int length, const char *
 			error = tfa_dsp_msg(handle, tfadsp_buf_size, tfadsp_buf); /* Use default */
 		}
 	} else {
-		pr_info("%s: skip dsp_msg when pstream is not active\n", __func__);
+		pr_debug("%s: skip dsp_msg when pstream is not active\n", __func__);
 	}
 #endif // (TFADSP_DSP_MSG_BUFFERING)
 
@@ -2195,7 +2195,7 @@ enum tfa98xx_error dsp_msg_raw(tfa98xx_handle_t handle, int length, const char *
 		/* Get actual error code from softDSP */
 		error = (enum tfa98xx_error)
 			(error + TFA98XX_ERROR_BUFFER_RPC_BASE);
-		pr_info("%s: (rpc base %d) error = %d\n",
+		pr_debug("%s: (rpc base %d) error = %d\n",
 			__func__, TFA98XX_ERROR_BUFFER_RPC_BASE, error);
 	}
 #endif // (TFADSP_DEBUG)
@@ -2291,7 +2291,7 @@ enum tfa98xx_error dsp_msg_read(tfa98xx_handle_t handle, int length, unsigned ch
 
 	if (handles_local[handle].saam_use_case == 1)
 	{
-		pr_info("%s: skip dsp_msg_read in SaaM (RaM / SaM only)\n", __func__);
+		pr_debug("%s: skip dsp_msg_read in SaaM (RaM / SaM only)\n", __func__);
 		return error;
 	}
 
@@ -2342,7 +2342,7 @@ enum tfa98xx_error dsp_msg_read(tfa98xx_handle_t handle, int length, unsigned ch
 				/* Get actual error code from softDSP */
 				error = (enum tfa98xx_error)
 					(error + TFA98XX_ERROR_BUFFER_RPC_BASE);
-				pr_info("%s: (rpc base %d) error = %d\n",
+				pr_debug("%s: (rpc base %d) error = %d\n",
 					__func__, TFA98XX_ERROR_BUFFER_RPC_BASE, error);
 			}
 		} else {
@@ -3395,7 +3395,7 @@ enum tfa98xx_error tfa_run_speaker_boost(tfa98xx_handle_t handle, int force, int
 		handles_local[handle].is_cold = value;
 	}
 
-	pr_info("%s: %s boot, ext_dsp = %d, profile = %d\n",
+	pr_debug("%s: %s boot, ext_dsp = %d, profile = %d\n",
 		__func__, value ? "cold" : "warm",
 		handles_local[handle].ext_dsp, profile);
 
@@ -3411,10 +3411,10 @@ enum tfa98xx_error tfa_run_speaker_boost(tfa98xx_handle_t handle, int force, int
 	/* cold start and not tap profile */
 	if ((value == 1) && (!istap_prof)) {
 		/* Run startup and write all files */
-		pr_info("%s: cold start, speaker startup\n", __func__);
+		pr_debug("%s: cold start, speaker startup\n", __func__);
 		err = tfa_run_speaker_startup(handle, force, profile);
 		if (err) {
-			pr_info("%s: speaker startup error = %d\n",
+			pr_debug("%s: speaker startup error = %d\n",
 				__func__, err);
 			return err;
 		}
@@ -3441,7 +3441,7 @@ enum tfa98xx_error tfa_run_speaker_boost(tfa98xx_handle_t handle, int force, int
 			/* always send the SetRe25 message to indicate all messages are send */
 			err = tfa_set_calibration_values(handle);
 			if (err)
-				pr_info("%s: set calibration values error = %d\n",
+				pr_debug("%s: set calibration values error = %d\n",
 					__func__, err);
 		}
 
@@ -3474,7 +3474,7 @@ enum tfa98xx_error tfa_run_speaker_startup(tfa98xx_handle_t handle, int force, i
 		err = tfa_run_startup(handle, profile);
 		PRINT_ASSERT(err);
 		if (err) {
-			pr_info("%s: tfa_run_startup error = %d\n",
+			pr_debug("%s: tfa_run_startup error = %d\n",
 				__func__, err);
 			return err;
 		}
@@ -3497,7 +3497,7 @@ enum tfa98xx_error tfa_run_speaker_startup(tfa98xx_handle_t handle, int force, i
 
 #if defined(TFADSP_DSP_MSG_BUFFERING)
 	/*dsp msg buffering on*/
-	pr_info("%s: start the dsp msg buffering\n", __func__);
+	pr_debug("%s: start the dsp msg buffering\n", __func__);
 	tfa98xx_dsp_msg_buffering_on = true;
 	/*dsp buffering state: count size*/
 	tfa98xx_dsp_msg_buffering_state = TFADSP_MSG_BUFFERING_STATE_COUNT_SIZE;
@@ -3508,10 +3508,10 @@ enum tfa98xx_error tfa_run_speaker_startup(tfa98xx_handle_t handle, int force, i
 		if (i == 1) {
 			/*first 4 bytes: num of packets*/
 			tfa98xx_dsp_msg_buffering_total_size += 4;
-			pr_info("%s: total size to send = %d bytes\n", __func__, tfa98xx_dsp_msg_buffering_total_size);
+			pr_debug("%s: total size to send = %d bytes\n", __func__, tfa98xx_dsp_msg_buffering_total_size);
 
 			/*get buffer for dsp msg buffering*/
-			pr_info("%s: kmalloc size(%d)\n", __func__, tfa98xx_dsp_msg_buffering_total_size);
+			pr_debug("%s: kmalloc size(%d)\n", __func__, tfa98xx_dsp_msg_buffering_total_size);
 #if defined(TFADSP_DSP_BUFFER_POOL)
 			tfa98xx_dsp_msg_buffer_p_index
 				= tfa98xx_buffer_pool_access(handle, -1, tfa98xx_dsp_msg_buffering_total_size, POOL_GET);
@@ -3533,7 +3533,7 @@ enum tfa98xx_error tfa_run_speaker_startup(tfa98xx_handle_t handle, int force, i
 #else
 			tfa98xx_dsp_msg_buffer = kmalloc(tfa98xx_dsp_msg_buffering_total_size, GFP_KERNEL);
 			if (tfa98xx_dsp_msg_buffer == NULL) {
-				pr_info(
+				pr_debug(
 					"%s: kmalloc tfa98xx_dsp_msg_buffer = NULL error, size(%d)\n",
 					__func__,
 					tfa98xx_dsp_msg_buffering_total_size);
@@ -3592,15 +3592,15 @@ enum tfa98xx_error tfa_run_speaker_startup(tfa98xx_handle_t handle, int force, i
 	/*send the dsp msgs*/
 	err = dsp_msg(handle, tfa98xx_dsp_msg_buffer_size_to_send, tfa98xx_dsp_msg_buffer);
 	if (err == TFA98XX_ERROR_OK)
-		pr_info("%s: dsp_msg_raw OK (%d bytes sent)\n",
+		pr_debug("%s: dsp_msg_raw OK (%d bytes sent)\n",
 			__func__, tfa98xx_dsp_msg_buffer_size_to_send);
 	else
-		pr_info("%s: dsp_msg_raw error = %d (%d bytes not sent)\n",
+		pr_debug("%s: dsp_msg_raw error = %d (%d bytes not sent)\n",
 			__func__, err, tfa98xx_dsp_msg_buffer_size_to_send);
 
 TFADSP_ERROR_MEM_FREE:
 	/*stop dsp msg buffering*/
-	pr_info("%s: stop the dsp msg buffering\n", __func__);
+	pr_debug("%s: stop the dsp msg buffering\n", __func__);
 	tfa98xx_dsp_msg_buffering_on = false;
 
 	/*free dsp msg buffer*/
@@ -3733,7 +3733,7 @@ enum tfa98xx_error tfa_set_calibration_values(tfa98xx_handle_t handle)
 
 	// print out readback for debugging
 	if (TFA_GET_BF(handle, MTPEX) == 1) {
-		pr_info("%s: calibration data: %d\n", __func__, value);
+		pr_debug("%s: calibration data: %d\n", __func__, value);
 	}
 
 	return err;
@@ -4052,7 +4052,7 @@ enum tfa_error tfa_start(int next_profile, int *vstep)
 	pr_debug("%s: tfa98xx_log_subrevision=0x%x, ", __func__, tfa98xx_log_subrevision);
 	pr_debug("%s: tfa98xx_log_i2c_devicenum=/dev/i2c-%d, ", __func__, tfa98xx_log_i2c_devicenum);
 	pr_debug("%s: tfa98xx_log_i2c_slaveaddress=0x%x, ", __func__, tfa98xx_log_i2c_slaveaddress);
-	pr_info("%s: tfa98xx_log_start_cnt=%d next_profile %d\n", __func__, tfa98xx_log_start_cnt, next_profile);
+	pr_debug("%s: tfa98xx_log_start_cnt=%d next_profile %d\n", __func__, tfa98xx_log_start_cnt, next_profile);
 
 	if ( devcount < 1 ) {
 		pr_err("No or wrong container file loaded\n");
@@ -4070,7 +4070,7 @@ enum tfa_error tfa_start(int next_profile, int *vstep)
 			cal_prof_idx = tfa_cont_get_cal_profile(dev);
 
 			if (cal_prof_idx >= 0) {
-				pr_info("%s: set profile for calibration cal_prof_idx %d\n", __func__, cal_prof_idx);
+				pr_debug("%s: set profile for calibration cal_prof_idx %d\n", __func__, cal_prof_idx);
 				next_profile = cal_prof_idx;
 			}
 
@@ -4109,7 +4109,7 @@ enum tfa_error tfa_start(int next_profile, int *vstep)
 		if ( err != TFA98XX_ERROR_OK)
 			goto error_exit;
 		if (profile == tfa_get_swprof(dev)) // cold start already set profile
-			pr_info("%s:[cold] device:%s profile:%s\n", __func__, tfa_cont_device_name(dev),
+			pr_debug("%s:[cold] device:%s profile:%s\n", __func__, tfa_cont_device_name(dev),
 						tfa_cont_profile_name(dev, profile));
 	}
 
@@ -4126,13 +4126,13 @@ enum tfa_error tfa_start(int next_profile, int *vstep)
 		/* was it not done already */
 		if ((next_profile != active_profile && active_profile >= 0)
 		       || (istap_prof == 1)) {
-			pr_info("%s:[warm] device:%s profile:%s\n", __func__, tfa_cont_device_name(dev),
+			pr_debug("%s:[warm] device:%s profile:%s\n", __func__, tfa_cont_device_name(dev),
 						tfa_cont_profile_name(dev, next_profile));
 			err = tfa_cont_write_profile(dev, next_profile, vstep[dev]);
 			if (err!=TFA98XX_ERROR_OK)
 				goto error_exit;
 			if (handles_local[dev].is_cold == 0) {
-				pr_info("%s: flush buffer in blob, in warm start\n",
+				pr_debug("%s: flush buffer in blob, in warm start\n",
 					__func__);
 				err = tfa_tib_dsp_msgblob(dev, -2, NULL);
 			}
@@ -4380,7 +4380,7 @@ tfa_dsp_get_calibration_impedance(tfa98xx_handle_t handle)
 					pr_debug("Getting calibration values from Speakerboost\n");
 					// nr_bytes = spkr_count * 3;
 					nr_bytes = spkr_count * 9; /* 3 data */
-					pr_info("%s: read SB_PARAM_GET_RE25C\n", __func__);
+					pr_debug("%s: read SB_PARAM_GET_RE25C\n", __func__);
 					error = tfa_dsp_cmd_id_write_read(handle,MODULE_SPEAKERBOOST,SB_PARAM_GET_RE25C, nr_bytes, bytes);
 					if (error == TFA98XX_ERROR_OK) {
 						tfa98xx_convert_bytes2data(nr_bytes, bytes, data);
@@ -4659,14 +4659,14 @@ static int tfa_dsp_handle_event(tfa98xx_handle_t handle, enum tfadsp_event_en tf
 	switch( tfadsp_event )
 	{
 	case TFADSP_EXT_PWRUP: /*DSP starting*/
-		//pr_info("set cold\n");
+		//pr_debug("set cold\n");
 		handles_local[handle].ext_dsp = 1;
 		handles_local[handle].is_cold = 1;
 		break;
 	case TFADSP_CMD_READY: /*Ready to receive commands*/
 		/* confirm */
-		pr_info("TFADSP_CMD_READY: call tfa_start to send msgs\n");
-		pr_info("TFADSP_CMD_READY: set cold\n");
+		pr_debug("TFADSP_CMD_READY: call tfa_start to send msgs\n");
+		pr_debug("TFADSP_CMD_READY: set cold\n");
 		handles_local[handle].ext_dsp = 1;
 		err = tfa_start(handles_local[handle].profile, handles_local[handle].vstep);
 		if ( err == tfa_error_ok) {
@@ -4684,7 +4684,7 @@ static int tfa_dsp_handle_event(tfa98xx_handle_t handle, enum tfadsp_event_en tf
 //	audio active
 		break;
 	case TFADSP_EXT_PWRDOWN: /*DSP stopping*/
-		pr_info("disable ext dsp\n");
+		pr_debug("disable ext dsp\n");
 		handles_local[handle].ext_dsp = 0; /* unregister */
 		/*		amp off */
 		break;
@@ -4712,7 +4712,7 @@ int tfa_ext_register(dsp_send_message_t tfa_send_message, dsp_read_message_t tfa
 {
 	//handles_local[0].rev = 0x1b72;//added for smart studio.
 
-	// pr_info("%s: device type (0x%02x)\n", __func__, handles_local[0].rev);
+	// pr_debug("%s: device type (0x%02x)\n", __func__, handles_local[0].rev);
 	// if( ((handles_local[0].rev & 0xff) == 0x72) || (handles_local[0].ext_dsp != 0) )
 	{
 #if 0
@@ -5050,7 +5050,7 @@ enum tfa98xx_error dsp_msg(
 	if (handles_local[handle].saam_use_case == 1
 		|| (handles_local[handle].stream_state & BIT_PSTREAM) == 0)
 	{
-		pr_info("%s: skip dsp_msg in SaaM (RaM / SaM only)\n", __func__);
+		pr_debug("%s: skip dsp_msg in SaaM (RaM / SaM only)\n", __func__);
 		return error;
 	}
 
@@ -5072,7 +5072,7 @@ enum tfa98xx_error dsp_msg(
 		buf32_len = (length/3)*4;
 		buf32 = kmalloc(buf32_len, GFP_KERNEL);
 		if (buf32 == NULL) {
-			pr_info("%s: kmalloc error %d bytes\n",
+			pr_debug("%s: kmalloc error %d bytes\n",
 				__func__, buf32_len);
 			return TFA98XX_ERROR_FAIL;
 		}
@@ -5098,12 +5098,12 @@ enum tfa98xx_error dsp_msg(
 	}
 
 	if (error == TFA98XX_ERROR_OK)
-		pr_info("%s: OK\n", __func__);
+		pr_debug("%s: OK\n", __func__);
 	else {
 		/* Get actual error code from softDSP */
 		error = (enum tfa98xx_error)
 			(error + TFA98XX_ERROR_BUFFER_RPC_BASE);
-		pr_info("%s: (rpc base %d) error = %d\n",
+		pr_debug("%s: (rpc base %d) error = %d\n",
 			__func__, TFA98XX_ERROR_BUFFER_RPC_BASE, error);
 	}
 
@@ -5122,7 +5122,7 @@ enum tfa98xx_error dsp_msg_buffering(
 
 	/*check if dsp buffer was allocated */
 	if (tfa98xx_dsp_msg_buffer == NULL) {
-		pr_info("%s: tfa98xx_dsp_msg_buffer = NULL error\n", __func__);
+		pr_debug("%s: tfa98xx_dsp_msg_buffer = NULL error\n", __func__);
 		return TFA98XX_ERROR_FAIL;
 	}
 
@@ -5135,7 +5135,7 @@ enum tfa98xx_error dsp_msg_buffering(
 	/*check the remained the dsp buffer:
 		size of dsp msg (4 bytes) + dsp msg*/
 	if (tfa98xx_dsp_msg_buffer_remained < (dsp_buf_size + 4)) {
-		pr_info("%s: no more memory remained (%d bytes) < requested (%d) error\n",
+		pr_debug("%s: no more memory remained (%d bytes) < requested (%d) error\n",
 			__func__, tfa98xx_dsp_msg_buffer_remained, dsp_buf_size);
 		return TFA98XX_ERROR_FAIL;
 	}
@@ -5167,15 +5167,15 @@ enum tfa98xx_error dsp_msg_buffering(
 	*((uint32_t *)tfa98xx_dsp_msg_buffer) = tfa98xx_dsp_msg_buffer_num_msgs;
 
 #if defined(TFADSP_DEBUG)
-	pr_info("%s: i = %d, size = %d bytes\n",
+	pr_debug("%s: i = %d, size = %d bytes\n",
 		__func__, tfa98xx_dsp_msg_buffer_num_msgs, dsp_buf_size);
-	pr_info("%s: remained buffer = %d bytes\n",
+	pr_debug("%s: remained buffer = %d bytes\n",
 		__func__, tfa98xx_dsp_msg_buffer_remained);
 
 #if defined(TFADSP_32BITS)
-	pr_info("%s: buf32_len = %d\n", __func__, buf32_len);
+	pr_debug("%s: buf32_len = %d\n", __func__, buf32_len);
 #else
-	pr_info("%s: buf24_len = %d\n", __func__, length);
+	pr_debug("%s: buf24_len = %d\n", __func__, length);
 #endif
 #endif
 
@@ -5201,7 +5201,7 @@ enum tfa98xx_error dsp_msg_count_size(
 	tfa98xx_dsp_msg_buffer_num_msgs++;
 
 #if defined(TFADSP_DEBUG)
-	pr_info("%s: i = %d, size %d bytes\n",
+	pr_debug("%s: i = %d, size %d bytes\n",
 		__func__, tfa98xx_dsp_msg_buffer_num_msgs, dsp_buf_size);
 #endif
 
@@ -5225,7 +5225,7 @@ tfa_tfadsp_get_calibration_impedance(tfa98xx_handle_t handle)
 	if (error == TFA98XX_ERROR_OK) {
 		pr_debug("%s: get calibration values from Speakerboost\n", __func__);
 		nr_bytes = spkr_count * 9 /* 3 data */;
-		pr_info("%s: read SB_PARAM_GET_RE25C\n", __func__);
+		pr_debug("%s: read SB_PARAM_GET_RE25C\n", __func__);
 		error = tfa_dsp_cmd_id_write_read(handle,MODULE_SPEAKERBOOST,SB_PARAM_GET_RE25C, nr_bytes, bytes);
 		if (error == TFA98XX_ERROR_OK) {
 			tfa98xx_convert_bytes2data(nr_bytes, bytes, data);
@@ -5251,7 +5251,7 @@ enum tfa98xx_error tfa_tfadsp_calibrate(tfa98xx_handle_t handle)
 	enum tfa98xx_error err = TFA98XX_ERROR_OK;
 	int cal_prof_idx = 0;
 
-	pr_info("%s: begin\n", __func__);
+	pr_debug("%s: begin\n", __func__);
 
 	if (TFA_GET_BF(handle, MTPEX) == 1) {
 	  pr_debug("note: speaker is already calibrated; kindly ResetMtpEx first\n");
@@ -5262,13 +5262,13 @@ enum tfa98xx_error tfa_tfadsp_calibrate(tfa98xx_handle_t handle)
 	if (cal_prof_idx < 0)
 		cal_prof_idx = 0;
 
-	pr_info("%s: set profile for calibration cal_prof_idx %d\n", __func__, cal_prof_idx);
+	pr_debug("%s: set profile for calibration cal_prof_idx %d\n", __func__, cal_prof_idx);
 	err =  tfa_cont_write_regs_prof(handle, cal_prof_idx);
 	PRINT_ASSERT(err);
 	err = tfa_cont_write_files_prof(handle, cal_prof_idx, 0);
 	PRINT_ASSERT(err);
 
-	pr_info("%s: set_calibration\n", __func__);
+	pr_debug("%s: set_calibration\n", __func__);
 	err = tfa_set_calibration_values(handle); // SetRe25C with {0, 0}
 	PRINT_ASSERT(err);
 
@@ -5276,7 +5276,7 @@ enum tfa98xx_error tfa_tfadsp_calibrate(tfa98xx_handle_t handle)
 	// err = tfa_tfadsp_wait_calibrate_done(handle);
 #endif
 
-	pr_info("%s: end\n", __func__);
+	pr_debug("%s: end\n", __func__);
 
 	return err;
 }
@@ -5292,13 +5292,13 @@ enum tfa98xx_error tfa_tfadsp_wait_calibrate_done(tfa98xx_handle_t handle)
 	uint16_t readback;
 	int count;
 
-	pr_info("%s: begin\n", __func__);
+	pr_debug("%s: begin\n", __func__);
 
 	controls->calib.wr_value = true;  /* request was triggered from here */
 	controls->calib.rd_valid = false; /* result not available */
 	controls->calib.rd_value = false; /* result not valid (dafault) */
 
-	pr_info("%s: wait until calibration is done\n", __func__);
+	pr_debug("%s: wait until calibration is done\n", __func__);
 	for (count = 0; count < MAX_WAIT_COUNT_UNTIL_CALIBRATION_DONE; count++)
 	{
 		err = tfa_dsp_cmd_id_write_read(handle, MODULE_FRAMEWORK, FW_PAR_ID_GET_STATUS_CHANGE,
@@ -5323,9 +5323,9 @@ enum tfa98xx_error tfa_tfadsp_wait_calibrate_done(tfa98xx_handle_t handle)
 		goto wait_calibrate_done_error_exit;
 	}
 
-	pr_info("%s: calibration done\n", __func__);
+	pr_debug("%s: calibration done\n", __func__);
 	calibration_done = 1;
-	pr_info("Prim:%d mOhms", handles_local[handle].mohm[0]);
+	pr_debug("Prim:%d mOhms", handles_local[handle].mohm[0]);
 
 #if defined(CHECK_CALIBRATION_DATA_RANGE)
 	err = tfa_calibration_range_check(handle, handles_local[handle].mohm[0]);
@@ -5355,7 +5355,7 @@ enum tfa98xx_error tfa_tfadsp_wait_calibrate_done(tfa98xx_handle_t handle)
 		}
 
 		// write again if readback is out of range
-		pr_info("%s: calibaration data %d, readback from MTP\n", __func__, readback);
+		pr_debug("%s: calibaration data %d, readback from MTP\n", __func__, readback);
 #if defined(CHECK_CALIBRATION_DATA_RANGE)
 		err = tfa_calibration_range_check(handle, readback);
 #else
@@ -5382,7 +5382,7 @@ enum tfa98xx_error tfa_tfadsp_wait_calibrate_done(tfa98xx_handle_t handle)
 			(otc_val & 1) << TFA98XX_KEY2_PROTECTED_MTP0_MTPOTC_POS,
 			TFA98XX_KEY2_PROTECTED_MTP0_MTPOTC_MSK);
 		if(err) {
-			pr_info("%s: setting OTC failed, err (%d)\n", __func__, err);
+			pr_debug("%s: setting OTC failed, err (%d)\n", __func__, err);
 			err = TFA98XX_ERROR_RPC_CALIB_FAILED;
 			goto wait_calibrate_done_error_exit;
 		} else {
@@ -5410,7 +5410,7 @@ enum tfa98xx_error tfa_tfadsp_wait_calibrate_done(tfa98xx_handle_t handle)
 		}
 
 		// panic if readback is out of range
-		pr_info("%s: calibaration data %d readback from MTP (2nd)\n", __func__, readback);
+		pr_debug("%s: calibaration data %d readback from MTP (2nd)\n", __func__, readback);
 #if defined(CHECK_CALIBRATION_DATA_RANGE)
 		err = tfa_calibration_range_check(handle, readback);
 #else
@@ -5422,7 +5422,7 @@ enum tfa98xx_error tfa_tfadsp_wait_calibrate_done(tfa98xx_handle_t handle)
 		}
 	}
 
-	pr_info("%s: end\n", __func__);
+	pr_debug("%s: end\n", __func__);
 
 wait_calibrate_done_error_exit:
 	if (err) {
@@ -5451,11 +5451,11 @@ enum tfa98xx_error tfa_calibration_range_check(tfa98xx_handle_t handle, int mohm
 	int lower_limit_cal = LOWER_LIMIT_CAL_N3B, upper_limit_cal = UPPER_LIMIT_CAL_N3B;
 
 	if (((handles_local[handle].rev >> 8) & 0xff) == 0x1a) {
-	    	pr_info("%s: Change N1A Calibration range", __func__);
+	    	pr_debug("%s: Change N1A Calibration range", __func__);
 		lower_limit_cal = LOWER_LIMIT_CAL_N1A;
 		upper_limit_cal = UPPER_LIMIT_CAL_N1A;
 	}
-	pr_info("%s: calibration range chceck [%d, %d] with %d\n",
+	pr_debug("%s: calibration range chceck [%d, %d] with %d\n",
 		__func__, lower_limit_cal, upper_limit_cal, mohm);
 	if (mohm < lower_limit_cal || mohm > upper_limit_cal)
 		err = TFA98XX_ERROR_BAD_PARAMETER;
