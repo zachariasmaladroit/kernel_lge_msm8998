@@ -3923,13 +3923,13 @@ static irqreturn_t wcd9xxx_hphl_ocp_irq(int irq, void *data)
 	struct wcd9xxx_mbhc *mbhc = data;
 	struct snd_soc_codec *codec;
 
-	pr_info("%s: received HPHL OCP irq\n", __func__);
+	pr_debug("%s: received HPHL OCP irq\n", __func__);
 
 	if (mbhc) {
 		codec = mbhc->codec;
 		if ((mbhc->hphlocp_cnt < OCP_ATTEMPT) &&
 		    (!mbhc->hphrocp_cnt)) {
-			pr_info("%s: retry\n", __func__);
+			pr_debug("%s: retry\n", __func__);
 			mbhc->hphlocp_cnt++;
 			snd_soc_update_bits(codec, WCD9XXX_A_RX_HPH_OCP_CTL,
 					    0x10, 0x00);
@@ -3955,11 +3955,11 @@ static irqreturn_t wcd9xxx_hphr_ocp_irq(int irq, void *data)
 	struct wcd9xxx_mbhc *mbhc = data;
 	struct snd_soc_codec *codec;
 
-	pr_info("%s: received HPHR OCP irq\n", __func__);
+	pr_debug("%s: received HPHR OCP irq\n", __func__);
 	codec = mbhc->codec;
 	if ((mbhc->hphrocp_cnt < OCP_ATTEMPT) &&
 	    (!mbhc->hphlocp_cnt)) {
-		pr_info("%s: retry\n", __func__);
+		pr_debug("%s: retry\n", __func__);
 		mbhc->hphrocp_cnt++;
 		snd_soc_update_bits(codec, WCD9XXX_A_RX_HPH_OCP_CTL, 0x10,
 				    0x00);
@@ -4365,7 +4365,7 @@ static void wcd9xxx_mbhc_fw_read(struct work_struct *work)
 
 	while (retry < FW_READ_ATTEMPTS) {
 		retry++;
-		pr_info("%s:Attempt %d to request MBHC firmware\n",
+		pr_debug("%s:Attempt %d to request MBHC firmware\n",
 				__func__, retry);
 		if (mbhc->mbhc_cb->get_hwdep_fw_cal)
 			fw_data = mbhc->mbhc_cb->get_hwdep_fw_cal(codec,
@@ -4381,15 +4381,15 @@ static void wcd9xxx_mbhc_fw_read(struct work_struct *work)
 			usleep_range(FW_READ_TIMEOUT, FW_READ_TIMEOUT +
 					WCD9XXX_USLEEP_RANGE_MARGIN_US);
 		} else {
-			pr_info("%s: MBHC Firmware read succesful\n",
+			pr_debug("%s: MBHC Firmware read succesful\n",
 					__func__);
 			break;
 		}
 	}
 	if (!fw_data)
-		pr_info("%s: using request_firmware\n", __func__);
+		pr_debug("%s: using request_firmware\n", __func__);
 	else
-		pr_info("%s: using hwdep cal\n", __func__);
+		pr_debug("%s: using hwdep cal\n", __func__);
 	if (ret != 0 && !fw_data) {
 		pr_err("%s: Cannot load MBHC firmware use default cal\n",
 				__func__);
@@ -4653,7 +4653,7 @@ int wcd9xxx_mbhc_start(struct wcd9xxx_mbhc *mbhc,
 		if (mbhc->mbhc_cb && mbhc->mbhc_cb->setup_int_rbias) {
 			mbhc->mbhc_cb->setup_int_rbias(codec, true);
 		} else {
-			pr_info("%s: internal bias requested but codec did not provide callback\n",
+			pr_debug("%s: internal bias requested but codec did not provide callback\n",
 				__func__);
 		}
 	}
