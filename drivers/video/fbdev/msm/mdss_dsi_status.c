@@ -276,7 +276,7 @@ static int param_dsi_status_disable(const char *val, struct kernel_param *kp)
 	if (ret)
 		return ret;
 
-	pr_info("%s: Set DSI status disable to %d\n",
+	pr_debug("%s: Set DSI status disable to %d\n",
 			__func__, int_val);
 	*((int *)kp->arg) = int_val;
 	return ret;
@@ -295,7 +295,7 @@ static int param_set_interval(const char *val, struct kernel_param *kp)
 						__func__, int_val);
 		ret = -EINVAL;
 	} else {
-		pr_info("%s: Set check interval to %d msecs\n",
+		pr_debug("%s: Set check interval to %d msecs\n",
 						__func__, int_val);
 		*((int *)kp->arg) = int_val;
 	}
@@ -324,7 +324,7 @@ int __init mdss_dsi_status_init(void)
 		return -EPERM;
 	}
 
-	pr_info("%s: DSI status check interval:%d\n", __func__,	interval);
+	pr_debug("%s: DSI status check interval:%d\n", __func__,	interval);
 
 	INIT_WORK(&ps_data->irq_done, disable_vsync_irq);
 	INIT_DELAYED_WORK(&ps_data->check_status, check_dsi_ctrl_status);

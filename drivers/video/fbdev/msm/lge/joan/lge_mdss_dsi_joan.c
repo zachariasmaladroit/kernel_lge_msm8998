@@ -43,7 +43,7 @@ int lge_panel_power_off(struct mdss_panel_data *pdata)
 
 	pinfo = &ctrl_pdata->panel_data.panel_info;
 
-	pr_info("+ ndx=%d\n", ctrl_pdata->ndx);
+	pr_debug("+ ndx=%d\n", ctrl_pdata->ndx);
 
 	if (!(panel_not_connected && detect_factory_cable() &&
 						!lge_get_mfts_mode())) {
@@ -80,7 +80,7 @@ int lge_panel_power_off(struct mdss_panel_data *pdata)
 		usleep_range(1000,1000);
 	}
 
-	pr_info("- ndx=%d\n", ctrl_pdata->ndx);
+	pr_debug("- ndx=%d\n", ctrl_pdata->ndx);
 
 	return ret;
 }
@@ -101,7 +101,7 @@ int lge_panel_power_on(struct mdss_panel_data *pdata)
 
 	pinfo = &ctrl_pdata->panel_data.panel_info;
 
-	pr_info("+ ndx=%d\n", ctrl_pdata->ndx);
+	pr_debug("+ ndx=%d\n", ctrl_pdata->ndx);
 
 	if (!(panel_not_connected && detect_factory_cable() &&
 						!lge_get_mfts_mode())) {
@@ -146,7 +146,7 @@ int lge_panel_power_on(struct mdss_panel_data *pdata)
 		if (ret)
 			pr_err("Panel reset failed. rc=%d\n", ret);
 	}
-	pr_info("- ndx=%d\n", ctrl_pdata->ndx);
+	pr_debug("- ndx=%d\n", ctrl_pdata->ndx);
 
 	return ret;
 }
@@ -169,7 +169,7 @@ int mdss_dsi_panel_power_on(struct mdss_panel_data *pdata)
 
 	pinfo = &ctrl_pdata->panel_data.panel_info;
 
-	pr_info("++\n");
+	pr_debug("++\n");
 
 	/* 1st : VDDIO */
 	lge_extra_gpio_set_value(ctrl_pdata, "vddio", 1);
@@ -208,7 +208,7 @@ int mdss_dsi_panel_power_on(struct mdss_panel_data *pdata)
 			pr_err("Panel reset failed. rc=%d\n", ret);
 	}
 
-	pr_info("--\n");
+	pr_debug("--\n");
 	return ret;
 }
 #endif
@@ -231,7 +231,7 @@ int mdss_dsi_panel_power_off(struct mdss_panel_data *pdata)
 
 	pinfo = &ctrl_pdata->panel_data.panel_info;
 
-	pr_info("++\n");
+	pr_debug("++\n");
 
 	/* 1st : reset */
 	ret = mdss_dsi_panel_reset(pdata, 0);
@@ -260,7 +260,7 @@ int mdss_dsi_panel_power_off(struct mdss_panel_data *pdata)
 		usleep_range(1000,1000);
 	}
 
-	pr_info("--\n");
+	pr_debug("--\n");
 end:
 	return ret;
 

@@ -59,7 +59,7 @@ static void sw43402_err_work(struct work_struct *work)
 
 	mdss_dsi_cmdlist_put(ctrl_pdata, &cmdreq);
 	ctrl_pdata->err_result = rx_buf[0];
-	pr_info("Reg[0x%x]=0x%x,\n", lge_err_dcs_cmd[0], rx_buf[0]);
+	pr_debug("Reg[0x%x]=0x%x,\n", lge_err_dcs_cmd[0], rx_buf[0]);
 	if (ctrl_pdata->err_crash && ctrl_pdata->err_result) {
 		pr_err("error is detected. BUG() \n");
 		BUG();
@@ -70,7 +70,7 @@ static irqreturn_t sw43402_err_irq_handler(int irq, void *data)
 {
 	struct mdss_dsi_ctrl_pdata *pdata = (struct mdss_dsi_ctrl_pdata *)data;
 
-	pr_info("\n");
+	pr_debug("\n");
 	queue_delayed_work(pdata->err_int_workq, &pdata->err_int_work,
 		msecs_to_jiffies(50));
 	return IRQ_HANDLED;

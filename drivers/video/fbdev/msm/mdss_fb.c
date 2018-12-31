@@ -1425,7 +1425,7 @@ static int mdss_fb_probe(struct platform_device *pdev)
 	mfd->split_fb_left = mfd->split_fb_right = 0;
 
 	mdss_fb_set_split_mode(mfd, pdata);
-	pr_info("fb%d: split_mode:%d left:%d right:%d\n", mfd->index,
+	pr_debug("fb%d: split_mode:%d left:%d right:%d\n", mfd->index,
 		mfd->split_mode, mfd->split_fb_left, mfd->split_fb_right);
 
 	mfd->mdp = *mdp_instance;
@@ -1490,7 +1490,7 @@ static int mdss_fb_probe(struct platform_device *pdev)
 					"qcom,default-brightness", &tmp);
 		pr_debug("qcom,default-brightness read result = %d, value = %d\n", ret, tmp);
 		mfd->panel_info->default_brightness = (ret == 0 && tmp != 0)?tmp:mfd->panel_info->brightness_max;
-		pr_info("qcom,default-brightness = %d\n", mfd->panel_info->default_brightness);
+		pr_debug("qcom,default-brightness = %d\n", mfd->panel_info->default_brightness);
 
 		backlight_led.brightness = mfd->panel_info->default_brightness;
 		backlight_led.usr_brightness_req = mfd->panel_info->default_brightness;
@@ -1915,7 +1915,7 @@ void mdss_fb_set_backlight(struct msm_fb_data_type *mfd, u32 bkl_lvl)
 			if (mfd->bl_level != bkl_lvl)
 				bl_notify_needed = true;
 #if defined(CONFIG_LGE_DISPLAY_COMMON)
-			pr_info("[Display] backlight sent to panel :%d\n", temp);
+			pr_debug("[Display] backlight sent to panel :%d\n", temp);
 #else
 			pr_debug("backlight sent to panel :%d\n", temp);
 #endif
@@ -1955,7 +1955,7 @@ void mdss_fb_update_backlight(struct msm_fb_data_type *mfd)
 					NOTIFY_TYPE_BL_AD_ATTEN_UPDATE);
 			mdss_fb_bl_update_notify(mfd, NOTIFY_TYPE_BL_UPDATE);
 #if defined(CONFIG_LGE_DISPLAY_COMMON)
-			pr_info("[Display] backlight sent to panel :%d\n", temp);
+			pr_debug("[Display] backlight sent to panel :%d\n", temp);
 #endif
 			pdata->set_backlight(pdata, temp);
 			mfd->bl_level_scaled = mfd->unset_bl_level;
@@ -2065,7 +2065,7 @@ static int mdss_fb_blank_blank(struct msm_fb_data_type *mfd,
 		mutex_lock(&ctrl_pdata->drs_lock);
 		if (ctrl_pdata->drs_state > DYNAMIC_RESOLUTION_SWITCH_IDLE) {
 			mutex_unlock(&ctrl_pdata->drs_lock);
-			pr_info("%s: DRS is running....wait drs_work_done complete\n", __func__);
+			pr_debug("%s: DRS is running....wait drs_work_done complete\n", __func__);
 			wait_for_completion_interruptible(&ctrl_pdata->drs_work_done);
 		} else {
 			mutex_unlock(&ctrl_pdata->drs_lock);
@@ -2260,7 +2260,7 @@ static int mdss_fb_blank_sub(int blank_mode, struct fb_info *info,
 	if (mfd->dcm_state == DCM_ENTER)
 		return -EPERM;
 
-	pr_info("[Display] %pS mode:%d\n", __builtin_return_address(0),
+	pr_debug("[Display] %pS mode:%d\n", __builtin_return_address(0),
 		blank_mode);
 
 	snprintf(trace_buffer, sizeof(trace_buffer), "fb%d blank %d",
@@ -3032,7 +3032,7 @@ static int mdss_fb_register(struct msm_fb_data_type *mfd)
 	snprintf(panel_name, ARRAY_SIZE(panel_name), "mdss_panel_fb%d",
 		mfd->index);
 	mdss_panel_debugfs_init(panel_info, panel_name);
-	pr_info("FrameBuffer[%d] %dx%d registered successfully!\n", mfd->index,
+	pr_debug("FrameBuffer[%d] %dx%d registered successfully!\n", mfd->index,
 					fbi->var.xres, fbi->var.yres);
 
 	return 0;
@@ -3101,7 +3101,7 @@ static int mdss_fb_release_all(struct fb_info *info, bool release_all)
 	struct task_struct *task = current->group_leader;
 
 	if (!mfd->ref_cnt) {
-		pr_info("try to close unopened fb %d! from pid:%d name:%s\n",
+		pr_debug("try to close unopened fb %d! from pid:%d name:%s\n",
 			mfd->index, current->tgid, task->comm);
 		return -EINVAL;
 	}
@@ -5493,7 +5493,7 @@ int mdss_register_panel(struct platform_device *pdev,
 		if (rc == 0)
 			master_panel = false;
 	} else {
-		pr_info("adding framebuffer device %s\n", dev_name(&pdev->dev));
+		pr_debug("adding framebuffer device %s\n", dev_name(&pdev->dev));
 		fb_pdev = of_platform_device_create(node, NULL,
 				&mdss_pdev->dev);
 		if (fb_pdev)
@@ -5613,7 +5613,7 @@ void mdss_fb_report_panel_dead(struct msm_fb_data_type *mfd)
 #endif
 #if defined(CONFIG_LGE_DISPLAY_COMMON)
 	if (mfd->recovery) {
-		pr_info("[Display] Already in recovery!!\n");
+		pr_debug("[Display] Already in recovery!!\n");
 		return;
 	} else {
 		mfd->recovery = true;

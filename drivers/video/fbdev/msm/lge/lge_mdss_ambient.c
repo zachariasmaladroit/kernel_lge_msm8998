@@ -100,7 +100,7 @@ int lge_mdss_ambient_init(struct device_node *node,
 	if (ctrl_pdata->panel_data.panel_info.pdest != DISPLAY_1)
 		return AMBIENT_RETURN_SUCCESS;
 
-	pr_info("[Ambient] init start\n");
+	pr_debug("[Ambient] init start\n");
 	panel_info = &(ctrl_pdata->panel_data.panel_info);
 	panel_info->ambient_init_done = false;
 	ctrl_pdata->ambient_cmds = kzalloc(sizeof(struct dsi_panel_cmds) *
@@ -146,7 +146,7 @@ int lge_mdss_ambient_config_reset(struct mdss_panel_data *pdata)
 	struct mdss_panel_info *pinfo;
 	struct ambient_ctrl_info *ainfo;
 
-	pr_info("%s: start\n", __func__);
+	pr_debug("%s: start\n", __func__);
 	if (pdata == NULL) {
 		pr_err("%s: Invalid input data\n", __func__);
 		return -EINVAL;
@@ -182,7 +182,7 @@ int lge_mdss_ambient_config_reset(struct mdss_panel_data *pdata)
 	ainfo->pixel_shift_interval = 0;
 	ainfo->pps_skip = false;
 
-	pr_info("%s: end\n", __func__);
+	pr_debug("%s: end\n", __func__);
 	return 0;
 }
 
@@ -250,7 +250,7 @@ int lge_mdss_ambient_cmd_send(struct mdss_panel_data *pdata, int enable)
 	if (ainfo == NULL)
 		return -AMBIENT_RETURN_ERROR_NOT_INIT;
 
-	pr_info("[Ambient] request %s doze-suspend\n",
+	pr_debug("[Ambient] request %s doze-suspend\n",
 				(enable == true) ? "enter" : "exit");
 	if (enable) {
 		cmd_index = AMBIENT_PANEL_CMD_TO_DOZE_SUSPEND;
@@ -276,7 +276,7 @@ send_cmds:
 #if defined(CONFIG_LGE_DISPLAY_DYNAMIC_RESOLUTION_SWITCH)
 #if defined(CONFIG_LGE_DISPLAY_BIST_MODE)
 	if (enable && (ctrl->requested_resolution_switch && !ctrl->keep_bist_on)) {
-		pr_info("%s: area chagned (hor:%d) (ver:%d)\n", __func__,
+		pr_debug("%s: area chagned (hor:%d) (ver:%d)\n", __func__,
 					ainfo->partial_area_vertical_changed,
 					ainfo->partial_area_horizontal_changed);
 		mutex_lock(&ctrl->bist_lock);
@@ -455,7 +455,7 @@ int lge_mdss_ambient_post_change_partial_area(struct mdss_panel_data *pdata, int
 
 	mutex_lock(&ctrl->bist_lock);
 #if defined(CONFIG_LGE_DISPLAY_DYNAMIC_RESOLUTION_SWITCH)
-	pr_info("%s: (freeze:%d) (store:%d) (hoz:%d) (ver:%d)\n", __func__,
+	pr_debug("%s: (freeze:%d) (store:%d) (hoz:%d) (ver:%d)\n", __func__,
 				ctrl->requested_resolution_switch,
 				ctrl->keep_bist_on,
 				ainfo->partial_area_horizontal_changed,
@@ -535,7 +535,7 @@ static int store_aod_area(struct mdss_dsi_ctrl_pdata *ctrl, struct mdss_rect req
 		ainfo->partial_area_vertical_changed = true;
 	}
 
-	pr_info("%s: horizontal_changed[%d], vertical_changed[%d]\n", __func__,
+	pr_debug("%s: horizontal_changed[%d], vertical_changed[%d]\n", __func__,
 			ainfo->partial_area_horizontal_changed,
 			ainfo->partial_area_vertical_changed);
 
@@ -544,10 +544,10 @@ static int store_aod_area(struct mdss_dsi_ctrl_pdata *ctrl, struct mdss_rect req
 		if (req.y > 0) req.y = 0;
 		memcpy(&ainfo->src_roi, &req, sizeof(struct mdss_rect));
 		lge_mdss_sw43402_update_partial_area_cmds(pdata_base);
-		pr_info("%s: source pos - x[%d] y[%d] w[%d] h[%d]\n", __func__,
+		pr_debug("%s: source pos - x[%d] y[%d] w[%d] h[%d]\n", __func__,
 				ainfo->src_roi.x, ainfo->src_roi.y,
 				ainfo->src_roi.w, ainfo->src_roi.h);
-		pr_info("%s: display pos - x[%d] y[%d] w[%d] h[%d]\n", __func__,
+		pr_debug("%s: display pos - x[%d] y[%d] w[%d] h[%d]\n", __func__,
 				ainfo->dst_roi.x, ainfo->dst_roi.y,
 				ainfo->dst_roi.w, ainfo->dst_roi.h);
 	}
@@ -558,7 +558,7 @@ static int store_aod_area(struct mdss_dsi_ctrl_pdata *ctrl, struct mdss_rect req
 #endif
 		if (!ainfo->partial_area_horizontal_changed &&
 				!ainfo->partial_area_vertical_changed) {
-			pr_info("%s: request refresh\n", __func__);
+			pr_debug("%s: request refresh\n", __func__);
 		}
 	}
 #endif
@@ -631,7 +631,7 @@ static ssize_t aod_area_set(struct device *dev,
 	req_area.w = (param[3] < 0)? 0 : param[3];
 	req_area.h = (param[4] < 0)? 0 : param[4];
 
-	pr_info("%s: lpmode(%d) x:(%d) y:(%d) w:(%d) h:(%d)\n", __func__, ainfo->lpmode,
+	pr_debug("%s: lpmode(%d) x:(%d) y:(%d) w:(%d) h:(%d)\n", __func__, ainfo->lpmode,
 				req_area.x, req_area.y, req_area.w, req_area.h);
 
 	if (store_aod_area(ctrl, req_area) < 0) {
