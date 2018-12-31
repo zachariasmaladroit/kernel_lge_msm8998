@@ -5773,7 +5773,7 @@ CONFIG_MEDIA_SUBDRV_AUTOSELECT=y
 # disable debug, logs stuff
 CONFIG_LGE_PM_DEBUG=y
 # CONFIG_IPC_LOGGING is not set # we shouldn't need this (forcing us into being a DEBUG kernel)
-CONFIG_DEBUG_BUGVERBOSE=y # we REALLY need this
+# CONFIG_DEBUG_BUGVERBOSE is not set # we REALLY need this
 # CONFIG_MSM_SDE_ROTATOR_EVTLOG_DEBUG is not set
 # CONFIG_FB_MSM_MDSS_XLOG_DEBUG is not set
 # CONFIG_IOMMU_DEBUG is not set
@@ -6118,7 +6118,7 @@ CONFIG_DPM_WATCHDOG_TIMEOUT=10 # spr , way too strict
 # CONFIG_VIDEO_ADV_DEBUG is not set # spr (non-perf)
 # CONFIG_MSM_CAMERA_DEBUG is not set # spr (non-perf)
 # CONFIG_MSMB_CAMERA_DEBUG is not set # spr (non-perf)
-# CONFIG_ESOC_DEBUG is not set # spr (=y)
+# CONFIG_ESOC_DEBUG is not set # spr (=y) # modem driver debug
 # CONFIG_ESOC_MDM_DBG_ENG is not set # spr (=y)
 # CONFIG_EFIVAR_FS is not set # pointless ?
 # CONFIG_PAGE_OWNER is not set # spr (=y) "Eats a fair amount of memory if enabled."
