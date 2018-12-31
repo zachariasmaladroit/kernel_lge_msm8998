@@ -5662,14 +5662,6 @@ CONFIG_PM_WAKELOCKS_GC=y
 # powerefficient workqueues
 CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y # needs more commits
 
-# Jump labels:
-# the kernel will compile trace point locations with just a nop instruction.
-# When trace points are enabled, the nop will be converted to a jump
-# to the trace function. This technique lowers overhead and stress
-# on the branch prediction of the processor.
-#
-# CONFIG_JUMP_LABEL is not set # assumedly leads to latency spikes, thus discouraged
-
 # add additional drivers that might be needed
 # CONFIG_RELAY is not set
 
@@ -5802,12 +5794,23 @@ CONFIG_KALLSYMS_ALL=y # needed on Stock for successful booting
 CONFIG_DEBUG_INFO_REDUCED=y
 # CONFIG_STRIP_ASM_SYMS is not set
 
+# Jump labels:
+# the kernel will compile trace point locations with just a nop instruction.
+# When trace points are enabled, the nop will be converted to a jump
+# to the trace function. This technique lowers overhead and stress
+# on the branch prediction of the processor.
+#
+CONFIG_JUMP_LABEL=y # assumedly leads to latency spikes, thus discouraged; performance (?)
+
 # Profiling, Tracepoints [eval, research disabling]
 CONFIG_PROFILING=y
-# CONFIG_TRACEPOINTS is not set # Place an empty function call at each tracepoint site. Can be dynamically changed for a probe function.
+CONFIG_TRACEPOINTS=y # Place an empty function call at each tracepoint site. Can be dynamically changed for a probe function. Set nonetheless
 
 CONFIG_TRACING=y # =y
-CONFIG_GENERIC_TRACER=y # =y
+CONFIG_NOP_TRACER=y # crucial
+# CONFIG_GENERIC_TRACER is not set # =y
+# CONFIG_EVENT_TRACING is not set
+# CONFIG_CONTEXT_SWITCH_TRACER is not set
 CONFIG_TRACING_SUPPORT=y # =y
 CONFIG_FTRACE=y # =y
 CONFIG_FUNCTION_TRACER=y # =y
