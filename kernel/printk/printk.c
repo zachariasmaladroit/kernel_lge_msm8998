@@ -3307,8 +3307,9 @@ void show_regs_print_info(const char *log_lvl)
 {
 	dump_stack_print_info(log_lvl);
 
-	printk("%stask: %p task.stack: %p\n",
-	       log_lvl, current, task_stack_page(current));
+	printk("%stask: %pP ti: %pP task.ti: %pP\n",
+	       log_lvl, current, current_thread_info(),
+	       task_thread_info(current));
 }
 
 #endif
