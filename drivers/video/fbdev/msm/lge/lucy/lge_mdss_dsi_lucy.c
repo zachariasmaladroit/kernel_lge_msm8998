@@ -99,7 +99,7 @@ int lge_panel_power_off(struct mdss_panel_data *pdata)
 	if(ret)
 		pr_err("%s: fail to disable ttw modei : %d\n", __func__, ret);
 	else
-		pr_info("%s: diable ttw mode\n", __func__);
+		pr_debug("%s: diable ttw mode\n", __func__);
 
 	if (touch_notifier_call_chain(NOTIFY_TOUCH_RESET, NULL))
 		pr_err("Failt to send notify to touch\n");
@@ -111,7 +111,7 @@ int lge_panel_power_off(struct mdss_panel_data *pdata)
 		pr_err("%s: failed to disable vregs for %s\n",
 				__func__, __mdss_dsi_pm_name(DSI_PANEL_PM));
 	else
-		pr_info("%s: disable vregs for %s\n",
+		pr_debug("%s: disable vregs for %s\n",
 				__func__, __mdss_dsi_pm_name(DSI_PANEL_PM));
 
 
@@ -122,23 +122,23 @@ int lge_panel_power_off(struct mdss_panel_data *pdata)
 	if (ret)
 		pr_err("%s fail to set mfts mode : %d\n", __func__, ret);
 	else
-		pr_info("%s: set spare on  mode\n", __func__);
+		pr_debug("%s: set spare on  mode\n", __func__);
 
 	ret = mdss_dsi_panel_reset(pdata, 0);
 	if (ret)
 		pr_err("%s: Panel reset failed. rc=%d\n", __func__, ret);
 	else
-		pr_info("%s Panel reset off\n", __func__);
+		pr_debug("%s Panel reset off\n", __func__);
 
 	usleep_range(5000,5000);
 
 	lge_extra_gpio_set_value(ctrl_pdata, "vpnl", 0);
-	pr_info("%s: disable LCD vpnl \n",__func__);
+	pr_debug("%s: disable LCD vpnl \n",__func__);
 
 	usleep_range(3000,3000);
 
 	lge_extra_gpio_set_value(ctrl_pdata, "vddio", 0);
-	pr_info("%s: disable LCD vddio \n",__func__);
+	pr_debug("%s: disable LCD vddio \n",__func__);
 
 	usleep_range(3000,3000);
 
@@ -150,7 +150,7 @@ int lge_panel_power_off(struct mdss_panel_data *pdata)
 	if(ret)
 		pr_err("%s: fail to disable ttw modei : %d\n", __func__, ret);
 	else
-		pr_info("%s: enable ttw mode\n", __func__);
+		pr_debug("%s: enable ttw mode\n", __func__);
 
 	pr_err("[Display] %s-: ndx=%d\n", __func__, ctrl_pdata->ndx);
 
@@ -183,12 +183,12 @@ int lge_panel_power_on(struct mdss_panel_data *pdata)
 	}
 
 	lge_extra_gpio_set_value(ctrl_pdata, "vddio", 1);
-	pr_info("%s: enable LCD vddio \n", __func__);
+	pr_debug("%s: enable LCD vddio \n", __func__);
 
 	usleep_range(3000,3000);
 
 	lge_extra_gpio_set_value(ctrl_pdata, "vpnl", 1);
-	pr_info("%s: enable LCD vpnl \n", __func__);
+	pr_debug("%s: enable LCD vpnl \n", __func__);
 
 	usleep_range(3000,3000);
 
@@ -199,7 +199,7 @@ int lge_panel_power_on(struct mdss_panel_data *pdata)
 		pr_err("%s: failed to enable vregs for %s\n",
 				__func__, __mdss_dsi_pm_name(DSI_PANEL_PM));
 	}else
-		pr_info("%s: enable vregs for %s\n",
+		pr_debug("%s: enable vregs for %s\n",
 				__func__, __mdss_dsi_pm_name(DSI_PANEL_PM));
 
 	usleep_range(3000,3000);
@@ -220,7 +220,7 @@ int lge_panel_power_on(struct mdss_panel_data *pdata)
 			pr_err("%s: Panel reset failed. rc=%d\n",
 					__func__, ret);
 		else
-			pr_info("%s: panel reset on\n",__func__);
+			pr_debug("%s: panel reset on\n",__func__);
 	}
 
 	pr_err("[Display] %s-: ndx=%d\n", __func__, ctrl_pdata->ndx);

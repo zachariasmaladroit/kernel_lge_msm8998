@@ -855,7 +855,7 @@ static int mdss_rotator_init_queue(struct mdss_rot_mgr *mgr)
 
 	for (i = 0; i < mgr->queue_count; i++) {
 		snprintf(name, sizeof(name), "rot_thread_%d", i);
-		pr_info("work thread name=%s\n", name);
+		pr_debug("work thread name=%s\n", name);
 		kthread_init_worker(&mgr->queues[i].worker);
 		mgr->queues[i].thread = kthread_run(kthread_worker_fn,
 						     &mgr->queues[i].worker,

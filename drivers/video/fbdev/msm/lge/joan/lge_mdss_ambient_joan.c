@@ -113,7 +113,7 @@ int lge_mdss_sw43402_backup_internal_reg(struct mdss_dsi_ctrl_pdata *ctrl)
 	if(ret < 0)
 		goto read_err;
 
-	pr_info("[Ambient] success to store internal register info\n");
+	pr_debug("[Ambient] success to store internal register info\n");
 
 	return ret;
 
@@ -198,7 +198,7 @@ int lge_mdss_sw43402_prepare_cmds(struct mdss_panel_data *pdata, int cmd_index)
 
 	cmds = &ctrl->ambient_cmds[cmd_index];
 
-	pr_info("current resolution(%d x %d)\n", pinfo->xres, pinfo->yres);
+	pr_debug("current resolution(%d x %d)\n", pinfo->xres, pinfo->yres);
 
 	switch(cmd_index) {
 	case AMBIENT_PANEL_CMD_TO_DOZE_SUSPEND:
@@ -233,16 +233,16 @@ int lge_mdss_sw43402_prepare_cmds(struct mdss_panel_data *pdata, int cmd_index)
 
 		data &= ~BIT(1); /* skip at this time */
 
-		pr_info("AODCTL : 0x%02x\n", data);
+		pr_debug("AODCTL : 0x%02x\n", data);
 		cmds->cmds[CMDS_AODCTL].payload[1] = data;
 
-		pr_info("cmd_index = %d, vertical partial area (0x%02x, 0x%02x, 0x%02x, 0x%02x)\n",
+		pr_debug("cmd_index = %d, vertical partial area (0x%02x, 0x%02x, 0x%02x, 0x%02x)\n",
 							cmd_index,
 							cmds->cmds[CMDS_PTLAR].payload[1],
 							cmds->cmds[CMDS_PTLAR].payload[2],
 							cmds->cmds[CMDS_PTLAR].payload[3],
 							cmds->cmds[CMDS_PTLAR].payload[4]);
-		pr_info("cmd_index = %d, horizontal partial area (0x%02x)\n",
+		pr_debug("cmd_index = %d, horizontal partial area (0x%02x)\n",
 				cmd_index,
 				cmds->cmds[CMDS_PTLAR].payload[1]);
 
@@ -260,13 +260,13 @@ int lge_mdss_sw43402_prepare_cmds(struct mdss_panel_data *pdata, int cmd_index)
 		break;
 #if defined(CONFIG_LGE_DISPLAY_CHANGE_PARTIAL_AREA_IN_KICKOFF)
 	case AMBIENT_PANEL_CMD_CHANGE_PARTIAL_AREA:
-		pr_info("cmd_index = %d, vertical partial area (0x%02x, 0x%02x, 0x%02x, 0x%02x)\n",
+		pr_debug("cmd_index = %d, vertical partial area (0x%02x, 0x%02x, 0x%02x, 0x%02x)\n",
 							cmd_index,
 							cmds->cmds[0].payload[1],
 							cmds->cmds[0].payload[2],
 							cmds->cmds[0].payload[3],
 							cmds->cmds[0].payload[4]);
-		pr_info("cmd_index = %d, horizontal partial area (0x%02x)\n",
+		pr_debug("cmd_index = %d, horizontal partial area (0x%02x)\n",
 							cmd_index,
 							cmds->cmds[1].payload[1]);
 		break;

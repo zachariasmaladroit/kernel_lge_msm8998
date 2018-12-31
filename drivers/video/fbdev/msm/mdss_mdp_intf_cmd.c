@@ -2100,7 +2100,7 @@ static int mdss_mdp_cmd_drs_start(struct mdss_mdp_ctl *ctl)
 
 	mutex_lock(&ctrl_pdata->drs_lock);
 	if (ctrl_pdata->drs_state > DYNAMIC_RESOLUTION_SWITCH_IDLE) {
-		pr_info("[Display] %s: state(%d) is duplicated\n",
+		pr_debug("[Display] %s: state(%d) is duplicated\n",
 				__func__, ctrl_pdata->drs_state);
 		mutex_unlock(&ctrl_pdata->drs_lock);
 		return ret;
@@ -2109,7 +2109,7 @@ static int mdss_mdp_cmd_drs_start(struct mdss_mdp_ctl *ctl)
 
 	ctrl_pdata->drs_kobj = &ctl->mfd->fbi->dev->kobj;
 
-	pr_info("[Display] %s: state(%d)\n", __func__, ctrl_pdata->drs_state);
+	pr_debug("[Display] %s: state(%d)\n", __func__, ctrl_pdata->drs_state);
 	return ret;
 }
 

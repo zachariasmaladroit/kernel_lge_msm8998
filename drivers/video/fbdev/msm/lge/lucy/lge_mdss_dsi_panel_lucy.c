@@ -106,11 +106,11 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 		return rc;
 	}
 
-	pr_info("%s: enable = %d\n", __func__, enable);
+	pr_debug("%s: enable = %d\n", __func__, enable);
 
 	if (enable) {
 		if (ctrl_pdata->panel_power_is_on == 1) {
-			pr_info("[Display] %s. panel reset is skipped.\n", __func__);
+			pr_debug("[Display] %s. panel reset is skipped.\n", __func__);
 			return rc;
 		}
 
@@ -228,7 +228,7 @@ int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 	ctrl = container_of(pdata, struct mdss_dsi_ctrl_pdata,
 				panel_data);
 
-	pr_info("%s: ndx=%d\n", __func__, ctrl->ndx);
+	pr_debug("%s: ndx=%d\n", __func__, ctrl->ndx);
 
 	if (pinfo->dcs_cmd_by_left) {
 		if (ctrl->ndx != DSI_CTRL_LEFT)
@@ -253,7 +253,7 @@ int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 	if (ctrl->ds_registered)
 		mdss_dba_utils_video_on(pinfo->dba_data, pinfo);
 end:
-	pr_info("%s:-\n", __func__);
+	pr_debug("%s:-\n", __func__);
 	return ret;
 }
 #endif
@@ -273,7 +273,7 @@ int mdss_dsi_panel_off(struct mdss_panel_data *pdata)
 	ctrl = container_of(pdata, struct mdss_dsi_ctrl_pdata,
 				panel_data);
 
-	pr_info("%s: ctrl=%pK ndx=%d\n", __func__, ctrl, ctrl->ndx);
+	pr_debug("%s: ctrl=%pK ndx=%d\n", __func__, ctrl, ctrl->ndx);
 
 	if (pinfo->dcs_cmd_by_left) {
 		if (ctrl->ndx != DSI_CTRL_LEFT)
@@ -289,7 +289,7 @@ int mdss_dsi_panel_off(struct mdss_panel_data *pdata)
 	}
 
 end:
-	pr_info("%s:-\n", __func__);
+	pr_debug("%s:-\n", __func__);
 	return 0;
 }
 #endif

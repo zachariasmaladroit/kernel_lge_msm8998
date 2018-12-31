@@ -71,7 +71,7 @@ static ssize_t aod_set(struct device *dev,
 	ssize_t ret = strnlen(buf, PAGE_SIZE);
 	unsigned int aod_state, idx;
 
-	pr_info("+++\n");
+	pr_debug("+++\n");
 
 	if(pdata_base == NULL) {
 		pr_err("Invalid input data\n");
@@ -111,7 +111,7 @@ static ssize_t aod_set(struct device *dev,
 	lge_mdss_dsi_send_dcs_cmds_by_cmd_name(ctrl, lge_dsi_cmds_list,
 					INTERNAL_TEST_INDEX_MAX, internal_test_cmd_names[INTERNAL_TEST_AOD]);
 
-	pr_info("---\n");
+	pr_debug("---\n");
 	return ret;
 }
 
@@ -125,7 +125,7 @@ static ssize_t orbit_set(struct device *dev,
 	unsigned int param[9];
 	int i;
 
-	pr_info("+++\n");
+	pr_debug("+++\n");
 
 	if(pdata_base == NULL) {
 		pr_err("Invalid input data\n");
@@ -152,7 +152,7 @@ static ssize_t orbit_set(struct device *dev,
 	lge_mdss_dsi_send_dcs_cmds_by_cmd_name(ctrl, lge_dsi_cmds_list,
 					INTERNAL_TEST_INDEX_MAX, internal_test_cmd_names[INTERNAL_TEST_ORBIT]);
 
-	pr_info("---\n");
+	pr_debug("---\n");
 	return ret;
 }
 
@@ -165,7 +165,7 @@ static ssize_t frc_set(struct device *dev,
 	ssize_t ret = strnlen(buf, PAGE_SIZE);
 	unsigned int param;
 
-	pr_info("+++\n");
+	pr_debug("+++\n");
 
 	if(pdata_base == NULL) {
 		pr_err("Invalid input data\n");
@@ -193,7 +193,7 @@ static ssize_t frc_set(struct device *dev,
 	lge_mdss_dsi_send_dcs_cmds_by_cmd_name(ctrl, lge_dsi_cmds_list,
 					INTERNAL_TEST_INDEX_MAX, internal_test_cmd_names[INTERNAL_TEST_FRC]);
 
-	pr_info("---\n");
+	pr_debug("---\n");
 	return ret;
 }
 
@@ -206,7 +206,7 @@ static ssize_t pwr_set(struct device *dev,
 	ssize_t ret = strnlen(buf, PAGE_SIZE);
 	unsigned int param;
 
-	pr_info(" +++\n");
+	pr_debug(" +++\n");
 
 	if(pdata_base == NULL) {
 		pr_err("Invalid input data\n");
@@ -243,7 +243,7 @@ static ssize_t pwr_set(struct device *dev,
 		break;
 	}
 
-	pr_info(" ---\n");
+	pr_debug(" ---\n");
 
 	return ret;
 }
