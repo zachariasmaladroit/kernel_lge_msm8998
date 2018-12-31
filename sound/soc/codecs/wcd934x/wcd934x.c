@@ -55,7 +55,7 @@
 #include <linux/switch.h>
 #endif
 
-//#define CONFIG_SOUND_CONTROL
+#define CONFIG_SOUND_CONTROL
 
 #define WCD934X_RATES_MASK (SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000 |\
 			    SNDRV_PCM_RATE_32000 | SNDRV_PCM_RATE_48000 |\
@@ -164,11 +164,11 @@ enum {
 	POWER_RESUME,
 };
 
-//#ifdef CONFIG_SOUND_CONTROL
+#ifdef CONFIG_SOUND_CONTROL
 static struct snd_soc_codec *sound_control_codec_ptr;
 static int custom_hp_left = 0;
 static int custom_hp_right = 0;
-//#endif
+#endif
 
 static int dig_core_collapse_enable = 1;
 module_param(dig_core_collapse_enable, int,
@@ -1518,12 +1518,12 @@ rtn:
 	snd_soc_dapm_mux_update_power(widget->dapm, kcontrol,
 				      rx_port_value, e, update);
 
-//#ifdef CONFIG_SOUND_CONTROL
+#ifdef CONFIG_SOUND_CONTROL
 	snd_soc_write(sound_control_codec_ptr, WCD934X_CDC_RX1_RX_VOL_MIX_CTL, custom_hp_left);
 	snd_soc_write(sound_control_codec_ptr, WCD934X_CDC_RX2_RX_VOL_MIX_CTL, custom_hp_right);
 	snd_soc_write(sound_control_codec_ptr, WCD934X_CDC_RX1_RX_VOL_CTL, custom_hp_left);
 	snd_soc_write(sound_control_codec_ptr, WCD934X_CDC_RX2_RX_VOL_CTL, custom_hp_right);
-//#endif
+#endif
 
 	return 0;
 err:
@@ -5907,12 +5907,12 @@ static const struct snd_kcontrol_new tavil_snd_controls[] = {
 
 	SOC_SINGLE_SX_TLV("RX0 Digital Volume", WCD934X_CDC_RX0_RX_VOL_CTL,
 		0, -84, 40, digital_gain), /* -84dB min - 40dB max */
-/*#ifndef CONFIG_SOUND_CONTROL
+#ifndef CONFIG_SOUND_CONTROL
 	SOC_SINGLE_SX_TLV("RX1 Digital Volume", WCD934X_CDC_RX1_RX_VOL_CTL,
 		0, -84, 40, digital_gain),
 	SOC_SINGLE_SX_TLV("RX2 Digital Volume", WCD934X_CDC_RX2_RX_VOL_CTL,
 		0, -84, 40, digital_gain),
-#endif*/
+#endif
 	SOC_SINGLE_SX_TLV("RX3 Digital Volume", WCD934X_CDC_RX3_RX_VOL_CTL,
 		0, -84, 40, digital_gain),
 	SOC_SINGLE_SX_TLV("RX4 Digital Volume", WCD934X_CDC_RX4_RX_VOL_CTL,
@@ -5923,12 +5923,12 @@ static const struct snd_kcontrol_new tavil_snd_controls[] = {
 		0, -84, 40, digital_gain),
 	SOC_SINGLE_SX_TLV("RX0 Mix Digital Volume",
 		WCD934X_CDC_RX0_RX_VOL_MIX_CTL, 0, -84, 40, digital_gain),
-/*#ifndef CONFIG_SOUND_CONTROL
+#ifndef CONFIG_SOUND_CONTROL
 	SOC_SINGLE_SX_TLV("RX1 Mix Digital Volume",
 		WCD934X_CDC_RX1_RX_VOL_MIX_CTL, 0, -84, 40, digital_gain),
 	SOC_SINGLE_SX_TLV("RX2 Mix Digital Volume",
 		WCD934X_CDC_RX2_RX_VOL_MIX_CTL, 0, -84, 40, digital_gain),
-#endif*/
+#endif
 	SOC_SINGLE_SX_TLV("RX3 Mix Digital Volume",
 		WCD934X_CDC_RX3_RX_VOL_MIX_CTL, 0, -84, 40, digital_gain),
 	SOC_SINGLE_SX_TLV("RX4 Mix Digital Volume",
@@ -9350,7 +9350,7 @@ done:
 	return ret;
 }
 
-//#ifdef CONFIG_SOUND_CONTROL
+#ifdef CONFIG_SOUND_CONTROL
 static ssize_t headphone_gain_show(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)
 {
@@ -9428,7 +9428,7 @@ static struct attribute_group sound_control_attr_group = {
 };
 
 static struct kobject *sound_control_kobj;
-//#endif
+#endif
 
 static int tavil_soc_codec_probe(struct snd_soc_codec *codec)
 {
@@ -9439,9 +9439,9 @@ static int tavil_soc_codec_probe(struct snd_soc_codec *codec)
 	int i, ret;
 	void *ptr = NULL;
 
-//#ifdef CONFIG_SOUND_CONTROL
+#ifdef CONFIG_SOUND_CONTROL
 	sound_control_codec_ptr = codec;
-//#endif
+#endif
 
 	control = dev_get_drvdata(codec->dev->parent);
 
@@ -10304,7 +10304,7 @@ err_resmgr:
 	mutex_destroy(&tavil->swr.clk_mutex);
 	devm_kfree(&pdev->dev, tavil);
 
-//#ifdef CONFIG_SOUND_CONTROL
+#ifdef CONFIG_SOUND_CONTROL
 	sound_control_kobj = kobject_create_and_add("sound_control", kernel_kobj);
 	if (sound_control_kobj == NULL) {
 		pr_warn("%s kobject create failed!\n", __func__);
@@ -10314,7 +10314,7 @@ err_resmgr:
         if (ret) {
 		pr_warn("%s sysfs file create failed!\n", __func__);
 	}
-//#endif
+#endif
 
 	return ret;
 }
