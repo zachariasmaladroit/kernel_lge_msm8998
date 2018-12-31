@@ -1960,7 +1960,7 @@ static int tavil_codec_enable_ear_pa(struct snd_soc_dapm_widget *w,
 		 * HW requirement
 		 */
 #ifdef CONFIG_MACH_LGE
-		pr_info("%s : enable SAR backoff\n", __func__);
+		pr_debug("%s : enable SAR backoff\n", __func__);
 		switch_set_state(&tavil->sar, 1);
 #endif
 		usleep_range(5000, 5500);
@@ -1979,7 +1979,7 @@ static int tavil_codec_enable_ear_pa(struct snd_soc_dapm_widget *w,
 		 * HW requirement
 		 */
 #ifdef CONFIG_MACH_LGE
-		pr_info("%s : disable SAR backoff\n", __func__);
+		pr_debug("%s : disable SAR backoff\n", __func__);
 		switch_set_state(&tavil->sar, 0);
 #endif
 		usleep_range(5000, 5500);
