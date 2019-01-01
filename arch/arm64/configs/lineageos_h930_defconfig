@@ -6193,6 +6193,9 @@ CONFIG_CRYPTO_CRC32_ARM64=y
 CONFIG_CRYPTO_AES_ARM64=y # slower than CE (crypto extensions)!, fallback though
 CONFIG_CRYPTO_CHACHA20_NEON=y
 
+# Wireguard VPN
+CONFIG_WIREGUARD=y
+
 # QDISC (queue discipline) net scheduler
 CONFIG_NET_SCH_CBQ=y
 CONFIG_NET_SCH_HTB=y
