@@ -5501,7 +5501,7 @@ CONFIG_CC_STACKPROTECTOR_REGULAR=y # boot eval
 # CONFIG_CC_STACKPROTECTOR_STRONG is not set
 
 # Kernel (self)protection
-CONFIG_DEFAULT_MMAP_MIN_ADDR=32768 # Disallow allocating the first 32k of memory (cannot be 64k due to ARM loader).
+CONFIG_DEFAULT_MMAP_MIN_ADDR=4096 # Disallow allocating the first 32k of memory (cannot be 64k due to ARM loader). 32768 invalid for ARM loader
 CONFIG_DEBUG_RODATA=y
 CONFIG_DEBUG_ALIGN_RODATA=y # This prevents sections from being split into pages and avoids a potential TLB penalty.
 # DEBUG_SET_MODULE_RONX is not set # for Stock ROM "Set loadable kernel module data as NX and text as RO"
