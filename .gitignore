@@ -116,3 +116,6 @@ all.config
 
 # msm ipa driver
 ipa_common
+
+# wireguard
+#net/wireguard/
