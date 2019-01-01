@@ -119,3 +119,6 @@ ipa_common
 
 # ignore foobar
 block/Makefile.rej
+
+# wireguard
+#net/wireguard/
