@@ -5516,7 +5516,9 @@ CONFIG_STRICT_DEVMEM=y # If this option is disabled,
 # CONFIG_FREE_PAGES_RDONLY is not set # spr (non-perf) , needs CONFIG_FORCE_PAGES=y (?!)
 # CONFIG_ARM64_STRICT_BREAK_BEFORE_MAKE is not set # spr (non-perf) , arch/arm64/include/asm/pgtable.h
 
-# disable LG cancun & triton, it's not needed and causes overhead
+# disable LG cancun & triton, it's broken on non-stock (needs triton binary)
+# Cancun: LGE CPU Cancun Project [hooks into lge_monitor_thermal.c, kgsl_pwrctrl.c]
+# Triton: "Cpu Freq Helper Driver"
 CONFIG_LGE_PM_TRITON=y
 CONFIG_LGE_PM_CANCUN=y
 
