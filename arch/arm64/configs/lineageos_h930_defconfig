@@ -5494,8 +5494,8 @@ CONFIG_SECURITY_YAMA=y
 # SSP stackprotector, degrades sound quality, let's set protection to "regular"
 CONFIG_HAVE_CC_STACKPROTECTOR=y
 CONFIG_CC_STACKPROTECTOR=y
-CONFIG_CC_STACKPROTECTOR_NONE=y # eval, music quality, speed improvement is negligible
-# CONFIG_CC_STACKPROTECTOR_REGULAR is not set # boot eval
+# CONFIG_CC_STACKPROTECTOR_NONE is not set
+CONFIG_CC_STACKPROTECTOR_REGULAR=y # boot eval
 # CONFIG_CC_STACKPROTECTOR_STRONG is not set
 
 # Kernel (self)protection
