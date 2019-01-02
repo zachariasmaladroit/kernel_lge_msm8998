@@ -1834,30 +1834,22 @@ process:
 			if (is_meta_sk(sk)) {
 				bh_lock_sock(sk);
 
-				if (!mptcp_can_new_subflow(sk)) {
-					inet_csk_reqsk_queue_drop_and_put(sk, req);
-					bh_unlock_sock(sk);
-					sock_put(sk);
+				if (sock_owned_by_user(sk)) {
+					skb->sk = sk;
+					if (unlikely(sk_add_backlog(sk, skb,
+									sk->sk_rcvbuf + sk->sk_sndbuf))) {
+						reqsk_put(req);
 
-					return 0;
-				}
-
-					if (sock_owned_by_user(sk)) {
-						skb->sk = sk;
-						if (unlikely(sk_add_backlog(sk, skb,
-										sk->sk_rcvbuf + sk->sk_sndbuf))) {
-							reqsk_put(req);
-
-							bh_unlock_sock(sk);
-							NET_INC_STATS_BH(net, LINUX_MIB_TCPBACKLOGDROP);
-							goto discard_and_relse;
-						}
+						bh_unlock_sock(sk);
+						NET_INC_STATS_BH(net, LINUX_MIB_TCPBACKLOGDROP);
+						goto discard_and_relse;
+					}
 
 					reqsk_put(req);
 					bh_unlock_sock(sk);
 
 					return 0;
-					}
+				}
 			}
 			sock_hold(sk);
 			nsk = tcp_check_req(sk, skb, req, false);
