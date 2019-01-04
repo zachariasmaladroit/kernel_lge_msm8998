@@ -52,8 +52,6 @@
 		qcom,mdss-dsi-lane-2-state;
 		qcom,mdss-dsi-lane-3-state;
 		qcom,mdss-dsi-reset-sequence = <1 10>, <0 2>, <1 10>;
-		qcom,mdss-dsi-bl-max-level = <511>;
-		qcom,mdss-brightness-max-level = <511>;
 		qcom,default-brightness = <158>;
 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
 		qcom,mdss-dsi-mdp-trigger = "none";
