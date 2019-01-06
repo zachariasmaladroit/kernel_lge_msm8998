@@ -126,11 +126,13 @@
 
 #define HBUFFERLEN 30
 
-static int arp_project_enable = 1;
-static int print_arp_info = 0;
-static int ignore_gw_update_by_request = 1;
-static int ignore_gw_update_by_reply = 1;
-static int ignore_proxy_arp = 1;
+bool arp_project_enable = true;
+bool print_arp_info = false;
+static bool ignore_gw_update_by_request = true;
+static bool ignore_gw_update_by_reply = true;
+static bool ignore_proxy_arp = true;
+EXPORT_SYMBOL(arp_project_enable);
+EXPORT_SYMBOL(print_arp_info);
 
 extern __be32 ip_fib_get_gw(struct net_device *dev);
 
@@ -2038,24 +2040,26 @@ static ssize_t arp_project_enable_show(struct device *dev,
 static ssize_t arp_project_enable_dump(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	int rc, val;
+	int val = 0;
 
-	rc = kstrtoint(buf, 10, &val);
-	if (rc)
-		return -EINVAL;
+	if (arp_project_enable)
+		val = 1;
 
-	if (val == 0 || val == 1) {
-		if (arp_project_enable != val)
-			arp_project_enable = val;
+	if ((buf[0] == '0' || buf[0] == '1') && buf[1] == '\n') {
+		if (val != buf[0] - '0')
+			val = buf[0] - '0';
 		else
 			return count;
 	} else
 		return -EINVAL;
 
-	if (arp_project_enable)
+	if (val) {
+		arp_project_enable = true;
 		printk(ARP_PROJECT"%s: Enabled\n", __func__);
-	else
+	} else {
+		arp_project_enable = false;
 		printk(ARP_PROJECT"%s: Disabled\n", __func__);
+	}
 
 	return count;
 }
@@ -2076,24 +2080,26 @@ static ssize_t print_arp_info_show(struct device *dev,
 static ssize_t print_arp_info_dump(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	int rc, val;
+	int val = 0;
 
-	rc = kstrtoint(buf, 10, &val);
-	if (rc)
-		return -EINVAL;
+	if (print_arp_info)
+		val = 1;
 
-	if (val == 0 || val == 1) {
-		if (print_arp_info != val)
-			print_arp_info = val;
+	if ((buf[0] == '0' || buf[0] == '1') && buf[1] == '\n') {
+		if (val != buf[0] - '0')
+			val = buf[0] - '0';
 		else
 			return count;
 	} else
 		return -EINVAL;
 
-	if (print_arp_info)
+	if (val) {
+		print_arp_info = true;
 		printk(ARP_PROJECT"%s: Enabled\n", __func__);
-	else
+	} else {
+		print_arp_info = false;
 		printk(ARP_PROJECT"%s: Disabled\n", __func__);
+	}
 
 	return count;
 }
@@ -2114,24 +2120,26 @@ static ssize_t ignore_gw_update_by_request_show(struct device *dev,
 static ssize_t ignore_gw_update_by_request_dump(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	int rc, val;
+	int val = 0;
 
-	rc = kstrtoint(buf, 10, &val);
-	if (rc)
-		return -EINVAL;
+	if (ignore_gw_update_by_request)
+		val = 1;
 
-	if (val == 0 || val == 1) {
-		if (ignore_gw_update_by_request != val)
-			ignore_gw_update_by_request = val;
+	if ((buf[0] == '0' || buf[0] == '1') && buf[1] == '\n') {
+		if (val != buf[0] - '0')
+			val = buf[0] - '0';
 		else
 			return count;
 	} else
 		return -EINVAL;
 
-	if (ignore_gw_update_by_request)
+	if (val) {
+		ignore_gw_update_by_request = true;
 		printk(ARP_PROJECT"%s: Enabled\n", __func__);
-	else
+	} else {
+		ignore_gw_update_by_request = false;
 		printk(ARP_PROJECT"%s: Disabled\n", __func__);
+	}
 
 	return count;
 }
@@ -2152,24 +2160,26 @@ static ssize_t ignore_gw_update_by_reply_show(struct device *dev,
 static ssize_t ignore_gw_update_by_reply_dump(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	int rc, val;
+	int val = 0;
 
-	rc = kstrtoint(buf, 10, &val);
-	if (rc)
-		return -EINVAL;
+	if (ignore_gw_update_by_reply)
+		val = 1;
 
-	if (val == 0 || val == 1) {
-		if (ignore_gw_update_by_reply != val)
-			ignore_gw_update_by_reply = val;
+	if ((buf[0] == '0' || buf[0] == '1') && buf[1] == '\n') {
+		if (val != buf[0] - '0')
+			val = buf[0] - '0';
 		else
 			return count;
 	} else
 		return -EINVAL;
 
-	if (ignore_gw_update_by_reply)
+	if (val) {
+		ignore_gw_update_by_reply = true;
 		printk(ARP_PROJECT"%s: Enabled\n", __func__);
-	else
+	} else {
+		ignore_gw_update_by_reply = false;
 		printk(ARP_PROJECT"%s: Disabled\n", __func__);
+	}
 
 	return count;
 }
@@ -2190,24 +2200,26 @@ static ssize_t ignore_proxy_arp_show(struct device *dev,
 static ssize_t ignore_proxy_arp_dump(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
-	int rc, val;
+	int val = 0;
 
-	rc = kstrtoint(buf, 10, &val);
-	if (rc)
-		return -EINVAL;
+	if (ignore_proxy_arp)
+		val = 1;
 
-	if (val == 0 || val == 1) {
-		if (ignore_proxy_arp != val)
-			ignore_proxy_arp = val;
+	if ((buf[0] == '0' || buf[0] == '1') && buf[1] == '\n') {
+		if (val != buf[0] - '0')
+			val = buf[0] - '0';
 		else
 			return count;
 	} else
 		return -EINVAL;
 
-	if (ignore_proxy_arp)
+	if (val) {
+		ignore_proxy_arp = true;
 		printk(ARP_PROJECT"%s: Enabled\n", __func__);
-	else
+	} else {
+		ignore_proxy_arp = false;
 		printk(ARP_PROJECT"%s: Disabled\n", __func__);
+	}
 
 	return count;
 }
