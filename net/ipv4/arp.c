@@ -622,7 +622,7 @@ static inline int arp_fwd_pvlan(struct in_device *in_dev,
  |-------------------------------------------------------------------------------| |
  | <HW Address Length> | <Protocol Addr Length> | <Operation Code>               | |<- sizeof(struct arp_hdr)
  | (MAC: 6byte)        | (IPv4 Length: 4byte)   | int type; ---- ARPOP_REQUEST 1 | |
- | arp->ar_hln =       | arp->ar_pln = 4;       |            |-- ARPOP_REPLY   2 | |
+ | arp->hln =          | arp->ar_pln = 4;       |            |-- ARPOP_REPLY   2 | |
  |    dev->addr_len;   |                        | arp->ar_op = htons(type);      | |
  |-------------------------------------------------------------------------------|<- arp + 1 <- arp_ptr
  | <Sender Hardware Address>  (6byte MAC Address)                                | |
