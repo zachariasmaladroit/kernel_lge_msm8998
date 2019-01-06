@@ -1354,13 +1354,15 @@ static int arp_process(struct net *net, struct sock *sk, struct sk_buff *skb)
 
 	// If REPLY
 
-	if (arp_project_enable && ignore_gw_update_by_reply &&
-	    arp->ar_op == htons(ARPOP_REPLY) &&
-	    arp_detect_gw_update(dev, sip, sha)) {
+	if (arp_project_enable && ignore_gw_update_by_reply) {
+		if (arp->ar_op == htons(ARPOP_REPLY)) {
+			if (arp_detect_gw_update(dev, sip, sha)) {
 				printk(ARP_PROJECT"%s: "
 				       "Ignoring ARP reply...\n",
 				       __func__);
 				goto out;
+			}
+		}
 	}
 
 	/* Update our ARP tables */
