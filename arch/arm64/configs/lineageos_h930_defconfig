@@ -5554,6 +5554,16 @@ CONFIG_DEVFREQ_GOV_QCOM_ADRENO_TZ=y
 CONFIG_DEVFREQ_GOV_CPUFREQ=y
 # CONFIG_SIMPLE_GPU_ALGORITHM is not set # not used right now, NA source
 
+# F2FS, needs "porting" of full upstream backported patchset, for now limited patchset
+CONFIG_F2FS_FS=y
+CONFIG_F2FS_STAT_FS=y
+CONFIG_F2FS_FS_XATTR=y
+CONFIG_F2FS_FS_POSIX_ACL=y
+CONFIG_F2FS_FS_SECURITY=y
+# CONFIG_F2FS_CHECK_FS is not set
+CONFIG_F2FS_FS_ENCRYPTION=y
+# CONFIG_F2FS_IO_TRACE is not set
+
 # exfat opensource'd Samsung exfat leaked driver
 # CONFIG_EXFAT_FS is not set
 CONFIG_EXFAT_DEFAULT_CODEPAGE=437
