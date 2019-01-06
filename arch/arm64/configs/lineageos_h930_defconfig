@@ -5895,7 +5895,7 @@ CONFIG_FRONTSWAP=y
 # CONFIG_CMA_PINPAGE_MIGRATION is not set
 CONFIG_GCMA=y
 CONFIG_GCMA_DEFAULT=y
-# CONFIG_GCMA_STATS is not set
+CONFIG_GCMA_STATS=y # tshoot, working state
 
 # pstore functionality
 CONFIG_PSTORE=y
