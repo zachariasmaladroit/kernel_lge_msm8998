@@ -361,7 +361,7 @@ static int32_t afe_callback(struct apr_client_data *data, void *priv)
 		if(atomic_read(&this_afe.tfa_state) == 1 &&
 		   data->token == q6audio_get_port_index(AFE_PORT_ID_TERTIARY_MI2S_RX))
 		{
-			pr_info("%s:AFE_PORT_CMDRSP_GET_PARAM_V2 , data->token = %d, payload = %d, %d\n",
+			pr_debug("%s:AFE_PORT_CMDRSP_GET_PARAM_V2 , data->token = %d, payload = %d, %d\n",
 				__func__, data->token, payload[0], payload[1]);
 			if(data->payload_size == sizeof(uint32_t))
 				atomic_set(&this_afe.status, payload[0]);
@@ -414,7 +414,7 @@ static int32_t afe_callback(struct apr_client_data *data, void *priv)
 					return 0;
 #if defined(CONFIG_SND_SOC_TFA9872)
 				if(atomic_read(&this_afe.tfa_state) == 1){
-					pr_info("%s:AFE_PORT_CMD_SET_PARAM_V2 , data->token = %d, payload = %d, %d\n",
+					pr_debug("%s:AFE_PORT_CMD_SET_PARAM_V2 , data->token = %d, payload = %d, %d\n",
 					__func__, data->token, payload[0], payload[1]);
 
 					if(data->payload_size == sizeof(uint32_t))
@@ -480,26 +480,26 @@ static int32_t afe_callback(struct apr_client_data *data, void *priv)
 			uint32_t *payload;
 			payload = data->payload;
 			if(payload[0] == AFE_EVENT_TFADSP_STATE_INIT) {
-				pr_info("%s: AFE_EVENT_TFADSP_STATE_INIT data = 0x%x\n",
+				pr_debug("%s: AFE_EVENT_TFADSP_STATE_INIT data = 0x%x\n",
 					__func__, payload[1]);
 				adsp_afe_tfadsp_status = AFE_EVENT_TFADSP_STATE_INIT;
 			} else if(payload[0] == AFE_EVENT_TFADSP_STATE_CLOSE) {
-				pr_info("%s: AFE_EVENT_TFADSP_STATE_CLOSE data = 0x%x\n",
+				pr_debug("%s: AFE_EVENT_TFADSP_STATE_CLOSE data = 0x%x\n",
 					__func__, payload[1]);
 				adsp_afe_tfadsp_status = AFE_EVENT_TFADSP_STATE_CLOSE;
 			} else if(payload[0] == AFE_EVENT_TFADSP_STATE_CONFIGURED) {
 				if(payload[1] == 0) // success
-					pr_info("%s: TFADSP is configured\n", __func__);
+					pr_debug("%s: TFADSP is configured\n", __func__);
 				else if(payload[1] == 6) // already configured.
-				    pr_info("%s: TFADSP is already configured\n", __func__);
+				    pr_debug("%s: TFADSP is already configured\n", __func__);
 				else // fail
 				  pr_err("%s: TFADSP configuration is failed. cause=%d\n",__func__, payload[1]);
 			} else if(payload[0] == AFE_EVENT_TFADSP_RX_MODULE_DISABLED) {
-			      pr_info("%s: AFE_EVENT_TFADSP_RX_MODULE_DISABLED\n", __func__);
+			      pr_debug("%s: AFE_EVENT_TFADSP_RX_MODULE_DISABLED\n", __func__);
 			} else if(payload[0] == AFE_EVENT_TFADSP_TX_MODULE_DISABLED) {
-			      pr_info("%s: AFE_EVENT_TFADSP_TX_MODULE_DISABLED\n", __func__);
+			      pr_debug("%s: AFE_EVENT_TFADSP_TX_MODULE_DISABLED\n", __func__);
 			} else {
-				pr_info("%s: AFE_EVENT_TFADSP_STATE state = 0x%x\n",
+				pr_debug("%s: AFE_EVENT_TFADSP_STATE state = 0x%x\n",
 					__func__, payload[0]);
 			}
 		}
@@ -1393,19 +1393,19 @@ static struct cal_block_data *afe_find_cal_topo_id_by_port(
                 if (afe_top->topology == 0x1000B900) {    // check if afe id is for TFA Rx
                     if (path == RX_DEVICE && port_id != AFE_PORT_ID_TERTIARY_MI2S_RX) {
                         afe_top->topology = 0x000112FC; // forced reset topo id AFE_RX_NONE_TOPOLOGY(0x000112FC)
-                        pr_info("%s: changed top_id:%x, acdb_id:%d afe_port_id:0x%x \n",
+                        pr_debug("%s: changed top_id:%x, acdb_id:%d afe_port_id:0x%x \n",
                             __func__, afe_top->topology,
                             afe_top->acdb_id, q6audio_get_port_id(port_id));
                     }
                 } else if (afe_top->topology == 0x1000B901) {   // check if afe id is for TFA Tx
                     if (path == TX_DEVICE && port_id == AFE_PORT_ID_SLIMBUS_MULTI_CHAN_8_TX) {
                         afe_top->topology = 0x000112F9; // forced reset topo id AFE_TX_TOPOLOGY(0x000112F9)
-                        pr_info("%s: changed top_id:%x for FM Radio(WCN3990) loopback Tx, acdb_id:%d afe_port_id:0x%x \n",
+                        pr_debug("%s: changed top_id:%x for FM Radio(WCN3990) loopback Tx, acdb_id:%d afe_port_id:0x%x \n",
                             __func__, afe_top->topology,
                             afe_top->acdb_id, q6audio_get_port_id(port_id));
                     } else if (path == TX_DEVICE && port_id != AFE_PORT_ID_TERTIARY_MI2S_TX) {
                         //afe_top->topology = 0x000112F9; // forced reset topo id AFE_TX_TOPOLOGY(0x000112F9)
-                        pr_info("%s: Now, don't change top_id:%x for FM Radio(WCN3990) loopback Tx, acdb_id:%d afe_port_id:0x%x \n",
+                        pr_debug("%s: Now, don't change top_id:%x for FM Radio(WCN3990) loopback Tx, acdb_id:%d afe_port_id:0x%x \n",
                             __func__, afe_top->topology,
                             afe_top->acdb_id, q6audio_get_port_id(port_id));
                     }
@@ -1506,11 +1506,11 @@ static int afe_send_port_topology_id(u16 port_id)
 	config.port.topology.minor_version = AFE_API_VERSION_TOPOLOGY_V1;
 #if defined(CONFIG_SND_SOC_TFA9872)
 	if((topology_id == AFE_RX_MODULE_ID_TFADSP) && (port_id != AFE_PORT_ID_TERTIARY_MI2S_RX)) {
-		pr_info("%s: [AUDIO_BSP] topology_id[0x%x] port_id[0x%x] \n", __func__, topology_id, port_id);
+		pr_debug("%s: [AUDIO_BSP] topology_id[0x%x] port_id[0x%x] \n", __func__, topology_id, port_id);
 		topology_id = AFE_RX_NONE_TOPOLOGY;
 	}
 	if((port_id == AFE_PORT_ID_TERTIARY_MI2S_TX) && (topology_id != AFE_TX_MODULE_ID_TFADSP)) {
-		pr_info("%s: [AUDIO_BSP] topology_id[0x%x] port_id[0x%x] \n", __func__, topology_id, port_id);
+		pr_debug("%s: [AUDIO_BSP] topology_id[0x%x] port_id[0x%x] \n", __func__, topology_id, port_id);
 		topology_id = AFE_TX_MODULE_ID_TFADSP;
 	}
 #endif
@@ -1861,7 +1861,7 @@ static int afe_tfa_dsp_read_msg_via_mmap(int dev /* not used */, int buf_size, c
 	struct afe_tfa_dsp_read_msg_t tfa_dsp_read_msg;
 	struct afe_port_param_data_v2 pdata;
 
-	//pr_info("%s: start : buf_size = %d\n", __func__, buf_size);
+	//pr_debug("%s: start : buf_size = %d\n", __func__, buf_size);
 
 	if(buf_size < 0
 		|| buf_size > this_afe.tfa_cal.map_data.map_size - sizeof(pdata)
@@ -1963,7 +1963,7 @@ static int afe_tfa_dsp_read_msg_via_mmap(int dev /* not used */, int buf_size, c
 	}
 
 fail_cmd:
-	//pr_info("%s: end\n", __func__);
+	//pr_debug("%s: end\n", __func__);
 	return result;
 }
 static int afe_tfa_dsp_send_msg(
@@ -1982,7 +1982,7 @@ static int afe_tfa_dsp_send_msg(
 #if defined(AFE_TFADSP_STATIC_MEMORY)
 	if (dev < 0) /*free memory*/
 	{
-		pr_info("%s: kfree: tfa_dsp_send_msg\n", __func__);
+		pr_debug("%s: kfree: tfa_dsp_send_msg\n", __func__);
 		if (tfa_dsp_send_msg != NULL)
 			kfree(tfa_dsp_send_msg);
 		tfa_dsp_send_msg = NULL;
@@ -1992,13 +1992,13 @@ static int afe_tfa_dsp_send_msg(
 #endif
 
 	if (buf == NULL) {
-		pr_info("%s: send buf = NULL error\n", __func__);
+		pr_debug("%s: send buf = NULL error\n", __func__);
 		goto fail_cmd;
 	}
 
 	if(adsp_afe_tfadsp_status != AFE_EVENT_TFADSP_STATE_INIT)
 	{
-		pr_info("%s: adsp_afe_tfadsp_status = %d, Do not send a message to aDSP!!!\n", __func__, adsp_afe_tfadsp_status);
+		pr_debug("%s: adsp_afe_tfadsp_status = %d, Do not send a message to aDSP!!!\n", __func__, adsp_afe_tfadsp_status);
 		goto fail_cmd;
 	}
 
@@ -2013,7 +2013,7 @@ static int afe_tfa_dsp_send_msg(
 	msg_type = AFE_TFADSP_MSG_TYPE_RAW;
 
 	if(((buf[0]<<8)|buf[1]) == 65535)
-		pr_info("%s: [0]:0x%x-[1]:0x%x-[2]:0x%x-[3]:0x%x, [4]:0x%x-[5]:0x%x, packet_id:%d, packet_size:%d\n",
+		pr_debug("%s: [0]:0x%x-[1]:0x%x-[2]:0x%x-[3]:0x%x, [4]:0x%x-[5]:0x%x, packet_id:%d, packet_size:%d\n",
 			__func__,buf[0],buf[1],buf[2],buf[3],buf[4],buf[5],(buf[0]<<8)|buf[1],(buf[2]<<8)|buf[3]);
 	pr_debug("%s:msg_type:%d--buf_size:%d--num_msgs:%d\n", __func__,msg_type,buf_size,num_msgs);
 	/*apr total packet size*/
@@ -2033,14 +2033,14 @@ static int afe_tfa_dsp_send_msg(
 
 	/*check the max size of the apr packet*/
 	if (tfa_apr_pkt_size > AFE_APR_MAX_PKT_SIZE) {
-		pr_info("%s: apr pkt size (%d) > apr max pkt size (%d) error\n",
+		pr_debug("%s: apr pkt size (%d) > apr max pkt size (%d) error\n",
 			 __func__, tfa_apr_pkt_size, AFE_APR_MAX_PKT_SIZE);
 		goto fail_cmd;
 	}
 
 #if defined(AFE_TFADSP_STATIC_MEMORY)
 	if (tfa_dsp_send_msg == NULL) {
-		pr_info("%s: kmalloc once: tfa_dsp_send_msg (size: %d)\n",
+		pr_debug("%s: kmalloc once: tfa_dsp_send_msg (size: %d)\n",
 			__func__, AFE_APR_MAX_PKT_SIZE);
 		tfa_dsp_send_msg =
 			(struct afe_tfa_dsp_send_msg_t *)
@@ -3424,12 +3424,12 @@ static int __afe_port_start(u16 port_id, union afe_port_config *afe_config,
 		afe_send_custom_topology();
 #if defined(CONFIG_SND_SOC_TFA9872)
 		if(port_id == AFE_PORT_ID_TERTIARY_MI2S_RX)
-			pr_info("%s: [NXP] afe_apr_send_pkt[AFE_PORT_CMD_DEVICE_START] enter\n", __func__);
+			pr_debug("%s: [NXP] afe_apr_send_pkt[AFE_PORT_CMD_DEVICE_START] enter\n", __func__);
 #endif
 		afe_send_port_topology_id(port_id);
 #if defined(CONFIG_SND_SOC_TFA9872)
 				if(port_id == AFE_PORT_ID_TERTIARY_MI2S_RX)
-					pr_info("%s: [NXP] afe_apr_send_pkt[AFE_PORT_CMD_DEVICE_START] exit\n", __func__);
+					pr_debug("%s: [NXP] afe_apr_send_pkt[AFE_PORT_CMD_DEVICE_START] exit\n", __func__);
 #endif
 		afe_send_cal(port_id);
 		afe_send_hw_delay(port_id, rate);
@@ -5182,7 +5182,7 @@ static struct dentry *debugfs_afelb_gain;
 static int afe_debug_open(struct inode *inode, struct file *file)
 {
 	file->private_data = inode->i_private;
-	pr_info("%s: debug intf %s\n", __func__, (char *) file->private_data);
+	pr_debug("%s: debug intf %s\n", __func__, (char *) file->private_data);
 	return 0;
 }
 
@@ -5240,7 +5240,7 @@ static ssize_t afe_debug_write(struct file *filp,
 	if (!strcmp(lb_str, "afe_loopback")) {
 		rc = afe_get_parameters(lbuf, param, 3);
 		if (!rc) {
-			pr_info("%s: %lu %lu %lu\n", lb_str, param[0], param[1],
+			pr_debug("%s: %lu %lu %lu\n", lb_str, param[0], param[1],
 				param[2]);
 
 			if ((param[0] != AFE_LOOPBACK_ON) && (param[0] !=
@@ -5269,7 +5269,7 @@ static ssize_t afe_debug_write(struct file *filp,
 	} else if (!strcmp(lb_str, "afe_loopback_gain")) {
 		rc = afe_get_parameters(lbuf, param, 2);
 		if (!rc) {
-			pr_info("%s: %s %lu %lu\n",
+			pr_debug("%s: %s %lu %lu\n",
 				__func__, lb_str, param[0], param[1]);
 
 			rc = q6audio_validate_port(param[0]);
@@ -6013,7 +6013,7 @@ int afe_close(int port_id)
 
 #if defined(CONFIG_SND_SOC_TFA9872)
 	if(port_id == AFE_PORT_ID_TERTIARY_MI2S_RX)
-		pr_info("%s: [NXP] afe_apr_send_pkt[AFE_PORT_CMD_DEVICE_STOP] enter\n", __func__);
+		pr_debug("%s: [NXP] afe_apr_send_pkt[AFE_PORT_CMD_DEVICE_STOP] enter\n", __func__);
 #endif
 
 	ret = afe_apr_send_pkt(&stop, &this_afe.wait[index]);
@@ -6022,7 +6022,7 @@ int afe_close(int port_id)
 
 #if defined(CONFIG_SND_SOC_TFA9872)
 	if(port_id == AFE_PORT_ID_TERTIARY_MI2S_RX)
-		pr_info("%s: [NXP] afe_apr_send_pkt[AFE_PORT_CMD_DEVICE_STOP] exit\n", __func__);
+		pr_debug("%s: [NXP] afe_apr_send_pkt[AFE_PORT_CMD_DEVICE_STOP] exit\n", __func__);
 #endif
 
 fail_cmd:
@@ -6808,7 +6808,7 @@ int afe_spk_prot_get_calib_data(struct afe_spkr_prot_get_vi_calib *calib_resp)
 	}
 	memcpy(&calib_resp->res_cfg , &this_afe.calib_data.res_cfg,
 		sizeof(this_afe.calib_data.res_cfg));
-	pr_info("%s: state %s resistance %d %d\n", __func__,
+	pr_debug("%s: state %s resistance %d %d\n", __func__,
 			 fbsp_state[calib_resp->res_cfg.th_vi_ca_state],
 			 calib_resp->res_cfg.r0_cali_q24[SP_V2_SPKR_1],
 			 calib_resp->res_cfg.r0_cali_q24[SP_V2_SPKR_2]);
@@ -7460,7 +7460,7 @@ static int afe_nxp_mmap_create(void)
   size_t len;
   struct rtac_cal_block_data *tfa_cal = &(this_afe.tfa_cal);
 
-  pr_info("%s: start\n", __func__);
+  pr_debug("%s: start\n", __func__);
 
   tfa_cal->map_data.map_size = SZ_4K;
 
@@ -7476,7 +7476,7 @@ static int afe_nxp_mmap_create(void)
       return rc;
   }
 
-  pr_info("%s : len = %zd\n", __func__, len);
+  pr_debug("%s : len = %zd\n", __func__, len);
 
   atomic_set(&this_afe.mem_map_cal_index, -1);
 
@@ -7487,8 +7487,8 @@ static int afe_nxp_mmap_create(void)
       return rc;
   }
 
-  pr_info("%s : mmap_handle = 0x%x\n", __func__, tfa_cal->map_data.map_handle);
-  pr_info("%s : end\n", __func__);
+  pr_debug("%s : mmap_handle = 0x%x\n", __func__, tfa_cal->map_data.map_handle);
+  pr_debug("%s : end\n", __func__);
 
   return rc;
 }
@@ -7498,10 +7498,10 @@ static void afe_nxp_mmap_destroy(void)
 	int	result = 0;
 	struct rtac_cal_block_data *tfa_cal = &(this_afe.tfa_cal);
 
-	pr_info("%s: start\n", __func__);
+	pr_debug("%s: start\n", __func__);
 
 	if (tfa_cal->map_data.map_handle == 0) {
-		pr_info("%s: mmap handle is 0, nothing to unmap\n",
+		pr_debug("%s: mmap handle is 0, nothing to unmap\n",
 			__func__);
 		goto done;
 	}
@@ -7518,7 +7518,7 @@ static void afe_nxp_mmap_destroy(void)
     tfa_cal->map_data.ion_client = NULL;
 
 done:
-	pr_info("%s: end\n", __func__);
+	pr_debug("%s: end\n", __func__);
 }
 #endif // CONFIG_SND_SOC_TFA9872
 int afe_map_rtac_block(struct rtac_cal_block_data *cal_block)
