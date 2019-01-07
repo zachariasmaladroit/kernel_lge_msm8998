@@ -753,7 +753,7 @@ static int msm_pcm_routing_get_app_type_idx(int app_type)
 		if (app_type_cfg[idx].app_type == app_type)
 			return idx;
 	}
-	pr_info("%s: App type not available, fallback to default\n", __func__);
+	pr_debug("%s: App type not available, fallback to default\n", __func__);
 	return 0;
 }
 
@@ -11630,7 +11630,7 @@ static void AC_setHPF(struct tx_control_param_t *ac_params, int16_t cutoff)
         }
     }
 
-    pr_info("%s: Mode = %d, HighpassFrequency = %d \n", __func__, ac_params->Mode, ac_params->HighpassFrequency);
+    pr_debug("%s: Mode = %d, HighpassFrequency = %d \n", __func__, ac_params->Mode, ac_params->HighpassFrequency);
 
     return;
 }
@@ -11639,13 +11639,13 @@ static void AC_setVolume(struct tx_control_param_t *ac_params, struct tx_control
 {
     int i=0;
 
-    pr_info("%s: volume = %d \n", __func__, volume);
+    pr_debug("%s: volume = %d \n", __func__, volume);
 
     if(volume == AC_VOL_VIDEO_MUTE) // video only.
     {
         ac_params->OutputGain = AC_OUTPUTGAIN_MIN;
 
-        pr_info("%s: Tx mute \n", __func__);
+        pr_debug("%s: Tx mute \n", __func__);
         return;
     }
 
@@ -11669,7 +11669,7 @@ static void AC_setVolume(struct tx_control_param_t *ac_params, struct tx_control
         }
     }
 
-    pr_info("%s: ac_params->OutputGain = %d, \n", __func__, ac_params->OutputGain);
+    pr_debug("%s: ac_params->OutputGain = %d, \n", __func__, ac_params->OutputGain);
 
     return;
 }
@@ -11682,7 +11682,7 @@ static void AC_setWNS(struct tx_control_param_t *ac_params, int16_t onoff)
     else {
         ac_params->Mode |= AC_MODE_WNS;
     }
-    pr_info("%s: onoff = %d,  Mode = %d \n", __func__, onoff, ac_params->Mode);
+    pr_debug("%s: onoff = %d,  Mode = %d \n", __func__, onoff, ac_params->Mode);
 
     return;
 }
@@ -11695,7 +11695,7 @@ static void AC_setHighSPL(struct tx_control_param_t *ac_params, int16_t onoff)
     else {
         ac_params->Mode |= AC_MODE_HIGH_SPL;
     }
-    pr_info("%s: onoff = %d,  Mode = %d \n", __func__, onoff, ac_params->Mode);
+    pr_debug("%s: onoff = %d,  Mode = %d \n", __func__, onoff, ac_params->Mode);
 
     return;
 }
@@ -11722,7 +11722,7 @@ static void AC_setAGC(struct tx_control_param_t *ac_params, struct tx_control_pa
             ac_params->MdrcBand0_OutputLevels[i] = AGC_Knees[i];
         }
     }
-    pr_info("%s: onoff = %d,  Mode = %d \n", __func__, onoff, ac_params->Mode);
+    pr_debug("%s: onoff = %d,  Mode = %d \n", __func__, onoff, ac_params->Mode);
 
     return;
 }
@@ -11736,7 +11736,7 @@ static void AC_setLIMITER(struct tx_control_param_t *ac_params, int16_t threshol
         ac_params->Mode |= AC_MODE_LIMITER;
         ac_params->LimiterThreshold = threshold;
     }
-    pr_info("%s: Mode = %d, LimiterThreshold = %d \n", __func__, ac_params->Mode, ac_params->LimiterThreshold);
+    pr_debug("%s: Mode = %d, LimiterThreshold = %d \n", __func__, ac_params->Mode, ac_params->LimiterThreshold);
 
     return;
 }
@@ -11748,14 +11748,14 @@ static int msm_routing_get_tx_cfg_control(struct snd_kcontrol *kcontrol,
     int copp_idx;
     uint32_t param_length = sizeof(struct tx_control_param_t);
 
-    pr_info("%s : enter \n", __func__);
+    pr_debug("%s : enter \n", __func__);
 
     copp_idx = adm_get_default_copp_idx(SLIMBUS_0_TX);
     if ((copp_idx < 0) || (copp_idx > MAX_COPPS_PER_PORT)) {
         pr_err("%s, no active copp to HiFi Rec. copp_idx:%d\n", __func__ , copp_idx);
         return -EINVAL;
     }
-    pr_info("%s: parameters copp_idx=%d, param_length=%d \n", __func__, copp_idx, param_length);
+    pr_debug("%s: parameters copp_idx=%d, param_length=%d \n", __func__, copp_idx, param_length);
 
     if (param_value == NULL) {
         param_value = (struct tx_control_param_t*) kzalloc(param_length, GFP_KERNEL);
@@ -11785,7 +11785,7 @@ static int msm_routing_get_tx_cfg_control(struct snd_kcontrol *kcontrol,
         memcpy((void *)default_params, (void *)param_value, param_length);
     }
     
-    pr_info("%s: OperatingMode=%d, Mode=%d \n", __func__, param_value->OperatingMode, param_value->Mode);
+    pr_debug("%s: OperatingMode=%d, Mode=%d \n", __func__, param_value->OperatingMode, param_value->Mode);
 
     return 0;
 
@@ -11802,7 +11802,7 @@ static int msm_routing_put_tx_cfg_control(struct snd_kcontrol *kcontrol,
     int key_value;
     struct tx_control_param_t *tx_control_param;
 
-    pr_info("%s : enter tx_enabled = %d\n", __func__, (int16_t)ucontrol->value.integer.value[0]);
+    pr_debug("%s : enter tx_enabled = %d\n", __func__, (int16_t)ucontrol->value.integer.value[0]);
 
     if((!param_value) || (!default_params)) {
         pr_err("%s: not called/complete msm_routing_get_tx_cfg_control() in advence\n", __func__);
@@ -11811,7 +11811,7 @@ static int msm_routing_put_tx_cfg_control(struct snd_kcontrol *kcontrol,
     }
 
     tx_control_param = param_value;
-    //pr_info("%s : OutputGain=%d, HighpassFrequency=%d, LimiterThreshold=%d \n",
+    //pr_debug("%s : OutputGain=%d, HighpassFrequency=%d, LimiterThreshold=%d \n",
     //     __func__, tx_control_param->OutputGain, tx_control_param->HighpassFrequency, tx_control_param->LimiterThreshold);
 
     if ( ucontrol->value.integer.value[0] == 0 ) {
@@ -11823,7 +11823,7 @@ static int msm_routing_put_tx_cfg_control(struct snd_kcontrol *kcontrol,
         AC_setHPF(tx_control_param, (int16_t)ucontrol->value.integer.value[4]);
         AC_setLIMITER(tx_control_param, (int16_t)ucontrol->value.integer.value[5]);
         if ( ucontrol->value.integer.value[6] == 1 ) {
-            pr_info("%s: Pro Camcorder initialization. High SPL is Disabled.\n", __func__);
+            pr_debug("%s: Pro Camcorder initialization. High SPL is Disabled.\n", __func__);
             AC_setHighSPL(tx_control_param, 0);
         }
     } else if ( ucontrol->value.integer.value[0] == 2) {
@@ -11848,19 +11848,19 @@ static int msm_routing_put_tx_cfg_control(struct snd_kcontrol *kcontrol,
                 break;
         }
     } else {
-        pr_info("%s: Normal Camcoder", __func__);
+        pr_debug("%s: Normal Camcoder", __func__);
         if ( ucontrol->value.integer.value[1] == 1 ) {
-            pr_info("%s: Normal Camcorder. High SPL is Disabled.\n", __func__);
+            pr_debug("%s: Normal Camcorder. High SPL is Disabled.\n", __func__);
             AC_setHighSPL(tx_control_param, 0);
         }
     }
 
-    //pr_info("%s : OutputGain=%d, HighpassFrequency=%d, LimiterThreshold=%d \n", __func__,
+    //pr_debug("%s : OutputGain=%d, HighpassFrequency=%d, LimiterThreshold=%d \n", __func__,
     //    tx_control_param->OutputGain, tx_control_param->HighpassFrequency, tx_control_param->LimiterThreshold);
 
     rc = q6adm_set_tx_cfg_parms(SLIMBUS_0_TX, tx_control_param);
 
-    pr_info("%s: end result = %d Mode = %d \n", __func__, rc, tx_control_param->Mode);
+    pr_debug("%s: end result = %d Mode = %d \n", __func__, rc, tx_control_param->Mode);
     return rc;
 
 get_hifi_rec_value_err:
@@ -16377,7 +16377,7 @@ static int msm_routing_put_device_pp_params_mixer(struct snd_kcontrol *kcontrol,
 					idx, latency);
 			break;
 		default:
-			pr_info("%s, device pp param %d not supported\n",
+			pr_debug("%s, device pp param %d not supported\n",
 				__func__, pp_id);
 			break;
 		}
