@@ -198,7 +198,7 @@ struct smb2 {
 };
 
 #ifdef CONFIG_LGE_PM_DEBUG
-static int __debug_mask = PR_LGE;
+static int __debug_mask;
 #else
 static int __debug_mask;
 #endif
