@@ -960,7 +960,7 @@ int register_bw_hwmon(struct device *dev, struct bw_hwmon *hwmon)
 	node->hyst_length = 0;
 	node->idle_mbps = 400;
 	node->mbps_zones[0] = 0;
-	node->freq_scalar = 0;
+	node->freq_scalar = CONFIG_BW_HWMON_DEFAULT_FREQ_SCALAR;
 	node->hw = hwmon;
 
 	mutex_lock(&list_lock);

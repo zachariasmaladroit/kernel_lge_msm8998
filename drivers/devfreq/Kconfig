@@ -159,6 +159,18 @@ config DEVFREQ_GOV_QCOM_BW_HWMON
 	  can conflict with existing profiling tools.  This governor is unlikely
 	  to be useful for non-QCOM devices.
 
+config BW_HWMON_DEFAULT_FREQ_SCALAR
+	int "Default value for the BW_HWMON frequency scalar"
+	default "0"
+	depends on DEVFREQ_GOV_QCOM_BW_HWMON
+	help
+
+	  The frequency scalar determines the inflation of the target frequency, 
+	  represented as a percentage value: 0% is default, represting no
+	  additional frequency inflation, and 100% would scale the target freqency
+	  by a constant of two. Arbitrary integer values (inclusive range of [0,
+	  500]) can be specified.
+
 config DEVFREQ_GOV_QCOM_CACHE_HWMON
 	tristate "HW monitor based governor for cache frequency"
 	help
