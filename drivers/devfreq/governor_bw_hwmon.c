@@ -30,6 +30,7 @@
 #include <linux/of.h>
 #include <linux/devfreq.h>
 #include <trace/events/power.h>
+#include <linux/cpu_input_boost.h>
 #include "governor.h"
 #include "governor_bw_hwmon.h"
 
@@ -488,7 +489,10 @@ static unsigned long get_bw_and_set_irq(struct hwmon_node *node,
 		*ab = roundup(new_bw, node->bw_step);
 
 	*freq = (new_bw * 100) / io_percent;
-	*freq *= 1 + (freq_scalar / 100);
+#ifdef CONFIG_CPU_INPUT_BOOST
+	if (cpu_input_boost_within_timeout(CONFIG_CPU_INPUT_BOOST_MDSS_TIMEOUT))
+#endif
+		*freq *= 1 + (freq_scalar / 100);
 	trace_bw_hwmon_update(dev_name(node->hw->df->dev.parent),
 				new_bw,
 				*freq,
