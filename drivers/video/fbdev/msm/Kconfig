@@ -369,3 +369,11 @@ config LGE_DISPLAY_DISPLAYPORT_EXTERNAL_BLOCK
 	bool "Use LGE_DISPLAY_DISPLAYPORT_EXTERNAL_BLOCK"
 	---help---
 	This feature support external display block.
+
+config CPU_INPUT_BOOST_MDSS_TIMEOUT
+	depends on FB_MSM_MDSS
+	int "MDSS general boost interaction timeout"
+	default "5000"
+	help
+	  Timeout in milliseconds to prevent general boosting on MDSS frame
+	  updates when interaction does not occur within this value.
