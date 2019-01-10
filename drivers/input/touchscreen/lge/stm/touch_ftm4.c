@@ -2423,11 +2423,6 @@ static int ftm4_probe(struct device *dev)
 
 	ftm4_get_dts(dev);
 
-	if (touch_boot_mode() == TOUCH_CHARGER_MODE) {
-		TOUCH_I("%s is not probe in charger_mode\n", __func__);
-		return 0;
-	}
-
 	touch_gpio_init(ts->reset_pin, "touch_reset");
 	touch_gpio_direction_output(ts->reset_pin, 0);
 
