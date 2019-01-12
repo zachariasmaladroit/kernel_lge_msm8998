@@ -312,13 +312,13 @@ config REMOVE_INPUT_BOOST_FREQ_PERF
 
 config GENERAL_BOOST_FREQ_LP
 	int "Low-power cluster general boost freq"
-	default "0"
+	default "672000"
 	help
 	  General boost frequency for the low-power CPU cluster.
 
 config GENERAL_BOOST_FREQ_PERF
 	int "Performance cluster general boost freq"
-	default "0"
+	default "652000"
 	help
 	  General boost frequency for the performance CPU cluster.
 
