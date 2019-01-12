@@ -78,6 +78,13 @@ CONFIG_GENERIC_CLOCKEVENTS=y
 CONFIG_ARCH_HAS_TICK_BROADCAST=y
 CONFIG_GENERIC_CLOCKEVENTS_BROADCAST=y
 
+#
+# CPU/Task time and stats accounting
+#
+# CONFIG_TICK_CPU_ACCOUNTING is not set
+# CONFIG_VIRT_CPU_ACCOUNTING_GEN is not set
+CONFIG_IRQ_TIME_ACCOUNTING=y
+
 # CONFIG_BSD_PROCESS_ACCT is not set
 CONFIG_TASKSTATS=y
 CONFIG_TASK_DELAY_ACCT=y
@@ -6173,13 +6180,6 @@ CONFIG_SUSPEND_SKIP_SYNC=y
 # CONFIG_PREEMPT__LL is not set # former default
 # CONFIG_PREEMPT_RTB is not set
 # CONFIG_PREEMPT_RT_FULL is not set # when it's done
-
-# CPU/Task/IRQ stats/accounting
-# CPU/Task time and stats accounting
-#
-CONFIG_TICK_CPU_ACCOUNTING=y # eval
-# CONFIG_VIRT_CPU_ACCOUNTING_GEN is not set # for full dynticks system "at the expense of some significant overhead"
-# CONFIG_IRQ_TIME_ACCOUNTING is not set # fine granularity task irq time accounting, timestamp on each transition softirq/hardirq
 
 # ARM64 CRYPTO
 CONFIG_ARM64_CRYPTO=y
