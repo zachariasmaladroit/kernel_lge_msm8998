@@ -5379,14 +5379,6 @@ CONFIG_FB_MSM_MDSS_KCAL_CTRL=y
 # CONFIG_SCHED_INFO is not set
 # CONFIG_SCHEDSTATS is not set # overhead # recommended =y for scheduler tweaking
 
-# MSM_PERFORMANCE
-# (cpu_input_boost: non-func)
-CONFIG_MSM_PERFORMANCE=y
-
-# core_ctl
-# (stock behavior: enabled)
-CONFIG_SCHED_CORE_CTL=y
-
 # WAKE_BOOST
 # CONFIG_CPU_WAKE_BOOST is not set # not use this in combination with CPU_INPUT_BOOST
 
@@ -5416,6 +5408,14 @@ CONFIG_BW_HWMON_DEFAULT_FREQ_SCALAR=25 # added
 # CONFIG_DEVFREQ_GOV_QCOM_CACHE_HWMON is not set
 CONFIG_DEVFREQ_GOV_SPDM_HYP=y
 CONFIG_DEVFREQ_GOV_MEMLAT=y
+
+# MSM_PERFORMANCE
+# (cpu_input_boost: non-func)
+CONFIG_MSM_PERFORMANCE=y
+
+# core_ctl
+# (stock behavior: enabled)
+CONFIG_SCHED_CORE_CTL=y
 
 # Generic CPU_BOOST
 CONFIG_CPU_BOOST=y # generally not use this in combination with CPU_INPUT_BOOST
