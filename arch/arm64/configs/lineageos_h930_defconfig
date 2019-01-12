@@ -5418,7 +5418,7 @@ CONFIG_DEVFREQ_GOV_SPDM_HYP=y
 CONFIG_DEVFREQ_GOV_MEMLAT=y
 
 # Generic CPU_BOOST
-# CONFIG_CPU_BOOST is not set # not use this in combination with CPU_INPUT_BOOST
+CONFIG_CPU_BOOST=y # generally not use this in combination with CPU_INPUT_BOOST
 
 # CPU_INPUT_BOOST framework
 CONFIG_CPU_INPUT_BOOST=y
