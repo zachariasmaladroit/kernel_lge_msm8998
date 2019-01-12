@@ -5746,7 +5746,7 @@ CONFIG_LGE_PM_DEBUG=y
 CONFIG_MSM_RPM_RBCPR_STATS_V2_LOG=y
 CONFIG_MSM_RPM_LOG=y
 CONFIG_MSM_RPM_STATS_LOG=y # needed for power-libperfmgr / permgr
-# CONFIG_MSM_TZ_LOG is not set
+CONFIG_MSM_TZ_LOG=y # keep enabled to prevent corruption of kernel memory
 CONFIG_TRACER_PKT=y
 # CONFIG_QCOM_REMOTEQDSS is not set # Allow debug tools to enable events on other processors
 # CONFIG_QCOM_COMMON_LOG is not set # default (=n)
