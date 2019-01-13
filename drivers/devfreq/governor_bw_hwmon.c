@@ -492,6 +492,7 @@ static unsigned long get_bw_and_set_irq(struct hwmon_node *node,
 #ifdef CONFIG_CPU_INPUT_BOOST
 	if (cpu_input_boost_within_timeout(CONFIG_CPU_INPUT_BOOST_MDSS_TIMEOUT))
 #endif
+	if (freq_scalar)
 		*freq *= 1 + (freq_scalar / 100);
 	trace_bw_hwmon_update(dev_name(node->hw->df->dev.parent),
 				new_bw,
