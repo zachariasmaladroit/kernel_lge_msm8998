@@ -6154,9 +6154,9 @@ CONFIG_SND_FM_RX_MI2S=y
 # CONFIG_SND_SOC_QCOM is not set
 
 # dynamic fsync
-CONFIG_DYNAMIC_FSYNC=y
+# CONFIG_DYNAMIC_FSYNC is not set
 CONFIG_DYNAMIC_FSYNC_BG_SYNC=y
-CONFIG_SUSPEND_SKIP_SYNC=y
+# CONFIG_SUSPEND_SKIP_SYNC is not set
 # CONFIG_PM_SUSPEND_BG_SYNC is not set
 
 # transparent hugepages | mutually exclusive with RT_FULL but perhaps beneficial for java/Android
