@@ -6175,8 +6175,8 @@ CONFIG_DYNAMIC_FSYNC_BG_SYNC=y
 # CPU/Task/IRQ stats/accounting
 # CPU/Task time and stats accounting
 #
-CONFIG_TICK_CPU_ACCOUNTING=y # eval
-# CONFIG_VIRT_CPU_ACCOUNTING_GEN is not set # for full dynticks system "at the expense of some significant overhead"
+# CONFIG_TICK_CPU_ACCOUNTING is not set # eval
+CONFIG_VIRT_CPU_ACCOUNTING_GEN=y # for full dynticks system "at the expense of some significant overhead"
 # CONFIG_IRQ_TIME_ACCOUNTING is not set # fine granularity task irq time accounting, timestamp on each transition softirq/hardirq
 
 # ARM64 CRYPTO
