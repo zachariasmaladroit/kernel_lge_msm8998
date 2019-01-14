@@ -5846,3 +5846,12 @@ CONFIG_RCU_CPU_STALL_TIMEOUT=60
 # CONFIG_RCU_STALL_WATCHDOG_BITE is not set
 # CONFIG_RCU_TRACE is not set
 # CONFIG_RCU_EQS_DEBUG is not set
+
+# "Simple user configurable GPU controlling algorithm"
+CONFIG_SIMPLE_GPU_ALGORITHM=y # not used right now, NA source
+
+# AdrenoIdler for msm_adreno_tz, needs STATE_NOTIFIER (in some implementations)
+CONFIG_ADRENO_IDLER=y
+
+# state notifier, needed for cpufreq governors, adreno-idler, etc.
+CONFIG_STATE_NOTIFIER=y
