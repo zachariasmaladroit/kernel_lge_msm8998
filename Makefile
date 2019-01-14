@@ -394,8 +394,44 @@ KBUILD_CPPFLAGS := -D__KERNEL__
 KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
+		   -Wno-maybe-uninitialized -Wno-misleading-indentation \
+		   -Wno-array-bounds -Wno-shift-overflow \
 		   -Wno-format-security \
+		   -fdiagnostics-color=always \
+		   -Wno-unused-value -Wno-unused-parameter \
+		   -Wno-missing-field-initializers \
+		   -fdelete-null-pointer-checks -fisolate-erroneous-paths-dereference \
+		   -fivopts \
+		   -fgcse -fgcse-lm -fgcse-sm -fgcse-las -fgcse-after-reload \
+		   -fsplit-paths \
+		   -flive-range-shrinkage -ftree-vrp \
+		   -fipa-cp -fipa-cp-clone -fipa-bit-cp -fipa-vrp -fipa-icf \
+		   -fipa-ra -fipa-sra \
+		   -floop-unroll-and-jam -floop-interchange -ftree-loop-distribution \
+		   -ftree-loop-distribute-patterns \
+		   -freorder-blocks -freorder-blocks-and-partition \
+		   -fdevirtualize -fdevirtualize-speculatively -flra-remat \
+		   -fshrink-wrap -fshrink-wrap-separate \
+		   -fno-schedule-insns \
+		   -fpredictive-commoning \
+		   -ftree-loop-im -funswitch-loops \
+		   -march=armv8-a+crc+crypto -mtune=cortex-a73 \
 		   -std=gnu89 $(call cc-option,-fno-PIE)
+
+#		   -fno-delete-null-pointer-checks \
+#		   -fmodulo-sched -fmodulo-sched-allow-regmoves \ # ICE, compiler bug
+#		   -fipa-ra
+#		   -fipa-reference -fipa-icf
+#
+#		   -fdevirtualize -fdevirtualize-speculatively -flra-remat \
+#		   -fivopts \
+#		   -flive-range-shrinkage \
+#		   -fno-ipa-sra \
+#
+#		   -mtune=cortex-a73.cortex-a53
+#		   -fstack-clash-protection # this actually works with kernel ?
+#		   -freorder-blocks-and-partition # this works on aarch64, kernel ?
+#		   -flive-range-shrinkage # this actually reduces performance on our arch/SoC ?
 
 
 KBUILD_AFLAGS_KERNEL :=
