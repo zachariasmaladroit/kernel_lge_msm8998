@@ -5743,3 +5743,6 @@ CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y
 
 # logging/debug
 # CONFIG_IPC_LOGGING is not set
+
+# wakelocks, etc.
+# CONFIG_FW_CACHE is not set
