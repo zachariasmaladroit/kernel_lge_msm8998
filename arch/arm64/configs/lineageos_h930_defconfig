@@ -5654,9 +5654,9 @@ CONFIG_INET_DIAG_DESTROY=y
 # disable unnecessary/not applicable components, speed up boot & operation
 # CONFIG_CPU_IDLE_GOV_LADDER is not set
 # CONFIG_VGA_ARB is not set
-# CONFIG_SND_SUPPORT_OLD_API is not set
-# CONFIG_SND_VERBOSE_PROCFS is not set
-# CONFIG_SND_DRIVERS is not set
+CONFIG_SND_SUPPORT_OLD_API=y # tshoot external DAC
+CONFIG_SND_VERBOSE_PROCFS=y # external DAC broken ?
+CONFIG_SND_DRIVERS=y # tshoot external DAC
 # CONFIG_MSM_BOOT_STATS is not set # default =y
 # CONFIG_SCHED_AUTOGROUP is not set # so it's obviously not necessarily to work on stock ROMs
 CONFIG_QCOM_RTB=y
