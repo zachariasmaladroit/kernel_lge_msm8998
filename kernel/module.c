@@ -1295,6 +1295,10 @@ static int check_version(Elf_Shdr *sechdrs,
 	unsigned int i, num_versions;
 	struct modversion_info *versions;
 
+	/* proprietary tuxera texfat replaced by in-kernel opensource exfat */
+	if(!strncmp("texfat", mod->name, 6))
+		return 1;
+
 	/* Exporting module didn't supply crcs?  OK, we're already tainted. */
 	if (!crc)
 		return 1;
