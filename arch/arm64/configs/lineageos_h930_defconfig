@@ -5740,3 +5740,6 @@ CONFIG_WIL6210_PLATFORM_MSM=y
 
 # PowerEfficient Workqueues
 CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y
+
+# logging/debug
+# CONFIG_IPC_LOGGING is not set
