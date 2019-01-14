@@ -5636,12 +5636,12 @@ CONFIG_DVB_MPQ_NUM_DMX_DEVICES=4
 # CONFIG_TSPP is not set # =m
 
 # WiGig (=m default), both off for monolithic kernel
-# CONFIG_WIL6210 is not set
+CONFIG_WIL6210=y
 CONFIG_WIL6210_ISR_COR=y
 CONFIG_WIL6210_TRACING=y
 CONFIG_WIL6210_WRITE_IOCTL=y
 CONFIG_WIL6210_PLATFORM_MSM=y
-# CONFIG_MSM_11AD is not set
+CONFIG_MSM_11AD=y
 
 # Prior to v4.1, assists heap memory attacks; best to keep interface disabled.
 CONFIG_INET_DIAG=y
