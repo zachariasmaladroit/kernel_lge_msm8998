@@ -5741,3 +5741,13 @@ CONFIG_WIL6210_PLATFORM_MSM=y
 # MM subsystem
 CONFIG_PROCESS_RECLAIM=y
 # CONFIG_HSWAP is not set
+
+
+# PowerEfficient Workqueues
+CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y
+
+# logging/debug
+CONFIG_IPC_LOGGING=y # enabled for now
+
+# wakelocks, etc.
+# CONFIG_FW_CACHE is not set
