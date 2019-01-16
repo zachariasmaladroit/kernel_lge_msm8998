@@ -759,6 +759,8 @@
 		reg = <0x01008000 0x300>, <0x01001000 0x200>;
 		reg-names = "base", "global_base";
 		interrupts = <0 183 4>;
+		qcom,count-unit = <0x1000>;
+		qcom,mb-shift = <21>;
 		qcom,mport = <0>;
 		qcom,target-dev = <&cpubw>;
 	};
