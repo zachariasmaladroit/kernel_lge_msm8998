@@ -5627,6 +5627,43 @@ CONFIG_ARCH_HAS_SG_CHAIN=y
 CONFIG_QMI_ENCDEC=y
 # CONFIG_QMI_ENCDEC_DEBUG is not set
 
+# LGE_USB_SUPPORT_LIST_NETWORK, fix LG
+CONFIG_USB_NET_DRIVERS=y # needed by LGE_USB_SUPPORT_LIST_NETWORK (USB_NET_DRIVERS && USB_NET_CDC_SUBSET) 
+CONFIG_USB_NET_CDC_SUBSET=y
+
+# LGE_USB_SUPPORT_LIST_INPUT, fix LG
+CONFIG_INPUT_MOUSE=y
+
+# tshoot for bringup, etc.
+CONFIG_USB_F_CDEV=y
+CONFIG_USB_CONFIGFS_F_CDEV=y
+
+# keep legacy emulation, compatibility w.r.t. ARMv8
+# disabling breaks WeChat (crash on startup) and others ...
+# CONFIG_ARMV8_DEPRECATED is not set
+CONFIG_SWP_EMULATION=y
+CONFIG_CP15_BARRIER_EMULATION=y
+CONFIG_SETEND_EMULATION=y
+
+# tshoot security features
+# CONFIG_SEEMP_CORE is not set
+# TTBR0 PAN emulation
+# CONFIG_ARM64_SW_TTBR0_PAN is not set
+
+# Wakelock Blocker
+# needs to be set up, doesn't block anything by default
+#
+CONFIG_BOEFFLA_WL_BLOCKER=y
+
+# PM / Sleep: Use workqueue for user space wakeup sources garbage collector
+CONFIG_PM_WAKELOCKS_GC=y
+
+# wakelocks, etc.
+# CONFIG_FW_CACHE is not set
+
+# powerefficient workqueues
+CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y # needs more commits
+
 # EAS
 CONFIG_IRQ_TIME_ACCOUNTING=y
 CONFIG_TASKSTATS=y
@@ -5693,6 +5730,9 @@ CONFIG_MODULE_SIG_HASH="sha512"
 # CONFIG_USB_GSPCA is not set
 CONFIG_BRIDGE_NETFILTER=y
 
+# add additional drivers that might be needed
+# CONFIG_RELAY is not set
+
 # DVB & TV functionality (ko only)
 # CONFIG_DVB_MPQ is not set
 CONFIG_DVB_MPQ_DEMUX=m
@@ -5701,6 +5741,27 @@ CONFIG_DVB_MPQ_TSPP1=y
 # CONFIG_DVB_MPQ_SW is not set
 # CONFIG_DVB_MPQ_MEDIA_BOX_DEMUX is not set
 # CONFIG_TSPP is not set # dep
+
+# media tuners (DVB, etc.)
+# CONFIG_MEDIA_DIGITAL_TV_SUPPORT is not set
+# CONFIG_DVB_CORE is not set
+# CONFIG_DVB_NET is not set
+# CONFIG_TTPCI_EEPROM is not set
+CONFIG_DVB_MAX_ADAPTERS=8
+# CONFIG_DVB_DYNAMIC_MINORS is not set
+# CONFIG_LGE_BROADCAST_ISDBT_JAPAN is not set
+CONFIG_MEDIA_SUBDRV_AUTOSELECT=y
+# CONFIG_MEDIA_TUNER is not set
+# CONFIG_MEDIA_TUNER_SIMPLE is not set
+# CONFIG_MEDIA_TUNER_TDA8290 is not set
+# CONFIG_MEDIA_TUNER_TDA827X is not set
+# CONFIG_MEDIA_TUNER_TDA18271 is not set
+# CONFIG_MEDIA_TUNER_TDA9887 is not set
+# CONFIG_MEDIA_TUNER_MT20XX is not set
+# CONFIG_MEDIA_TUNER_XC2028 is not set
+# CONFIG_MEDIA_TUNER_XC5000 is not set
+# CONFIG_MEDIA_TUNER_XC4000 is not set
+# CONFIG_MEDIA_TUNER_MC44S803 is not set
 
 # advanced congestion control
 CONFIG_TCP_CONG_ADVANCED=y
@@ -5738,12 +5799,6 @@ CONFIG_WIL6210_WRITE_IOCTL=y
 CONFIG_WIL6210_PLATFORM_MSM=y
 # CONFIG_MSM_11AD is not set # dep
 
-# PowerEfficient Workqueues
-CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y
-
-# wakelocks, etc.
-# CONFIG_FW_CACHE is not set
-
 # "Simple user configurable GPU controlling algorithm"
 CONFIG_SIMPLE_GPU_ALGORITHM=y # not used right now, NA source
 
@@ -5752,3 +5807,56 @@ CONFIG_ADRENO_IDLER=y
 
 # state notifier, needed for cpufreq governors, adreno-idler, etc.
 CONFIG_STATE_NOTIFIER=y
+
+# performance & latency cutdown tweaking
+# CONFIG_ZEN_INTERACTIVE is not set
+# CONFIG_SCSI_MQ_DEFAULT is not set # broken on 4.4 Android ?
+# CONFIG_MANDATORY_FILE_LOCKING is not set # needs commit first
+# CONFIG_SLUB_CPU_PARTIAL is not set # more indeterminism in the latency of the free , taking of locks that may cause latency spikes
+# CONFIG_VM_EVENT_COUNTERS is not set
+CONFIG_CONFIG_AUDIT=y # SELinux auditing overhead , needs commit first
+
+# swap, hswap, zram, etc.
+CONFIG_KSWAPD_CPU_AFFINITY_MASK="f"
+CONFIG_BALANCE_ANON_FILE_RECLAIM=y # eval
+CONFIG_ZSMALLOC=y
+# CONFIG_PGTABLE_MAPPING is not set
+# CONFIG_ZSMALLOC_STAT is not set
+# CONFIG_ZPOOL is not set
+# CONFIG_ZBUD is not set # needed for zswap if not z3fold
+CONFIG_Z3FOLD=y
+CONFIG_ZRAM_DEFAULT_Z3FOLD=y
+CONFIG_CLEANCACHE=y
+CONFIG_FRONTSWAP=y
+# CONFIG_ZSWAP is not set
+# CONFIG_CMA_DEBUGFS is not set
+# CONFIG_CMA_PINPAGE_MIGRATION is not set
+CONFIG_GCMA=y
+CONFIG_GCMA_DEFAULT=y
+# CONFIG_GCMA_STATS is not set
+
+# disable for debug, security, attack surface
+# CONFIG_MSM_RDBG is not set # remote debugger driver (=m by default)
+# CONFIG_MAGIC_SYSRQ is not set
+
+# disable debug/strip/shrink kernel
+CONFIG_KALLSYMS_ALL=y # needed on Stock for successful booting
+CONFIG_DEBUG_INFO_REDUCED=y
+# CONFIG_STRIP_ASM_SYMS is not set
+
+# Jump labels:
+# the kernel will compile trace point locations with just a nop instruction.
+# When trace points are enabled, the nop will be converted to a jump
+# to the trace function. This technique lowers overhead and stress
+# on the branch prediction of the processor.
+#
+CONFIG_JUMP_LABEL=y # assumedly leads to latency spikes, thus discouraged; performance (?)
+
+# CPU/Task/IRQ stats/accounting
+# CPU/Task time and stats accounting
+#
+CONFIG_TICK_CPU_ACCOUNTING=y # eval
+# CONFIG_VIRT_CPU_ACCOUNTING_GEN is not set # for full dynticks system "at the expense of some significant overhead"
+# CONFIG_IRQ_TIME_ACCOUNTING is not set # fine granularity task irq time accounting, timestamp on each transition softirq/hardirq
+
+# next: RCU
