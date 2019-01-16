@@ -5752,3 +5752,30 @@ CONFIG_ADRENO_IDLER=y
 
 # state notifier, needed for cpufreq governors, adreno-idler, etc.
 CONFIG_STATE_NOTIFIER=y
+
+# performance & latency cutdown tweaking
+# CONFIG_ZEN_INTERACTIVE is not set
+# CONFIG_SCSI_MQ_DEFAULT is not set # broken on 4.4 Android ?
+# CONFIG_MANDATORY_FILE_LOCKING is not set # needs commit first
+# CONFIG_SLUB_CPU_PARTIAL is not set # more indeterminism in the latency of the free , taking of locks that may cause latency spikes
+# CONFIG_VM_EVENT_COUNTERS is not set
+CONFIG_CONFIG_AUDIT=y # SELinux auditing overhead , needs commit first
+
+# swap, hswap, zram, etc.
+CONFIG_KSWAPD_CPU_AFFINITY_MASK="f"
+CONFIG_BALANCE_ANON_FILE_RECLAIM=y # eval
+CONFIG_ZSMALLOC=y
+# CONFIG_PGTABLE_MAPPING is not set
+# CONFIG_ZSMALLOC_STAT is not set
+# CONFIG_ZPOOL is not set
+# CONFIG_ZBUD is not set # needed for zswap if not z3fold
+CONFIG_Z3FOLD=y
+CONFIG_ZRAM_DEFAULT_Z3FOLD=y
+CONFIG_CLEANCACHE=y
+CONFIG_FRONTSWAP=y
+# CONFIG_ZSWAP is not set
+# CONFIG_CMA_DEBUGFS is not set
+# CONFIG_CMA_PINPAGE_MIGRATION is not set
+CONFIG_GCMA=y
+CONFIG_GCMA_DEFAULT=y
+# CONFIG_GCMA_STATS is not set
