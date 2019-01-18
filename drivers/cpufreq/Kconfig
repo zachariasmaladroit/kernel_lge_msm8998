@@ -429,7 +429,3 @@ config QORIQ_CPUFREQ
 
 endif
 endmenu
-
-config SCHED_CHILD_RUNS_FIRST
-  bool "Process child forks before parent forks"
-  default y
