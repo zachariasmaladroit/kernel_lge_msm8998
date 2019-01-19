@@ -5,6 +5,8 @@
 #ifndef _CPU_INPUT_BOOST_H_
 #define _CPU_INPUT_BOOST_H_
 
+#include <linux/types.h>
+
 #ifdef CONFIG_CPU_INPUT_BOOST
 extern unsigned long last_input_time;
 bool cpu_input_boost_within_timeout(unsigned int input_boost_timeout);
