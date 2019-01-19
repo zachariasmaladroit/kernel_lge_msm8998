@@ -1844,7 +1844,7 @@ long _do_fork(unsigned long clone_flags,
 #ifdef CONFIG_CPU_INPUT_BOOST
 	/* Boost CPU to the max for 500 ms when userspace launches an app */
 	if (is_zygote_pid(current->pid) && !state_suspended &&
-		time_before(jiffies, last_input_time + msecs_to_jiffies(150))) {
+		cpu_input_boost_within_timeout(100)) {
 		cpu_input_boost_kick_max(500);
 		devfreq_boost_kick_max(DEVFREQ_MSM_CPUBW, 500);
 	}
