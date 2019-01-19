@@ -5853,3 +5853,37 @@ CONFIG_WLAN_FEATURE_FILS=y # needed for successful compilation
 # qcacld-3.0 debug stuff
 # CONFIG_FEATURE_TSO_DEBUG is not set
 # CONFIG_WLAN_NAPI_DEBUG is not set
+
+# ION
+CONFIG_ION=y
+# CONFIG_ION_TEST is not set
+# CONFIG_ION_DUMMY is not set
+CONFIG_ION_MSM=y
+# CONFIG_ALLOC_BUFFERS_IN_4K_CHUNKS is not set # default =y
+
+# later added performance enhancements and tweaks behind a config entry
+# RSEQ (selected via Makefile by default)
+CONFIG_HAVE_RSEQ=y
+CONFIG_RSEQ=y
+
+# AIO
+# CONFIG_AIO has legitimate use for the functionfs
+# driver, which is used with adb and mtp. It is now required to be enabled
+# for better performance with those services.
+CONFIG_AIO=y
+
+# LGE_USB_SUPPORT_LIST_NETWORK
+CONFIG_USB_NET_DRIVERS=y # needed by LGE_USB_SUPPORT_LIST_NETWORK (USB_NET_DRIVERS && USB_NET_CDC_SUBSET) 
+CONFIG_USB_NET_CDC_SUBSET=y
+
+# tshoot for bringup, etc.
+CONFIG_USB_F_CDEV=y
+CONFIG_USB_CONFIGFS_F_CDEV=y
+
+# LGE_USB_SUPPORT_LIST_INPUT
+CONFIG_INPUT_MOUSE=y
+
+# tshoot security features
+# CONFIG_SEEMP_CORE is not set
+# TTBR0 PAN emulation
+# CONFIG_ARM64_SW_TTBR0_PAN is not set
