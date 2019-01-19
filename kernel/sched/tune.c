@@ -938,6 +938,11 @@ out:
 static void
 schedtune_boostgroup_release(struct schedtune *st)
 {
+
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+	/* Free dynamic boost slots */
+	boost_slots_release(st);
+#endif // CONFIG_DYNAMIC_STUNE_BOOST
 	struct boost_groups *bg;
 	int cpu;
 
@@ -950,11 +955,6 @@ schedtune_boostgroup_release(struct schedtune *st)
 
 	/* Keep track of allocated boost groups */
 	allocated_group[st->idx] = NULL;
-	
-	#ifdef CONFIG_DYNAMIC_STUNE_BOOST
-	/* Free dynamic boost slots */
-	boost_slots_release(st);
-	#endif // CONFIG_DYNAMIC_STUNE_BOOST
 }
 
 static void
