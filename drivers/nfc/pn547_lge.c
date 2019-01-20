@@ -322,7 +322,7 @@ static long pn547_dev_unlocked_ioctl(struct file *filp, unsigned int cmd, unsign
             msleep(10);
         } else if (arg == 1) {
             /* power on */
-            pr_info(PN547_DRV_NAME ":%s power on\n", __func__);
+            pr_debug(PN547_DRV_NAME ":%s power on\n", __func__);
             if (sPowerState == NFC_POWER_OFF) {
 #ifdef CONFIG_LGE_NFC_USE_PMIC
                 if(clk_source == CLKS_PMIC)
@@ -337,7 +337,7 @@ static long pn547_dev_unlocked_ioctl(struct file *filp, unsigned int cmd, unsign
                 if (sIrqState == false) {
                     irq_set_irq_wake(pn547_dev->client->irq,1);
                     sIrqState = true;
-                    pr_info(PN547_DRV_NAME ":%s enable IRQ\n", __func__);
+                    pr_debug(PN547_DRV_NAME ":%s enable IRQ\n", __func__);
                 }
                 else {
                     pr_err("%s IRQ is already enabled!\n", __func__);
@@ -352,7 +352,7 @@ static long pn547_dev_unlocked_ioctl(struct file *filp, unsigned int cmd, unsign
             }
         } else  if (arg == 0) {
             /* power off */
-            pr_info(PN547_DRV_NAME ":%s power off\n", __func__);
+            pr_debug(PN547_DRV_NAME ":%s power off\n", __func__);
             if (sPowerState == NFC_POWER_ON) {
 #ifdef CONFIG_LGE_NFC_USE_PMIC
                 if(clk_source == CLKS_PMIC)
@@ -435,7 +435,7 @@ static int pn547_probe(struct i2c_client *client,
     struct pn547_dev *pn547_dev = NULL;
     pn547_client = client;
 
-    pr_info(PN547_DRV_NAME ": pn547_probe() start\n");
+    pr_debug(PN547_DRV_NAME ": pn547_probe() start\n");
 
     pn547_dev = kzalloc(sizeof(*pn547_dev), GFP_KERNEL);
     if (pn547_dev == NULL) {
@@ -448,22 +448,22 @@ static int pn547_probe(struct i2c_client *client,
     pn547_parse_dt(&client->dev, pn547_dev);
 
     pn547_dev->client   = client;
-    pr_info(PN547_DRV_NAME ":IRQ : %d\nVEN : %d\nFIRM : %d\n",
+    pr_debug(PN547_DRV_NAME ":IRQ : %d\nVEN : %d\nFIRM : %d\n",
             pn547_dev->irq_gpio, pn547_dev->ven_gpio, pn547_dev->firm_gpio);
 
     ret = gpio_request(pn547_dev->irq_gpio, "nfc_int");
     if (ret) {
-        pr_info(PN547_DRV_NAME ":pn547_probe() : nfc_int request failed!\n");
+        pr_debug(PN547_DRV_NAME ":pn547_probe() : nfc_int request failed!\n");
         goto err_int;
     }
     ret = gpio_request(pn547_dev->ven_gpio, "nfc_ven");
     if (ret) {
-        pr_info(PN547_DRV_NAME ":pn547_probe() : nfc_ven request failed!\n");
+        pr_debug(PN547_DRV_NAME ":pn547_probe() : nfc_ven request failed!\n");
         goto err_ven;
     }
     ret = gpio_request(pn547_dev->firm_gpio, "nfc_firm");
     if (ret) {
-        pr_info(PN547_DRV_NAME ":pn547_probe() : nfc_firm request failed!\n");
+        pr_debug(PN547_DRV_NAME ":pn547_probe() : nfc_firm request failed!\n");
         goto err_firm;
     }
 
@@ -496,7 +496,7 @@ static int pn547_probe(struct i2c_client *client,
     /* request irq.  the irq is set whenever the chip has data available
      * for reading.  it is cleared when all data has been read.
      */
-    pr_info("%s : requesting IRQ %d\n", __func__, client->irq);
+    pr_debug("%s : requesting IRQ %d\n", __func__, client->irq);
     pn547_dev->irq_enabled = true;
     ret = request_irq(pn547_gpio_to_irq(pn547_dev), pn547_dev_irq_handler,
               IRQF_TRIGGER_RISING|IRQF_NO_SUSPEND, client->name, pn547_dev);
@@ -507,7 +507,7 @@ static int pn547_probe(struct i2c_client *client,
     enable_irq_wake(pn547_get_irq_pin(pn547_dev));
     pn547_disable_irq(pn547_dev);
     i2c_set_clientdata(client, pn547_dev);
-    pr_info(PN547_DRV_NAME ": pn547_probe() end\n");
+    pr_debug(PN547_DRV_NAME ": pn547_probe() end\n");
 
     return 0;
 
@@ -592,19 +592,19 @@ static struct i2c_driver pn547_driver = {
 static void async_dev_init(void *data, async_cookie_t cookie)
 {
     int ret = 0;
-    pr_info(PN547_DRV_NAME ": Start async init\n");
+    pr_debug(PN547_DRV_NAME ": Start async init\n");
 
     ret = i2c_add_driver(&pn547_driver);
     if (ret < 0) {
         pr_err("[NFC]failed to i2c_add_driver\n");
     }
-    pr_info(PN547_DRV_NAME ": Loading PN547 driver Success! \n");
+    pr_debug(PN547_DRV_NAME ": Loading PN547 driver Success! \n");
     return;
 }
 
 static int __init pn547_dev_init(void)
 {
-    pr_info("Loading PN547 driver\n");
+    pr_debug("Loading PN547 driver\n");
     async_schedule(async_dev_init, NULL);
 
     return 0;
@@ -614,7 +614,7 @@ module_init(pn547_dev_init);
 
 static void __exit pn547_dev_exit(void)
 {
-    pr_info("Unloading PN547 driver\n");
+    pr_debug("Unloading PN547 driver\n");
     i2c_del_driver(&pn547_driver);
 }
 module_exit(pn547_dev_exit);
