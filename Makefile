@@ -406,6 +406,15 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Wno-unused-value -Wno-unused-parameter \
 		   -Wno-missing-field-initializers \
 		   -fno-delete-null-pointer-checks \
+		   -fivopts \
+		   -fmodulo-sched -fmodulo-sched-allow-regmoves \
+		   -fshrink-wrap \
+		   -fno-schedule-insns \
+		   -fsplit-paths \
+		   -fgcse -fgcse-after-reload -fgcse-sm -fgcse-las -frerun-cse-after-loop \
+		   -freorder-blocks -freorder-blocks-and-partition \
+		   -fipa-cp -fipa-cp-alignment \
+		   -fipa-ra -fipa-sra -fipa-icf \
 		   -march=armv8-a+crc+crypto \
 		   -std=gnu89 $(call cc-option,-fno-PIE)
 
