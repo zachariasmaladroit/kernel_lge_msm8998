@@ -439,7 +439,7 @@ static int pn547_probe(struct i2c_client *client,
 
     pn547_dev = kzalloc(sizeof(*pn547_dev), GFP_KERNEL);
     if (pn547_dev == NULL) {
-        dev_err(&client->dev,
+        dev_dbg(&client->dev,
                 "failed to allocate memory for module data\n");
         ret = -ENOMEM;
         goto err_exit;
@@ -501,7 +501,7 @@ static int pn547_probe(struct i2c_client *client,
     ret = request_irq(pn547_gpio_to_irq(pn547_dev), pn547_dev_irq_handler,
               IRQF_TRIGGER_RISING|IRQF_NO_SUSPEND, client->name, pn547_dev);
     if (ret) {
-        dev_err(&client->dev, "request_irq failed\n");
+        dev_dbg(&client->dev, "request_irq failed\n");
         goto err_request_irq_failed;
     }
     enable_irq_wake(pn547_get_irq_pin(pn547_dev));
