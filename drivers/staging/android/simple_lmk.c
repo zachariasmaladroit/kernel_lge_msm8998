@@ -5,8 +5,12 @@
 
 #define pr_fmt(fmt) "simple_lmk: " fmt
 
+#ifdef CONFIG_CPU_INPUT_BOOST
 #include <linux/cpu_input_boost.h>
+#endif
+#ifdef CONFIG_DEVFREQ_BOOST
 #include <linux/devfreq_boost.h>
+#endif
 #include <linux/mm.h>
 #include <linux/moduleparam.h>
 #include <linux/oom.h>
@@ -118,9 +122,12 @@ static unsigned long do_lmk_reclaim(unsigned long pages_needed)
 {
 	unsigned long pages_freed = 0;
 	int i;
-
+#ifdef CONFIG_CPU_INPUT_BOOST
 	cpu_input_boost_kick_max(BOOST_DURATION_MS);
+#endif
+#ifdef CONFIG_DEVFREQ_BOOST
 	devfreq_boost_kick_max(DEVFREQ_MSM_CPUBW, BOOST_DURATION_MS);
+#endif
 
 	for (i = 1; i < ARRAY_SIZE(adj_prio); i++) {
 		pages_freed += scan_and_kill(adj_prio[i], adj_prio[i - 1],
