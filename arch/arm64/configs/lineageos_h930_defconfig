@@ -5762,6 +5762,9 @@ CONFIG_DEFAULT_CAKE=y # no yet ? connection issues/WiFi
 CONFIG_DEFAULT_NET_SCH="cake"
 # CONFIG_DEFAULT_NET_SCH="pfifo_fast"
 
+# Wireguard VPN
+CONFIG_WIREGUARD=y
+
 # WiGig
 # CONFIG_WIL6210 is not set
 CONFIG_WIL6210_ISR_COR=y
