@@ -3078,7 +3078,7 @@ static int sd_media_scan_thread(void *__sdkp)
 			(sdkp->thread_remove && sdkp->async_end), 3*HZ);
 		if (sdkp->thread_remove && sdkp->async_end)
 			break;
-#ifdef CONFIG_MACH_LGE
+#ifdef CONFIG_MACH_MSM8998_JOAN_GLOBAL_COM
 		ret = sd_check_events(sdkp->disk, 0);
 #else
 		ret = 0;
