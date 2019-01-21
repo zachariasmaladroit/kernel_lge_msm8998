@@ -5892,6 +5892,7 @@ CONFIG_WLAN_FEATURE_FILS=y # needed for successful compilation
 # qcacld-3.0 debug stuff
 # CONFIG_FEATURE_TSO_DEBUG is not set
 # CONFIG_WLAN_NAPI_DEBUG is not set
+# CONFIG_ICNSS_DEBUG is not set
 
 # general debug/debug loggging, etc.
 # CONFIG_MSM_SDE_ROTATOR_EVTLOG_DEBUG is not set
