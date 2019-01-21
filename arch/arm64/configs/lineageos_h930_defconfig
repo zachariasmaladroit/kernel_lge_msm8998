@@ -5794,7 +5794,7 @@ CONFIG_STATE_NOTIFIER=y
 # CONFIG_MANDATORY_FILE_LOCKING is not set # needs commit first
 # CONFIG_SLUB_CPU_PARTIAL is not set # more indeterminism in the latency of the free , taking of locks that may cause latency spikes
 # CONFIG_VM_EVENT_COUNTERS is not set
-CONFIG_CONFIG_AUDIT=y # SELinux auditing overhead , needs commit first
+# CONFIG_CONFIG_AUDIT is not set # SELinux auditing overhead , needs commit first
 
 # DEBUG/logging
 # CONFIG_IPC_LOGGING is not set # defconfig =off
