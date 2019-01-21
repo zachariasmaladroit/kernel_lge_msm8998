@@ -5776,6 +5776,14 @@ CONFIG_WIL6210_PLATFORM_MSM=y
 # PowerEfficient Workqueues
 CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y
 
+# Wakelock Blocker
+# needs to be set up, doesn't block anything by default
+#
+CONFIG_BOEFFLA_WL_BLOCKER=y
+
+# PM / Sleep: Use workqueue for user space wakeup sources garbage collector
+CONFIG_PM_WAKELOCKS_GC=y
+
 # wakelocks, etc.
 # CONFIG_FW_CACHE is not set
 
@@ -5828,6 +5836,26 @@ CONFIG_ANDROID_SIMPLE_LMK=y
 CONFIG_ANDROID_SIMPLE_LMK_MINFREE=64
 CONFIG_ANDROID_SIMPLE_LMK_KSWAPD_TIMEOUT=100
 CONFIG_ANDROID_SIMPLE_LMK_OOM_TIMEOUT=50
+
+# transparent hugepages | mutually exclusive with RT_FULL but perhaps beneficial for java/Android
+# CONFIG_TRANSPARENT_HUGEPAGE is not set
+
+# rt-kernel/rt-devel
+# CONFIG_INTERRUPT_OFF_HIST is not set
+# CONFIG_PREEMPT_OFF_HIST is not set
+# CONFIG_WAKEUP_LATENCY_HIST is not set
+# CONFIG_MISSED_TIMER_OFFSETS_HIST is not set
+# CONFIG_HWLAT_DETECTOR is not set
+# CONFIG_PREEMPT__LL is not set # former default
+# CONFIG_PREEMPT_RTB is not set
+# CONFIG_PREEMPT_RT_FULL is not set # when it's done
+
+# CPU/Task/IRQ stats/accounting
+# CPU/Task time and stats accounting
+#
+# CONFIG_TICK_CPU_ACCOUNTING is not set # eval
+CONFIG_VIRT_CPU_ACCOUNTING_GEN=y # for full dynticks system "at the expense of some significant overhead"
+# CONFIG_IRQ_TIME_ACCOUNTING is not set # fine granularity task irq time accounting, timestamp on each transition softirq/hardirq
 
 # i/o schedulers
 CONFIG_IOSCHED_NOOP=y
@@ -5903,9 +5931,30 @@ CONFIG_DEBUG_INFO_REDUCED=y # keep this
 # CONFIG_DEBUG_INFO_SPLIT is not set
 # CONFIG_DEBUG_INFO_DWARF4 is not set # success with gdb and high optimization
 # CONFIG_SCHED_INFO is not set
+# CONFIG_SCHEDSTATS is not set # overhead # recommended =y for scheduler tweaking
 # CONFIG_SCHED_DEBUG is not set
 # CONFIG_SYSRQ_SCHED_DEBUG is not set
 
+#
+# RCU Subsystem
+#
+CONFIG_PREEMPT_RCU=y
+CONFIG_RCU_EXPERT=y
+CONFIG_SRCU=y
+# CONFIG_TASKS_RCU is not set
+CONFIG_RCU_STALL_COMMON=y
+CONFIG_RCU_FANOUT=64
+CONFIG_RCU_FANOUT_LEAF=16
+CONFIG_RCU_FAST_NO_HZ=y
+# CONFIG_TREE_RCU_TRACE is not set
+CONFIG_RCU_BOOST=y
+CONFIG_RCU_BOOST_DELAY=331
+CONFIG_RCU_KTHREAD_PRIO=51
+CONFIG_RCU_NOCB_CPU=y
+# CONFIG_RCU_NOCB_CPU_NONE is not set
+# CONFIG_RCU_NOCB_CPU_ZERO is not set
+CONFIG_RCU_NOCB_CPU_ALL=y
+CONFIG_RCU_EXPEDITE_BOOT=y
 
 # ION
 CONFIG_ION=y
@@ -5925,6 +5974,13 @@ CONFIG_RSEQ=y
 # for better performance with those services.
 CONFIG_AIO=y
 
+# add additional drivers that might be needed
+# CONFIG_RELAY is not set
+
+# dmesg/printk: raise size of kernel log
+CONFIG_LOG_BUF_SHIFT=22
+CONFIG_LOG_CPU_MAX_BUF_SHIFT=21
+
 # pstore functionality
 CONFIG_PSTORE=y
 CONFIG_PSTORE_CONSOLE=y
@@ -5942,6 +5998,10 @@ CONFIG_USB_CONFIGFS_F_CDEV=y
 
 # LGE_USB_SUPPORT_LIST_INPUT
 CONFIG_INPUT_MOUSE=y
+
+# lge-oreo, stock config; and other discoveries
+CONFIG_BT_BDA=y
+CONFIG_SPI_SLAVE=y # SPI slave protocol handlers
 
 # tshoot security features
 # CONFIG_SEEMP_CORE is not set
@@ -6014,3 +6074,73 @@ CONFIG_SD_ENCRYPTION_MANAGER=y # joan_global_com ONLY , no spr/vzw/tmo
 # LG_VPN_V36 (SPR_US/VZW/TMO)
 # CONFIG_LG_VPN_V36 is not set
 # CONFIG_VPNCLIENT_SECURITY is not set # spr (=m)
+
+# DVB, disable or needed for some weird streaming usage-case ?
+# CONFIG_DVB_MPQ is not set # =m
+# CONFIG_DVB_MPQ_DEMUX is not set # =m
+CONFIG_DVB_MPQ_NUM_DMX_DEVICES=4
+# CONFIG_DVB_MPQ_TSPP1 is not set # =y
+# CONFIG_DVB_MPQ_SW is not set
+# CONFIG_DVB_MPQ_MEDIA_BOX_DEMUX is not set
+# CONFIG_TSPP is not set # =m
+
+# media tuners (DVB, etc.)
+# CONFIG_MEDIA_DIGITAL_TV_SUPPORT is not set
+# CONFIG_DVB_CORE is not set
+# CONFIG_DVB_NET is not set
+# CONFIG_TTPCI_EEPROM is not set
+CONFIG_DVB_MAX_ADAPTERS=8
+# CONFIG_DVB_DYNAMIC_MINORS is not set
+# CONFIG_LGE_BROADCAST_ISDBT_JAPAN is not set
+CONFIG_MEDIA_SUBDRV_AUTOSELECT=y
+# CONFIG_MEDIA_TUNER is not set
+# CONFIG_MEDIA_TUNER_SIMPLE is not set
+# CONFIG_MEDIA_TUNER_TDA8290 is not set
+# CONFIG_MEDIA_TUNER_TDA827X is not set
+# CONFIG_MEDIA_TUNER_TDA18271 is not set
+# CONFIG_MEDIA_TUNER_TDA9887 is not set
+# CONFIG_MEDIA_TUNER_MT20XX is not set
+# CONFIG_MEDIA_TUNER_XC2028 is not set
+# CONFIG_MEDIA_TUNER_XC5000 is not set
+# CONFIG_MEDIA_TUNER_XC4000 is not set
+# CONFIG_MEDIA_TUNER_MC44S803 is not set
+
+# build drivers INto the kernel
+# CONFIG_USB_GSPCA is not set # most likely NOT needed , disable it
+
+# security frameworks & related
+CONFIG_SECURITY_YAMA=y
+
+# SSP stackprotector, degrades sound quality, let's set protection to "regular"
+CONFIG_HAVE_CC_STACKPROTECTOR=y
+CONFIG_CC_STACKPROTECTOR=y
+# CONFIG_CC_STACKPROTECTOR_NONE is not set
+CONFIG_CC_STACKPROTECTOR_REGULAR=y # boot eval
+# CONFIG_CC_STACKPROTECTOR_STRONG is not set
+
+# Kernel (self)protection
+CONFIG_DEFAULT_MMAP_MIN_ADDR=4096 # Disallow allocating the first 32k of memory (cannot be 64k due to ARM loader). 32768 invalid for ARM loader
+CONFIG_DEBUG_RODATA=y
+CONFIG_DEBUG_ALIGN_RODATA=y # This prevents sections from being split into pages and avoids a potential TLB penalty.
+# DEBUG_SET_MODULE_RONX is not set # for Stock ROM "Set loadable kernel module data as NX and text as RO"
+CONFIG_SCHED_STACK_END_CHECK=y # The runtime overhead introduced is minimal.
+CONFIG_STRICT_DEVMEM=y # If this option is disabled,
+# you allow userspace (root) access to all of memory, including kernel and userspace memory. Accidental
+# access to this is obviously disastrous, but specific access can be used by people debugging the kernel.
+#
+# data integrity/DEBUG (in combination with the below, follow-up checks)
+# CONFIG_PANIC_ON_DATA_CORRUPTION=y # NOT needed in production/stable (?)
+# CONFIG_DEBUG_CREDENTIALS=y # (+ SELinux, checks to see that this number never exceeds the usage count of the cred struct)
+# CONFIG_DEBUG_NOTIFIERS is not set # modules, This is a relatively cheap check
+# CONFIG_DEBUG_LIST=y
+# CONFIG_DEBUG_SG=y # This can help find problems with drivers that do not properly initialize their sg tables.
+
+# disable workarounds NOT applicable to our hardware (modified later revision cortex A53, A73)
+# (some of those actually ARE applied)
+
+# keep legacy emulation, compatibility w.r.t. ARMv8
+# disabling breaks WeChat (crash on startup) and others ...
+# CONFIG_ARMV8_DEPRECATED is not set
+CONFIG_SWP_EMULATION=y
+CONFIG_CP15_BARRIER_EMULATION=y
+CONFIG_SETEND_EMULATION=y
