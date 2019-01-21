@@ -415,6 +415,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -freorder-blocks -freorder-blocks-and-partition \
 		   -fipa-cp -fipa-cp-alignment \
 		   -fipa-ra -fipa-sra -fipa-icf \
+		   -g0 \
 		   -march=armv8-a+crc+crypto \
 		   -std=gnu89 $(call cc-option,-fno-PIE)
 
