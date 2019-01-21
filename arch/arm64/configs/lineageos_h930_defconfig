@@ -5893,6 +5893,19 @@ CONFIG_WLAN_FEATURE_FILS=y # needed for successful compilation
 # CONFIG_FEATURE_TSO_DEBUG is not set
 # CONFIG_WLAN_NAPI_DEBUG is not set
 
+# general debug/debug loggging, etc.
+# CONFIG_MSM_SDE_ROTATOR_EVTLOG_DEBUG is not set
+# CONFIG_FB_MSM_MDSS_XLOG_DEBUG is not set
+# CONFIG_USB_DWC3_DEBUG_FS is not set
+# CONFIG_DEBUG_INFO is not set
+CONFIG_DEBUG_INFO_REDUCED=y # keep this
+# CONFIG_DEBUG_INFO_SPLIT is not set
+# CONFIG_DEBUG_INFO_DWARF4 is not set # success with gdb and high optimization
+# CONFIG_SCHED_INFO is not set
+# CONFIG_SCHED_DEBUG is not set
+# CONFIG_SYSRQ_SCHED_DEBUG is not set
+
+
 # ION
 CONFIG_ION=y
 # CONFIG_ION_TEST is not set
