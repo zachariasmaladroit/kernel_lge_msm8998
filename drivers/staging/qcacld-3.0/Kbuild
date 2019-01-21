@@ -1742,6 +1742,7 @@ endif
 KBUILD_CPPFLAGS += $(CDEFINES)
 
 EXTRA_CFLAGS += -Wno-unused-function -Wno-unused-variable
+EXTRA_CFLAGS += $(call cc-option, -g0)
 
 # Currently, for versions of gcc which support it, the kernel Makefile
 # is disabling the maybe-uninitialized warning.  Re-enable it for the
