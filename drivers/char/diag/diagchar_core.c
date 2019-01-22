@@ -34,7 +34,7 @@
 #include "diagfwd.h"
 #include "diagfwd_cntl.h"
 #include "diag_dci.h"
-#ifdef CONFIG_DEBUG_FS
+#ifdef CONFIG_DIAG_DEBUG
 #include "diag_debugfs.h"
 #endif
 #include "diag_masks.h"
@@ -3734,7 +3734,7 @@ static int __init diagchar_init(void)
 			diag_update_md_client_work_fn);
 	diag_ws_init();
 	diag_stats_init();
-#ifdef CONFIG_DEBUG_FS
+#ifdef CONFIG_DIAG_DEBUG
 	diag_debug_init();
 #endif
 	diag_md_session_init();
@@ -3752,7 +3752,7 @@ static int __init diagchar_init(void)
 	ret = diag_real_time_info_init();
 	if (ret)
 		goto fail;
-#ifdef CONFIG_DEBUG_FS
+#ifdef CONFIG_DIAG_DEBUG
 	ret = diag_debugfs_init();
 	if (ret)
 		goto fail;
@@ -3801,7 +3801,7 @@ static int __init diagchar_init(void)
 
 fail:
 	pr_err("diagchar is not initialized, ret: %d\n", ret);
-#ifdef CONFIG_DEBUG_FS
+#ifdef CONFIG_DIAG_DEBUG
 	diag_debugfs_cleanup();
 #endif
 	diagchar_cleanup();
@@ -3827,7 +3827,7 @@ static void diagchar_exit(void)
 	diag_masks_exit();
 	diag_md_session_exit();
 	diag_remote_exit();
-#ifdef CONFIG_DEBUG_FS
+#ifdef CONFIG_DIAG_DEBUG
 	diag_debugfs_cleanup();
 #endif
 	diagchar_cleanup();
