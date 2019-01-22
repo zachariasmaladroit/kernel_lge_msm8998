@@ -5782,7 +5782,7 @@ CONFIG_INET_UDP_DIAG=y
 # eBPF traffic monitoring (starting with 4.9 on Android)
 CONFIG_CGROUP_BPF=y # NA
 CONFIG_BPF=y # default =y
-CONFIG_BPF_SYSCALL=y # default =n
+# CONFIG_BPF_SYSCALL is not set # default =n
 
 
 # ARM64 CRYPTO
