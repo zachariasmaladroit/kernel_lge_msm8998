@@ -6282,3 +6282,10 @@ CONFIG_ARMV8_DEPRECATED=y
 CONFIG_SWP_EMULATION=y
 CONFIG_CP15_BARRIER_EMULATION=y
 CONFIG_SETEND_EMULATION=y
+
+# LGE Stock ROM bits
+# disable LG cancun & triton, it's broken on non-stock (needs triton binary)
+# Cancun: LGE CPU Cancun Project [hooks into lge_monitor_thermal.c, kgsl_pwrctrl.c]
+# Triton: "Cpu Freq Helper Driver"
+# CONFIG_LGE_PM_TRITON is not set
+# CONFIG_LGE_PM_CANCUN is not set
