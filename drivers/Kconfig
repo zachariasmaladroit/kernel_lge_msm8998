@@ -218,4 +218,6 @@ source "drivers/broadcast/Kconfig"
 
 source "drivers/gud/Kconfig"
 
+source "drivers/dts_eagle/Kconfig"
+
 endmenu
