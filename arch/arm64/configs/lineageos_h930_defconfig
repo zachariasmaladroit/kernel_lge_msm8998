@@ -5834,37 +5834,7 @@ CONFIG_STATE_NOTIFIER=y
 # CONFIG_IPC_LOGGING is not set # defconfig =off
 
 # disable unnecessary/not applicable components, speed up boot & operation
-# CONFIG_CPU_IDLE_GOV_LADDER is not set
-# CONFIG_VGA_ARB is not set
-# CONFIG_MSM_BOOT_STATS is not set # default =y
-# CONFIG_QCOM_RTB is not set # register tracing
-# CONFIG_QCOM_RTB_SEPARATE_CPUS is not set # register tracing on separate CPUs
-# CONFIG_MMC_PERF_PROFILING is not set
-# CONFIG_IOSCHED_TEST is not set
-# CONFIG_MSM_GLADIATOR_ERP_V2 is not set
-# CONFIG_PANIC_ON_GLADIATOR_ERROR_V2 is not set
-# CONFIG_MSM_GLADIATOR_ERROR_V2_MAIN_LOGGER_ONLY is not set
-# CONFIG_MSM_GLADIATOR_HANG_DETECT is not set
-# CONFIG_MSM_CORE_HANG_DETECT is not set
-# CONFIG_EDAC_SUPPORT is not set
-# CONFIG_EDAC is not set # missing dts/dtb entries, so NOP ?
-# CONFIG_EDAC_LEGACY_SYSFS is not set
-# CONFIG_EDAC_DEBUG is not set
-# CONFIG_EDAC_MM_EDAC is not set # (default =y)
-# CONFIG_EDAC_CORTEX_ARM64 is not set # (default =y)
-# CONFIG_EDAC_CORTEX_ARM64_PANIC_ON_CE is not set
-# CONFIG_EDAC_CORTEX_ARM64_DBE_IRQ_ONLY is not set
-# CONFIG_EDAC_CORTEX_ARM64_PANIC_ON_UE is not set # "Panic on uncorrectable errors",
-# For production builds, you should probably say 'N' here. This can reduce debugging times on hardware which may be
-#	   operating at voltages or frequencies outside normal specification.
-# CONFIG_MPC_UT_FRAMEWORK is not set # qcacld-3.0 $(HDD_SRC_DIR)/wlan_hdd_conc_ut.o , # Enable Unit test framework for multiport concurrency
-# CONFIG_QCOM_DCC is not set # QCOM Data Capture and Compare enigne support - NEEDED for what ?
-# CONFIG_QCOM_CPUSS_DUMP is not set
-# CONFIG_V4L_PLATFORM_DRIVERS # eval
-# CONFIG_MSM_SMP2P_TEST is not set
-# CONFIG_FW_CACHE is not set # needs: 'firmware_class: make firmware caching configurable', Enable firmware caching during suspend
-# CONFIG_SKY2 is not set
-# CONFIG_SMSC911X is not set
+
 
 # swap, hswap, zram, etc.
 CONFIG_KSWAPD_CPU_AFFINITY_MASK="f"
@@ -6002,28 +5972,7 @@ CONFIG_DEBUG_INFO_REDUCED=y # keep this
 
 CONFIG_IKCONFIG_PROC=y # spr
 CONFIG_BLK_DEV_BSG=y # default =y
-# CONFIG_PM_DEBUG is not set # spr (non-perf)
-# CONFIG_DPM_WATCHDOG is not set # spr (=y) | NA
-# CONFIG_DPM_WATCHDOG_TIMEOUT=10 # spr , way too strict | NA
-# CONFIG_L2TP_DEBUGFS is not set # spr (=y)
-# CONFIG_DNS_RESOLVER is not set # spr (non-perf)
-# CONFIG_REGMAP_ALLOW_WRITE_DEBUGFS is not set # spr (non-perf), DANGEROUS! "Regmap, allow direct register writes through debugfs"
-# CONFIG_SCSI_LOGGING is not set # spr (=y) [needs to be enabled via /proc/sys/dev/scsi/logging_level
-# CONFIG_SCSI_UFSHCD_CMD_LOGGING is not set # spr (=y)
 
-# CONFIG_VIDEO_ADV_DEBUG is not set # spr (non-perf)
-# CONFIG_MSM_CAMERA_DEBUG is not set # spr (non-perf)
-# CONFIG_MSMB_CAMERA_DEBUG is not set # spr (non-perf)
-# CONFIG_ESOC_DEBUG is not set # spr (=y) # modem driver debug
-# CONFIG_ESOC_MDM_DBG_ENG is not set # spr (=y)
-# CONFIG_EFIVAR_FS is not set # pointless, hardbrick danger?
-# CONFIG_PAGE_OWNER is not set # spr (=y) "Eats a fair amount of memory if enabled."
-# CONFIG_PAGE_OWNER_ENABLE_DEFAULT is not set # spr (=y)
-#tshoot
-# CONFIG_BOOTPARAM_HARDLOCKUP_PANIC is not set # EVAL
-# CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC is not set # EVAL
-# CONFIG_PANIC_ON_SCHED_BUG is not set # EVAL
-# CONFIG_PANIC_ON_RT_THROTTLING is not set # EVAL
 
 # disable for debug, security, attack surface
 # CONFIG_MSM_RDBG is not set # remote debugger driver (=m by default)
@@ -6038,40 +5987,7 @@ CONFIG_BLK_DEV_BSG=y # default =y
 CONFIG_JUMP_LABEL=y # assumedly leads to latency spikes, thus discouraged; performance (?)
 
 # Profiling, Tracepoints [eval, research disabling]
-CONFIG_PROFILING=y
-CONFIG_TRACEPOINTS=y # Place an empty function call at each tracepoint site. Can be dynamically changed for a probe function. Set nonetheless
 
-CONFIG_TRACING=y # =y
-CONFIG_NOP_TRACER=y # crucial
-# CONFIG_GENERIC_TRACER is not set # =y
-CONFIG_DISABLE_TRACE_PRINTK=y # needs commit
-# CONFIG_EVENT_TRACING is not set
-# CONFIG_CONTEXT_SWITCH_TRACER is not set
-CONFIG_TRACING_SUPPORT=y # =y
-CONFIG_FTRACE=y # =y
-CONFIG_FUNCTION_TRACER=y # =y
-CONFIG_FUNCTION_GRAPH_TRACER=y # =y
-# CONFIG_IRQSOFF_TRACER is not set
-# CONFIG_PREEMPT_TRACER is not set
-# CONFIG_SCHED_TRACER is not set
-# CONFIG_FTRACE_SYSCALLS is not set
-# CONFIG_TRACER_SNAPSHOT is not set
-CONFIG_BRANCH_PROFILE_NONE=y # keep =y
-# CONFIG_PROFILE_ANNOTATED_BRANCHES is not set
-# CONFIG_PROFILE_ALL_BRANCHES is not set
-# CONFIG_STACK_TRACER is not set
-# CONFIG_BLK_DEV_IO_TRACE is not set
-# CONFIG_PROBE_EVENTS is not set
-CONFIG_DYNAMIC_FTRACE=y # keep =y
-# CONFIG_FUNCTION_PROFILER is not set
-# CONFIG_CPU_FREQ_SWITCH_PROFILER is not set # =y , probably NO overhead, needs to be enabled through debugfs
-CONFIG_FTRACE_MCOUNT_RECORD=y # =y , needed by msm/ipa ? (/home/padma.r/LGH930/android/kernel/msm-4.4)
-# CONFIG_FTRACE_STARTUP_TEST is not set
-# CONFIG_TRACEPOINT_BENCHMARK is not set
-# CONFIG_RING_BUFFER_BENCHMARK is not set
-# CONFIG_RING_BUFFER_STARTUP_TEST is not set
-# CONFIG_TRACE_ENUM_MAP_FILE is not set
-# CONFIG_TRACING_EVENTS_GPIO is not set # =y
 
 #
 # RCU Subsystem
