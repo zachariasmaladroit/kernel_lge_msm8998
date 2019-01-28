@@ -313,7 +313,7 @@ config REMOVE_INPUT_BOOST_FREQ_PERF
 config INPUT_BOOST_STUNE_LEVEL
 	int "Foreground app schedtune input boost level"
 	depends on DYNAMIC_STUNE_BOOST
-	default "25"
+	default "10"
 	help
 	  Input boost level for the EAS SchedTune boosting system. This
 	  artifically increases perceived load of certain processes in order
@@ -337,7 +337,7 @@ config GENERAL_BOOST_FREQ_PERF
 config GENERAL_BOOST_STUNE_LEVEL
 	int "Foreground app schedtune general boost level"
 	depends on DYNAMIC_STUNE_BOOST
-	default "10"
+	default "0"
 	help
 	  General boost level for the EAS SchedTune boosting system. This
 	  artifically increases perceived load of certain processes in order
