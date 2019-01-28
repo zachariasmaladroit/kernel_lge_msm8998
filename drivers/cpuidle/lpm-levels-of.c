@@ -815,8 +815,6 @@ static int parse_cpu_levels(struct device_node *node, struct lpm_cluster *c)
 		if (ret || c->cpu->ref_premature_cnt < PREMATURE_CNT_LOW ||
 				c->cpu->ref_premature_cnt > PREMATURE_CNT_HIGH)
 			c->cpu->ref_premature_cnt = DEFAULT_PREMATURE_CNT;
-		pr_err("settings set to %i - %i - %i", c->cpu->ref_stddev,
-			   c->cpu->tmr_add, c->cpu->ref_premature_cnt);
 	}
 	for_each_child_of_node(node, n) {
 		struct lpm_cpu_level *l = &c->cpu->levels[c->cpu->nlevels];
