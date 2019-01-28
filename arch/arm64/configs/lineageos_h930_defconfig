@@ -5405,7 +5405,7 @@ CONFIG_MSM_PERFORMANCE=y
 
 # core_ctl
 # (stock behavior: enabled)
-CONFIG_SCHED_CORE_CTL=y
+# CONFIG_SCHED_CORE_CTL is not set
 
 # WAKE_BOOST
 # CONFIG_CPU_WAKE_BOOST is not set # not use this in combination with CPU_INPUT_BOOST
