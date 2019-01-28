@@ -5643,11 +5643,11 @@ CONFIG_WIL6210_WRITE_IOCTL=y
 CONFIG_WIL6210_PLATFORM_MSM=y
 # CONFIG_MSM_11AD is not set
 
-# Prior to v4.1, assists heap memory attacks; best to keep interface disabled.
+# Android needed ("required by Android to nuke connections"):
 CONFIG_INET_DIAG=y
-CONFIG_INET_TCP_DIAG=y
-CONFIG_INET_UDP_DIAG=y # if unsure, say Y.
 CONFIG_INET_DIAG_DESTROY=y
+CONFIG_INET_TCP_DIAG=y
+CONFIG_INET_UDP_DIAG=y
 
 # disable unnecessary/not applicable components, speed up boot & operation
 # CONFIG_CPU_IDLE_GOV_LADDER is not set
