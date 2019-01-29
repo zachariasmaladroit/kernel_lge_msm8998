@@ -407,7 +407,6 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Wno-missing-field-initializers \
 		   -fno-delete-null-pointer-checks \
 		   -fivopts \
-		   -fmodulo-sched -fmodulo-sched-allow-regmoves \
 		   -fshrink-wrap \
 		   -fno-schedule-insns \
 		   -fsplit-paths \
@@ -418,6 +417,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -march=armv8-a+crc+crypto \
 		   -std=gnu89 $(call cc-option,-fno-PIE)
 
+#		   -fmodulo-sched -fmodulo-sched-allow-regmoves \
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
