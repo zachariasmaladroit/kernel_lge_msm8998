@@ -6051,12 +6051,12 @@ CONFIG_SPI_SLAVE=y # SPI slave protocol handlers
 # [eval]joan_spr_us/joan_vzv
 CONFIG_MACH_LGE=y
 CONFIG_MACH_MSM8998_JOAN=y
-# CONFIG_MACH_MSM8998_JOAN_GLOBAL_COM is not set
+CONFIG_MACH_MSM8998_JOAN_GLOBAL_COM=y
 # CONFIG_MACH_MSM8998_JOAN_GLOBAL_CA is not set # H933
 # CONFIG_MACH_MSM8998_JOAN_GLOBAL_LDU is not set
 # CONFIG_MACH_MSM8998_JOAN_ACG_US is not set # AS998
 # CONFIG_MACH_MSM8998_JOAN_ATT_US is not set # H931
-CONFIG_MACH_MSM8998_JOAN_SPR_US=y # LS998
+# CONFIG_MACH_MSM8998_JOAN_SPR_US is not set # LS998
 # CONFIG_MACH_MSM8998_JOAN_NAO_US is not set
 # CONFIG_MACH_MSM8998_JOAN_TMO_US is not set # H932, config similar to SPR_US
 # CONFIG_MACH_MSM8998_JOAN_VZW is not set # VS996
@@ -6071,13 +6071,13 @@ CONFIG_MACH_MSM8998_JOAN_SPR_US=y # LS998
 # CONFIG_TOUCHSCREEN_FTS=y # for tmo_us-perf (config doesn't exist !)
 
 # "feature for usb diag access lock" - perhaps shouldn't even used in production ...
-# CONFIG_LGE_USB_DIAG_LOCK is not set
-CONFIG_LGE_USB_DIAG_LOCK_SPR=y # SET on spr_us
+CONFIG_LGE_USB_DIAG_LOCK=y
+# CONFIG_LGE_USB_DIAG_LOCK_SPR is not set # SET on spr_us
 # CONFIG_LGE_USB_DIAG_LOCK_TRF is not set # assuming TMO
 # CONFIG_LGE_USB_DIAG_LOCK_VZW is not set # NOT set on vzw ?!
 
-# CONFIG_LGE_PM_BATT_MANAGER is not set # GLOBAL # NOT spr, vzw, tmo
-# CONFIG_IDTP9223_CHARGER_WPC_ONLY is not set # GLOBAL # NOT spr, vzw, tmo
+CONFIG_LGE_PM_BATT_MANAGER=y # GLOBAL # NOT spr, vzw, tmo
+CONFIG_IDTP9223_CHARGER_WPC_ONLY=y # GLOBAL # NOT spr, vzw, tmo
 
 # CONFIG_LGE_PM_LGE_POWER_CLASS_VZW_REQ is not set # vzw ONLY
 
@@ -6092,28 +6092,28 @@ CONFIG_LGE_USB_GADGET=y # ALL
 
 
 # disable LG stuff
-CONFIG_LGE_DM_APP=y # global_com, spr_us - NOT vzw; tmo ?
+CONFIG_LGE_DM_APP=y # global_com, spr_us - NOT vzw
 
-CONFIG_MDFPP_CCAUDIT=y # main branch config (all 3) , spr/vzw/tmo (=y)
-CONFIG_SDP=y
-CONFIG_CRYPTO_DEV_KEY_INTEGRITY_CHECK=y
+# CONFIG_MDFPP_CCAUDIT is not set # main branch config (3) , spr/vzw/tmo (=y)
+# CONFIG_SDP is not set
+# CONFIG_CRYPTO_DEV_KEY_INTEGRITY_CHECK is not set
 
-# CONFIG_SYSTEM_TRUSTED_KEYS="verity.x509.pem" # joan_global_com ONLY
-# CONFIG_SD_ENCRYPTION_MANAGER=y # joan_global_com ONLY , no spr/vzw/tmo
+CONFIG_SYSTEM_TRUSTED_KEYS="verity.x509.pem" # joan_global_com ONLY
+CONFIG_SD_ENCRYPTION_MANAGER=y # joan_global_com ONLY , no spr/vzw/tmo
 
 #klcm , SPR_US/VZW/TMO ONLY
-CONFIG_CRYPTODEV=y
-CONFIG_LGCRYPTO_FIPS_ENABLE=y
-CONFIG_LGECRYPTO_FIPS_ADDED_SIGNATURE_SIZE=710
-CONFIG_LGE_PKM=y
+# CONFIG_CRYPTODEV is not set
+# CONFIG_LGCRYPTO_FIPS_ENABLE is not set
+# CONFIG_LGECRYPTO_FIPS_ADDED_SIGNATURE_SIZE=710
+# CONFIG_LGE_PKM is not set
 
 # tmo/vzw ONLY
 # CONFIG_TRUSTONIC_TEE is not set
 # CONFIG_LGE_QSDL_SUPPORT is not set # NOT for tmo_us ? "Support for Quality Statistics Data Logging"
 
 # LG_VPN_V36 (SPR_US/VZW/TMO)
-CONFIG_LG_VPN_V36=y
-CONFIG_VPNCLIENT_SECURITY=y # spr (=m)
+# CONFIG_LG_VPN_V36 is not set
+# CONFIG_VPNCLIENT_SECURITY is not set # spr (=m)
 
 # DVB, disable or needed for some weird streaming usage-case ?
 # CONFIG_DVB_MPQ is not set # =m
