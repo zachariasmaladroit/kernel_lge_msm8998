@@ -43,8 +43,10 @@
 
 #define UPDATE_BUSY_VAL		1000000
 
+#if 0
 /* Number of jiffies for a full thermal cycle */
 #define TH_HZ			(HZ/5)
+#endif
 
 #define KGSL_MAX_BUSLEVELS	20
 
@@ -71,8 +73,6 @@ static const char * const clocks[] = {
 static unsigned int ib_votes[KGSL_MAX_BUSLEVELS];
 static int last_vote_buslevel;
 static int max_vote_buslevel;
-
-static int kgsl_pwrctrl_limit_enable = 0;
 
 static void kgsl_pwrctrl_clk(struct kgsl_device *device, int state,
 					int requested_state);
@@ -290,6 +290,7 @@ static void kgsl_pwrctrl_pwrlevel_change_settings(struct kgsl_device *device,
 	device->ftbl->pwrlevel_change_settings(device, old, new, post);
 }
 
+#if 0
 /**
  * kgsl_pwrctrl_set_thermal_cycle() - set the thermal cycle if required
  * @pwr: Pointer to the kgsl_pwrctrl struct
@@ -316,6 +317,7 @@ static void kgsl_pwrctrl_set_thermal_cycle(struct kgsl_pwrctrl *pwr,
 		}
 	}
 }
+#endif
 
 /**
  * kgsl_pwrctrl_pwrlevel_change() - Validate and change power levels
@@ -357,12 +359,13 @@ void kgsl_pwrctrl_pwrlevel_change(struct kgsl_device *device,
 	 */
 	new_level = _adjust_pwrlevel(pwr, new_level, &pwr->constraint);
 
+#if 0
 	/*
 	 * If thermal cycling is required and the new level hits the
 	 * thermal limit, kick off the cycling.
 	 */
-	if (kgsl_pwrctrl_limit_enable)
-		kgsl_pwrctrl_set_thermal_cycle(pwr, new_level);
+	kgsl_pwrctrl_set_thermal_cycle(pwr, new_level);
+#endif
 
 	if (new_level == old_level)
 		return;
@@ -573,13 +576,11 @@ static ssize_t kgsl_pwrctrl_thermal_pwrlevel_store(struct device *dev,
 					 struct device_attribute *attr,
 					 const char *buf, size_t count)
 {
+#if 0
 	struct kgsl_device *device = kgsl_device_from_dev(dev);
 	struct kgsl_pwrctrl *pwr;
 	int ret;
 	unsigned int level = 0;
-
-	if (!kgsl_pwrctrl_limit_enable)
-		return 0;
 
 	if (device == NULL)
 		return 0;
@@ -601,6 +602,7 @@ static ssize_t kgsl_pwrctrl_thermal_pwrlevel_store(struct device *dev,
 	/* Update the current level using the new limit */
 	kgsl_pwrctrl_pwrlevel_change(device, pwr->active_pwrlevel);
 	mutex_unlock(&device->mutex);
+#endif
 	return count;
 }
 
@@ -625,9 +627,6 @@ static ssize_t kgsl_pwrctrl_max_pwrlevel_store(struct device *dev,
 	struct kgsl_pwrctrl *pwr;
 	int ret;
 	unsigned int level = 0;
-
-	if (!kgsl_pwrctrl_limit_enable)
-		return 0;
 
 	if (device == NULL)
 		return 0;
@@ -757,7 +756,7 @@ static void kgsl_pwrctrl_max_clock_set(struct kgsl_device *device, int val)
 	level = _get_nearest_pwrlevel(pwr, val);
 	/* If the requested power level is not supported by hw, try cycling */
 	if (level < 0) {
-		unsigned int hfreq, diff, udiff, i;
+		unsigned int /* hfreq, diff, udiff,*/ i;
 		if ((val < pwr->pwrlevels[pwr->num_pwrlevels - 1].gpu_freq) ||
 			(val > pwr->pwrlevels[0].gpu_freq))
 			goto err;
@@ -772,24 +771,25 @@ static void kgsl_pwrctrl_max_clock_set(struct kgsl_device *device, int val)
 		}
 		if (i == pwr->num_pwrlevels - 1)
 			goto err;
+#if 0
+		hfreq = pwr->pwrlevels[i].gpu_freq;
+		diff =  hfreq - pwr->pwrlevels[i + 1].gpu_freq;
+		udiff = hfreq - val;
 
-		if (kgsl_pwrctrl_limit_enable) {
-			hfreq = pwr->pwrlevels[i].gpu_freq;
-			diff =  hfreq - pwr->pwrlevels[i + 1].gpu_freq;
-			udiff = hfreq - val;
-
-			pwr->thermal_timeout = (udiff * TH_HZ) / diff;
-			pwr->thermal_cycle = CYCLE_ENABLE;
-		}
-	} else if (kgsl_pwrctrl_limit_enable) {
+		pwr->thermal_timeout = (udiff * TH_HZ) / diff;
+		pwr->thermal_cycle = CYCLE_ENABLE;
+	} else {
 		pwr->thermal_cycle = CYCLE_DISABLE;
 		del_timer_sync(&pwr->thermal_timer);
+#endif
 	}
 	mutex_unlock(&device->mutex);
 
-	if (kgsl_pwrctrl_limit_enable && pwr->sysfs_pwr_limit)
+#if 0
+	if (pwr->sysfs_pwr_limit)
 		kgsl_pwr_limits_set_freq(pwr->sysfs_pwr_limit,
 					pwr->pwrlevels[level].gpu_freq);
+#endif
 
 	return;
 
@@ -826,15 +826,16 @@ static unsigned int kgsl_pwrctrl_max_clock_get(struct kgsl_device *device)
 		return 0;
 	pwr = &device->pwrctrl;
 	freq = pwr->pwrlevels[pwr->thermal_pwrlevel].gpu_freq;
-
+#if 0
 	/* Calculate the effective frequency if we're cycling */
-	if (kgsl_pwrctrl_limit_enable && pwr->thermal_cycle) {
+	if (pwr->thermal_cycle) {
 		unsigned int hfreq = freq;
 		unsigned int lfreq = pwr->pwrlevels[pwr->
 				thermal_pwrlevel + 1].gpu_freq;
 		freq = pwr->thermal_timeout * (lfreq / TH_HZ) +
 			(TH_HZ - pwr->thermal_timeout) * (hfreq / TH_HZ);
 	}
+#endif
 
 	return freq;
 }
@@ -1437,51 +1438,6 @@ static ssize_t kgsl_pwrctrl_pwrscale_show(struct device *dev,
 	return snprintf(buf, PAGE_SIZE, "%u\n", psc->enabled);
 }
 
-static ssize_t kgsl_pwrctrl_limit_enable_store(struct device *dev,
-					   struct device_attribute *attr,
-					   const char *buf, size_t count)
-{
-	int rc, val;
-	struct kgsl_device *device = kgsl_device_from_dev(dev);
-	struct kgsl_pwrctrl *pwr;
-
-	rc = kstrtoint(buf, 10, &val);
-	if (rc)
-		return -EINVAL;
-
-	if (val == 0 || val == 1) {
-		if (kgsl_pwrctrl_limit_enable != val)
-			kgsl_pwrctrl_limit_enable = val;
-		else
-			return count;
-	} else
-		return -EINVAL;
-
-	if (!kgsl_pwrctrl_limit_enable) {
-		if (device == NULL)
-			return 0;
-
-		pwr = &device->pwrctrl;
-
-		pwr->max_pwrlevel = 0;
-		pwr->min_pwrlevel = pwr->num_pwrlevels - 2;
-		pwr->thermal_pwrlevel = 0;
-	}
-
-	return count;
-}
-
-static ssize_t kgsl_pwrctrl_limit_enable_show(struct device *dev,
-					   struct device_attribute *attr,
-					   char *buf)
-{
-	size_t count = 0;
-
-	count += sprintf(buf, "%d\n", kgsl_pwrctrl_limit_enable);
-
-	return count;
-}
-
 static DEVICE_ATTR(gpuclk, 0644, kgsl_pwrctrl_gpuclk_show,
 	kgsl_pwrctrl_gpuclk_store);
 static DEVICE_ATTR(max_gpuclk, 0644, kgsl_pwrctrl_max_gpuclk_show,
@@ -1543,9 +1499,6 @@ static DEVICE_ATTR(temp, 0444, kgsl_pwrctrl_temp_show, NULL);
 static DEVICE_ATTR(pwrscale, 0644,
 	kgsl_pwrctrl_pwrscale_show,
 	kgsl_pwrctrl_pwrscale_store);
-static DEVICE_ATTR(kgsl_pwrctrl_limit_enable, 0644,
-	kgsl_pwrctrl_limit_enable_show,
-	kgsl_pwrctrl_limit_enable_store);
 
 static const struct device_attribute *pwrctrl_attr_list[] = {
 	&dev_attr_gpuclk,
@@ -1573,7 +1526,6 @@ static const struct device_attribute *pwrctrl_attr_list[] = {
 	&dev_attr_freq_table_mhz,
 	&dev_attr_temp,
 	&dev_attr_pwrscale,
-	&dev_attr_kgsl_pwrctrl_limit_enable,
 	NULL
 };
 
@@ -1880,6 +1832,7 @@ static void kgsl_pwrctrl_irq(struct kgsl_device *device, int state)
 	}
 }
 
+#if 0
 /**
  * kgsl_thermal_cycle() - Work function for thermal timer.
  * @work: The input work
@@ -1928,6 +1881,7 @@ static void kgsl_thermal_timer(unsigned long data)
 	/* Have work run in a non-interrupt context. */
 	kgsl_schedule_work(&device->pwrctrl.thermal_cycle_ws);
 }
+#endif
 
 #ifdef CONFIG_DEVFREQ_GOV_QCOM_GPUBW_MON
 static int kgsl_pwrctrl_vbif_init(void)
@@ -2314,6 +2268,7 @@ int kgsl_pwrctrl_init(struct kgsl_device *device)
 		}
 	}
 
+#if 0
 	INIT_WORK(&pwr->thermal_cycle_ws, kgsl_thermal_cycle);
 	setup_timer(&pwr->thermal_timer, kgsl_thermal_timer,
 			(unsigned long) device);
@@ -2321,6 +2276,7 @@ int kgsl_pwrctrl_init(struct kgsl_device *device)
 	INIT_LIST_HEAD(&pwr->limits);
 	spin_lock_init(&pwr->limits_lock);
 	pwr->sysfs_pwr_limit = kgsl_pwr_limits_add(KGSL_DEVICE_3D0);
+#endif
 
 	kgsl_pwrctrl_vbif_init();
 
@@ -2744,13 +2700,12 @@ _slumber(struct kgsl_device *device)
 	case KGSL_STATE_NAP:
 		del_timer_sync(&device->idle_timer);
 		kgsl_pwrscale_midframe_timer_cancel(device);
-
-		if (kgsl_pwrctrl_limit_enable &&
-		    device->pwrctrl.thermal_cycle == CYCLE_ACTIVE) {
+#if 0
+		if (device->pwrctrl.thermal_cycle == CYCLE_ACTIVE) {
 			device->pwrctrl.thermal_cycle = CYCLE_ENABLE;
 			del_timer_sync(&device->pwrctrl.thermal_timer);
 		}
-
+#endif
 		kgsl_pwrctrl_irq(device, KGSL_PWRFLAGS_OFF);
 		/* make sure power is on to stop the device*/
 		status = kgsl_pwrctrl_enable(device);
@@ -3035,6 +2990,7 @@ int kgsl_active_count_wait(struct kgsl_device *device, int count)
 }
 EXPORT_SYMBOL(kgsl_active_count_wait);
 
+#if 0
 /**
  * _update_limits() - update the limits based on the current requests
  * @limit: Pointer to the limits structure
@@ -3074,9 +3030,6 @@ static void _update_limits(struct kgsl_pwr_limit *limit, unsigned int reason,
 
 done:
 	spin_unlock(&pwr->limits_lock);
-
-	if (!kgsl_pwrctrl_limit_enable)
-		return;
 
 	mutex_lock(&device->mutex);
 	pwr->thermal_pwrlevel = max_level;
@@ -3193,3 +3146,4 @@ unsigned int kgsl_pwr_limits_get_freq(enum kgsl_deviceid id)
 	return freq;
 }
 EXPORT_SYMBOL(kgsl_pwr_limits_get_freq);
+#endif
