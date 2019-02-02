@@ -532,29 +532,51 @@ static int smb2_usb_get_prop(struct power_supply *psy,
 			rc = smblib_get_prop_usb_present(chg, val);
 		break;
 	case POWER_SUPPLY_PROP_ONLINE:
-		rc = smblib_get_prop_usb_online(chg, val);
-		if (!val->intval)
-			break;
 #ifdef CONFIG_LGE_PM
+		rc = smblib_get_prop_usb_online(chg, val);
+		if (!val->intval) {
+			union power_supply_propval pval = {0, };
+			bool present = !smb2_usb_get_prop(psy, POWER_SUPPLY_PROP_PRESENT, &pval)
+				? !!pval.intval : false;
+			bool ac = chg->real_charger_type != POWER_SUPPLY_TYPE_UNKNOWN
+				&& chg->real_charger_type  != POWER_SUPPLY_TYPE_USB
+				&& chg->real_charger_type  != POWER_SUPPLY_TYPE_USB_CDP;
+			bool fo = get_effective_result_locked(chg->usb_icl_votable) == 0;
+			pr_debug("chgtype=%d, present=%d, ac=%d, fo=%d, icl=%d\n",
+				chg->real_charger_type, present, ac, fo, get_effective_result_locked(chg->usb_icl_votable));
+
+			if (present && ac && !fo) {
+				pr_debug("Set ONLINE by force\n");
+				val->intval = 1;
+			}
+			break;
+		}
+
 		if (chg->real_charger_type == POWER_SUPPLY_TYPE_USB ||
 			chg->real_charger_type == POWER_SUPPLY_TYPE_USB_FLOAT)
-#else
-		if ((chg->typec_mode == POWER_SUPPLY_TYPEC_SOURCE_DEFAULT ||
-			chg->micro_usb_mode) &&
-			chg->real_charger_type == POWER_SUPPLY_TYPE_USB)
-#endif
 			val->intval = 0;
 		else
 			val->intval = 1;
-#ifdef CONFIG_LGE_PM
-                if (chg->real_charger_type == POWER_SUPPLY_TYPE_UNKNOWN &&
+
+		if (chg->real_charger_type == POWER_SUPPLY_TYPE_UNKNOWN &&
 			!(get_effective_result_locked(chg->pseudo_usb_type_votable) > 0))
 			val->intval = 0;
+		break;
 #else
+		rc = smblib_get_prop_usb_online(chg, val);
+		if (!val->intval)
+			break;
+
+		if ((chg->typec_mode == POWER_SUPPLY_TYPEC_SOURCE_DEFAULT ||
+			chg->micro_usb_mode) &&
+			chg->real_charger_type == POWER_SUPPLY_TYPE_USB)
+			val->intval = 0;
+		else
+			val->intval = 1;
                 if (chg->real_charger_type == POWER_SUPPLY_TYPE_UNKNOWN)
 			val->intval = 0;
-#endif
 		break;
+#endif
 	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
 		rc = smblib_get_prop_usb_voltage_max(chg, val);
 		break;
@@ -2709,6 +2731,7 @@ static int smb2_gpio_interrupts(struct smb2 *chip)
 	struct smb_charger *chg = &chip->chg;
 	int ret = 0;
 
+	chg->is_cc_first_irq = true;
 	ret = gpio_request_one(chg->cc_protect_irq, GPIOF_DIR_IN,
 		"cc_protect_irq");
 	if (ret < 0) {
