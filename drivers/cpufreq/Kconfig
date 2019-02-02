@@ -301,12 +301,6 @@ config INPUT_BOOST_FREQ_PERF
 	help
 	  Input boost frequency for the performance CPU cluster.
 
-config INPUT_BOOST_GPU_FREQ
-	int "GPU freq for boost CPU"
-	default "0"
-	help
-	  GPU frequency for boost CPU.
-
 endif
 
 comment "CPU frequency scaling drivers"
