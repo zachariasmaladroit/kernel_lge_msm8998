@@ -209,7 +209,7 @@ static void bfq_schedule_dispatch(struct bfq_data *bfqd);
  */
 static int bfq_bio_sync(struct bio *bio)
 {
-	return bio_data_dir(bio) == READ || (bio->bi_opf & REQ_SYNC);
+	return bio_data_dir(bio) == READ || (bio->bi_rw & REQ_SYNC);
 }
 
 /*
@@ -4532,7 +4532,7 @@ static int __bfq_may_queue(struct bfq_queue *bfqq)
 	return ELV_MQUEUE_MAY;
 }
 
-static int bfq_may_queue(struct request_queue *q, int op, int op_flags)
+static int bfq_may_queue(struct request_queue *q, int rw)
 {
 	struct bfq_data *bfqd = q->elevator->elevator_data;
 	struct task_struct *tsk = current;
@@ -4549,7 +4549,7 @@ static int bfq_may_queue(struct request_queue *q, int op, int op_flags)
 	if (!bic)
 		return ELV_MQUEUE_MAY;
 
-	bfqq = bic_to_bfqq(bic, rw_is_sync(op, op_flags));
+	bfqq = bic_to_bfqq(bic, rw_is_sync(rw));
 	if (bfqq)
 		return __bfq_may_queue(bfqq);
 
