@@ -196,6 +196,4 @@ obj-$(CONFIG_LGE_BROADCAST_ISDBT_JAPAN) += broadcast/
 # Mobicore
 obj-$(CONFIG_TRUSTONIC_TEE) += gud/
 
-# DTS_EAGLE START
 obj-$(CONFIG_AINUR_DTS_SW) += dts_eagle/
-# DTS_EAGLE END
