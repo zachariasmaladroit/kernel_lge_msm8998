@@ -406,7 +406,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Wno-unused-value -Wno-unused-parameter \
 		   -Wno-missing-field-initializers \
 		   -fno-delete-null-pointer-checks \
-		   -march=armv8-a+crc+crypto \
+		   -march=armv8-a+crc+crypto -mtune=cortex-a73 \
 		   -std=gnu89 $(call cc-option,-fno-PIE)
 
 
