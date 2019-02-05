@@ -417,6 +417,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-schedule-insns \
 		   -fpredictive-commoning \
 		   -ftree-loop-im -funswitch-loops \
+		   -fmodulo-sched -fmodulo-sched-allow-regmoves \
 		   -march=armv8-a+crc+crypto -mtune=cortex-a73 \
 		   -std=gnu89 $(call cc-option,-fno-PIE)
 
