@@ -5859,6 +5859,9 @@ CONFIG_INPUT_MOUSE=y
 # TTBR0 PAN emulation
 # CONFIG_ARM64_SW_TTBR0_PAN is not set
 
+# use thin archives instead of ld -r
+CONFIG_THIN_ARCHIVES=y
+
 # DTS/sound processing variants
 CONFIG_SND_LGE_DTS=y
 CONFIG_AINUR_DTS_HW=y
