@@ -27,7 +27,7 @@ unsigned long boosted_cpu_util(int cpu);
 #define cpufreq_enable_fast_switch(x)
 #define cpufreq_disable_fast_switch(x)
 #define UP_RATE_LIMIT_US			(500)
-#define DOWN_RATE_LIMIT_US			(1000)
+#define DOWN_RATE_LIMIT_US			(20000)
 #define SUGOV_KTHREAD_PRIORITY	50
 
 struct sugov_tunables {
