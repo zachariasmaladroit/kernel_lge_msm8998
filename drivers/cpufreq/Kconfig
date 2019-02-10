@@ -361,7 +361,7 @@ config MAX_BOOST_STUNE_LEVEL
 config DISPLAY_BOOST_STUNE_LEVEL
 	int "Foreground app schedtune screen-on boost level"
 	depends on DYNAMIC_STUNE_BOOST
-	default "1"
+	default "0"
 	help
 	  Screen-on boost level for the EAS SchedTune boosting system. This
 	  artifically increases perceived load of certain processes in order
