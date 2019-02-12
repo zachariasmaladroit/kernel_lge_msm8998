@@ -2401,8 +2401,7 @@ void task_numa_work(struct callback_head *work)
 		return;
 
 
-	if (!down_read_trylock(&mm->mmap_sem))
-		return;
+	down_read(&mm->mmap_sem);
 	vma = find_vma(mm, start);
 	if (!vma) {
 		reset_ptenuma_scan(p);
