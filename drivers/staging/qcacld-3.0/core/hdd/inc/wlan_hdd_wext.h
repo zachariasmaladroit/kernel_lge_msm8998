@@ -152,14 +152,8 @@ enum hdd_wlan_wmm_ts_info_ack_policy {
 	HDD_WLAN_WMM_TS_INFO_ACK_POLICY_HT_IMMEDIATE_BLOCK_ACK = 1,
 };
 
-/* Source for peer rssi request */
-enum hdd_wlan_get_peer_rssi_source {
-	HDD_WLAN_GET_PEER_RSSI_SOURCE_USER = 0,
-	HDD_WLAN_GET_PEER_RSSI_SOURCE_DRIVER = 1,
-};
-
 /** Maximum Length of WPA/RSN IE */
-#define MAX_WPA_RSN_IE_LEN 255
+#define MAX_WPA_RSN_IE_LEN 40
 
 /** Enable 11d */
 #define ENABLE_11D  1
@@ -374,20 +368,8 @@ extern int hdd_priv_get_data(struct iw_point *p_priv_data,
 
 extern void *mem_alloc_copy_from_user_helper(const void *wrqu_data, size_t len);
 
-/**
- * wlan_hdd_get_linkspeed_for_peermac() - Get link speed for a peer
- * @adapter: adapter upon which the peer is active
- * @mac_address: MAC address of the peer
- * @linkspeed: pointer to memory where returned link speed is to be placed
- *
- * This function will send a query to SME for the linkspeed of the
- * given peer, and then wait for the callback to be invoked.
- *
- * Return: 0 if linkspeed data is available, negative errno otherwise
- */
-int wlan_hdd_get_linkspeed_for_peermac(hdd_adapter_t *adapter,
-				       struct qdf_mac_addr *mac_address,
-				       uint32_t *linkspeed);
+int wlan_hdd_get_linkspeed_for_peermac(hdd_adapter_t *pAdapter,
+					     struct qdf_mac_addr mac_address);
 void hdd_clear_roam_profile_ie(hdd_adapter_t *pAdapter);
 
 uint8_t *wlan_hdd_get_vendor_oui_ie_ptr(uint8_t *oui, uint8_t oui_size,
@@ -417,26 +399,16 @@ int wlan_hdd_update_phymode(struct net_device *net, tHalHandle hal,
 
 int wlan_hdd_get_temperature(hdd_adapter_t *pAdapter, int *temperature);
 int wlan_hdd_get_link_speed(hdd_adapter_t *sta_adapter, uint32_t *link_speed);
+
 /**
  * wlan_hdd_get_peer_rssi() - get station's rssi
  * @adapter: hostapd interface
  * @macaddress: peer sta mac address or ff:ff:ff:ff:ff:ff to query all peer
- * @source : source of the request hdd_wlan_get_peer_rssi_source
  *
  * This function will call sme_get_peer_info to get rssi
  *
  * Return: 0 on success, otherwise error value
  */
 int wlan_hdd_get_peer_rssi(hdd_adapter_t *adapter,
-			struct qdf_mac_addr *macaddress, int request_source);
-/**
- * wlan_hdd_set_mon_chan() - Set capture channel on the monitor mode interface.
- * @adapter: Handle to adapter
- * @chan: Monitor mode channel
- * @bandwidth: Capture channel bandwidth
- *
- * Return: 0 on success else error code.
- */
-int wlan_hdd_set_mon_chan(hdd_adapter_t *adapter, uint32_t chan,
-			  uint32_t bandwidth);
+			struct qdf_mac_addr *macaddress);
 #endif /* __WEXT_IW_H__ */

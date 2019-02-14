@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2013-2017 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -381,10 +381,9 @@ struct ol_tx_sched_t;
 #ifndef OL_TXRX_NUM_LOCAL_PEER_IDS
 /*
  * Each AP will occupy one ID, so it will occupy two IDs for AP-AP mode.
- * Clients will be assigned max 32 IDs.
- * STA(associated)/P2P DEV (self-PEER) will get one ID.
+ * And the remainder IDs will be assigned to other 32 clients.
  */
-#define OL_TXRX_NUM_LOCAL_PEER_IDS (32 + 1 + 1 + 1)
+#define OL_TXRX_NUM_LOCAL_PEER_IDS (2 + 32)
 #endif
 
 #ifndef ol_txrx_local_peer_id_t
@@ -542,27 +541,6 @@ struct ol_txrx_peer_id_map {
 	qdf_atomic_t del_peer_id_ref_cnt;
 };
 
-/**
- * ol_txrx_stats_req_internal - specifications of the requested
- * statistics internally
- */
-struct ol_txrx_stats_req_internal {
-    struct ol_txrx_stats_req base;
-    TAILQ_ENTRY(ol_txrx_stats_req_internal) req_list_elem;
-    int serviced; /* state of this request */
-    int offset;
-};
-
-struct ol_txrx_fw_stats_desc_t {
-	struct ol_txrx_stats_req_internal *req;
-	unsigned char desc_id;
-};
-
-struct ol_txrx_fw_stats_desc_elem_t {
-	struct ol_txrx_fw_stats_desc_elem_t *next;
-	struct ol_txrx_fw_stats_desc_t desc;
-};
-
 /*
  * As depicted in the diagram below, the pdev contains an array of
  * NUM_EXT_TID ol_tx_active_queues_in_tid_t elements.
@@ -674,23 +652,11 @@ struct ol_txrx_pdev_t {
 	qdf_atomic_t target_tx_credit;
 	qdf_atomic_t orig_target_tx_credit;
 
-	struct {
-		uint16_t pool_size;
-		struct ol_txrx_fw_stats_desc_elem_t *pool;
-		struct ol_txrx_fw_stats_desc_elem_t *freelist;
-		qdf_spinlock_t pool_lock;
-		qdf_atomic_t initialized;
-	} ol_txrx_fw_stats_desc_pool;
-
 	/* Peer mac address to staid mapping */
 	struct ol_mac_addr mac_to_staid[WLAN_MAX_STA_COUNT + 3];
 
 	/* ol_txrx_vdev list */
 	TAILQ_HEAD(, ol_txrx_vdev_t) vdev_list;
-
-	TAILQ_HEAD(, ol_txrx_stats_req_internal) req_list;
-	int req_list_depth;
-	qdf_spinlock_t req_list_spinlock;
 
 	/* peer ID to peer object map (array of pointers to peer objects) */
 	struct ol_txrx_peer_id_map *peer_id_to_obj_map;
@@ -740,7 +706,6 @@ struct ol_txrx_pdev_t {
 		} callbacks[OL_TXRX_MGMT_NUM_TYPES];
 	} tx_mgmt;
 
-	data_stall_detect_cb data_stall_detect_callback;
 	/* packetdump callback functions */
 	tp_ol_packetdump_cb ol_tx_packetdump_cb;
 	tp_ol_packetdump_cb ol_rx_packetdump_cb;
@@ -1072,7 +1037,6 @@ struct ol_txrx_vdev_t {
 						* pseudo-peer)
 						*/
 	ol_txrx_rx_fp rx; /* receive function used by this vdev */
-	ol_txrx_stats_rx_fp stats_rx; /* receive function used by this vdev */
 
 	struct {
 		/*
@@ -1132,7 +1096,6 @@ struct ol_txrx_vdev_t {
 	uint16_t tx_fl_hwm;
 	qdf_spinlock_t flow_control_lock;
 	ol_txrx_tx_flow_control_fp osif_flow_control_cb;
-	ol_txrx_tx_flow_control_is_pause_fp osif_flow_control_is_pause;
 	void *osif_fc_ctx;
 
 #if defined(CONFIG_HL_SUPPORT) && defined(FEATURE_WLAN_TDLS)
@@ -1403,11 +1366,6 @@ struct ol_error_info {
 struct ol_rx_remote_data {
 	qdf_nbuf_t msdu;
 	uint8_t mac_id;
-};
-
-struct ol_fw_data {
-	void *data;
-	uint32_t len;
 };
 
 #define INVALID_REORDER_INDEX 0xFFFF

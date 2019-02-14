@@ -45,6 +45,10 @@
 #include "lim_scan_result_utils.h"
 #include "lim_timer_utils.h"
 #include "lim_trace.h"
+typedef enum {
+	ONE_BYTE = 1,
+	TWO_BYTE = 2
+} eSizeOfLenField;
 
 #define LIM_STA_ID_MASK                        0x00FF
 #define LIM_AID_MASK                              0xC000
@@ -473,6 +477,9 @@ tpPESession lim_is_ibss_session_active(tpAniSirGlobal pMac);
 tpPESession lim_is_ap_session_active(tpAniSirGlobal pMac);
 void lim_handle_heart_beat_failure_timeout(tpAniSirGlobal pMac);
 
+uint8_t *lim_get_ie_ptr_new(tpAniSirGlobal pMac, uint8_t *pIes, int length,
+		uint8_t eid, eSizeOfLenField size_of_len_field);
+
 #define limGetWscIEPtr(pMac, ie, ie_len) \
 	cfg_get_vendor_ie_ptr_from_oui(pMac, SIR_MAC_WSC_OUI, \
 			SIR_MAC_WSC_OUI_SIZE, ie, ie_len)
@@ -671,33 +678,6 @@ tSirRetStatus lim_strip_extcap_update_struct(tpAniSirGlobal mac_ctx,
 void lim_merge_extcap_struct(tDot11fIEExtCap *dst, tDot11fIEExtCap *src,
 		bool add);
 
-#ifdef WLAN_FEATURE_11W
-/**
- * lim_del_pmf_sa_query_timer() - This function deletes SA query timer
- * @mac_ctx: pointer to mac context
- * @pe_session: pointer to PE session
- *
- * This API is to delete the PMF SA query timer created for each associated STA
- *
- * Return: none
- */
-void lim_del_pmf_sa_query_timer(tpAniSirGlobal mac_ctx, tpPESession pe_session);
-#else
-/**
- * lim_del_pmf_sa_query_timer() - This function deletes SA query timer
- * @mac_ctx: pointer to mac context
- * @pe_session: pointer to PE session
- *
- * This API is to delete the PMF SA query timer created for each associated STA
- *
- * Return: none
- */
-static inline void
-lim_del_pmf_sa_query_timer(tpAniSirGlobal mac_ctx, tpPESession pe_session)
-{
-}
-#endif
-
 /**
  * lim_strip_op_class_update_struct - strip sup op class IE and populate
  *				  the dot11f structure
@@ -766,7 +746,7 @@ void lim_send_set_dtim_period(tpAniSirGlobal mac_ctx, uint8_t dtim_period,
 
 tSirRetStatus lim_strip_ie(tpAniSirGlobal mac_ctx,
 		uint8_t *addn_ie, uint16_t *addn_ielen,
-		uint8_t eid, enum size_of_len_field size_of_len_field,
+		uint8_t eid, eSizeOfLenField size_of_len_field,
 		uint8_t *oui, uint8_t out_len, uint8_t *extracted_ie,
 		uint32_t eid_max_len);
 bool lim_get_rx_ldpc(tpAniSirGlobal mac_ctx, enum channel_enum ch,
@@ -834,16 +814,4 @@ void lim_assoc_rej_add_to_rssi_based_reject_list(tpAniSirGlobal mac_ctx,
 bool lim_check_if_vendor_oui_match(tpAniSirGlobal mac_ctx,
 				uint8_t *oui, uint8_t oui_len,
 				uint8_t *ie, uint8_t ie_len);
-
-/**
- * lim_get_min_session_txrate() - Get the minimum rate supported in the session
- * @session: Pointer to PE session
- *
- * This API will find the minimum rate supported by the given PE session and
- * return the enum rateid corresponding to the rate.
- *
- * Return: enum rateid
- */
-enum rateid lim_get_min_session_txrate(tpPESession session);
-
 #endif /* __LIM_UTILS_H */

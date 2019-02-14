@@ -88,8 +88,6 @@
 #endif
 #define WMA_MAX_SUPPORTED_BSS     5
 
-#define WMA_MAX_MGMT_MPDU_LEN 2000
-
 #define FRAGMENT_SIZE 3072
 
 #define MAX_PRINT_FAILURE_CNT 50
@@ -275,8 +273,6 @@ enum ds_mode {
 #define WMA_VDEV_START_REQUEST_TIMEOUT (6000)   /* 6 seconds */
 #define WMA_VDEV_STOP_REQUEST_TIMEOUT  (6000)   /* 6 seconds */
 #define WMA_VDEV_HW_MODE_REQUEST_TIMEOUT (5000) /* 5 seconds */
-#define WMA_VDEV_PLCY_MGR_CMD_TIMEOUT (3000)    /* 3 seconds */
-#define WMA_VDEV_SET_KEY_REQUEST_TIMEOUT (1000) /* 1 second */
 
 #define WMA_TGT_INVALID_SNR (0)
 
@@ -979,17 +975,6 @@ typedef struct {
 	uint8_t ssidHidden;
 } vdev_restart_params_t;
 
-struct roam_synch_frame_ind {
-	uint32_t bcn_probe_rsp_len;
-	uint8_t *bcn_probe_rsp;
-	uint8_t is_beacon;
-	uint32_t reassoc_req_len;
-	uint8_t *reassoc_req;
-	uint32_t reassoc_rsp_len;
-	uint8_t *reassoc_rsp;
-};
-
-
 /**
  * struct wma_txrx_node - txrx node
  * @addr: mac address
@@ -1057,7 +1042,6 @@ struct roam_synch_frame_ind {
  * @in_bmps : Whether bmps for this interface has been enabled
  * @vdev_start_wakelock: wakelock to protect vdev start op with firmware
  * @vdev_stop_wakelock: wakelock to protect vdev stop op with firmware
- * @vdev_set_key_wakelock: wakelock to protect vdev set key op with firmware
  */
 struct wma_txrx_node {
 	uint8_t addr[IEEE80211_ADDR_LEN];
@@ -1102,7 +1086,6 @@ struct wma_txrx_node {
 	tAniGetPEStatsRsp *stats_rsp;
 	uint8_t fw_stats_set;
 	void *del_staself_req;
-	bool is_del_sta_defered;
 	qdf_atomic_t bss_status;
 	uint8_t rate_flags;
 	uint8_t nss;
@@ -1145,8 +1128,6 @@ struct wma_txrx_node {
 	bool beacon_filter_enabled;
 	qdf_wake_lock_t vdev_start_wakelock;
 	qdf_wake_lock_t vdev_stop_wakelock;
-	qdf_wake_lock_t vdev_set_key_wakelock;
-	struct roam_synch_frame_ind roam_synch_frame_ind;
 };
 
 #if defined(QCA_WIFI_FTM)
@@ -1515,6 +1496,7 @@ struct peer_debug_info {
  * @wmi_cmd_rsp_wake_lock: wmi command response wake lock
  * @wmi_cmd_rsp_runtime_lock: wmi command response bus lock
  * @saved_chan: saved channel list sent as part of WMI_SCAN_CHAN_LIST_CMDID
+ * @fw_mem_dump_enabled: Fw memory dump support
  * @ss_configs: spectral scan config parameters
  * @ito_repeat_count: Indicates ito repeated count
  */
@@ -1721,6 +1703,7 @@ typedef struct {
 	tp_wma_packetdump_cb wma_mgmt_rx_packetdump_cb;
 	bool rcpi_enabled;
 	tSirLLStatsResults *link_stats_results;
+	bool fw_mem_dump_enabled;
 	bool tx_bfee_8ss_enabled;
 	tSirAddonPsReq ps_setting;
 	struct peer_debug_info *peer_dbg;
@@ -2696,15 +2679,5 @@ int wma_chan_info_event_handler(void *handle, u_int8_t *event_buf,
  */
 QDF_STATUS wma_config_bmiss_bcnt_params(uint32_t vdev_id, uint32_t first_cnt,
 		uint32_t final_cnt);
-
-/**
- * wma_send_action_oui() - send of action oui extensions to firmware
- * @handle: wma handle
- * @action_oui: action oui buffer containg extensions to be send
- *
- * Return: QDF_STATUS
- */
-QDF_STATUS wma_send_action_oui(WMA_HANDLE handle,
-			       struct wmi_action_oui *action_oui);
 
 #endif
