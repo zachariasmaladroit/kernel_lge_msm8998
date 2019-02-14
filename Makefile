@@ -407,7 +407,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fivopts \
 		   -fshrink-wrap -fshrink-wrap-separate \
 		   -flive-range-shrinkage -ftree-vrp \
-		   -floop-unroll-and-jam -floop-interchange -ftree-loop-distribution \
+		   -ftree-loop-distribution \
 		   -ftree-loop-distribute-patterns \
 		   -fgraphite-identity \
 		   -floop-nest-optimize \
@@ -417,6 +417,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -std=gnu89 $(call cc-option,-fno-PIE)
 
 #		   -fmodulo-sched -fmodulo-sched-allow-regmoves \
+#		   -floop-unroll-and-jam -floop-interchange \
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
