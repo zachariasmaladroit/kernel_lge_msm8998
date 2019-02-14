@@ -3502,9 +3502,10 @@ static int __hdd_ipa_uc_ssr_deinit(void)
 	for (idx = 0; (hdd_ipa->num_iface > 0) &&
 		(idx < HDD_IPA_MAX_IFACE); idx++) {
 		iface_context = &hdd_ipa->iface_context[idx];
-		if (iface_context->adapter && iface_context->adapter->magic ==
-					      WLAN_HDD_ADAPTER_MAGIC)
+		if (iface_context->adapter &&
+		    hdd_is_adapter_valid(hdd_ctx, iface_context->adapter)) {
 			hdd_ipa_cleanup_iface(iface_context);
+		}
 	}
 	hdd_ipa->num_iface = 0;
 	/* After SSR, wlan driver reloads FW again. But we need to protect
@@ -3844,8 +3845,7 @@ static int hdd_ipa_rm_try_release(struct hdd_ipa_priv *hdd_ipa)
 	 * while there is healthy amount of data transfer going on by
 	 * releasing the wake_lock after some delay.
 	 */
-	queue_delayed_work(system_power_efficient_wq,
-			&hdd_ipa->wake_lock_work,
+	schedule_delayed_work(&hdd_ipa->wake_lock_work,
 			      msecs_to_jiffies
 				      (HDD_IPA_RX_INACTIVITY_MSEC_DELAY));
 
