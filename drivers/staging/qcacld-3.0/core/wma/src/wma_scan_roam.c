@@ -2404,35 +2404,6 @@ void wma_process_roam_synch_fail(WMA_HANDLE handle,
 }
 
 /**
- * wma_free_roam_synch_frame_ind() - Free the bcn_probe_rsp, reassoc_req,
- * reassoc_rsp recieved as part of the ROAM_SYNC_FRAME event
- *
- * @iface - interaface corresponding to a vdev
- *
- * This API is used to free the buffer allocated during the ROAM_SYNC_FRAME
- * event
- *
- */
-static void wma_free_roam_synch_frame_ind(struct wma_txrx_node *iface)
-{
-	if (iface->roam_synch_frame_ind.bcn_probe_rsp) {
-		qdf_mem_free(iface->roam_synch_frame_ind.bcn_probe_rsp);
-		iface->roam_synch_frame_ind.bcn_probe_rsp_len = 0;
-		iface->roam_synch_frame_ind.bcn_probe_rsp = NULL;
-	}
-	if (iface->roam_synch_frame_ind.reassoc_req) {
-		qdf_mem_free(iface->roam_synch_frame_ind.reassoc_req);
-		iface->roam_synch_frame_ind.reassoc_req_len = 0;
-		iface->roam_synch_frame_ind.reassoc_req = NULL;
-	}
-	if (iface->roam_synch_frame_ind.reassoc_rsp) {
-		qdf_mem_free(iface->roam_synch_frame_ind.reassoc_rsp);
-		iface->roam_synch_frame_ind.reassoc_rsp_len = 0;
-		iface->roam_synch_frame_ind.reassoc_rsp = NULL;
-	}
-}
-
-/**
  * wma_fill_data_synch_frame_event() - Fill the the roam sync data buffer using
  * synch frame event data
  * @wma: Global WMA Handle
@@ -2576,14 +2547,12 @@ static int wma_fill_roam_synch_buffer(tp_wma_handle wma,
 	wmi_key_material *key;
 	wmi_roam_fils_synch_tlv_param *fils_info;
 	struct wma_txrx_node *iface = NULL;
-	int status = -EINVAL;
 
 	synch_event = param_buf->fixed_param;
 	roam_synch_ind_ptr->roamedVdevId = synch_event->vdev_id;
 	roam_synch_ind_ptr->authStatus = synch_event->auth_status;
 	roam_synch_ind_ptr->roamReason = synch_event->roam_reason;
 	roam_synch_ind_ptr->rssi = synch_event->rssi;
-	iface = &wma->interfaces[synch_event->vdev_id];
 	WMI_MAC_ADDR_TO_CHAR_ARRAY(&synch_event->bssid,
 				   roam_synch_ind_ptr->bssid.bytes);
 	WMA_LOGD("%s: roamedVdevId %d authStatus %d roamReason %d rssi %d isBeacon %d",
@@ -2595,9 +2564,10 @@ static int wma_fill_roam_synch_buffer(tp_wma_handle wma,
 		wma->csr_roam_synch_cb((tpAniSirGlobal)wma->mac_context,
 		roam_synch_ind_ptr, NULL, SIR_ROAMING_DEREGISTER_STA))) {
 		WMA_LOGE("LFR3: CSR Roam synch cb failed");
-		wma_free_roam_synch_frame_ind(iface);
-		return status;
+		return -EINVAL;
 	}
+
+	iface = &wma->interfaces[synch_event->vdev_id];
 
 	/*
 	 * If lengths of bcn_probe_rsp, reassoc_req and reassoc_rsp are zero in
@@ -2611,22 +2581,19 @@ static int wma_fill_roam_synch_buffer(tp_wma_handle wma,
 			WMA_LOGE("LFR3: bcn_probe_rsp is NULL");
 			QDF_ASSERT(iface->roam_synch_frame_ind.
 				   bcn_probe_rsp != NULL);
-			wma_free_roam_synch_frame_ind(iface);
-			return status;
+			return -EINVAL;
 		}
 		if (!iface->roam_synch_frame_ind.reassoc_rsp) {
 			WMA_LOGE("LFR3: reassoc_rsp is NULL");
 			QDF_ASSERT(iface->roam_synch_frame_ind.
 				   reassoc_rsp != NULL);
-			wma_free_roam_synch_frame_ind(iface);
-			return status;
+			return -EINVAL;
 		}
 		if (!iface->roam_synch_frame_ind.reassoc_req) {
 			WMA_LOGE("LFR3: reassoc_req is NULL");
 			QDF_ASSERT(iface->roam_synch_frame_ind.
 				   reassoc_req != NULL);
-			wma_free_roam_synch_frame_ind(iface);
-			return status;
+			return -EINVAL;
 		}
 		wma_fill_data_synch_frame_event(wma, roam_synch_ind_ptr, iface);
 	} else {
@@ -2665,8 +2632,7 @@ static int wma_fill_roam_synch_buffer(tp_wma_handle wma,
 				 __func__,
 				 fils_info->kek_len,
 				 fils_info->pmk_len);
-			wma_free_roam_synch_frame_ind(iface);
-			return status;
+			return -EINVAL;
 		}
 
 		roam_synch_ind_ptr->kek_len = fils_info->kek_len;
@@ -2695,7 +2661,6 @@ static int wma_fill_roam_synch_buffer(tp_wma_handle wma,
 		QDF_TRACE_HEX_DUMP(QDF_MODULE_ID_WMA, QDF_TRACE_LEVEL_DEBUG,
 				   roam_synch_ind_ptr->pmkid, SIR_PMKID_LEN);
 	}
-	wma_free_roam_synch_frame_ind(iface);
 	return 0;
 }
 
@@ -3055,25 +3020,25 @@ int wma_roam_synch_frame_event_handler(void *handle, uint8_t *event,
 	WMA_LOGD("LFR3:Synch Frame event");
 	if (!event) {
 		WMA_LOGE("event param null");
-		return status;
+		goto cleanup_label;
 	}
 
 	param_buf = (WMI_ROAM_SYNCH_FRAME_EVENTID_param_tlvs *) event;
 	if (!param_buf) {
 		WMA_LOGE("received null buf from target");
-		return status;
+		goto cleanup_label;
 	}
 
 	synch_frame_event = param_buf->fixed_param;
 	if (!synch_frame_event) {
 		WMA_LOGE("received null event data from target");
-		return status;
+		goto cleanup_label;
 	}
 
 	if (synch_frame_event->vdev_id >= wma->max_bssid) {
 		WMA_LOGE("received invalid vdev_id %d",
 				 synch_frame_event->vdev_id);
-		return status;
+		goto cleanup_label;
 	}
 
 	vdev_id = synch_frame_event->vdev_id;
@@ -3081,8 +3046,7 @@ int wma_roam_synch_frame_event_handler(void *handle, uint8_t *event,
 
 	if (wma_is_roam_synch_in_progress(wma, vdev_id)) {
 		WMA_LOGE("Ignoring this event as it is unexpected");
-		wma_free_roam_synch_frame_ind(iface);
-		return status;
+		goto cleanup_label;
 	}
 	WMA_LOGD("LFR3: Received ROAM_SYNCH_FRAME_EVENT");
 
@@ -3098,9 +3062,6 @@ int wma_roam_synch_frame_event_handler(void *handle, uint8_t *event,
 		iface->roam_synch_frame_ind.is_beacon =
 				synch_frame_event->is_beacon;
 
-		if (iface->roam_synch_frame_ind.bcn_probe_rsp)
-			qdf_mem_free(iface->roam_synch_frame_ind.
-				     bcn_probe_rsp);
 		iface->roam_synch_frame_ind.bcn_probe_rsp =
 			qdf_mem_malloc(iface->roam_synch_frame_ind.
 				       bcn_probe_rsp_len);
@@ -3109,8 +3070,7 @@ int wma_roam_synch_frame_event_handler(void *handle, uint8_t *event,
 			QDF_ASSERT(iface->roam_synch_frame_ind.
 				   bcn_probe_rsp != NULL);
 			status = -ENOMEM;
-			wma_free_roam_synch_frame_ind(iface);
-			return status;
+			goto cleanup_label;
 		}
 		qdf_mem_copy(iface->roam_synch_frame_ind.
 			bcn_probe_rsp,
@@ -3122,8 +3082,6 @@ int wma_roam_synch_frame_event_handler(void *handle, uint8_t *event,
 		iface->roam_synch_frame_ind.reassoc_req_len =
 				synch_frame_event->reassoc_req_len;
 
-		if (iface->roam_synch_frame_ind.reassoc_req)
-			qdf_mem_free(iface->roam_synch_frame_ind.reassoc_req);
 		iface->roam_synch_frame_ind.reassoc_req =
 			qdf_mem_malloc(iface->roam_synch_frame_ind.
 				       reassoc_req_len);
@@ -3132,8 +3090,7 @@ int wma_roam_synch_frame_event_handler(void *handle, uint8_t *event,
 			QDF_ASSERT(iface->roam_synch_frame_ind.
 				   reassoc_req != NULL);
 			status = -ENOMEM;
-			wma_free_roam_synch_frame_ind(iface);
-			return status;
+			goto cleanup_label;
 		}
 		qdf_mem_copy(iface->roam_synch_frame_ind.reassoc_req,
 			     param_buf->reassoc_req_frame,
@@ -3141,17 +3098,8 @@ int wma_roam_synch_frame_event_handler(void *handle, uint8_t *event,
 	}
 
 	if (synch_frame_event->reassoc_rsp_len) {
-		if (!iface->roam_synch_frame_ind.bcn_probe_rsp ||
-		    !iface->roam_synch_frame_ind.reassoc_req) {
-			WMA_LOGE("failed: No probe or reassoc rsp");
-			wma_free_roam_synch_frame_ind(iface);
-			return status;
-		}
 		iface->roam_synch_frame_ind.reassoc_rsp_len =
 				synch_frame_event->reassoc_rsp_len;
-
-		if (iface->roam_synch_frame_ind.reassoc_rsp)
-			qdf_mem_free(iface->roam_synch_frame_ind.reassoc_rsp);
 
 		iface->roam_synch_frame_ind.reassoc_rsp =
 			qdf_mem_malloc(iface->roam_synch_frame_ind.
@@ -3161,14 +3109,29 @@ int wma_roam_synch_frame_event_handler(void *handle, uint8_t *event,
 			QDF_ASSERT(iface->roam_synch_frame_ind.
 				   reassoc_rsp != NULL);
 			status = -ENOMEM;
-			wma_free_roam_synch_frame_ind(iface);
-			return status;
+			goto cleanup_label;
 		}
 		qdf_mem_copy(iface->roam_synch_frame_ind.reassoc_rsp,
 			     param_buf->reassoc_rsp_frame,
 			     iface->roam_synch_frame_ind.reassoc_rsp_len);
 	}
 	return 0;
+
+cleanup_label:
+	if (iface && (iface->roam_synch_frame_ind.bcn_probe_rsp)) {
+		qdf_mem_free(iface->roam_synch_frame_ind.
+			     bcn_probe_rsp);
+		iface->roam_synch_frame_ind.bcn_probe_rsp = NULL;
+	}
+	if (iface && (iface->roam_synch_frame_ind.reassoc_req)) {
+		qdf_mem_free(iface->roam_synch_frame_ind.reassoc_req);
+		iface->roam_synch_frame_ind.reassoc_req = NULL;
+	}
+	if (iface && (iface->roam_synch_frame_ind.reassoc_rsp)) {
+		qdf_mem_free(iface->roam_synch_frame_ind.reassoc_rsp);
+		iface->roam_synch_frame_ind.reassoc_rsp = NULL;
+	}
+	return status;
 }
 
 #define RSN_CAPS_SHIFT               16
