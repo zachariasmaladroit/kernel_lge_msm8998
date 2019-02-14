@@ -403,7 +403,6 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fdiagnostics-color=always \
 		   -Wno-unused-value -Wno-unused-parameter \
 		   -Wno-missing-field-initializers \
-		   -fmodulo-sched -fmodulo-sched-allow-regmoves \
 		   -fivopts \
 		   -fshrink-wrap -fshrink-wrap-separate \
 		   -flive-range-shrinkage -ftree-vrp \
@@ -415,6 +414,8 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fdelete-null-pointer-checks -fisolate-erroneous-paths-dereference \
 		   -march=armv8-a+crc+crypto -mtune=cortex-a73.cortex-a53 \
 		   -std=gnu89 $(call cc-option,-fno-PIE)
+
+#		   -fmodulo-sched -fmodulo-sched-allow-regmoves \
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
