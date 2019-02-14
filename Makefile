@@ -403,6 +403,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fdiagnostics-color=always \
 		   -Wno-unused-value -Wno-unused-parameter \
 		   -Wno-missing-field-initializers \
+		   -fno-store-merging \
 		   -fivopts \
 		   -fshrink-wrap -fshrink-wrap-separate \
 		   -flive-range-shrinkage -ftree-vrp \
