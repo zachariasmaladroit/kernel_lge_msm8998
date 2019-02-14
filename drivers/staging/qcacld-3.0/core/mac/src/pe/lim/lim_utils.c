@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2011-2017 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -56,7 +56,6 @@
 #include "lim_ft_defs.h"
 #include "lim_session.h"
 #include "cds_reg_service.h"
-#include "cds_concurrency.h"
 #include "nan_datapath.h"
 #include "wma.h"
 
@@ -401,6 +400,10 @@ char *lim_msg_str(uint32_t msgType)
 		return "WNI_CFG_DNLD_RSP";
 	case WNI_CFG_GET_REQ:
 		return "WNI_CFG_GET_REQ";
+	case WNI_CFG_SET_REQ:
+		return "WNI_CFG_SET_REQ";
+	case WNI_CFG_SET_REQ_NO_RSP:
+		return "WNI_CFG_SET_REQ_NO_RSP";
 	case eWNI_PMC_ENTER_IMPS_RSP:
 		return "eWNI_PMC_ENTER_IMPS_RSP";
 	case eWNI_PMC_EXIT_IMPS_RSP:
@@ -541,6 +544,39 @@ tSirRetStatus lim_init_mlm(tpAniSirGlobal pMac)
 	return eSIR_SUCCESS;
 } /*** end lim_init_mlm() ***/
 
+#ifdef WLAN_FEATURE_11W
+/**
+ * lim_deactivate_del_sta() - This function deactivate/delete associates STA
+ * @mac_ctx: pointer to Global Mac Structure
+ * @bss_entry: index for bss_entry
+ * @psession_entry: pointer to session entry
+ * @sta_ds: pointer to tpDphHashNode
+ *
+ * Function deactivate/delete associates STA
+ *
+ * Return: none
+ */
+static void lim_deactivate_del_sta(tpAniSirGlobal mac_ctx, uint32_t bss_entry,
+		tpPESession psession_entry, tpDphHashNode sta_ds)
+{
+	uint32_t sta_entry;
+
+	for (sta_entry = 1; sta_entry < mac_ctx->lim.gLimAssocStaLimit;
+				sta_entry++) {
+		psession_entry = &mac_ctx->lim.gpSession[bss_entry];
+		sta_ds = dph_get_hash_entry(mac_ctx, sta_entry,
+					&psession_entry->dph.dphHashTable);
+		if (NULL == sta_ds)
+			continue;
+
+		pe_err("Deleting pmfSaQueryTimer for staid: %d",
+				sta_ds->staIndex);
+		tx_timer_deactivate(&sta_ds->pmfSaQueryTimer);
+		tx_timer_delete(&sta_ds->pmfSaQueryTimer);
+	}
+}
+#endif
+
 void lim_deactivate_timers(tpAniSirGlobal mac_ctx)
 {
 	uint32_t n;
@@ -557,11 +593,6 @@ void lim_deactivate_timers(tpAniSirGlobal mac_ctx)
 	/* Deactivate addts response timer. */
 	tx_timer_deactivate(&lim_timer->gLimAddtsRspTimer);
 
-	if (tx_timer_running(&lim_timer->gLimJoinFailureTimer)) {
-		pe_err("Join failure timer running call the timeout API");
-		/* Cleanup as if join timer expired */
-		lim_timer_handler(mac_ctx, SIR_LIM_JOIN_FAIL_TIMEOUT);
-	}
 	/* Deactivate Join failure timer. */
 	tx_timer_deactivate(&lim_timer->gLimJoinFailureTimer);
 
@@ -572,22 +603,12 @@ void lim_deactivate_timers(tpAniSirGlobal mac_ctx)
 	tx_timer_deactivate
 			(&lim_timer->g_lim_periodic_auth_retry_timer);
 
-	if (tx_timer_running(&lim_timer->gLimAssocFailureTimer)) {
-		pe_err("Assoc failure timer running call the timeout API");
-		/* Cleanup as if assoc timer expired */
-		lim_assoc_failure_timer_handler(mac_ctx, LIM_ASSOC);
-	}
 	/* Deactivate Association failure timer. */
 	tx_timer_deactivate(&lim_timer->gLimAssocFailureTimer);
 
 	/* Deactivate Open system auth timer. */
 	tx_timer_deactivate(&lim_timer->open_sys_auth_timer);
 
-	if (tx_timer_running(&mac_ctx->lim.limTimers.gLimAuthFailureTimer)) {
-		pe_err("Auth failure timer running call the timeout API");
-		/* Cleanup as if auth timer expired */
-		lim_timer_handler(mac_ctx, SIR_LIM_AUTH_FAIL_TIMEOUT);
-	}
 	/* Deactivate Authentication failure timer. */
 	tx_timer_deactivate(&lim_timer->gLimAuthFailureTimer);
 
@@ -638,6 +659,11 @@ void lim_cleanup_mlm(tpAniSirGlobal mac_ctx)
 {
 	uint32_t n;
 	tLimPreAuthNode **pAuthNode;
+#ifdef WLAN_FEATURE_11W
+	uint32_t bss_entry;
+	tpDphHashNode sta_ds = NULL;
+	tpPESession psession_entry = NULL;
+#endif
 	tLimTimers *lim_timer = NULL;
 
 	if (mac_ctx->lim.gLimTimersCreated == 1) {
@@ -712,6 +738,21 @@ void lim_cleanup_mlm(tpAniSirGlobal mac_ctx)
 
 		mac_ctx->lim.gLimTimersCreated = 0;
 	}
+#ifdef WLAN_FEATURE_11W
+	/*
+	 * When SSR is triggered, we need to loop through
+	 * each STA associated per BSSId and deactivate/delete
+	 * the pmfSaQueryTimer for it
+	 */
+	for (bss_entry = 0; bss_entry < mac_ctx->lim.maxBssId;
+					bss_entry++) {
+		if (!mac_ctx->lim.gpSession[bss_entry].valid)
+			continue;
+		lim_deactivate_del_sta(mac_ctx, bss_entry,
+				psession_entry, sta_ds);
+	}
+#endif
+
 } /*** end lim_cleanup_mlm() ***/
 
 /**
@@ -4371,12 +4412,6 @@ void lim_update_sta_run_time_ht_switch_chnl_params(tpAniSirGlobal pMac,
 		    (pMac, eHT_SUPPORTED_CHANNEL_WIDTH_SET, psessionEntry))
 		return;
 
-	if (CDS_IS_CHANNEL_24GHZ(psessionEntry->currentOperChannel) &&
-		psessionEntry->force_24ghz_in_ht20) {
-		pe_debug("force_24ghz_in_ht20 is set and channel is 2.4 Ghz");
-		return;
-	}
-
 	if (psessionEntry->ftPEContext.ftPreAuthSession) {
 		pe_err("FT PREAUTH channel change is in progress");
 		return;
@@ -5057,7 +5092,6 @@ bool lim_is_channel_valid_for_channel_switch(tpAniSirGlobal pMac, uint8_t channe
 	uint8_t index;
 	uint32_t validChannelListLen = WNI_CFG_VALID_CHANNEL_LIST_LEN;
 	tSirMacChanNum validChannelList[WNI_CFG_VALID_CHANNEL_LIST_LEN];
-	bool status;
 
 	if (wlan_cfg_get_str(pMac, WNI_CFG_VALID_CHANNEL_LIST,
 			     (uint8_t *) validChannelList,
@@ -5068,13 +5102,8 @@ bool lim_is_channel_valid_for_channel_switch(tpAniSirGlobal pMac, uint8_t channe
 	}
 
 	for (index = 0; index < validChannelListLen; index++) {
-
-		if (validChannelList[index] != channel)
-			continue;
-
-		status = cds_is_valid_channel_for_channel_switch(channel);
-
-		return status;
+		if (validChannelList[index] == channel)
+			return true;
 	}
 
 	/* channel does not belong to list of valid channels */
@@ -5725,6 +5754,38 @@ void lim_diag_event_report(tpAniSirGlobal pMac, uint16_t eventType,
 
 #endif /* FEATURE_WLAN_DIAG_SUPPORT */
 
+uint8_t *lim_get_ie_ptr_new(tpAniSirGlobal pMac, uint8_t *pIes, int length,
+				 uint8_t eid, eSizeOfLenField size_of_len_field)
+{
+	int left = length;
+	uint8_t *ptr = pIes;
+	uint8_t elem_id;
+	uint16_t elem_len;
+
+	while (left >= (size_of_len_field + 1)) {
+		elem_id = ptr[0];
+		if (size_of_len_field == TWO_BYTE) {
+			elem_len = ((uint16_t) ptr[1]) | (ptr[2] << 8);
+		} else {
+			elem_len = ptr[1];
+		}
+
+		left -= (size_of_len_field + 1);
+		if (elem_len > left) {
+			pe_err("Invalid IEs eid: %d elem_len: %d left: %d",
+				eid, elem_len, left);
+			return NULL;
+		}
+		if (elem_id == eid) {
+			return ptr;
+		}
+
+		left -= elem_len;
+		ptr += (elem_len + (size_of_len_field + 1));
+	}
+	return NULL;
+}
+
 /* Returns length of P2P stream and Pointer ie passed to this function is filled with noa stream */
 
 uint8_t lim_build_p2p_ie(tpAniSirGlobal pMac, uint8_t *ie, uint8_t *data,
@@ -5970,16 +6031,6 @@ bool lim_set_nss_change(tpAniSirGlobal pMac, tpPESession psessionEntry,
 {
 	tUpdateRxNss tempParam;
 
-	if (!rxNss) {
-		pe_err("Invalid rxNss value: %u", rxNss);
-		if (!cds_is_driver_recovering()) {
-			if (cds_is_self_recovery_enabled())
-				cds_trigger_recovery(CDS_REASON_UNSPECIFIED);
-			else
-				QDF_BUG(0);
-		}
-	}
-
 	tempParam.rxNss = rxNss;
 	tempParam.staId = staId;
 	tempParam.smesessionId = psessionEntry->smeSessionId;
@@ -6111,9 +6162,9 @@ void lim_set_ht_caps(tpAniSirGlobal p_mac, tpPESession p_session_entry,
 	tDot11fIEHTCaps dot11_ht_cap = {0,};
 
 	populate_dot11f_ht_caps(p_mac, p_session_entry, &dot11_ht_cap);
-	p_ie = wlan_cfg_get_ie_ptr(p_ie_start, num_bytes,
-				   DOT11F_EID_HTCAPS, ONE_BYTE);
-	pe_debug("p_ie: %pK dot11_ht_cap.supportedMCSSet[0]: 0x%x",
+	p_ie = lim_get_ie_ptr_new(p_mac, p_ie_start, num_bytes,
+			DOT11F_EID_HTCAPS, ONE_BYTE);
+	pe_debug("p_ie: %p dot11_ht_cap.supportedMCSSet[0]: 0x%x",
 		p_ie, dot11_ht_cap.supportedMCSSet[0]);
 	if (p_ie) {
 		/* convert from unpacked to packed structure */
@@ -6186,8 +6237,8 @@ void lim_set_vht_caps(tpAniSirGlobal p_mac, tpPESession p_session_entry,
 	tDot11fIEVHTCaps     dot11_vht_cap;
 
 	populate_dot11f_vht_caps(p_mac, p_session_entry, &dot11_vht_cap);
-	p_ie = wlan_cfg_get_ie_ptr(p_ie_start, num_bytes,
-				   DOT11F_EID_VHTCAPS, ONE_BYTE);
+	p_ie = lim_get_ie_ptr_new(p_mac, p_ie_start, num_bytes,
+				  DOT11F_EID_VHTCAPS, ONE_BYTE);
 
 	if (p_ie) {
 		tSirMacVHTCapabilityInfo *vht_cap =
@@ -6587,7 +6638,7 @@ QDF_STATUS lim_send_ext_cap_ie(tpAniSirGlobal mac_ctx,
  */
 tSirRetStatus lim_strip_ie(tpAniSirGlobal mac_ctx,
 		uint8_t *addn_ie, uint16_t *addn_ielen,
-		uint8_t eid, enum size_of_len_field size_of_len_field,
+		uint8_t eid, eSizeOfLenField size_of_len_field,
 		uint8_t *oui, uint8_t oui_length, uint8_t *extracted_ie,
 		uint32_t eid_max_len)
 {
@@ -6657,28 +6708,6 @@ tSirRetStatus lim_strip_ie(tpAniSirGlobal mac_ctx,
 
 	return eSIR_SUCCESS;
 }
-
-#ifdef WLAN_FEATURE_11W
-void lim_del_pmf_sa_query_timer(tpAniSirGlobal mac_ctx, tpPESession pe_session)
-{
-	uint32_t associated_sta;
-	tpDphHashNode sta_ds = NULL;
-
-	for (associated_sta = 1;
-			associated_sta < mac_ctx->lim.gLimAssocStaLimit;
-			associated_sta++) {
-		sta_ds = dph_get_hash_entry(mac_ctx, associated_sta,
-				&pe_session->dph.dphHashTable);
-		if (NULL == sta_ds)
-			continue;
-
-		pe_err("Deleting pmfSaQueryTimer for staid: %d",
-			sta_ds->staIndex);
-		tx_timer_deactivate(&sta_ds->pmfSaQueryTimer);
-		tx_timer_delete(&sta_ds->pmfSaQueryTimer);
-	}
-}
-#endif
 
 tSirRetStatus lim_strip_supp_op_class_update_struct(tpAniSirGlobal mac_ctx,
 		uint8_t *addn_ie, uint16_t *addn_ielen,
@@ -7302,9 +7331,9 @@ QDF_STATUS lim_util_get_type_subtype(void *pkt, uint8_t *type,
 
 	hdr = WMA_GET_RX_MAC_HEADER(rxpktinfor);
 	if (hdr->fc.type == SIR_MAC_MGMT_FRAME) {
-		pe_debug("RxBd: %pK mHdr: %pK Type: %d Subtype: %d SizeFC: %zu",
-				rxpktinfor, hdr, hdr->fc.type, hdr->fc.subType,
-				sizeof(tSirMacFrameCtl));
+		pe_debug("RxBd: %p mHdr: %p Type: %d Subtype: %d  SizesFC: %zu",
+		  rxpktinfor, hdr, hdr->fc.type, hdr->fc.subType,
+		  sizeof(tSirMacFrameCtl));
 		*type = hdr->fc.type;
 		*subtype = hdr->fc.subType;
 	} else {
@@ -7440,65 +7469,4 @@ bool lim_check_if_vendor_oui_match(tpAniSirGlobal mac_ctx,
 		return true;
 	else
 		return false;
-}
-
-enum rateid lim_get_min_session_txrate(tpPESession session)
-{
-	enum rateid rid = RATEID_DEFAULT;
-	uint8_t min_rate = SIR_MAC_RATE_54, curr_rate, i;
-	tSirMacRateSet *rateset = &session->rateSet;
-
-	if (!session)
-		return rid;
-
-	for (i = 0; i < rateset->numRates; i++) {
-		/* Ignore MSB - set to indicate basic rate */
-		curr_rate = rateset->rate[i] & 0x7F;
-		min_rate =  (curr_rate < min_rate) ? curr_rate : min_rate;
-	}
-	pe_debug("supported min_rate: %0x(%d)", min_rate, min_rate);
-
-	switch (min_rate) {
-	case SIR_MAC_RATE_1:
-		rid = RATEID_1MBPS;
-		break;
-	case SIR_MAC_RATE_2:
-		rid = RATEID_2MBPS;
-		break;
-	case SIR_MAC_RATE_5_5:
-		rid = RATEID_5_5MBPS;
-		break;
-	case SIR_MAC_RATE_11:
-		rid = RATEID_11MBPS;
-		break;
-	case SIR_MAC_RATE_6:
-		rid = RATEID_6MBPS;
-		break;
-	case SIR_MAC_RATE_9:
-		rid = RATEID_9MBPS;
-		break;
-	case SIR_MAC_RATE_12:
-		rid = RATEID_12MBPS;
-		break;
-	case SIR_MAC_RATE_18:
-		rid = RATEID_18MBPS;
-		break;
-	case SIR_MAC_RATE_24:
-		rid = RATEID_24MBPS;
-		break;
-	case SIR_MAC_RATE_36:
-		rid = RATEID_36MBPS;
-		break;
-	case SIR_MAC_RATE_48:
-		rid = RATEID_48MBPS;
-		break;
-	case SIR_MAC_RATE_54:
-		rid = RATEID_54MBPS;
-		break;
-	default:
-		rid = RATEID_DEFAULT;
-		break;
-	}
-
-	return rid;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2011-2017 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -949,7 +949,6 @@ static void csr_neighbor_roam_info_ctx_init(
 	tpCsrNeighborRoamControlInfo ngbr_roam_info =
 		&pMac->roam.neighborRoamInfo[session_id];
 	tCsrRoamSession *session = &pMac->roam.roamSession[session_id];
-	struct tagCsrRoamProfile *roam_profile = session->pCurRoamProfile;
 
 	int init_ft_flag = false;
 
@@ -1043,14 +1042,14 @@ static void csr_neighbor_roam_info_ctx_init(
 			}
 		} else
 #endif
-
 			csr_roam_offload_scan(pMac, session_id,
 				ROAM_SCAN_OFFLOAD_START,
 				REASON_CTX_INIT);
 
-		if (roam_profile &&
-			roam_profile->supplicant_disabled_roaming) {
+		if (session->pCurRoamProfile &&
+			 session->pCurRoamProfile->do_not_roam) {
 			sme_debug("Supplicant disabled driver roaming");
+
 			csr_roam_offload_scan(pMac, session_id,
 				ROAM_SCAN_OFFLOAD_STOP,
 				REASON_SUPPLICANT_DISABLED_ROAMING);
@@ -1138,6 +1137,7 @@ QDF_STATUS csr_neighbor_roam_indicate_connect(
 		csr_neighbor_roam_reset_init_state_control_info(pMac,
 			session_id);
 		csr_neighbor_roam_info_ctx_init(pMac, session_id);
+
 		return status;
 	}
 #endif
