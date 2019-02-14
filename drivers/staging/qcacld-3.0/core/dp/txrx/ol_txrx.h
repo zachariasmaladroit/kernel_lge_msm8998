@@ -69,9 +69,6 @@ ol_tx_desc_pool_size_hl(ol_pdev_handle ctrl_pdev);
 #define OL_TX_DESC_POOL_SIZE_MAX_HL 5000
 #endif
 
-#ifndef FW_STATS_DESC_POOL_SIZE
-#define FW_STATS_DESC_POOL_SIZE 10
-#endif
 
 #ifdef CONFIG_PER_VDEV_TX_DESC_POOL
 #define TXRX_HL_TX_FLOW_CTRL_VDEV_LOW_WATER_MARK 400
@@ -151,24 +148,6 @@ ol_txrx_update_last_real_peer(
 void
 ol_txrx_dump_pkt(qdf_nbuf_t nbuf, uint32_t nbuf_paddr, int len);
 
-
-/**
- * ol_txrx_post_data_stall_event() - post data stall event
- * @indicator: Module triggering data stall
- * @data_stall_type: data stall event type
- * @pdev_id: pdev id
- * @vdev_id_bitmap: vdev id bitmap
- * @recovery_type: data stall recovery type
- *
- * Return: None
- */
-
-void ol_txrx_post_data_stall_event(
-			enum data_stall_log_event_indicator indicator,
-			enum data_stall_log_event_type data_stall_type,
-			uint32_t pdev_id, uint32_t vdev_id_bitmap,
-			enum data_stall_log_recovery_type recovery_type);
-
 /**
  * ol_txrx_fwd_desc_thresh_check() - check to forward packet to tx path
  * @vdev: which virtual device the frames were addressed to
@@ -198,14 +177,5 @@ QDF_STATUS ol_txrx_set_wisa_mode(ol_txrx_vdev_handle vdev,
 void ol_txrx_update_mac_id(uint8_t vdev_id, uint8_t mac_id);
 void ol_txrx_peer_detach_force_delete(ol_txrx_peer_handle peer);
 void peer_unmap_timer_handler(void *data);
-
-int ol_txrx_fw_stats_desc_pool_init(struct ol_txrx_pdev_t *pdev,
-				    uint8_t pool_size);
-void ol_txrx_fw_stats_desc_pool_deinit(struct ol_txrx_pdev_t *pdev);
-struct ol_txrx_fw_stats_desc_t
-	*ol_txrx_fw_stats_desc_alloc(struct ol_txrx_pdev_t
-				     *pdev);
-struct ol_txrx_stats_req_internal *ol_txrx_fw_stats_desc_get_req(struct
-	ol_txrx_pdev_t *pdev, uint8_t desc_id);
 
 #endif /* _OL_TXRX__H_ */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -736,9 +736,7 @@ wlan_hdd_cfg80211_extscan_signif_wifi_change_results_ind(
 		for (j = 0; j < ap_info->numOfRssi; j++)
 			hdd_debug("Rssi %d", *rssi++);
 
-		ap_info = (tSirWifiSignificantChange *)((char *)ap_info +
-				ap_info->numOfRssi * sizeof(*rssi) +
-				sizeof(*ap_info));
+		ap_info += ap_info->numOfRssi * sizeof(*rssi);
 	}
 
 	if (nla_put_u32(skb,
@@ -784,9 +782,7 @@ wlan_hdd_cfg80211_extscan_signif_wifi_change_results_ind(
 
 			nla_nest_end(skb, ap);
 
-			ap_info = (tSirWifiSignificantChange *)((char *)ap_info
-					+ ap_info->numOfRssi * sizeof(*rssi) +
-					sizeof(*ap_info));
+			ap_info += ap_info->numOfRssi * sizeof(*rssi);
 		}
 		nla_nest_end(skb, aps);
 
@@ -1351,7 +1347,7 @@ wlan_hdd_cfg80211_extscan_generic_rsp
 	ENTER();
 
 	if (wlan_hdd_validate_context(hdd_ctx) || !response) {
-		hdd_err("HDD context is not valid or response(%pK) is null",
+		hdd_err("HDD context is not valid or response(%p) is null",
 		       response);
 		return;
 	}
@@ -2403,7 +2399,7 @@ static void hdd_remove_passive_channels(struct wiphy *wiphy,
 	int i, j, k;
 
 	for (i = 0; i < *num_channels; i++)
-		for (j = 0; j < HDD_NUM_NL80211_BANDS; j++) {
+		for (j = 0; j < NUM_NL80211_BANDS; j++) {
 			if (wiphy->bands[j] == NULL)
 				continue;
 			for (k = 0; k < wiphy->bands[j]->n_channels; k++) {
@@ -3045,11 +3041,6 @@ static int hdd_extscan_start_fill_bucket_channel_spec(
 			total_channels++;
 		}
 
-		if (j != req_msg->buckets[bkt_index].numChannels) {
-			hdd_err("Input parameters didn't match");
-			goto fail;
-		}
-
 		hdd_extscan_update_dwell_time_limits(
 					req_msg, bkt_index,
 					min_dwell_time_active_bucket,
@@ -3151,11 +3142,6 @@ __wlan_hdd_cfg80211_extscan_start(struct wiphy *wiphy,
 
 	if (QDF_GLOBAL_FTM_MODE == hdd_get_conparam()) {
 		hdd_err("Command not allowed in FTM mode");
-		return -EPERM;
-	}
-
-	if (QDF_NDI_MODE == pAdapter->device_mode) {
-		hdd_err("Command not allowed for NDI interface");
 		return -EPERM;
 	}
 
@@ -4030,13 +4016,6 @@ int wlan_hdd_cfg80211_set_epno_list(struct wiphy *wiphy,
 	return ret;
 }
 
-#define PARAM_ID QCA_WLAN_VENDOR_ATTR_PNO_PASSPOINT_NETWORK_PARAM_ID
-#define PARAM_REALM QCA_WLAN_VENDOR_ATTR_PNO_PASSPOINT_NETWORK_PARAM_REALM
-#define PARAM_ROAM_ID \
-	QCA_WLAN_VENDOR_ATTR_PNO_PASSPOINT_NETWORK_PARAM_ROAM_CNSRTM_ID
-#define PARAM_ROAM_PLMN \
-	QCA_WLAN_VENDOR_ATTR_PNO_PASSPOINT_NETWORK_PARAM_ROAM_PLMN
-
 /**
  * hdd_extscan_passpoint_fill_network_list() - passpoint fill network list
  * @hddctx: HDD context
@@ -4055,8 +4034,7 @@ static int hdd_extscan_passpoint_fill_network_list(
 {
 	struct nlattr *network[QCA_WLAN_VENDOR_ATTR_PNO_MAX + 1];
 	struct nlattr *networks;
-	int rem1;
-	size_t len;
+	int rem1, len;
 	uint8_t index;
 	uint32_t expected_networks;
 
@@ -4085,47 +4063,49 @@ static int hdd_extscan_passpoint_fill_network_list(
 		}
 
 		/* Parse and fetch identifier */
-		if (!network[PARAM_ID]) {
+		if (!network[QCA_WLAN_VENDOR_ATTR_PNO_PASSPOINT_NETWORK_PARAM_ID]) {
 			hdd_err("attr passpoint id failed");
 			return -EINVAL;
 		}
-		req_msg->networks[index].id = nla_get_u32(network[PARAM_ID]);
+		req_msg->networks[index].id = nla_get_u32(
+			network[QCA_WLAN_VENDOR_ATTR_PNO_PASSPOINT_NETWORK_PARAM_ID]);
 		hdd_debug("Id %u", req_msg->networks[index].id);
 
 		/* Parse and fetch realm */
-		if (!network[PARAM_REALM]) {
+		if (!network[QCA_WLAN_VENDOR_ATTR_PNO_PASSPOINT_NETWORK_PARAM_REALM]) {
 			hdd_err("attr realm failed");
 			return -EINVAL;
 		}
-		len = nla_strlcpy(req_msg->networks[index].realm,
-				  network[PARAM_REALM],
-				  SIR_PASSPOINT_REALM_LEN);
-		/* Don't send partial realm to firmware */
-		if (len >= SIR_PASSPOINT_REALM_LEN) {
-			hdd_err("user passed invalid realm, len:%zu", len);
+		len = nla_len(
+			network[QCA_WLAN_VENDOR_ATTR_PNO_PASSPOINT_NETWORK_PARAM_REALM]);
+		if (len < 0 || len > SIR_PASSPOINT_REALM_LEN) {
+			hdd_err("Invalid realm size %d", len);
 			return -EINVAL;
 		}
-
+		qdf_mem_copy(req_msg->networks[index].realm,
+				nla_data(network[QCA_WLAN_VENDOR_ATTR_PNO_PASSPOINT_NETWORK_PARAM_REALM]),
+				len);
+		hdd_debug("realm len %d", len);
 		hdd_debug("realm: %s", req_msg->networks[index].realm);
 
 		/* Parse and fetch roaming consortium ids */
-		if (!network[PARAM_ROAM_ID]) {
+		if (!network[QCA_WLAN_VENDOR_ATTR_PNO_PASSPOINT_NETWORK_PARAM_ROAM_CNSRTM_ID]) {
 			hdd_err("attr roaming consortium ids failed");
 			return -EINVAL;
 		}
 		nla_memcpy(&req_msg->networks[index].roaming_consortium_ids,
-			   network[PARAM_ROAM_ID],
-			   sizeof(req_msg->networks[0].roaming_consortium_ids));
+			network[QCA_WLAN_VENDOR_ATTR_PNO_PASSPOINT_NETWORK_PARAM_ROAM_CNSRTM_ID],
+			sizeof(req_msg->networks[0].roaming_consortium_ids));
 		hdd_debug("roaming consortium ids");
 
 		/* Parse and fetch plmn */
-		if (!network[PARAM_ROAM_PLMN]) {
+		if (!network[QCA_WLAN_VENDOR_ATTR_PNO_PASSPOINT_NETWORK_PARAM_ROAM_PLMN]) {
 			hdd_err("attr plmn failed");
 			return -EINVAL;
 		}
 		nla_memcpy(&req_msg->networks[index].plmn,
-			   network[PARAM_ROAM_PLMN],
-			   SIR_PASSPOINT_PLMN_LEN);
+			network[QCA_WLAN_VENDOR_ATTR_PNO_PASSPOINT_NETWORK_PARAM_ROAM_PLMN],
+			SIR_PASSPOINT_PLMN_LEN);
 		hdd_debug("plmn %02x:%02x:%02x)",
 			req_msg->networks[index].plmn[0],
 			req_msg->networks[index].plmn[1],
@@ -4360,10 +4340,22 @@ int wlan_hdd_cfg80211_reset_passpoint_list(struct wiphy *wiphy,
 	return ret;
 }
 
-#undef PARAM_ID
-#undef PARAM_REALM
-#undef PARAM_ROAM_ID
-#undef PARAM_ROAM_PLMN
+/**
+ * wlan_hdd_init_completion_extwow() - Initialize ext wow variable
+ * @hdd_ctx: Global HDD context
+ *
+ * Return: none
+ */
+#ifdef WLAN_FEATURE_EXTWOW_SUPPORT
+static inline void wlan_hdd_init_completion_extwow(hdd_context_t *pHddCtx)
+{
+	init_completion(&pHddCtx->ready_to_extwow);
+}
+#else
+static inline void wlan_hdd_init_completion_extwow(hdd_context_t *pHddCtx)
+{
+}
+#endif
 
 /**
  * wlan_hdd_cfg80211_extscan_init() - Initialize the ExtScan feature
@@ -4373,6 +4365,7 @@ int wlan_hdd_cfg80211_reset_passpoint_list(struct wiphy *wiphy,
  */
 void wlan_hdd_cfg80211_extscan_init(hdd_context_t *hdd_ctx)
 {
+	wlan_hdd_init_completion_extwow(hdd_ctx);
 	init_completion(&ext_scan_context.response_event);
 	spin_lock_init(&ext_scan_context.context_lock);
 }

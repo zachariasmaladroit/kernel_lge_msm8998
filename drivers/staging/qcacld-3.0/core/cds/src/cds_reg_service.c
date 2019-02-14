@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2014-2017 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -32,7 +32,6 @@
    ============================================================================*/
 
 #include <net/cfg80211.h>
-#include "pld_common.h"
 #include "qdf_types.h"
 #include "qdf_trace.h"
 #include "cds_api.h"
@@ -219,16 +218,6 @@ enum channel_enum cds_get_channel_enum(uint32_t chan_num)
 	return INVALID_CHANNEL;
 }
 
-void cds_set_channel_state(uint32_t chan_num, enum channel_state state)
-{
-	enum channel_enum chan_enum;
-
-	chan_enum = cds_get_channel_enum(chan_num);
-	if (INVALID_CHANNEL == chan_enum)
-		return;
-
-	reg_channels[chan_enum].state = state;
-}
 
 /**
  * cds_get_channel_state() - get the channel state
@@ -639,20 +628,6 @@ QDF_STATUS cds_get_reg_domain_from_country_code(v_REGDOMAIN_t *reg_domain_ptr,
 						const uint8_t *country_alpha2,
 						enum country_src source)
 {
-	hdd_context_t *hdd_ctx;
-
-	hdd_ctx = cds_get_context(QDF_MODULE_ID_HDD);
-
-	if (cds_is_driver_unloading()) {
-		hdd_err("Driver is unloading can not open the hdd");
-		return -EBUSY;
-	}
-
-	if (cds_is_driver_recovering()) {
-		hdd_err("WLAN is currently recovering; Please try again.");
-		return -EBUSY;
-	}
-
 	if (NULL == reg_domain_ptr) {
 		QDF_TRACE(QDF_MODULE_ID_QDF, QDF_TRACE_LEVEL_ERROR,
 			  "Invalid reg domain pointer");
@@ -676,17 +651,9 @@ QDF_STATUS cds_get_reg_domain_from_country_code(v_REGDOMAIN_t *reg_domain_ptr,
 		return QDF_STATUS_SUCCESS;
 	}
 
-	if (SOURCE_11D == source || SOURCE_USERSPACE == source) {
-		if (SOURCE_USERSPACE == source)
-			pld_set_cc_source(hdd_ctx->parent_dev,
-					PLD_SOURCE_USER);
-		else
-			pld_set_cc_source(hdd_ctx->parent_dev,
-					PLD_SOURCE_11D);
-
+	if (SOURCE_11D == source || SOURCE_USERSPACE == source)
 		regulatory_hint_user(country_alpha2,
 				     NL80211_USER_REG_HINT_USER);
-	}
 
 	return QDF_STATUS_SUCCESS;
 }

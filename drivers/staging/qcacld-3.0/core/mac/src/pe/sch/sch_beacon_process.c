@@ -533,15 +533,10 @@ sch_bcn_process_sta_ibss(tpAniSirGlobal mac_ctx,
 	uint32_t fw_vht_ch_wd = wma_get_vht_ch_width();
 	bool skip_opmode_update = false;
 
-	if (CDS_IS_CHANNEL_24GHZ(session->currentOperChannel)) {
-		if (session->force_24ghz_in_ht20)
-			cb_mode = WNI_CFG_CHANNEL_BONDING_MODE_DISABLE;
-		else
-			cb_mode = mac_ctx->roam.configParam.channelBondingMode24GHz;
-	}
+	if (CHAN_ENUM_14 >= session->currentOperChannel)
+		cb_mode = mac_ctx->roam.configParam.channelBondingMode24GHz;
 	else
 		cb_mode = mac_ctx->roam.configParam.channelBondingMode5GHz;
-
 	/* check for VHT capability */
 	pStaDs = dph_lookup_hash_entry(mac_ctx, pMh->sa, &aid,
 			&session->dph.dphHashTable);
@@ -905,6 +900,8 @@ sch_beacon_process(tpAniSirGlobal mac_ctx, uint8_t *rx_pkt_info,
 		return;
 	}
 
+	if (bcn.ssidPresent)
+		bcn.ssId.ssId[bcn.ssId.length] = 0;
 	/*
 	 * First process the beacon in the context of any existing AP or BTAP
 	 * session. This takes cares of following two scenarios:

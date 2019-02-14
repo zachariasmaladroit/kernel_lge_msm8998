@@ -98,9 +98,9 @@
 
 /* ***************************************************************************
  * The MAX BSSID Count should be lower than the command timeout value and it
- * can be of a fraction of 1/3 to 1/2 of the total command timeout value.
+ * can be of a fraction of 3/4 of the total command timeout value.
  * ***************************************************************************/
-#define CSR_MAX_BSSID_COUNT     (SME_ACTIVE_LIST_CMD_TIMEOUT_VALUE/3000) - 2
+#define CSR_MAX_BSSID_COUNT     ((SME_ACTIVE_LIST_CMD_TIMEOUT_VALUE/4000) * 3)
 #define CSR_CUSTOM_CONC_GO_BI    100
 extern uint8_t csr_wpa_oui[][CSR_WPA_OUI_SIZE];
 bool csr_is_supported_channel(tpAniSirGlobal pMac, uint8_t channelId);
@@ -126,44 +126,29 @@ bool csr_is_supported_channel(tpAniSirGlobal pMac, uint8_t channelId);
 #define HIGH_CHANNEL_CONGESTION 75
 #define EXTREME_CHANNEL_CONGESTION 100
 
+#define RSSI_WEIGHTAGE 25
+#define HT_CAPABILITY_WEIGHTAGE 7
+#define VHT_CAP_WEIGHTAGE 5
+#define CHAN_WIDTH_WEIGHTAGE 10
+#define CHAN_BAND_WEIGHTAGE 5
+#define NSS_WEIGHTAGE 5
+#define BEAMFORMING_CAP_WEIGHTAGE 2
+#define PCL_WEIGHT 10
+#define CHANNEL_CONGESTION_WEIGHTAGE 5
+#define RESERVED_WEIGHT 31
+
 #define EXCELLENT_RSSI -55
 #define BAD_RSSI  -80
 #define EXCELLENT_RSSI_WEIGHT 100
 #define RSSI_BUCKET 5
 #define RSSI_WEIGHT_BUCKET 250
 
+#define BEST_CANDIDATE_MAX_WEIGHT 100
 #define BEST_CANDIDATE_80MHZ 100
 #define BEST_CANDIDATE_40MHZ 70
 #define BEST_CANDIDATE_20MHZ 30
 #define BEST_CANDIDATE_MAX_BSS_SCORE 10000
 
-#define WLAN_20MHZ_BW_INDEX                  0
-#define WLAN_SCORE_40MHZ_BW_INDEX            1
-#define WLAN_SCORE_80MHZ_BW_INDEX            2
-#define WLAN_SCORE_160MHZ_BW_INDEX           3
-#define WLAN_SCORE_MAX_BW_INDEX              4
-
-#define WLAN_NSS_1x1_INDEX                   0
-#define WLAN_NSS_2x2_INDEX                   1
-#define WLAN_NSS_3x3_INDEX                   2
-#define WLAN_NSS_4x4_INDEX                   3
-#define WLAN_MAX_NSS_INDEX                   4
-
-#define WLAN_BAND_2G_INDEX                   0
-#define WLAN_BAND_5G_INDEX                   1
-/* 2 and 3 are reserved */
-#define WLAN_MAX_BAND_INDEX                  4
-
-#define WLAN_SCORE_INDEX_0                   0
-#define WLAN_SCORE_INDEX_3                   3
-#define WLAN_SCORE_INDEX_7                   7
-#define WLAN_SCORE_OFFSET_INDEX_7_4          4
-#define WLAN_SCORE_INDEX_11                  11
-#define WLAN_SCORE_OFFSET_INDEX_11_8         8
-#define WLAN_SCORE_MAX_INDEX                 15
-#define WLAN_SCORE_OFFSET_INDEX_15_12        12
-
-#define MAX_OCE_WAN_DL_CAP 16
 
 enum csr_scancomplete_nextcommand {
 	eCsrNextScanNothing,
@@ -940,20 +925,6 @@ QDF_STATUS csr_roam_set_pmkid_cache(tpAniSirGlobal pMac, uint32_t sessionId,
 
 #ifdef WLAN_FEATURE_ROAM_OFFLOAD
 /*
- * csr_get_pmk_info(): store PMK in pmk_cache
- * @mac_ctx: pointer to global structure for MAC
- * @session_id: Sme session id
- * @pmk_cache: pointer to a structure of Pmk
- *
- * This API gets the PMK from the session and
- * stores it in the pmk_cache
- *
- * Return: none
- */
-void csr_get_pmk_info(tpAniSirGlobal mac_ctx, uint8_t session_id,
-		      tPmkidCacheInfo *pmk_cache);
-
-/*
  * csr_roam_set_psk_pmk() -
  * store PSK/PMK
  * pMac  - pointer to global structure for MAC
@@ -1299,17 +1270,4 @@ static inline bool csr_is_mfpc_capable(struct sDot11fIERSN *rsn)
 }
 #endif
 
-/**
- * csr_lookup_pmkid_using_bssid() - lookup pmkid using bssid
- * @mac: pointer to mac
- * @session: sme session pointer
- * @pmk_cache: pointer to pmk cache
- * @index: index value needs to be seached
- *
- * Return: true if pmkid is found else false
- */
-bool csr_lookup_pmkid_using_bssid(tpAniSirGlobal mac,
-				  tCsrRoamSession *session,
-				  tPmkidCacheInfo *pmk_cache,
-				  uint32_t *index);
 #endif /* CSR_INSIDE_API_H__ */

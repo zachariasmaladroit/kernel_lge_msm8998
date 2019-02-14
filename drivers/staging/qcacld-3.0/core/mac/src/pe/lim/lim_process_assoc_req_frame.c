@@ -727,152 +727,6 @@ static void lim_print_ht_cap(tpAniSirGlobal mac_ctx, tpPESession session,
 }
 
 /**
- * lim_check_wpa_rsn_ie() - wpa and rsn ie related checks
- * @session: pointer to pe session entry
- * @mac_ctx: pointer to Global MAC structure
- * @sub_type: Assoc(=0) or Reassoc(=1) Requestframe
- * @hdr: pointer to the MAC head
- * @assoc_req: pointer to ASSOC/REASSOC Request frame
- * @pmf_connection: flag indicating pmf connection
- *
- * This function checks if wpa/rsn IE is present and validates
- * ie version, length and mismatch.
- *
- * Return: true if no error, false otherwise
- */
-static bool lim_check_wpa_rsn_ie(tpPESession session, tpAniSirGlobal mac_ctx,
-				 uint8_t sub_type, tpSirMacMgmtHdr hdr,
-				 tpSirAssocReq assoc_req, bool *pmf_connection)
-{
-	uint32_t ret;
-	tDot11fIEWPA dot11f_ie_wpa = {0};
-	tDot11fIERSN dot11f_ie_rsn = {0};
-	tSirRetStatus status = eSIR_SUCCESS;
-
-	/*
-	 * Clear the buffers so that frame parser knows that there isn't a
-	 * previously decoded IE in these buffers
-	 */
-	 qdf_mem_set((uint8_t *)&dot11f_ie_rsn, sizeof(dot11f_ie_rsn), 0);
-	 qdf_mem_set((uint8_t *)&dot11f_ie_wpa, sizeof(dot11f_ie_wpa), 0);
-
-	 pe_err("RSN enabled auth, Re/Assoc req from STA: "
-			 MAC_ADDRESS_STR,	MAC_ADDR_ARRAY(hdr->sa));
-
-	 if (assoc_req->rsnPresent) {
-		if (!assoc_req->rsn.length) {
-			pe_warn("Re/Assoc rejected from: "
-				MAC_ADDRESS_STR,
-				MAC_ADDR_ARRAY(hdr->sa));
-			/*
-			 * rcvd Assoc req frame with RSN IE but length is 0
-			 */
-			lim_send_assoc_rsp_mgmt_frame(mac_ctx,
-				eSIR_MAC_INVALID_INFORMATION_ELEMENT_STATUS,
-				1, hdr->sa, sub_type, 0, session);
-			return false;
-		}
-
-		/* Unpack the RSN IE */
-		ret = dot11f_unpack_ie_rsn(mac_ctx, &assoc_req->rsn.info[0],
-					   assoc_req->rsn.length,
-					   &dot11f_ie_rsn, false);
-		if (!DOT11F_SUCCEEDED(ret)) {
-			pe_err("Invalid RSN ie");
-			lim_send_assoc_rsp_mgmt_frame(
-				mac_ctx,
-				eSIR_MAC_INVALID_INFORMATION_ELEMENT_STATUS,
-				1, hdr->sa, sub_type, 0, session);
-			return false;
-		}
-
-		/* Check RSN version is supported */
-		if (SIR_MAC_OUI_VERSION_1 == dot11f_ie_rsn.version) {
-			/*
-			 * check the groupwise and
-			 * pairwise cipher suites
-			 */
-			 status = lim_check_rx_rsn_ie_match(mac_ctx,
-						dot11f_ie_rsn, session,
-						assoc_req->HTCaps.present,
-						pmf_connection);
-			if (eSIR_SUCCESS != status) {
-				pe_warn("Re/Assoc rejected from: "
-					MAC_ADDRESS_STR,
-					MAC_ADDR_ARRAY(hdr->sa));
-				/*
-				 * some IE is not properly sent
-				 * received Association frame with RSN IE but
-				 * length is 0
-				 */
-				lim_send_assoc_rsp_mgmt_frame(mac_ctx, status,
-							      1, hdr->sa,
-							      sub_type, 0,
-							      session);
-				return false;
-			}
-		} else {
-			pe_warn("Re/Assoc rejected from: "
-				MAC_ADDRESS_STR,
-				MAC_ADDR_ARRAY(hdr->sa));
-			/*
-			 * rcvd Assoc req frame with RSN
-			 * IE version wrong
-			 */
-			lim_send_assoc_rsp_mgmt_frame(
-				mac_ctx,
-				eSIR_MAC_UNSUPPORTED_RSN_IE_VERSION_STATUS,
-				1, hdr->sa, sub_type, 0,
-				session);
-			return false;
-		}
-	} else if (assoc_req->wpaPresent) {
-		if (!assoc_req->wpa.length) {
-			pe_warn("Re/Assoc rejected from: "
-				MAC_ADDRESS_STR,
-				MAC_ADDR_ARRAY(hdr->sa));
-			/*
-			 * rcvd Assoc req frame with invalid WPA IE
-			 */
-			lim_send_assoc_rsp_mgmt_frame(mac_ctx,
-				eSIR_MAC_INVALID_INFORMATION_ELEMENT_STATUS,
-				1, hdr->sa, sub_type, 0, session);
-			return false;
-		}
-		/* Unpack the WPA IE */
-		ret = dot11f_unpack_ie_wpa(mac_ctx, &assoc_req->wpa.info[4],
-					   (assoc_req->wpa.length - 4),
-					   &dot11f_ie_wpa, false);
-		if (!DOT11F_SUCCEEDED(ret)) {
-			pe_err("Invalid WPA IE");
-			lim_send_assoc_rsp_mgmt_frame(mac_ctx,
-				eSIR_MAC_INVALID_INFORMATION_ELEMENT_STATUS,
-				1, hdr->sa, sub_type, 0, session);
-			return false;
-		}
-		/*
-		 * check the groupwise and pairwise cipher suites
-		 */
-		status = lim_check_rx_wpa_ie_match(mac_ctx, dot11f_ie_wpa,
-						   session,
-						   assoc_req->HTCaps.present);
-		if (eSIR_SUCCESS != status) {
-			pe_warn("Re/Assoc rejected from: "
-				MAC_ADDRESS_STR,
-				MAC_ADDR_ARRAY(hdr->sa));
-			/*
-			 * rcvd Assoc req frame with WPA IE but mismatch
-			 */
-			lim_send_assoc_rsp_mgmt_frame(mac_ctx, status, 1,
-						      hdr->sa, sub_type, 0,
-						      session);
-			return false;
-		}
-	}
-	return true;
-}
-
-/**
  * lim_chk_n_process_wpa_rsn_ie() - wpa ie related checks
  * @mac_ctx: pointer to Global MAC structure
  * @hdr: pointer to the MAC head
@@ -892,6 +746,15 @@ static bool lim_chk_n_process_wpa_rsn_ie(tpAniSirGlobal mac_ctx,
 					 uint8_t sub_type, bool *pmf_connection)
 {
 	uint8_t *wps_ie = NULL;
+	tDot11fIEWPA dot11f_ie_wpa;
+	tDot11fIERSN dot11f_ie_rsn;
+	tSirRetStatus status = eSIR_SUCCESS;
+	/*
+	 * Clear the buffers so that frame parser knows that there isn't a
+	 * previously decoded IE in these buffers
+	 */
+	qdf_mem_set((uint8_t *) &dot11f_ie_rsn, sizeof(dot11f_ie_rsn), 0);
+	qdf_mem_set((uint8_t *) &dot11f_ie_wpa, sizeof(dot11f_ie_wpa), 0);
 
 	/* if additional IE is present, check if it has WscIE */
 	if (assoc_req->addIEPresent && assoc_req->addIE.length)
@@ -902,18 +765,147 @@ static bool lim_chk_n_process_wpa_rsn_ie(tpAniSirGlobal mac_ctx,
 			assoc_req->addIEPresent, assoc_req->addIE.length);
 
 	/* when wps_ie is present, RSN/WPA IE is ignored */
-	if (wps_ie) {
+	if (wps_ie == NULL) {
+		/* check whether as RSN IE is present */
+		if (LIM_IS_AP_ROLE(session) &&
+		    session->pLimStartBssReq->privacy &&
+		    session->pLimStartBssReq->rsnIE.length) {
+			pe_err("RSN enabled auth, Re/Assoc req from STA: "
+					MAC_ADDRESS_STR,
+				MAC_ADDR_ARRAY(hdr->sa));
+			if (assoc_req->rsnPresent) {
+				if (assoc_req->rsn.length) {
+					/* Unpack the RSN IE */
+					if (dot11f_unpack_ie_rsn(mac_ctx,
+						&assoc_req->rsn.info[0],
+						assoc_req->rsn.length,
+						&dot11f_ie_rsn, false) !=
+							DOT11F_PARSE_SUCCESS) {
+						pe_err("Invalid RSN ie");
+						return false;
+					}
+
+					/* Check RSN version is supported */
+					if (SIR_MAC_OUI_VERSION_1 ==
+						dot11f_ie_rsn.version) {
+						/*
+						 * check the groupwise and
+						 * pairwise cipher suites
+						 */
+						status =
+						    lim_check_rx_rsn_ie_match(
+						      mac_ctx, dot11f_ie_rsn,
+						      session,
+						      assoc_req->HTCaps.present,
+						      pmf_connection);
+						if (eSIR_SUCCESS != status) {
+							pe_warn("Re/Assoc rejected from: " MAC_ADDRESS_STR,
+							MAC_ADDR_ARRAY(
+								hdr->sa));
+
+							/*
+							 * some IE is not
+							 * properly sent
+							 * received Association
+							 * req frame with RSN IE
+							 * but length is 0
+							 */
+							lim_send_assoc_rsp_mgmt_frame(
+								mac_ctx,
+								status, 1,
+								hdr->sa,
+								sub_type, 0,
+								session);
+							return false;
+						}
+					} else {
+						pe_warn("Re/Assoc rejected from: " MAC_ADDRESS_STR,
+							MAC_ADDR_ARRAY(
+								hdr->sa));
+						/*
+						 * rcvd Assoc req frame with RSN
+						 * IE version wrong
+						 */
+						lim_send_assoc_rsp_mgmt_frame(
+							mac_ctx,
+							eSIR_MAC_UNSUPPORTED_RSN_IE_VERSION_STATUS,
+							1, hdr->sa, sub_type, 0,
+							session);
+						return false;
+					}
+				} else {
+					pe_warn("Re/Assoc rejected from: "
+							MAC_ADDRESS_STR,
+						MAC_ADDR_ARRAY(hdr->sa));
+					/*
+					 * rcvd Assoc req frame with RSN IE but
+					 * length is 0
+					 */
+					lim_send_assoc_rsp_mgmt_frame(mac_ctx,
+						eSIR_MAC_INVALID_INFORMATION_ELEMENT_STATUS,
+						1, hdr->sa, sub_type, 0,
+						session);
+					return false;
+				}
+			} /* end - if(assoc_req->rsnPresent) */
+			if ((!assoc_req->rsnPresent) && assoc_req->wpaPresent) {
+				/* Unpack the WPA IE */
+				if (assoc_req->wpa.length) {
+					/* OUI is not taken care */
+					if (dot11f_unpack_ie_wpa(mac_ctx,
+						&assoc_req->wpa.info[4],
+						assoc_req->wpa.length,
+						&dot11f_ie_wpa, false) !=
+							DOT11F_PARSE_SUCCESS) {
+						pe_err("Invalid WPA IE");
+						return false;
+					}
+					/*
+					 * check the groupwise and pairwise
+					 * cipher suites
+					 */
+					status = lim_check_rx_wpa_ie_match(
+						     mac_ctx, dot11f_ie_wpa,
+						     session,
+						     assoc_req->HTCaps.present);
+					if (eSIR_SUCCESS != status) {
+						pe_warn("Re/Assoc rejected from: "
+							   MAC_ADDRESS_STR,
+							MAC_ADDR_ARRAY(
+								hdr->sa));
+						/*
+						 * rcvd Assoc req frame with WPA
+						 * IE but mismatch
+						 */
+						lim_send_assoc_rsp_mgmt_frame(
+							mac_ctx, status, 1,
+							hdr->sa, sub_type, 0,
+							session);
+						return false;
+					}
+				} else {
+					pe_warn("Re/Assoc rejected from: "
+						   MAC_ADDRESS_STR,
+						MAC_ADDR_ARRAY(hdr->sa));
+					/*
+					 * rcvd Assoc req frame with invalid WPA
+					 * IE
+					 */
+					lim_send_assoc_rsp_mgmt_frame(mac_ctx,
+						eSIR_MAC_INVALID_INFORMATION_ELEMENT_STATUS,
+						1, hdr->sa, sub_type, 0,
+						session);
+					return false;
+				} /* end - if(assoc_req->wpa.length) */
+			} /* end - if(assoc_req->wpaPresent) */
+		}
+		/*
+		 * end of if(session->pLimStartBssReq->privacy
+		 * && session->pLimStartBssReq->rsnIE->length)
+		 */
+	} /* end of if( ! assoc_req->wscInfo.present ) */
+	else {
 		pe_debug("Assoc req WSE IE is present");
-		return true;
-	}
-	/* when wps_ie is present, RSN/WPA IE is ignored */
-	if (LIM_IS_AP_ROLE(session) &&
-	    session->pLimStartBssReq->privacy &&
-	    session->pLimStartBssReq->rsnIE.length) {
-		/* check whether RSN IE is present */
-		return lim_check_wpa_rsn_ie(session, mac_ctx,
-					    sub_type,  hdr,
-					    assoc_req, pmf_connection);
 	}
 	return true;
 }
@@ -1110,7 +1102,6 @@ static bool lim_process_assoc_req_sta_ctx(tpAniSirGlobal mac_ctx,
 			eLIM_MLM_AUTHENTICATED_STATE)) {
 			/* STA has triggered pre-auth again */
 			*auth_type = sta_pre_auth_ctx->authType;
-			sta_ds->prev_auth_seq_no = sta_pre_auth_ctx->seq_num;
 			lim_delete_pre_auth_node(mac_ctx, hdr->sa);
 		} else {
 			*auth_type = sta_ds->mlmStaContext.authType;
@@ -1255,9 +1246,6 @@ static bool lim_update_sta_ds(tpAniSirGlobal mac_ctx, tpSirMacMgmtHdr hdr,
 	sta_ds->qos.addts = assoc_req->addtsReq;
 	sta_ds->qos.capability = assoc_req->qosCapability;
 	sta_ds->versionPresent = 0;
-	sta_ds->prev_assoc_seq_no = (((hdr->seqControl.seqNumHi <<
-					HIGH_SEQ_NUM_OFFSET) |
-					hdr->seqControl.seqNumLo));
 	/*
 	 * short slot and short preamble should be updated before doing
 	 * limaddsta
@@ -1764,21 +1752,19 @@ void lim_process_assoc_req_frame(tpAniSirGlobal mac_ctx, uint8_t *rx_pkt_info,
 	}
 
 	/*
-	 * If a STA is already present in DPH and the host receives an assoc
-	 * request with the same sequence number , do not process it, as the
-	 * previous assoc has already been processed and the response will be
-	 * retried by the firmware if the peer hasnt received the response yet
+	 * If a STA is already present in DPH and it is initiating a Assoc
+	 * re-transmit, do not process it. This can happen when first Assoc Req
+	 * frame is received but ACK lost at STA side. The ACK for this dropped
+	 * Assoc Req frame should be sent by HW. Host simply does not process it
+	 * once the entry for the STA is already present in DPH.
 	 */
 	sta_ds = dph_lookup_hash_entry(mac_ctx, hdr->sa, &assoc_id,
 				&session->dph.dphHashTable);
 	if (NULL != sta_ds) {
-		if (sta_ds->prev_assoc_seq_no == (((hdr->seqControl.seqNumHi <<
-						  HIGH_SEQ_NUM_OFFSET) |
-						  hdr->seqControl.seqNumLo))) {
-			pe_err("Got an Assoc Req with same seq no. SN:%d .Do not process sessionid: %d sys sub_type=%d for role=%d from: "
-				MAC_ADDRESS_STR, sta_ds->prev_assoc_seq_no,
-				session->peSessionId,
-				sub_type, GET_LIM_SYSTEM_ROLE(session),
+		if (hdr->fc.retry > 0) {
+			pe_err("STA is initiating Assoc Req after ACK lost. Do not process sessionid: %d sys sub_type=%d for role=%d from: "
+				MAC_ADDRESS_STR, session->peSessionId,
+			sub_type, GET_LIM_SYSTEM_ROLE(session),
 			MAC_ADDR_ARRAY(hdr->sa));
 			return;
 		} else if (!sta_ds->rmfEnabled && (sub_type == LIM_REASSOC)) {
@@ -1842,15 +1828,9 @@ void lim_process_assoc_req_frame(tpAniSirGlobal mac_ctx, uint8_t *rx_pkt_info,
 	if ((session->access_policy_vendor_ie) &&
 		(session->access_policy ==
 		LIM_ACCESS_POLICY_RESPOND_IF_IE_IS_PRESENT)) {
-		if (frame_len <= LIM_ASSOC_REQ_IE_OFFSET) {
-			pe_debug("Received action frame of invalid len %d",
-				 frame_len);
-			return;
-		}
 		if (!cfg_get_vendor_ie_ptr_from_oui(mac_ctx,
 			&session->access_policy_vendor_ie[2],
-			3, frm_body + LIM_ASSOC_REQ_IE_OFFSET,
-			frame_len - LIM_ASSOC_REQ_IE_OFFSET)) {
+			3, frm_body + LIM_ASSOC_REQ_IE_OFFSET, frame_len)) {
 			pe_err("Vendor ie not present and access policy is %x, Rejected association",
 				session->access_policy);
 			lim_send_assoc_rsp_mgmt_frame(mac_ctx,
@@ -2082,12 +2062,9 @@ static void lim_fill_assoc_ind_wapi_info(tpAniSirGlobal mac_ctx,
 static void lim_fill_assoc_ind_vht_info(tpAniSirGlobal mac_ctx,
 					tpPESession session_entry,
 					tpSirAssocReq assoc_req,
-					tpLimMlmAssocInd assoc_ind,
-					tpDphHashNode sta_ds)
+					tpLimMlmAssocInd assoc_ind)
 {
 	uint8_t chan;
-	uint8_t i;
-	bool nw_type_11b = true;
 
 	if (session_entry->limRFBand == SIR_BAND_2_4_GHZ) {
 		if (session_entry->vhtCapability && assoc_req->VHTCaps.present)
@@ -2095,19 +2072,8 @@ static void lim_fill_assoc_ind_vht_info(tpAniSirGlobal mac_ctx,
 		else if (session_entry->htCapability
 			    && assoc_req->HTCaps.present)
 			assoc_ind->chan_info.info = MODE_11NG_HT20;
-		else {
-			for (i = 0; i < SIR_NUM_11A_RATES; i++) {
-				if (sirIsArate(sta_ds->
-					       supportedRates.llaRates[i]
-					       & 0x7F)) {
-					assoc_ind->chan_info.info = MODE_11G;
-					nw_type_11b = false;
-					break;
-				}
-			}
-			if (nw_type_11b)
-				assoc_ind->chan_info.info = MODE_11B;
-		}
+		else
+			assoc_ind->chan_info.info = MODE_11G;
 		return;
 	}
 
@@ -2330,9 +2296,6 @@ void lim_send_mlm_assoc_ind(tpAniSirGlobal mac_ctx,
 		 * processing in hostapd
 		 */
 		if (assoc_req->HTCaps.present) {
-			qdf_mem_copy(&assoc_ind->HTCaps, &assoc_req->HTCaps,
-				     sizeof(tDot11fIEHTCaps));
-
 			rsn_len = assoc_ind->addIE.length;
 			if (assoc_ind->addIE.length + DOT11F_IE_HTCAPS_MIN_LEN
 				+ 2 < SIR_MAC_MAX_IE_LENGTH) {
@@ -2446,10 +2409,8 @@ void lim_send_mlm_assoc_ind(tpAniSirGlobal mac_ctx,
 		fill_mlm_assoc_ind_vht(assoc_req, sta_ds, assoc_ind);
 
 		/* updates VHT information in assoc indication */
-		 qdf_mem_copy(&assoc_ind->VHTCaps, &assoc_req->VHTCaps,
-			      sizeof(tDot11fIEVHTCaps));
 		lim_fill_assoc_ind_vht_info(mac_ctx, session_entry, assoc_req,
-					    assoc_ind, sta_ds);
+			assoc_ind);
 		lim_post_sme_message(mac_ctx, LIM_MLM_ASSOC_IND,
 			 (uint32_t *) assoc_ind);
 		qdf_mem_free(assoc_ind);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2014-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2011, 2014-2017 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -164,7 +164,7 @@ htt_h2t_dbg_stats_get(struct htt_pdev_t *pdev,
 		      uint32_t stats_type_upload_mask,
 		      uint32_t stats_type_reset_mask,
 		      uint8_t cfg_stats_type,
-		      uint32_t cfg_val, uint8_t cookie);
+		      uint32_t cfg_val, uint64_t cookie);
 
 /**
  * @brief Get the fields from HTT T2H stats upload message's stats info header
@@ -194,14 +194,6 @@ htt_t2h_dbg_stats_hdr_parse(uint8_t *stats_info_list,
  *  @param concise - whether to do a verbose or concise printout
  */
 void htt_t2h_stats_print(uint8_t *stats_data, int concise);
-
-/**
- * htt_log_rx_ring_info() - log htt rx ring info during FW_RX_REFILL failure
- * @pdev: handle to the HTT instance
- *
- * Return: None
- */
-void htt_log_rx_ring_info(htt_pdev_handle pdev);
 
 #ifndef HTT_DEBUG_LEVEL
 #if defined(DEBUG)

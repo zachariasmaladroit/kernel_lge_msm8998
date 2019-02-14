@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -839,8 +839,6 @@ typedef struct sAniSirLim {
 		uint32_t scan_id, uint32_t flags);
 	QDF_STATUS(*sme_msg_callback)
 		(tHalHandle hal, cds_msg_t *msg);
-	QDF_STATUS(*stop_roaming_callback)
-		(tHalHandle hal, uint8_t session_id, uint8_t reason);
 	uint8_t retry_packet_cnt;
 	uint8_t scan_disabled;
 	uint8_t beacon_probe_rsp_cnt_per_scan;
@@ -852,41 +850,6 @@ struct mgmt_frm_reg_info {
 	uint16_t matchLen;
 	uint16_t sessionId;
 	uint8_t matchData[1];
-};
-
-/**
- * struct ani_action_oui_extension - action oui extn contents
- * @item: list element
- * @extension: wmi extnsion contents
- *
- * This structure encapsulates the wmi extension and list item to
- * create list of wmi extensions
- */
-struct ani_action_oui_extension {
-	qdf_list_node_t item;
-	struct wmi_action_oui_extension extension;
-};
-
-/**
- * struct ani_action_oui - each action oui info
- * @action_id: type of action oui
- * @oui_ext_list: list of action oui extensions
- * @oui_ext_list_lock: lock to control access to @oui_ext_list
- */
-struct ani_action_oui {
-	enum wmi_action_oui_id action_id;
-	qdf_list_t oui_ext_list;
-	qdf_mutex_t oui_ext_list_lock;
-};
-
-/**
- * struct action_oui_info - all action ouis info
- * @total_action_oui_extns: total no of oui extensions from all action ouis
- * @action_oui: array of action oui pointers
- */
-struct action_oui_info {
-	uint32_t total_action_oui_extns;
-	struct ani_action_oui *action_oui[WMI_ACTION_OUI_MAXIMUM_ID];
 };
 
 typedef struct sRrmContext {
@@ -989,10 +952,6 @@ typedef struct sAniSirGlobal {
 	void *readyToExtWoWContext;
 #endif
 	uint32_t f_sta_miracast_mcc_rest_time_val;
-	uint32_t sta_scan_burst_duration;
-	uint32_t p2p_scan_burst_duration;
-	uint32_t go_scan_burst_duration;
-	uint32_t ap_scan_burst_duration;
 	uint8_t f_prefer_non_dfs_on_radar;
 	hdd_ftm_msg_processor ftm_msg_processor_callback;
 	uint32_t fine_time_meas_cap;
@@ -1007,7 +966,6 @@ typedef struct sAniSirGlobal {
 	uint8_t hw_dbs_capable;
 	/* Based on INI parameter */
 	uint32_t dual_mac_feature_disable;
-	uint32_t sta_sap_scc_on_dfs_chan;
 	sir_mgmt_frame_ind_callback mgmt_frame_ind_cb;
 	sir_p2p_ack_ind_callback p2p_ack_ind_cb;
 	bool first_scan_done;
@@ -1020,18 +978,6 @@ typedef struct sAniSirGlobal {
 	bool snr_monitor_enabled;
 	/* channel information callback */
 	void (*chan_info_cb)(struct scan_chan_info *chan_info);
-
-	/* action ouis info */
-	bool enable_action_oui;
-	struct action_oui_info *oui_info;
-
-	/* 11k Offload Support */
-	bool is_11k_offload_supported;
-
-	uint32_t peer_rssi;
-	uint32_t peer_txrate;
-	uint32_t peer_rxrate;
-	uint32_t rx_mc_bc_cnt;
 } tAniSirGlobal;
 
 typedef enum {
