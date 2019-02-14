@@ -403,8 +403,17 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fdiagnostics-color=always \
 		   -Wno-unused-value -Wno-unused-parameter \
 		   -Wno-missing-field-initializers \
-		   -fno-delete-null-pointer-checks \
-		   -march=armv8-a+crc+crypto \
+		   -fmodulo-sched -fmodulo-sched-allow-regmoves \
+		   -fivopts \
+		   -fshrink-wrap -fshrink-wrap-separate \
+		   -flive-range-shrinkage -ftree-vrp \
+		   -floop-unroll-and-jam -floop-interchange -ftree-loop-distribution \
+		   -ftree-loop-distribute-patterns \
+		   -fgraphite-identity \
+		   -floop-nest-optimize \
+		   -freorder-blocks -freorder-blocks-and-partition \
+		   -fdelete-null-pointer-checks -fisolate-erroneous-paths-dereference \
+		   -march=armv8-a+crc+crypto -mtune=cortex-a73.cortex-a53 \
 		   -std=gnu89 $(call cc-option,-fno-PIE)
 
 KBUILD_AFLAGS_KERNEL :=
@@ -654,9 +663,9 @@ ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= $(call cc-option,-Oz,-Os)
 else
 ifdef CONFIG_PROFILE_ALL_BRANCHES
-KBUILD_CFLAGS	+= -O2
+KBUILD_CFLAGS	+= -O3
 else
-KBUILD_CFLAGS   += -O2
+KBUILD_CFLAGS   += -O3
 endif
 endif
 
