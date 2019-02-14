@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2011-2017 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -106,12 +106,12 @@ static void lim_process_auth_shared_system_algo(tpAniSirGlobal mac_ctx,
 		tpSirMacMgmtHdr mac_hdr,
 		tSirMacAuthFrameBody *rx_auth_frm_body,
 		tSirMacAuthFrameBody *auth_frame,
+		uint8_t *challenge_txt_arr,
 		tpPESession pe_session)
 {
 	uint32_t val;
-	uint8_t cfg_privacy_opt_imp;
+	uint8_t cfg_privacy_opt_imp, *challenge;
 	struct tLimPreAuthNode *auth_node;
-	uint8_t challenge_txt_arr[SIR_MAC_SAP_AUTH_CHALLENGE_LENGTH] = {0};
 
 	pe_debug("=======> eSIR_SHARED_KEY");
 	if (LIM_IS_AP_ROLE(pe_session))
@@ -165,7 +165,7 @@ static void lim_process_auth_shared_system_algo(tpAniSirGlobal mac_ctx,
 		auth_node->timestamp = qdf_mc_timer_get_system_ticks();
 		lim_add_pre_auth_node(mac_ctx, auth_node);
 
-		pe_debug("Alloc new data: %pK id: %d peer ",
+		pe_debug("Alloc new data: %p id: %d peer ",
 			auth_node, auth_node->authNodeIdx);
 		lim_print_mac_addr(mac_ctx, mac_hdr->sa, LOGD);
 		/* / Create and activate Auth Response timer */
@@ -192,39 +192,19 @@ static void lim_process_auth_shared_system_algo(tpAniSirGlobal mac_ctx,
 			lim_delete_pre_auth_node(mac_ctx, mac_hdr->sa);
 			return;
 		}
-
-		/*
-		 * get random bytes and use as challenge text.
-		 */
-		get_random_bytes(challenge_txt_arr,
-				 SIR_MAC_SAP_AUTH_CHALLENGE_LENGTH);
-		qdf_mem_zero(auth_node->challengeText,
-			     SIR_MAC_SAP_AUTH_CHALLENGE_LENGTH);
-		if (!qdf_mem_cmp(challenge_txt_arr,
-				 auth_node->challengeText,
-				 SIR_MAC_SAP_AUTH_CHALLENGE_LENGTH)) {
-			pe_err("Challenge text preparation failed");
-			lim_print_mac_addr(mac_ctx, mac_hdr->sa, LOGW);
-			auth_frame->authAlgoNumber =
-				rx_auth_frm_body->authAlgoNumber;
-			auth_frame->authTransactionSeqNumber =
-				rx_auth_frm_body->authTransactionSeqNumber + 1;
-			auth_frame->authStatusCode = eSIR_MAC_TRY_AGAIN_LATER;
-			lim_send_auth_mgmt_frame(mac_ctx,
-						 auth_frame,
-						 mac_hdr->sa,
-						 LIM_NO_WEP_IN_FC,
-						 pe_session);
-			lim_delete_pre_auth_node(mac_ctx, mac_hdr->sa);
-			return;
-		}
-
 		lim_activate_auth_rsp_timer(mac_ctx, auth_node);
 		auth_node->fTimerStarted = 1;
-
-		qdf_mem_copy(auth_node->challengeText,
-			     challenge_txt_arr,
-			     sizeof(challenge_txt_arr));
+		/*
+		 * get random bytes and use as challenge text.
+		 * If it fails we already have random stack bytes.
+		 */
+		if (!QDF_IS_STATUS_SUCCESS(cds_rand_get_bytes(0,
+				(uint8_t *) challenge_txt_arr,
+				SIR_MAC_SAP_AUTH_CHALLENGE_LENGTH)))
+			pe_err("Challenge text preparation failed");
+		challenge = auth_node->challengeText;
+		qdf_mem_copy(challenge, (uint8_t *)challenge_txt_arr,
+				sizeof(challenge_txt_arr));
 		/*
 		 * Sending Authenticaton frame with challenge.
 		 */
@@ -260,7 +240,7 @@ static void lim_process_auth_open_system_algo(tpAniSirGlobal mac_ctx,
 		lim_print_mac_addr(mac_ctx, mac_hdr->sa, LOGW);
 		return;
 	}
-	pe_debug("Alloc new data: %pK peer", auth_node);
+	pe_debug("Alloc new data: %p peer", auth_node);
 	lim_print_mac_addr(mac_ctx, mac_hdr->sa, LOGD);
 	qdf_mem_copy((uint8_t *) auth_node->peerMacAddr,
 			mac_hdr->sa, sizeof(tSirMacAddr));
@@ -293,6 +273,7 @@ static void lim_process_auth_frame_type1(tpAniSirGlobal mac_ctx,
 {
 	tpDphHashNode sta_ds_ptr = NULL;
 	struct tLimPreAuthNode *auth_node;
+	uint8_t challenge_txt_arr[SIR_MAC_SAP_AUTH_CHALLENGE_LENGTH];
 	uint32_t maxnum_preauth;
 	uint16_t associd = 0;
 
@@ -344,11 +325,8 @@ static void lim_process_auth_frame_type1(tpAniSirGlobal mac_ctx,
 		 * modify the state of the existing association until the
 		 * SA-Query procedure determines that the original SA is
 		 * invalid.
-		 * If the Auth sequence number is same as the previous auth seq
-		 * number, dont send a deauth as the auth packet is just the
-		 * duplicate of previous auth.
 		 */
-		if (isConnected && sta_ds_ptr->prev_auth_seq_no != curr_seq_num
+		if (isConnected
 #ifdef WLAN_FEATURE_11W
 			&& !sta_ds_ptr->rmfEnabled
 #endif
@@ -368,15 +346,14 @@ static void lim_process_auth_frame_type1(tpAniSirGlobal mac_ctx,
 	auth_node = lim_search_pre_auth_list(mac_ctx, mac_hdr->sa);
 	if (auth_node) {
 		/* Pre-auth context exists for the STA */
-		if (auth_node->seq_num == curr_seq_num) {
+		if (!(mac_hdr->fc.retry == 0 ||
+					auth_node->seq_num != curr_seq_num)) {
 			/*
-			 * If a STA is already present in authnode and the host receives an auth
-			 * request with the same sequence number , do not process it, as the
-			 * previous auth has already been processed and the response will be
-			 * retried by the firmware if the peer hasnt received the response yet
+			 * This can happen when first authentication frame is
+			 * received but ACK lost at STA side, in this case 2nd
+			 * auth frame is already in transmission queue
 			 */
-			pe_warn("STA is initiating Auth with SN: %d after ACK lost",
-							auth_node->seq_num);
+			pe_warn("STA is initiating Auth after ACK lost");
 			return;
 		}
 		/*
@@ -478,7 +455,8 @@ static void lim_process_auth_frame_type1(tpAniSirGlobal mac_ctx,
 
 		case eSIR_SHARED_KEY:
 			lim_process_auth_shared_system_algo(mac_ctx, mac_hdr,
-				rx_auth_frm_body, auth_frame, pe_session);
+				rx_auth_frm_body, auth_frame,
+				challenge_txt_arr, pe_session);
 			break;
 		default:
 			pe_err("rx Auth frm for unsupported auth algo %d "
@@ -659,7 +637,7 @@ static void lim_process_auth_frame_type2(tpAniSirGlobal mac_ctx,
 			return;
 		}
 
-		pe_debug("Alloc new data: %pK peer", auth_node);
+		pe_debug("Alloc new data: %p peer", auth_node);
 		lim_print_mac_addr(mac_ctx, mac_hdr->sa, LOGD);
 		qdf_mem_copy((uint8_t *) auth_node->peerMacAddr,
 				mac_ctx->lim.gpLimMlmAuthReq->peerMacAddr,
@@ -1015,7 +993,7 @@ static void lim_process_auth_frame_type4(tpAniSirGlobal mac_ctx,
 			lim_print_mac_addr(mac_ctx, mac_hdr->sa, LOGW);
 			return;
 		}
-		pe_debug("Alloc new data: %pK peer", auth_node);
+		pe_debug("Alloc new data: %p peer", auth_node);
 		lim_print_mac_addr(mac_ctx, mac_hdr->sa, LOGD);
 		qdf_mem_copy((uint8_t *) auth_node->peerMacAddr,
 				mac_ctx->lim.gpLimMlmAuthReq->peerMacAddr,
@@ -1209,11 +1187,6 @@ lim_process_auth_frame(tpAniSirGlobal mac_ctx, uint8_t *rx_pkt_info,
 					mac_hdr->sa, pe_session, false);
 			goto free;
 		}
-
-		if (frame_len < 4) {
-			pe_err("invalid frame len: %d", frame_len);
-			goto free;
-		}
 		/* Extract key ID from IV (most 2 bits of 4th byte of IV) */
 		key_id = (*(body_ptr + 3)) >> 6;
 
@@ -1240,8 +1213,7 @@ lim_process_auth_frame(tpAniSirGlobal mac_ctx, uint8_t *rx_pkt_info,
 			goto free;
 		}
 
-		if ((frame_len < LIM_ENCR_AUTH_BODY_LEN_SAP) ||
-		    (frame_len > LIM_ENCR_AUTH_BODY_LEN)) {
+		if (frame_len < LIM_ENCR_AUTH_BODY_LEN_SAP) {
 			/* Log error */
 			pe_err("Not enough size: %d to decry rx Auth frm",
 				frame_len);
@@ -1575,12 +1547,12 @@ tSirRetStatus lim_process_auth_frame_no_session(tpAniSirGlobal pMac, uint8_t *pB
 		 * pre-auth.
 		 */
 		pe_debug("Auth rsp already posted to SME"
-			       " (session %pK, FT session %pK)", psessionEntry,
+			       " (session %p, FT session %p)", psessionEntry,
 			       psessionEntry);
 		return eSIR_SUCCESS;
 	} else {
 		pe_warn("Auth rsp not yet posted to SME"
-			       " (session %pK, FT session %pK)", psessionEntry,
+			       " (session %p, FT session %p)", psessionEntry,
 			       psessionEntry);
 		psessionEntry->ftPEContext.pFTPreAuthReq->bPreAuthRspProcessed =
 			true;

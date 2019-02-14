@@ -470,7 +470,7 @@ static void lim_tx_action_frame(tpAniSirGlobal mac_ctx,
 			TXRX_FRM_802_11_MGMT,
 			ANI_TXDIR_TODS, 7, lim_tx_complete,
 			frame, tx_flag, sme_session_id,
-			channel_freq, RATEID_DEFAULT);
+			channel_freq);
 
 		if (!mb_msg->noack)
 			lim_p2p_action_cnf(mac_ctx,
@@ -485,7 +485,7 @@ static void lim_tx_action_frame(tpAniSirGlobal mac_ctx,
 				ANI_TXDIR_TODS, 7, lim_tx_complete,
 				frame, lim_p2p_action_cnf, tx_flag,
 				sme_session_id, false,
-				channel_freq, RATEID_DEFAULT);
+				channel_freq);
 
 		if (!QDF_IS_STATUS_SUCCESS(qdf_status)) {
 			pe_err("couldn't send action frame");
@@ -635,7 +635,7 @@ void lim_send_p2p_action_frame(tpAniSirGlobal mac_ctx,
 			if (NULL != p2p_ie) {
 				/* extract the presence of NoA attribute inside
 				 * P2P IE */
-				presence_noa_attr =  wlan_cfg_get_ie_ptr(
+				presence_noa_attr =  lim_get_ie_ptr_new(mac_ctx,
 					p2p_ie + SIR_P2P_IE_HEADER_LEN,
 					p2p_ie[1], SIR_P2P_NOA_ATTR, TWO_BYTE);
 			}
@@ -681,7 +681,7 @@ void lim_send_p2p_action_frame(tpAniSirGlobal mac_ctx,
 				p2p_ie[1] += noa_len;
 			}
 			msg_len += noa_len;
-			pe_debug("noa_len: %d orig_len: %d p2p_ie: %pK msg_len: %d nBytesToCopy: %zu ",
+			pe_debug("noa_len: %d orig_len: %d p2p_ie: %p msg_len: %d nBytesToCopy: %zu ",
 				noa_len, orig_len, p2p_ie, msg_len,
 				((p2p_ie + orig_len + 2) -
 				 (uint8_t *) mb_msg->data));
