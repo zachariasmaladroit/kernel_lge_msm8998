@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2011-2017 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -419,7 +419,7 @@ void ol_rx_frag_indication_handler(ol_txrx_pdev_handle pdev,
  */
 void
 ol_rx_offload_deliver_ind_handler(ol_txrx_pdev_handle pdev,
-				  qdf_nbuf_t msg, uint16_t msdu_cnt);
+				  qdf_nbuf_t msg, int msdu_cnt);
 
 /**
  * @brief Process a peer map message sent by the target.
@@ -502,6 +502,47 @@ ol_rx_sec_ind_handler(ol_txrx_pdev_handle pdev,
 		      enum htt_sec_type sec_type,
 		      int is_unicast, uint32_t *michael_key, uint32_t *rx_pn);
 
+/**
+ * @brief Process an ADDBA message sent by the target.
+ * @details
+ *  When the target notifies the host of an ADDBA event for a specified
+ *  peer-TID, the host will set up the rx reordering state for the peer-TID.
+ *  Specifically, the host will create a rx reordering array whose length
+ *  is based on the window size specified in the ADDBA.
+ *
+ * @param pdev - data physical device handle
+ *      (registered with HTT as a context pointer during attach time)
+ * @param peer_id - which peer the ADDBA event is for
+ * @param tid - which traffic ID within the peer the ADDBA event is for
+ * @param win_sz - how many sequence numbers are in the ARQ block ack window
+ *      set up by the ADDBA event
+ * @param start_seq_num - the initial value of the sequence number during the
+ *      block ack agreement, as specified by the ADDBA request.
+ * @param failed - indicate whether the target's ADDBA setup succeeded:
+ *      0 -> success, 1 -> fail
+ */
+void
+ol_rx_addba_handler(ol_txrx_pdev_handle pdev,
+		    uint16_t peer_id,
+		    uint8_t tid,
+		    uint8_t win_sz, uint16_t start_seq_num, uint8_t failed);
+
+/**
+ * @brief Process a DELBA message sent by the target.
+ * @details
+ *  When the target notifies the host of a DELBA event for a specified
+ *  peer-TID, the host will clean up the rx reordering state for the peer-TID.
+ *  Specifically, the host will remove the rx reordering array, and will
+ *  set the reorder window size to be 1 (stop and go ARQ).
+ *
+ * @param pdev - data physical device handle
+ *      (registered with HTT as a context pointer during attach time)
+ * @param peer_id - which peer the ADDBA event is for
+ * @param tid - which traffic ID within the peer the ADDBA event is for
+ */
+void
+ol_rx_delba_handler(ol_txrx_pdev_handle pdev, uint16_t peer_id, uint8_t tid);
+
 enum htt_rx_flush_action {
 	htt_rx_flush_release,
 	htt_rx_flush_discard,
@@ -581,8 +622,8 @@ void
 ol_rx_pn_ind_handler(ol_txrx_pdev_handle pdev,
 		     uint16_t peer_id,
 		     uint8_t tid,
-		     uint16_t seq_num_start,
-		     uint16_t seq_num_end, uint8_t pn_ie_cnt, uint8_t *pn_ie);
+		     int seq_num_start,
+		     int seq_num_end, uint8_t pn_ie_cnt, uint8_t *pn_ie);
 
 /**
  * @brief Process a stats message sent by the target.
@@ -604,7 +645,7 @@ ol_rx_pn_ind_handler(ol_txrx_pdev_handle pdev,
  */
 void
 ol_txrx_fw_stats_handler(ol_txrx_pdev_handle pdev,
-			 uint8_t cookie, uint8_t *stats_info_list);
+			 uint64_t cookie, uint8_t *stats_info_list);
 
 /**
  * @brief Process a tx inspect message sent by the target.
