@@ -71,10 +71,6 @@ config WLAN_OFFLOAD_PACKETS
 	bool "Enable offload packets feature"
 	default n
 
-config WLAN_FEATURE_FILS
-	bool "Enable FILS feature (11ai)"
-	default n
-
 config WLAN_FEATURE_MEMDUMP
 	bool "Enable MEMDUMP feature"
 	default n
