@@ -409,8 +409,6 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -flive-range-shrinkage -ftree-vrp \
 		   -ftree-loop-distribution \
 		   -ftree-loop-distribute-patterns \
-		   -fgraphite-identity \
-		   -floop-nest-optimize \
 		   -freorder-blocks -freorder-blocks-and-partition \
 		   -fdelete-null-pointer-checks -fisolate-erroneous-paths-dereference \
 		   -march=armv8-a+crc+crypto -mtune=cortex-a73.cortex-a53 \
@@ -418,6 +416,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 
 #		   -fmodulo-sched -fmodulo-sched-allow-regmoves \
 #		   -floop-unroll-and-jam -floop-interchange \
+#		   -fgraphite-identity -floop-nest-optimize \
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
