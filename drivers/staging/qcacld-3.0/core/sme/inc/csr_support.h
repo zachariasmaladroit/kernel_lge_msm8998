@@ -175,6 +175,16 @@ typedef struct tagCsrRSNAuthIe {
 	} qdf_packed AuthOui[1];
 } qdf_packed tCsrRSNAuthIe;
 
+typedef struct tagCsrRSNCapabilities {
+	uint16_t PreAuthSupported:1;
+	uint16_t NoPairwise:1;
+	uint16_t PTKSAReplayCounter:2;
+	uint16_t GTKSAReplayCounter:2;
+	uint16_t MFPRequired:1;
+	uint16_t MFPCapable:1;
+	uint16_t Reserved:8;
+} qdf_packed tCsrRSNCapabilities;
+
 typedef struct tagCsrRSNPMKIe {
 	uint16_t cPMKIDs;
 	struct {
@@ -359,15 +369,8 @@ QDF_STATUS csr_validate_mcc_beacon_interval(tpAniSirGlobal pMac, uint8_t channel
 bool csr_is_profile11r(tCsrRoamProfile *pProfile);
 bool csr_is_auth_type11r(eCsrAuthType AuthType, uint8_t mdiePresent);
 #ifdef FEATURE_WLAN_ESE
+bool csr_is_auth_type_ese(eCsrAuthType AuthType);
 bool csr_is_profile_ese(tCsrRoamProfile *pProfile);
 #endif
-
-/**
- * csr_is_auth_type_ese() - Checks whether Auth type is ESE or not
- * @AuthType: Authentication type
- *
- * Return: true, if auth type is ese, false otherwise
- */
-bool csr_is_auth_type_ese(eCsrAuthType AuthType);
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2016-2017 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -464,56 +464,10 @@ static int wma_ndp_indication_event_handler(void *handle, uint8_t *event_info,
 	wmi_ndp_indication_event_fixed_param *fixed_params;
 	struct ndp_indication_event ind_event = {0};
 	tp_wma_handle wma_handle = handle;
-	size_t total_array_len;
 
 	event = (WMI_NDP_INDICATION_EVENTID_param_tlvs *)event_info;
 	fixed_params =
 		(wmi_ndp_indication_event_fixed_param *)event->fixed_param;
-
-	if (fixed_params->ndp_cfg_len > event->num_ndp_cfg) {
-		WMA_LOGE("FW message ndp cfg length %d larger than TLV hdr %d",
-			 fixed_params->ndp_cfg_len, event->num_ndp_cfg);
-		return -EINVAL;
-	}
-
-	if (fixed_params->ndp_app_info_len > event->num_ndp_app_info) {
-		WMA_LOGE("FW message ndp app info length %d more than TLV hdr %d",
-			 fixed_params->ndp_app_info_len,
-			 event->num_ndp_app_info);
-		return -EINVAL;
-	}
-
-	if (fixed_params->nan_scid_len > event->num_ndp_scid) {
-		WMA_LOGE(FL("Invalid nan_scid_len: %d"),
-			 fixed_params->nan_scid_len);
-		return -EINVAL;
-	}
-
-	if (fixed_params->ndp_cfg_len >
-		(WMI_SVC_MSG_MAX_SIZE - sizeof(*fixed_params))) {
-		WMA_LOGE("%s: excess wmi buffer: ndp_cfg_len %d",
-			 __func__, fixed_params->ndp_cfg_len);
-		return -EINVAL;
-	}
-
-	total_array_len = fixed_params->ndp_cfg_len +
-					sizeof(*fixed_params);
-
-	if (fixed_params->ndp_app_info_len >
-		(WMI_SVC_MSG_MAX_SIZE - total_array_len)) {
-		WMA_LOGE("%s: excess wmi buffer: ndp_cfg_len %d",
-			 __func__, fixed_params->ndp_app_info_len);
-		return -EINVAL;
-	}
-
-	total_array_len += fixed_params->ndp_app_info_len;
-
-	if (fixed_params->nan_scid_len >
-		(WMI_SVC_MSG_MAX_SIZE - total_array_len)) {
-		WMA_LOGE("%s: excess wmi buffer: ndp_cfg_len %d",
-			 __func__, fixed_params->nan_scid_len);
-		return -EINVAL;
-	}
 
 	ind_event.vdev_id = fixed_params->vdev_id;
 	ind_event.service_instance_id = fixed_params->service_instance_id;
@@ -662,22 +616,9 @@ static int wma_ndp_confirm_event_handler(void *handle, uint8_t *event_info,
 		 fixed_params->reason_code,
 		 fixed_params->num_active_ndps_on_peer);
 
-	if (fixed_params->ndp_cfg_len > event->num_ndp_cfg) {
-		WMA_LOGE("FW message ndp cfg length %d larger than TLV hdr %d",
-			 fixed_params->ndp_cfg_len, event->num_ndp_cfg);
-		return -EINVAL;
-	}
-
 	WMA_LOGE(FL("ndp_cfg - %d bytes"), fixed_params->ndp_cfg_len);
 	QDF_TRACE_HEX_DUMP(QDF_MODULE_ID_WMA, QDF_TRACE_LEVEL_DEBUG,
 		&event->ndp_cfg, fixed_params->ndp_cfg_len);
-
-	if (fixed_params->ndp_app_info_len > event->num_ndp_app_info) {
-		WMA_LOGE("FW message ndp app info length %d more than TLV hdr %d",
-			 fixed_params->ndp_app_info_len,
-			 event->num_ndp_app_info);
-		return -EINVAL;
-	}
 
 	WMA_LOGE(FL("ndp_app_info - %d bytes"), fixed_params->ndp_app_info_len);
 	QDF_TRACE_HEX_DUMP(QDF_MODULE_ID_WMA, QDF_TRACE_LEVEL_DEBUG,
@@ -694,11 +635,6 @@ static int wma_ndp_confirm_event_handler(void *handle, uint8_t *event_info,
 				   ndp_confirm.peer_ndi_mac_addr.bytes);
 
 	ndp_confirm.ndp_info.ndp_app_info_len = fixed_params->ndp_app_info_len;
-	if (ndp_confirm.ndp_info.ndp_app_info_len > event->num_ndp_app_info) {
-		WMA_LOGE(FL("Invalid ndp_app_info_len: %d"),
-			ndp_confirm.ndp_info.ndp_app_info_len);
-		return -EINVAL;
-	}
 
 	if (ndp_confirm.ndp_info.ndp_app_info_len) {
 		ndp_confirm.ndp_info.ndp_app_info =
@@ -797,13 +733,6 @@ static int wma_ndp_end_indication_event_handler(void *handle,
 
 	WMA_LOGD(FL("number of ndp instances = %d"),
 		event->num_ndp_end_indication_list);
-
-	if (event->num_ndp_end_indication_list > ((WMI_SVC_MSG_MAX_SIZE -
-	    sizeof(*ndp_event_buf)) / sizeof(ndp_event_buf->ndp_map[0]))) {
-		WMA_LOGE("%s: excess data received from fw num_ndp_end_indication_list %d",
-			 __func__, event->num_ndp_end_indication_list);
-		return -EINVAL;
-	}
 
 	buf_size = sizeof(*ndp_event_buf) + event->num_ndp_end_indication_list *
 			sizeof(ndp_event_buf->ndp_map[0]);
@@ -1389,10 +1318,6 @@ send_del_rsp:
 		WMA_LOGD(FL("Sending del rsp to umac (status: %d)"),
 				del_sta->status);
 		wma_send_msg_high_priority(wma, WMA_DELETE_STA_RSP, del_sta, 0);
-	} else {
-		WMA_LOGD(FL("NDI Del Sta resp not needed"));
-		qdf_mem_free(del_sta);
 	}
-
 }
 

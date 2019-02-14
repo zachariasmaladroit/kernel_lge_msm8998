@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -120,8 +120,7 @@ QDF_STATUS sys_stop(v_CONTEXT_t p_cds_context)
 	if (!QDF_IS_STATUS_SUCCESS(qdf_status))
 		qdf_status = QDF_STATUS_E_BADMSG;
 
-	qdf_status = qdf_wait_for_event_completion(&g_stop_evt,
-			SYS_STOP_TIMEOUT);
+	qdf_status = qdf_wait_single_event(&g_stop_evt, SYS_STOP_TIMEOUT);
 	QDF_ASSERT(QDF_IS_STATUS_SUCCESS(qdf_status));
 
 	qdf_status = qdf_event_destroy(&g_stop_evt);
@@ -143,7 +142,6 @@ QDF_STATUS sys_mc_process_msg(v_CONTEXT_t p_cds_context, cds_msg_t *pMsg)
 {
 	QDF_STATUS qdf_status = QDF_STATUS_SUCCESS;
 	qdf_mc_timer_callback_t timerCB;
-	data_stall_detect_cb data_stall_detect_callback;
 	tpAniSirGlobal mac_ctx;
 	void *hHal;
 
@@ -245,15 +243,6 @@ QDF_STATUS sys_mc_process_msg(v_CONTEXT_t p_cds_context, cds_msg_t *pMsg)
 			qdf_mem_free(pMsg->bodyptr);
 			break;
 
-		case SYS_MSG_ID_DATA_STALL_MSG:
-			data_stall_detect_callback = pMsg->callback;
-			if (NULL != data_stall_detect_callback)
-				data_stall_detect_callback(pMsg->bodyptr);
-			qdf_mem_free(pMsg->bodyptr);
-			break;
-		case SYS_MSG_ID_CLEAN_VDEV_RSP_QUEUE:
-			wma_cleanup_vdev_resp_and_hold_req(pMsg->bodyptr);
-			break;
 		default:
 			QDF_TRACE(QDF_MODULE_ID_SYS, QDF_TRACE_LEVEL_ERROR,
 				"Unknown message type msgType= %d [0x%08x]",
@@ -328,6 +317,8 @@ void sys_process_mmh_msg(tpAniSirGlobal pMac, tSirMsgQ *pMsg)
 		break;
 
 	case WNI_CFG_GET_REQ:
+	case WNI_CFG_SET_REQ:
+	case WNI_CFG_SET_REQ_NO_RSP:
 	case eWNI_SME_SYS_READY_IND:
 		/* Forward this message to the PE module */
 		targetMQ = QDF_MODULE_ID_PE;

@@ -836,15 +836,11 @@ tSirRetStatus pe_close(tpAniSirGlobal pMac)
 	if (ANI_DRIVER_TYPE(pMac) == QDF_DRIVER_TYPE_MFG)
 		return eSIR_SUCCESS;
 
-	if (pMac->lim.limDisassocDeauthCnfReq.pMlmDeauthReq) {
-		qdf_mem_free(pMac->lim.limDisassocDeauthCnfReq.pMlmDeauthReq);
-		pMac->lim.limDisassocDeauthCnfReq.pMlmDeauthReq = NULL;
-	}
-
 	qdf_spinlock_destroy(&pMac->sys.bbt_mgmt_lock);
 	for (i = 0; i < pMac->lim.maxBssId; i++) {
-		if (pMac->lim.gpSession[i].valid == true)
+		if (pMac->lim.gpSession[i].valid == true) {
 			pe_delete_session(pMac, &pMac->lim.gpSession[i]);
+		}
 	}
 	qdf_mem_free(pMac->lim.limTimers.gpLimCnfWaitTimer);
 	pMac->lim.limTimers.gpLimCnfWaitTimer = NULL;
@@ -1114,7 +1110,7 @@ static QDF_STATUS pe_handle_mgmt_frame(void *p_cds_gctx, void *cds_buff)
 
 	mHdr = WMA_GET_RX_MAC_HEADER(pRxPacketInfo);
 	if (mHdr->fc.type == SIR_MAC_MGMT_FRAME) {
-		pe_debug("RxBd: %pK mHdr: %pK Type: %d Subtype: %d  SizesFC: %zu Mgmt: %zu",
+		pe_debug("RxBd: %p mHdr: %p Type: %d Subtype: %d  SizesFC: %zu Mgmt: %zu",
 		  pRxPacketInfo, mHdr, mHdr->fc.type, mHdr->fc.subType,
 		  sizeof(tSirMacFrameCtl), sizeof(tSirMacMgmtHdr));
 
@@ -1914,9 +1910,27 @@ lim_roam_fill_bss_descr(tpAniSirGlobal pMac,
 	}
 	bss_desc_ptr->channelIdSelf = bss_desc_ptr->channelId;
 
-	bss_desc_ptr->nwType = lim_get_nw_type(pMac, bss_desc_ptr->channelId,
-					       SIR_MAC_MGMT_FRAME,
-					       parsed_frm_ptr);
+	if ((bss_desc_ptr->channelId > 0) && (bss_desc_ptr->channelId < 15)) {
+		int i;
+		/* *
+		 * 11b or 11g packet
+		 * 11g if extended Rate IE is present or
+		 * if there is an A rate in suppRate IE
+		 * */
+		for (i = 0; i < parsed_frm_ptr->supportedRates.numRates; i++) {
+			if (sirIsArate(parsed_frm_ptr->supportedRates.rate[i] &
+						0x7f)) {
+				bss_desc_ptr->nwType = eSIR_11G_NW_TYPE;
+				break;
+			}
+		}
+		if (parsed_frm_ptr->extendedRatesPresent) {
+			bss_desc_ptr->nwType = eSIR_11G_NW_TYPE;
+		}
+	} else {
+		/* 11a packet */
+		bss_desc_ptr->nwType = eSIR_11A_NW_TYPE;
+	}
 
 	bss_desc_ptr->sinr = 0;
 	bss_desc_ptr->beaconInterval = parsed_frm_ptr->beaconInterval;
@@ -2444,11 +2458,6 @@ QDF_STATUS lim_update_ext_cap_ie(tpAniSirGlobal mac_ctx,
 		return QDF_STATUS_E_FAILURE;
 	}
 
-	if ((*local_ie_len) > (MAX_DEFAULT_SCAN_IE_LEN - EXT_CAP_IE_HDR_LEN)) {
-		pe_err("Invalid Scan IE length");
-		return QDF_STATUS_E_FAILURE;
-	}
-
 	/* copy ie prior to ext cap to local buffer */
 	qdf_mem_copy(local_ie_buf, ie_data, (*local_ie_len));
 
@@ -2465,11 +2474,6 @@ QDF_STATUS lim_update_ext_cap_ie(tpAniSirGlobal mac_ctx,
 		pe_err("Failed %d to create ext cap IE. Use default value instead",
 				status);
 		local_ie_buf[*local_ie_len + 1] = DOT11F_IE_EXTCAP_MAX_LEN;
-		if ((*local_ie_len) > (MAX_DEFAULT_SCAN_IE_LEN -
-		    (DOT11F_IE_EXTCAP_MAX_LEN + EXT_CAP_IE_HDR_LEN))) {
-			pe_err("Invalid Scan IE length");
-			return QDF_STATUS_E_FAILURE;
-		}
 		(*local_ie_len) += EXT_CAP_IE_HDR_LEN;
 		qdf_mem_copy(local_ie_buf + (*local_ie_len),
 				default_scan_ext_cap.bytes,
@@ -2479,12 +2483,6 @@ QDF_STATUS lim_update_ext_cap_ie(tpAniSirGlobal mac_ctx,
 	}
 	lim_merge_extcap_struct(&driver_ext_cap, &default_scan_ext_cap, true);
 	local_ie_buf[*local_ie_len + 1] = driver_ext_cap.num_bytes;
-
-	if ((*local_ie_len) > (MAX_DEFAULT_SCAN_IE_LEN -
-	    (EXT_CAP_IE_HDR_LEN + driver_ext_cap.num_bytes))) {
-		pe_err("Invalid Scan IE length");
-		return QDF_STATUS_E_FAILURE;
-	}
 	(*local_ie_len) += EXT_CAP_IE_HDR_LEN;
 	qdf_mem_copy(local_ie_buf + (*local_ie_len),
 			driver_ext_cap.bytes, driver_ext_cap.num_bytes);

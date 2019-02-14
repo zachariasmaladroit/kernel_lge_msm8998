@@ -1218,49 +1218,6 @@ static int cds_ol_rx_thread(void *arg)
 }
 #endif
 
-void cds_remove_timer_from_sys_msg(uint32_t timer_cookie)
-{
-	p_cds_msg_wrapper msg_wrapper = NULL;
-	struct list_head *pos, *q;
-	unsigned long flags;
-	p_cds_mq_type sys_msgq;
-
-	if (!gp_cds_sched_context) {
-		cds_err("gp_cds_sched_context is null");
-		return;
-	}
-
-	if (!gp_cds_sched_context->McThread) {
-		cds_err("Cannot post message because MC thread is stopped");
-		return;
-	}
-
-	sys_msgq = &gp_cds_sched_context->sysMcMq;
-	/* No msg present in sys queue */
-	if (cds_is_mq_empty(sys_msgq))
-		return;
-
-	spin_lock_irqsave(&sys_msgq->mqLock, flags);
-	list_for_each_safe(pos, q, &sys_msgq->mqList) {
-		msg_wrapper = list_entry(pos, cds_msg_wrapper, msgNode);
-
-		if ((msg_wrapper->pVosMsg->type == SYS_MSG_ID_MC_TIMER) &&
-		    (msg_wrapper->pVosMsg->bodyval == timer_cookie)) {
-			/* return message to the Core */
-			list_del(pos);
-			spin_unlock_irqrestore(&sys_msgq->mqLock, flags);
-			QDF_TRACE(QDF_MODULE_ID_QDF, QDF_TRACE_LEVEL_DEBUG,
-				  "%s: removing timer message with cookie %d",
-				  __func__, timer_cookie);
-			cds_core_return_msg(gp_cds_sched_context->pVContext,
-					    msg_wrapper);
-			return;
-		}
-
-	}
-	spin_unlock_irqrestore(&sys_msgq->mqLock, flags);
-}
-
 /**
  * cds_sched_close() - close the cds scheduler
  * @p_cds_context: Pointer to the global CDS Context
@@ -1710,7 +1667,7 @@ void cds_shutdown_notifier_purge(void)
  * Call registered shutdown notifier call back to indicate about remove or
  * shutdown.
  */
-void cds_shutdown_notifier_call(void)
+static void cds_shutdown_notifier_call(void)
 {
 	struct shutdown_notifier *notifier;
 	unsigned long irq_flags;
@@ -1742,6 +1699,8 @@ bool cds_wait_for_external_threads_completion(const char *caller_func)
 {
 	int count = MAX_SSR_WAIT_ITERATIONS;
 	int r;
+
+	cds_shutdown_notifier_call();
 
 	while (count) {
 

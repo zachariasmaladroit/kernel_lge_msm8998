@@ -144,7 +144,6 @@ typedef enum {
 	 * result of various conditions
 	 */
 	eSAP_STA_DISASSOC_EVENT,
-
 	/* Event sent when user called wlansap_set_key_sta */
 	eSAP_STA_SET_KEY_EVENT,
 	/* Event sent whenever there is MIC failure detected */
@@ -235,7 +234,6 @@ typedef enum {
 typedef struct sap_StartBssCompleteEvent_s {
 	uint8_t status;
 	uint8_t operatingChannel;
-	enum phy_ch_width ch_width;
 	uint16_t staId;         /* self StaID */
 	uint8_t sessionId;      /* SoftAP SME session ID */
 } tSap_StartBssCompleteEvent;
@@ -292,9 +290,6 @@ typedef struct sap_StationAssocReassocCompleteEvent_s {
 	uint8_t max_mcs_idx;
 	uint8_t rx_mcs_map;
 	uint8_t tx_mcs_map;
-	tDot11fIEHTCaps ht_caps;
-	tDot11fIEVHTCaps vht_caps;
-	tSirMacCapabilityInfo capability_info;
 } tSap_StationAssocReassocCompleteEvent;
 
 typedef struct sap_StationDisassocCompleteEvent_s {
@@ -302,12 +297,7 @@ typedef struct sap_StationDisassocCompleteEvent_s {
 	uint8_t staId;          /* STAID should not be used */
 	uint8_t status;
 	uint32_t statusCode;
-	uint32_t reason_code;
 	eSapDisassocReason reason;
-	int rssi;
-	int tx_rate;
-	int rx_rate;
-	uint32_t rx_mc_bc_cnt;
 } tSap_StationDisassocCompleteEvent;
 
 typedef struct sap_StationSetKeyCompleteEvent_s {
@@ -629,8 +619,6 @@ typedef struct sap_Config {
 	uint8_t sap_chanswitch_mode;
 	uint16_t reduced_beacon_interval;
 	bool dfs_beacon_tx_enhanced;
-	bool chan_switch_hostapd_rate_enabled;
-	uint32_t user_config_channel;
 } tsap_Config_t;
 
 #ifdef FEATURE_WLAN_AP_AP_ACS_OPTIMIZE

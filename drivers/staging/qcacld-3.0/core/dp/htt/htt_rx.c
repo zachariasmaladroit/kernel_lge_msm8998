@@ -139,7 +139,7 @@ static void htt_rx_hash_deinit(struct htt_pdev_t *pdev)
 
 	if (qdf_mem_smmu_s1_enabled(pdev->osdev) && pdev->is_ipa_uc_enabled) {
 		mem_map_table = qdf_mem_map_table_alloc(
-					RX_NUM_HASH_BUCKETS * RX_ENTRIES_SIZE);
+					pdev->rx_ring.fill_level);
 		if (!mem_map_table) {
 			qdf_print("%s: Failed to allocate memory for mem map table\n",
 				  __func__);
@@ -427,7 +427,7 @@ htt_rx_paddr_unmark_high_bits(qdf_dma_addr_t paddr)
 		 */
 		if ((markings & 0xFFFF0000) != RX_PADDR_MAGIC_PATTERN) {
 			QDF_TRACE(QDF_MODULE_ID_HTT, QDF_TRACE_LEVEL_ERROR,
-				  "%s: paddr not marked correctly: 0x%pK!",
+				  "%s: paddr not marked correctly: 0x%p!",
 				  __func__, (void *)paddr);
 			HTT_ASSERT_ALWAYS(0);
 		}
@@ -475,15 +475,6 @@ static int htt_rx_ring_fill_n(struct htt_pdev_t *pdev, int num)
 	int num_alloc = 0;
 
 	idx = *(pdev->rx_ring.alloc_idx.vaddr);
-
-	if ((idx < 0) || (idx > pdev->rx_ring.size_mask) ||
-	    (num > pdev->rx_ring.size))  {
-		QDF_TRACE(QDF_MODULE_ID_HTT,
-			  QDF_TRACE_LEVEL_ERROR,
-			  "%s:rx refill failed!", __func__);
-		return filled;
-	}
-
 	if (qdf_mem_smmu_s1_enabled(pdev->osdev) && pdev->is_ipa_uc_enabled) {
 		mem_map_table = qdf_mem_map_table_alloc(num);
 		if (!mem_map_table) {
@@ -1543,13 +1534,6 @@ htt_rx_frag_pop_hl(
 }
 
 static inline int
-htt_rx_offload_msdu_cnt_hl(
-    htt_pdev_handle pdev)
-{
-    return 1;
-}
-
-static inline int
 htt_rx_offload_msdu_pop_hl(htt_pdev_handle pdev,
 			   qdf_nbuf_t offload_deliver_msg,
 			   int *vdev_id,
@@ -1596,13 +1580,6 @@ htt_rx_offload_msdu_pop_hl(htt_pdev_handle pdev,
 #endif
 
 #ifndef CONFIG_HL_SUPPORT
-static inline int
-htt_rx_offload_msdu_cnt_ll(
-    htt_pdev_handle pdev)
-{
-    return htt_rx_ring_elems(pdev);
-}
-
 static int
 htt_rx_offload_msdu_pop_ll(htt_pdev_handle pdev,
 			   qdf_nbuf_t offload_deliver_msg,
@@ -1826,7 +1803,7 @@ static unsigned char htt_rx_get_rate(uint32_t l_sig_rate_select,
 					uint32_t l_sig_rate, uint8_t *preamble)
 {
 	char ret = 0x0;
-	*preamble = SHORT_PREAMBLE;
+	*preamble = LONG_PREAMBLE;
 	if (l_sig_rate_select == 0) {
 		switch (l_sig_rate) {
 		case 0x8:
@@ -1876,12 +1853,14 @@ static unsigned char htt_rx_get_rate(uint32_t l_sig_rate_select,
 			break;
 		case 0x5:
 			ret = 0x4;
+			*preamble = SHORT_PREAMBLE;
 			break;
 		case 0x6:
 			ret = 0xB;
 			break;
 		case 0x7:
 			ret = 0x16;
+			*preamble = SHORT_PREAMBLE;
 			break;
 		default:
 			break;
@@ -2981,10 +2960,6 @@ int (*htt_rx_frag_pop)(htt_pdev_handle pdev,
 		       uint32_t *msdu_count);
 
 int
-(*htt_rx_offload_msdu_cnt)(
-    htt_pdev_handle pdev);
-
-int
 (*htt_rx_offload_msdu_pop)(htt_pdev_handle pdev,
 			   qdf_nbuf_t offload_deliver_msg,
 			   int *vdev_id,
@@ -3476,7 +3451,7 @@ htt_rx_hash_list_insert(struct htt_pdev_t *pdev,
 	htt_list_add_tail(&pdev->rx_ring.hash_table[i]->listhead,
 			  &hash_element->listnode);
 
-	RX_HASH_LOG(qdf_print("rx hash: %s: paddr 0x%x netbuf %pK bucket %d\n",
+	RX_HASH_LOG(qdf_print("rx hash: %s: paddr 0x%x netbuf %p bucket %d\n",
 			      __func__, paddr, netbuf, (int)i));
 
 	HTT_RX_HASH_COUNT_INCR(pdev->rx_ring.hash_table[i]);
@@ -3541,14 +3516,14 @@ qdf_nbuf_t htt_rx_hash_list_lookup(struct htt_pdev_t *pdev,
 		}
 	}
 
-	RX_HASH_LOG(qdf_print("rx hash: %s: paddr 0x%x, netbuf %pK, bucket %d\n",
+	RX_HASH_LOG(qdf_print("rx hash: %s: paddr 0x%x, netbuf %p, bucket %d\n",
 			      __func__, paddr, netbuf, (int)i));
 	HTT_RX_HASH_COUNT_PRINT(pdev->rx_ring.hash_table[i]);
 
 	qdf_spin_unlock_bh(&(pdev->rx_ring.rx_hash_lock));
 
 	if (netbuf == NULL) {
-		qdf_print("rx hash: %s: no entry found for %pK!\n",
+		qdf_print("rx hash: %s: no entry found for %p!\n",
 			  __func__, (void *)paddr);
 		if (cds_is_self_recovery_enabled())
 			cds_trigger_recovery(CDS_RX_HASH_NO_ENTRY_FOUND);
@@ -3660,7 +3635,6 @@ int htt_rx_attach(struct htt_pdev_t *pdev)
 	pdev->rx_ring.base_paddr = 0;
 	htt_rx_amsdu_pop = htt_rx_amsdu_pop_hl;
 	htt_rx_frag_pop = htt_rx_frag_pop_hl;
-	htt_rx_offload_msdu_cnt = htt_rx_offload_msdu_cnt_hl;
 	htt_rx_offload_msdu_pop = htt_rx_offload_msdu_pop_hl;
 	htt_rx_mpdu_desc_list_next = htt_rx_mpdu_desc_list_next_hl;
 	htt_rx_mpdu_desc_retry = htt_rx_mpdu_desc_retry_hl;
@@ -3805,7 +3779,6 @@ int htt_rx_attach(struct htt_pdev_t *pdev)
 	if (cds_get_conparam() == QDF_GLOBAL_MONITOR_MODE)
 		htt_rx_amsdu_pop = htt_rx_mon_amsdu_rx_in_order_pop_ll;
 
-	htt_rx_offload_msdu_cnt = htt_rx_offload_msdu_cnt_ll;
 	htt_rx_offload_msdu_pop = htt_rx_offload_msdu_pop_ll;
 	htt_rx_mpdu_desc_retry = htt_rx_mpdu_desc_retry_ll;
 	htt_rx_mpdu_desc_seq_num = htt_rx_mpdu_desc_seq_num_ll;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2015-2017 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -44,7 +44,7 @@
 #ifdef CONFIG_SCHED_CORE_CTL
 #include <linux/sched/core_ctl.h>
 #endif
-#include <pld_common.h>
+#include <pld_snoc.h>
 #endif
 #include <linux/pm.h>
 
@@ -63,12 +63,12 @@ enum napi_decision_vector {
 #define ENABLE_NAPI_MASK (HIF_NAPI_INITED | HIF_NAPI_CONF_UP)
 
 #ifdef HELIUMPLUS
-static inline int hif_get_irq_for_ce(struct device *dev, int ce_id)
+static inline int hif_get_irq_for_ce(int ce_id)
 {
-	return pld_get_irq(dev, ce_id);
+	return pld_snoc_get_irq(ce_id);
 }
 #else /* HELIUMPLUS */
-static inline int hif_get_irq_for_ce(struct device *dev, int ce_id)
+static inline int hif_get_irq_for_ce(int ce_id)
 {
 	return -EINVAL;
 }
@@ -173,8 +173,7 @@ int hif_napi_create(struct hif_opaque_softc   *hif_ctx,
 		napii->scale = scale;
 		napii->id    = NAPI_PIPE2ID(i);
 		napii->hif_ctx = hif_ctx;
-		if (hif->qdf_dev)
-			napii->irq   = hif_get_irq_for_ce(hif->qdf_dev->dev, i);
+		napii->irq   = hif_get_irq_for_ce(i);
 
 		if (napii->irq < 0)
 			HIF_WARN("%s: bad IRQ value for CE %d: %d",
@@ -1180,7 +1179,6 @@ static int hnc_cpu_notify_cb(struct notifier_block *nb,
 
 	switch (action) {
 	case CPU_ONLINE:
-	case CPU_ONLINE_FROZEN:
 		napid->napi_cpu[cpu].state = QCA_NAPI_CPU_UP;
 		NAPI_DEBUG("%s: CPU %ld marked %d",
 			   __func__, cpu, napid->napi_cpu[cpu].state);

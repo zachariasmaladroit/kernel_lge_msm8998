@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -131,7 +131,6 @@ v_CONTEXT_t cds_init(void)
 	qdf_lock_stats_init();
 	qdf_mem_init();
 	qdf_mc_timer_manager_init();
-	qdf_event_list_init();
 
 	gp_cds_context = &g_cds_context;
 
@@ -167,7 +166,6 @@ void cds_deinit(void)
 	qdf_mem_exit();
 	qdf_lock_stats_deinit();
 	qdf_debugfs_exit();
-	qdf_event_list_destroy();
 
 	gp_cds_context->qdf_ctx = NULL;
 	gp_cds_context = NULL;
@@ -628,9 +626,8 @@ QDF_STATUS cds_pre_enable(v_CONTEXT_t cds_context)
 	}
 
 	/* Need to update time out of complete */
-	qdf_status = qdf_wait_for_event_completion(
-					&gp_cds_context->wmaCompleteEvent,
-					CDS_WMA_TIMEOUT);
+	qdf_status = qdf_wait_single_event(&gp_cds_context->wmaCompleteEvent,
+					   CDS_WMA_TIMEOUT);
 	if (qdf_status != QDF_STATUS_SUCCESS) {
 		if (qdf_status == QDF_STATUS_E_TIMEOUT) {
 			QDF_TRACE(QDF_MODULE_ID_QDF, QDF_TRACE_LEVEL_ERROR,
@@ -667,7 +664,7 @@ QDF_STATUS cds_pre_enable(v_CONTEXT_t cds_context)
 		 * fail gracefully if FW is down allowing re-probing from
 		 * from the platform driver
 		 */
-		if ((!cds_is_fw_down()) && (!cds_is_self_recovery_enabled()))
+		if (!cds_is_fw_down())
 			QDF_BUG(0);
 
 		htc_stop(gp_cds_context->htc_ctx);
@@ -784,9 +781,8 @@ err_wma_stop:
 		wma_setneedshutdown(cds_context);
 	} else {
 		qdf_status =
-			qdf_wait_for_event_completion(
-					&gp_cds_context->wmaCompleteEvent,
-					CDS_WMA_TIMEOUT);
+			qdf_wait_single_event(&(gp_cds_context->wmaCompleteEvent),
+					      CDS_WMA_TIMEOUT);
 		if (qdf_status != QDF_STATUS_SUCCESS) {
 			if (qdf_status == QDF_STATUS_E_TIMEOUT) {
 				QDF_TRACE(QDF_MODULE_ID_QDF,
@@ -817,9 +813,6 @@ QDF_STATUS cds_disable(v_CONTEXT_t cds_context)
 {
 	QDF_STATUS qdf_status;
 	void *handle;
-
-	if (gp_cds_sched_context)
-		cds_sched_flush_mc_mqs(gp_cds_sched_context);
 
 	qdf_status = wma_stop(cds_context, HAL_STOP_TYPE_RF_KILL);
 
@@ -897,10 +890,6 @@ QDF_STATUS cds_post_disable(void)
 		cds_err("Failed to get txrx pdev!");
 		return QDF_STATUS_E_INVAL;
 	}
-
-	/* Clean up all MC thread message queues */
-	if (gp_cds_sched_context)
-		cds_sched_flush_mc_mqs(gp_cds_sched_context);
 
 	/*
 	 * With new state machine changes cds_close can be invoked without
@@ -1370,9 +1359,6 @@ QDF_STATUS cds_set_context(QDF_MODULE_ID module_id, void *context)
 	case QDF_MODULE_ID_HIF:
 		p_cds_context->pHIFContext = context;
 		break;
-	case QDF_MODULE_ID_HDD:
-		p_cds_context->pHDDContext = context;
-		break;
 	default:
 		QDF_TRACE(QDF_MODULE_ID_QDF, QDF_TRACE_LEVEL_ERROR,
 			  "%s: Module ID %i does not have its context managed by CDS",
@@ -1825,7 +1811,7 @@ static QDF_STATUS cds_force_assert_target(qdf_device_t qdf_ctx)
 	}
 
 	/* wait for firmware assert to trigger a recovery event */
-	status = qdf_wait_for_event_completion(&wma->recovery_event,
+	status = qdf_wait_single_event(&wma->recovery_event,
 				       WMA_CRASH_INJECT_TIMEOUT);
 	if (QDF_IS_STATUS_ERROR(status)) {
 		cds_err("Failed target force assert wait; status:%d", status);
@@ -2683,37 +2669,22 @@ QDF_STATUS cds_deregister_dp_cb(void)
 	return QDF_STATUS_SUCCESS;
 }
 
-uint32_t cds_get_connectivity_stats_pkt_bitmap(void *context)
-{
-	hdd_adapter_t *adapter = NULL;
-
-	adapter = (hdd_adapter_t *)context;
-	if (unlikely(adapter->magic != WLAN_HDD_ADAPTER_MAGIC)) {
-		QDF_TRACE(QDF_MODULE_ID_HDD_DATA, QDF_TRACE_LEVEL_ERROR,
-			  "Magic cookie(%x) for adapter sanity verification is invalid",
-			  adapter->magic);
-		return 0;
-	}
-	return adapter->pkt_type_bitmap;
-}
-
 /**
  * cds_get_arp_stats_gw_ip() - get arp stats track IP
  *
  * Return: ARP stats IP to track
  */
-uint32_t cds_get_arp_stats_gw_ip(void *context)
+uint32_t cds_get_arp_stats_gw_ip(void)
 {
-	hdd_adapter_t *adapter = (hdd_adapter_t *)context;
+	hdd_context_t *hdd_ctx;
 
-	if (unlikely(adapter->magic != WLAN_HDD_ADAPTER_MAGIC)) {
-		QDF_TRACE(QDF_MODULE_ID_HDD_DATA, QDF_TRACE_LEVEL_ERROR,
-			  "Magic cookie(%x) for adapter sanity verification is invalid",
-			  adapter->magic);
+	hdd_ctx = (hdd_context_t *) (gp_cds_context->pHDDContext);
+	if (!hdd_ctx) {
+		cds_err("Hdd Context is Null");
 		return 0;
 	}
 
-	return adapter->track_arp_ip;
+	return hdd_ctx->track_arp_ip;
 }
 
 /**
@@ -2835,36 +2806,3 @@ int cds_smmu_map_unmap(bool map, uint32_t num_buf, qdf_mem_info_t *buf_arr)
 	return 0;
 }
 #endif
-
-uint32_t cds_get_mcc_to_scc_switch_mode(void)
-{
-	hdd_context_t *hdd_ctx;
-
-	hdd_ctx = cds_get_context(QDF_MODULE_ID_HDD);
-	if (!hdd_ctx) {
-		cds_err("HDD context is NULL");
-		return false;
-	}
-
-	return hdd_ctx->config->WlanMccToSccSwitchMode;
-}
-
-bool cds_is_sta_sap_scc_allowed_on_dfs_channel(void)
-{
-	hdd_context_t *hdd_ctx;
-	bool ret = false;
-
-	hdd_ctx = cds_get_context(QDF_MODULE_ID_HDD);
-
-	if (!hdd_ctx) {
-		cds_err("HDD context is NULL");
-		return false;
-	}
-
-	if ((hdd_ctx->config->WlanMccToSccSwitchMode !=
-				QDF_MCC_TO_SCC_SWITCH_DISABLE) &&
-			(hdd_ctx->config->sta_sap_scc_on_dfs_chan))
-		ret = true;
-
-	return ret;
-}

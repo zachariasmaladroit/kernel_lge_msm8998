@@ -1386,7 +1386,7 @@ IE RSN (EID_RSN)                          // 7.3.2.25
     // The version is 2 octets, and we only support version 1.
     version, 2 MUSTBE 1;
     // The next four octets will be the Group Cipher Suite
-    OPTIONAL gp_cipher_suite[4];
+    gp_cipher_suite[4];
     // The IE *may* stop here; if there's any more, we should see two more
     // octets giving the number of Pairwise Cipher Suites
     OPTIONAL pwise_cipher_suite_count, 2;
@@ -1395,10 +1395,10 @@ IE RSN (EID_RSN)                          // 7.3.2.25
     // to 61.  However, that seems needlessly wasteful of space.
     pwise_cipher_suites[4][0..6] COUNTIS pwise_cipher_suite_count;
     // Optional count of AKM suite selectors
-    OPTIONAL akm_suite_cnt, 2;
+    OPTIONAL akm_suite_count, 2;
     // Again, I see nothing in the Standard explicitly limiting the number of
     // AKM suite selectors other than the maximum size of an IE.
-    akm_suite[4][0..6] COUNTIS akm_suite_cnt;
+    akm_suites[4][0..6] COUNTIS akm_suite_count;
     OPTIONAL RSN_Cap[2];
     // Finally, the IE may contain zero or more PMKIDs:
     OPTIONAL pmkid_count, 2;
@@ -1408,7 +1408,7 @@ IE RSN (EID_RSN)                          // 7.3.2.25
 
 IE RSNOpaque (EID_RSN)                    // 7.3.2.25
 {
-    data[ 0..253 ];
+    data[ 6..253 ];
 }
 
 IE WAPI (EID_WAPI)                          // 7.3.2.25
@@ -3106,9 +3106,8 @@ MULTIIE MBO_IE (EID_VENDOR_SPECIFIC) OUI ( 0x50, 0x6F, 0x9A, 0x16 )
    OPTIONALTLV reduced_wan_metrics;
 }
 
-IE vendor_vht_ie (EID_VENDOR_SPECIFIC) OUI (0x00, 0x90, 0x4c, 0x04)
+IE vendor_vht_ie (EID_VENDOR_SPECIFIC) OUI (0x00, 0x90, 0x4c, 0x04, 0x08)
 {
-   sub_type, 1;
    OPTIE IE VHTCaps;
    OPTIE IE VHTOperation;
 }
@@ -3981,7 +3980,6 @@ FRAME ext_channel_switch_action_frame
     FF     Category;
     FF     Action;
     FF     ext_chan_switch_ann_action;
-    OPTIE  WiderBWChanSwitchAnn;
 }
 
 FRAME p2p_oper_chan_change_confirm

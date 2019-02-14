@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2013-2017 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -101,12 +101,6 @@ static void wma_send_bcn_buf_ll(tp_wma_handle wma,
 	bcn = wma->interfaces[vdev_id].beacon;
 	if (!bcn->buf) {
 		WMA_LOGE("%s: Invalid beacon buffer", __func__);
-		return;
-	}
-	if (WMI_UNIFIED_NOA_ATTR_NUM_DESC_GET(p2p_noa_info) >
-			WMI_P2P_MAX_NOA_DESCRIPTORS) {
-		WMA_LOGE("%s: Too many descriptors %d", __func__,
-			WMI_UNIFIED_NOA_ATTR_NUM_DESC_GET(p2p_noa_info));
 		return;
 	}
 
@@ -266,9 +260,7 @@ int wma_beacon_swba_handler(void *handle, uint8_t *event, uint32_t len)
 		return -EINVAL;
 	}
 
-	WMA_LOGD("vdev_map = %d", vdev_map);
-	for (; vdev_map && vdev_id < wma->max_bssid;
-			vdev_id++, vdev_map >>= 1) {
+	for (; vdev_map; vdev_id++, vdev_map >>= 1) {
 		if (!(vdev_map & 0x1))
 			continue;
 		if (!ol_cfg_is_high_latency(pdev->ctrl_pdev))
@@ -508,12 +500,6 @@ int wma_unified_bcntx_status_event_handler(void *handle,
 	resp_event = param_buf->fixed_param;
 
 	WMA_LOGD("%s", __func__);
-
-	if (resp_event->vdev_id >= wma->max_bssid) {
-		WMA_LOGE("%s: received invalid vdev_id %d",
-			 __func__, resp_event->vdev_id);
-		return -EINVAL;
-	}
 
 	/* Check for valid handle to ensure session is not
 	 * deleted in any race
@@ -1232,13 +1218,8 @@ QDF_STATUS wma_send_peer_assoc(tp_wma_handle wma,
 #ifdef FEATURE_WLAN_WAPI
 	    || params->encryptType == eSIR_ED_WPI
 #endif /* FEATURE_WLAN_WAPI */
-	    ) {
+	    )
 		cmd->peer_flags |= WMI_PEER_NEED_PTK_4_WAY;
-		WMA_LOGD("Acquire set key wake lock for %d ms",
-			WMA_VDEV_SET_KEY_REQUEST_TIMEOUT);
-		wma_acquire_wakelock(&intr->vdev_set_key_wakelock,
-			WMA_VDEV_SET_KEY_REQUEST_TIMEOUT);
-	}
 	if (params->wpa_rsn >> 1)
 		cmd->peer_flags |= WMI_PEER_NEED_GTK_2_WAY;
 
@@ -1576,17 +1557,6 @@ static QDF_STATUS wma_setup_install_key_cmd(tp_wma_handle wma_handle,
 		return QDF_STATUS_E_NOMEM;
 	}
 
-	if (NULL == wma_handle) {
-		WMA_LOGE(FL("Invalid wma_handle for vdev_id: %d"),
-			key_params->vdev_id);
-		return QDF_STATUS_E_INVAL;
-	}
-	if (key_params->vdev_id >= wma_handle->max_bssid) {
-		WMA_LOGE(FL("Invalid vdev_id: %d"), key_params->vdev_id);
-		return QDF_STATUS_E_INVAL;
-	}
-	iface = &wma_handle->interfaces[key_params->vdev_id];
-
 	params.vdev_id = key_params->vdev_id;
 	params.key_idx = key_params->key_idx;
 	qdf_mem_copy(params.peer_mac, key_params->peer_mac, IEEE80211_ADDR_LEN);
@@ -1739,13 +1709,6 @@ static QDF_STATUS wma_setup_install_key_cmd(tp_wma_handle wma_handle,
 
 	status = wmi_unified_setup_install_key_cmd(wma_handle->wmi_handle,
 								&params);
-
-
-	if (!key_params->unicast) {
-		/* Its GTK release the wake lock */
-		WMA_LOGD("Release set key wake lock");
-		wma_release_wakelock(&iface->vdev_set_key_wakelock);
-	}
 
 	return status;
 }
@@ -2495,7 +2458,7 @@ int wma_tbttoffset_update_event_handler(void *handle, uint8_t *event,
 		return -EINVAL;
 	}
 
-	for (; (if_id < wma->max_bssid && vdev_map); vdev_map >>= 1, if_id++) {
+	for (; (vdev_map); vdev_map >>= 1, if_id++) {
 		if (!(vdev_map & 0x1) || (!(intf[if_id].handle)))
 			continue;
 
@@ -2629,7 +2592,7 @@ void wma_send_beacon(tp_wma_handle wma, tpSendbeaconParams bcn_info)
 
 		if (bcn_info->p2pIeOffset) {
 			p2p_ie = bcn_info->beacon + bcn_info->p2pIeOffset;
-			WMA_LOGD("%s: p2pIe is present - vdev_id %hu, p2p_ie = %pK, p2p ie len = %hu",
+			WMA_LOGD("%s: p2pIe is present - vdev_id %hu, p2p_ie = %p, p2p ie len = %hu",
 				__func__, vdev_id, p2p_ie, p2p_ie[1]);
 			if (wma_p2p_go_set_beacon_ie(wma, vdev_id,
 							 p2p_ie) < 0) {
@@ -2735,10 +2698,6 @@ static int wma_process_mgmt_tx_completion(tp_wma_handle wma_handle,
 		WMA_LOGE("%s: NULL pdev pointer", __func__);
 		return -EINVAL;
 	}
-	if (desc_id >= WMI_DESC_POOL_MAX) {
-		WMA_LOGE("%s: Invalid desc id %d", __func__, desc_id);
-		return -EINVAL;
-	}
 
 	WMA_LOGD("%s: status: %d wmi_desc_id: %d", __func__, status, desc_id);
 
@@ -2821,8 +2780,7 @@ int wma_mgmt_tx_bundle_completion_handler(void *handle, uint8_t *buf,
 	uint32_t num_reports;
 	uint32_t *desc_ids;
 	uint32_t *status;
-	uint32_t i, buf_len;
-	bool excess_data = false;
+	int i;
 
 	param_buf = (WMI_MGMT_TX_BUNDLE_COMPLETION_EVENTID_param_tlvs *)buf;
 	if (!param_buf || !wma_handle) {
@@ -2833,31 +2791,6 @@ int wma_mgmt_tx_bundle_completion_handler(void *handle, uint8_t *buf,
 	num_reports = cmpl_params->num_reports;
 	desc_ids = (uint32_t *)(param_buf->desc_ids);
 	status = (uint32_t *)(param_buf->status);
-
-	/* buf contains num_reports * sizeof(uint32) len of desc_ids and
-	 * num_reports * sizeof(uint32) status,
-	 * so (2 x (num_reports * sizeof(uint32)) should not exceed MAX
-	 */
-	if (cmpl_params->num_reports > (WMI_SVC_MSG_MAX_SIZE /
-	    (2 * sizeof(uint32_t))))
-		excess_data = true;
-	else
-		buf_len = cmpl_params->num_reports * (2 * sizeof(uint32_t));
-
-	if (excess_data || (sizeof(*cmpl_params) > (WMI_SVC_MSG_MAX_SIZE -
-	    buf_len))) {
-		WMA_LOGE("excess wmi buffer: num_reports %d",
-			  cmpl_params->num_reports);
-		return -EINVAL;
-	}
-
-	if ((cmpl_params->num_reports > param_buf->num_desc_ids) ||
-	    (cmpl_params->num_reports > param_buf->num_status)) {
-		WMA_LOGE("Invalid num_reports %d, num_desc_ids %d, num_status %d",
-			 cmpl_params->num_reports, param_buf->num_desc_ids,
-			 param_buf->num_status);
-		return -EINVAL;
-	}
 
 	for (i = 0; i < num_reports; i++)
 		wma_process_mgmt_tx_completion(wma_handle,
@@ -2895,11 +2828,11 @@ void wma_process_update_opmode(tp_wma_handle wma_handle,
 			update_vht_opmode->dot11_mode);
 
 	wma_set_peer_param(wma_handle, update_vht_opmode->peer_mac,
-			WMI_PEER_CHWIDTH, update_vht_opmode->opMode,
+			WMI_PEER_PHYMODE, chan_mode,
 			update_vht_opmode->smesessionId);
 
 	wma_set_peer_param(wma_handle, update_vht_opmode->peer_mac,
-			WMI_PEER_PHYMODE, chan_mode,
+			WMI_PEER_CHWIDTH, update_vht_opmode->opMode,
 			update_vht_opmode->smesessionId);
 }
 
@@ -3280,13 +3213,6 @@ int wma_process_rmf_frame(tp_wma_handle wma_handle,
 			cds_pkt_return_packet(rx_pkt);
 			return -EINVAL;
 		}
-	if (qdf_nbuf_len(wbuf) < (sizeof(*wh) + IEEE80211_CCMP_HEADERLEN +
-						IEEE80211_CCMP_MICLEN)) {
-		WMA_LOGE("Buffer length less than expected %d ",
-						(int)qdf_nbuf_len(wbuf));
-		cds_pkt_return_packet(rx_pkt);
-		return -EINVAL;
-	}
 
 		orig_hdr = (uint8_t *) qdf_nbuf_data(wbuf);
 		/* Pointer to head of CCMP header */
@@ -3316,30 +3242,14 @@ int wma_process_rmf_frame(tp_wma_handle wma_handle,
 		rx_pkt->pkt_meta.mpdu_hdr_ptr =
 				qdf_nbuf_data(wbuf);
 		rx_pkt->pkt_meta.mpdu_len = qdf_nbuf_len(wbuf);
-		rx_pkt->pkt_buf = wbuf;
-		if (rx_pkt->pkt_meta.mpdu_len >=
-			rx_pkt->pkt_meta.mpdu_hdr_len) {
-			rx_pkt->pkt_meta.mpdu_data_len =
-				rx_pkt->pkt_meta.mpdu_len -
-				rx_pkt->pkt_meta.mpdu_hdr_len;
-		} else {
-			WMA_LOGE("mpdu len %d less than hdr %d, dropping frame",
-				rx_pkt->pkt_meta.mpdu_len,
-				rx_pkt->pkt_meta.mpdu_hdr_len);
-			cds_pkt_return_packet(rx_pkt);
-			return -EINVAL;
-		}
-
-		if (rx_pkt->pkt_meta.mpdu_data_len > WMA_MAX_MGMT_MPDU_LEN) {
-			WMA_LOGE("Data Len %d greater than max, dropping frame",
-				rx_pkt->pkt_meta.mpdu_data_len);
-			cds_pkt_return_packet(rx_pkt);
-			return -EINVAL;
-		}
+		rx_pkt->pkt_meta.mpdu_data_len =
+		rx_pkt->pkt_meta.mpdu_len -
+		rx_pkt->pkt_meta.mpdu_hdr_len;
 		rx_pkt->pkt_meta.mpdu_data_ptr =
 		rx_pkt->pkt_meta.mpdu_hdr_ptr +
 		rx_pkt->pkt_meta.mpdu_hdr_len;
 		rx_pkt->pkt_meta.tsf_delta = rx_pkt->pkt_meta.tsf_delta;
+		rx_pkt->pkt_buf = wbuf;
 		WMA_LOGD(FL("BSSID: "MAC_ADDRESS_STR" tsf_delta: %u"),
 		    MAC_ADDR_ARRAY(wh->i_addr3), rx_pkt->pkt_meta.tsf_delta);
 	} else {
@@ -3471,7 +3381,6 @@ end:
 }
 
 #define RATE_LIMIT 16
-#define RESERVE_BYTES   100
 /**
  * wma_mgmt_rx_process() - process management rx frame.
  * @handle: wma handle
@@ -3514,17 +3423,11 @@ static int wma_mgmt_rx_process(void *handle, uint8_t *data,
 		WMA_LOGE("Rx event is NULL");
 		return -EINVAL;
 	}
-	if (hdr->buf_len > param_tlvs->num_bufp) {
-		WMA_LOGE("Invalid length of frame hdr->buf_len:%u, param_tlvs->num_bufp:%u",
-			hdr->buf_len, param_tlvs->num_bufp);
-		return -EINVAL;
-	}
-	if (hdr->buf_len < sizeof(struct ieee80211_frame) ||
-		hdr->buf_len > data_len) {
+
+	if (hdr->buf_len < sizeof(struct ieee80211_frame)) {
 		limit_prints_invalid_len++;
 		if (limit_prints_invalid_len == RATE_LIMIT) {
-			WMA_LOGD("Invalid rx mgmt packet, data_len %u, hdr->buf_len %u",
-				data_len, hdr->buf_len);
+			WMA_LOGD("Invalid rx mgmt packet");
 			limit_prints_invalid_len = 0;
 		}
 		return -EINVAL;
@@ -3594,37 +3497,8 @@ static int wma_mgmt_rx_process(void *handle, uint8_t *data,
 
 	rx_pkt->pkt_meta.roamCandidateInd = 0;
 
-	/*
-	 * If the mpdu_data_len is greater than Max (2k), drop the frame
-	 */
-	if (rx_pkt->pkt_meta.mpdu_data_len > WMA_MAX_MGMT_MPDU_LEN) {
-		WMA_LOGE("Data Len %d greater than max, dropping frame",
-			 rx_pkt->pkt_meta.mpdu_data_len);
-		qdf_mem_free(rx_pkt);
-		return -EINVAL;
-	}
-	/*
-	 * Allocate the memory for this rx packet, add extra 100 bytes for:-
-	 *
-	 * 1.  Filling the missing RSN capabilites by some APs, which fill the
-	 *     RSN IE length as extra 2 bytes but dont fill the IE data with
-	 *     capabilities, resulting in failure in unpack core due to length
-	 *     mismatch. Check sir_validate_and_rectify_ies for more info.
-	 *
-	 * 2.  In the API wma_process_rmf_frame(), the driver trims the CCMP
-	 *     header by overwriting the IEEE header to memory occupied by CCMP
-	 *     header, but an overflow is possible if the memory allocated to
-	 *     frame is less than the sizeof(struct ieee80211_frame) +CCMP
-	 *     HEADER len, so allocating 100 bytes would solve this issue too.
-	 *
-	 * 3.  CCMP header is pointing to orig_hdr +
-	 *     sizeof(struct ieee80211_frame) which could also result in OOB
-	 *     access, if the data len is less than
-	 *     sizeof(struct ieee80211_frame), allocating extra bytes would
-	 *     result in solving this issue too.
-	 */
-	wbuf = qdf_nbuf_alloc(NULL, roundup(hdr->buf_len + RESERVE_BYTES,
-							4), 0, 4, false);
+	/* Why not just use rx_event->hdr.buf_len? */
+	wbuf = qdf_nbuf_alloc(NULL, roundup(hdr->buf_len, 4), 0, 4, false);
 	if (!wbuf) {
 		WMA_LOGE("%s: Failed to allocate wbuf for mgmt rx len(%u)",
 			    __func__, hdr->buf_len);
@@ -3635,9 +3509,6 @@ static int wma_mgmt_rx_process(void *handle, uint8_t *data,
 	qdf_nbuf_put_tail(wbuf, hdr->buf_len);
 	qdf_nbuf_set_protocol(wbuf, ETH_P_CONTROL);
 	wh = (struct ieee80211_frame *)qdf_nbuf_data(wbuf);
-	qdf_mem_zero(((uint8_t *)wh + hdr->buf_len), roundup(hdr->buf_len +
-							RESERVE_BYTES, 4) -
-							hdr->buf_len);
 
 	rx_pkt->pkt_meta.mpdu_hdr_ptr = qdf_nbuf_data(wbuf);
 	rx_pkt->pkt_meta.mpdu_data_ptr = rx_pkt->pkt_meta.mpdu_hdr_ptr +

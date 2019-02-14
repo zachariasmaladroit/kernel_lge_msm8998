@@ -548,7 +548,6 @@ static bool __lim_process_sme_sys_ready_ind(tpAniSirGlobal pMac, uint32_t *pMsgB
 		pe_register_callbacks_with_wma(pMac, ready_req);
 		pMac->lim.add_bssdescr_callback = ready_req->add_bssdescr_cb;
 		pMac->lim.sme_msg_callback = ready_req->sme_msg_cb;
-		pMac->lim.stop_roaming_callback = ready_req->stop_roaming_cb;
 	}
 	pe_debug("sending WMA_SYS_READY_IND msg to HAL");
 	MTRACE(mac_trace_msg_tx(pMac, NO_SESSION, msg.type));
@@ -1703,9 +1702,8 @@ __lim_process_sme_join_req(tpAniSirGlobal mac_ctx, uint32_t *msg_buf)
 		/*Store Persona */
 		session->pePersona = sme_join_req->staPersona;
 		QDF_TRACE(QDF_MODULE_ID_PE, QDF_TRACE_LEVEL_DEBUG,
-			  FL("PE PERSONA=%d cbMode %u force_24ghz_in_ht20 %d"),
-			  session->pePersona, sme_join_req->cbMode,
-			  sme_join_req->force_24ghz_in_ht20);
+			  FL("PE PERSONA=%d cbMode %u"),
+			  session->pePersona, sme_join_req->cbMode);
 		/* Copy The channel Id to the session Table */
 		session->currentOperChannel = bss_desc->channelId;
 		if (IS_5G_CH(session->currentOperChannel))
@@ -1742,8 +1740,6 @@ __lim_process_sme_join_req(tpAniSirGlobal mac_ctx, uint32_t *msg_buf)
 		/*Phy mode */
 		session->gLimPhyMode = bss_desc->nwType;
 		handle_ht_capabilityand_ht_info(mac_ctx, session);
-		session->force_24ghz_in_ht20 =
-			sme_join_req->force_24ghz_in_ht20;
 		/* cbMode is already merged value of peer and self -
 		 * done by csr in csr_get_cb_mode_from_ies */
 		session->htSupportedChannelWidthSet =
@@ -1899,7 +1895,6 @@ __lim_process_sme_join_req(tpAniSirGlobal mac_ctx, uint32_t *msg_buf)
 		session->maxTxPower = lim_get_max_tx_power(reg_max,
 					local_power_constraint,
 					mac_ctx->roam.configParam.nTxPowerCap);
-		session->def_max_tx_pwr = session->maxTxPower;
 
 		pe_debug("Reg max %d local power con %d max tx pwr %d",
 			reg_max, local_power_constraint, session->maxTxPower);
@@ -2555,8 +2550,6 @@ static void __lim_process_sme_disassoc_cnf(tpAniSirGlobal pMac, uint32_t *pMsgBu
 	tpDphHashNode pStaDs;
 	tpPESession psessionEntry;
 	uint8_t sessionId;
-	uint32_t *msg = NULL;
-	QDF_STATUS status;
 
 	qdf_mem_copy(&smeDisassocCnf, pMsgBuf,
 			sizeof(struct sSirSmeDisassocCnf));
@@ -2566,27 +2559,11 @@ static void __lim_process_sme_disassoc_cnf(tpAniSirGlobal pMac, uint32_t *pMsgBu
 				&sessionId);
 	if (psessionEntry == NULL) {
 		pe_err("session does not exist for given bssId");
-		status = lim_prepare_disconnect_done_ind(pMac, &msg,
-						smeDisassocCnf.sme_session_id,
-						eSIR_SME_INVALID_SESSION,
-						NULL);
-		if (QDF_IS_STATUS_SUCCESS(status))
-			lim_send_sme_disassoc_deauth_ntf(pMac,
-							 QDF_STATUS_SUCCESS,
-							 (uint32_t *)msg);
 		return;
 	}
 
 	if (!lim_is_sme_disassoc_cnf_valid(pMac, &smeDisassocCnf, psessionEntry)) {
 		pe_err("received invalid SME_DISASSOC_CNF message");
-		status = lim_prepare_disconnect_done_ind(pMac, &msg,
-						psessionEntry->smeSessionId,
-						eSIR_SME_INVALID_PARAMETERS,
-						&smeDisassocCnf.bssid.bytes[0]);
-		if (QDF_IS_STATUS_SUCCESS(status))
-			lim_send_sme_disassoc_deauth_ntf(pMac,
-							 QDF_STATUS_SUCCESS,
-							 (uint32_t *)msg);
 		return;
 	}
 #ifdef FEATURE_WLAN_DIAG_SUPPORT_LIM    /* FEATURE_WLAN_DIAG_SUPPORT */
@@ -2610,15 +2587,6 @@ static void __lim_process_sme_disassoc_cnf(tpAniSirGlobal pMac, uint32_t *pMsgBu
 				psessionEntry->limSmeState);
 			lim_print_sme_state(pMac, LOGE,
 					    psessionEntry->limSmeState);
-			status = lim_prepare_disconnect_done_ind(pMac, &msg,
-						psessionEntry->smeSessionId,
-						eSIR_SME_INVALID_STATE,
-						&smeDisassocCnf.bssid.
-						bytes[0]);
-			if (QDF_IS_STATUS_SUCCESS(status))
-				lim_send_sme_disassoc_deauth_ntf(pMac,
-							QDF_STATUS_SUCCESS,
-							(uint32_t *)msg);
 			return;
 		}
 		break;
@@ -2631,14 +2599,7 @@ static void __lim_process_sme_disassoc_cnf(tpAniSirGlobal pMac, uint32_t *pMsgBu
 	default:                /* eLIM_UNKNOWN_ROLE */
 		pe_err("received unexpected SME_DISASSOC_CNF role %d",
 			GET_LIM_SYSTEM_ROLE(psessionEntry));
-		status = lim_prepare_disconnect_done_ind(pMac, &msg,
-						psessionEntry->smeSessionId,
-						eSIR_SME_INVALID_STATE,
-						&smeDisassocCnf.bssid.bytes[0]);
-		if (QDF_IS_STATUS_SUCCESS(status))
-			lim_send_sme_disassoc_deauth_ntf(pMac,
-							 QDF_STATUS_SUCCESS,
-							 (uint32_t *)msg);
+
 		return;
 	}
 
@@ -2652,14 +2613,6 @@ static void __lim_process_sme_disassoc_cnf(tpAniSirGlobal pMac, uint32_t *pMsgBu
 			pe_err("DISASSOC_CNF for a STA with no context, addr= "
 				MAC_ADDRESS_STR,
 				MAC_ADDR_ARRAY(smeDisassocCnf.peer_macaddr.bytes));
-			status = lim_prepare_disconnect_done_ind(pMac, &msg,
-						psessionEntry->smeSessionId,
-						eSIR_SME_INVALID_PARAMETERS,
-						&smeDisassocCnf.bssid.bytes[0]);
-			if (QDF_IS_STATUS_SUCCESS(status))
-				lim_send_sme_disassoc_deauth_ntf(pMac,
-							QDF_STATUS_SUCCESS,
-							(uint32_t *)msg);
 			return;
 		}
 
@@ -2670,14 +2623,6 @@ static void __lim_process_sme_disassoc_cnf(tpAniSirGlobal pMac, uint32_t *pMsgBu
 			pe_err("No need of cleanup for addr:" MAC_ADDRESS_STR "as MLM state is %d",
 				MAC_ADDR_ARRAY(smeDisassocCnf.peer_macaddr.bytes),
 				pStaDs->mlmStaContext.mlmState);
-			status = lim_prepare_disconnect_done_ind(pMac, &msg,
-						psessionEntry->smeSessionId,
-						eSIR_SME_SUCCESS,
-						NULL);
-			if (QDF_IS_STATUS_SUCCESS(status))
-				lim_send_sme_disassoc_deauth_ntf(pMac,
-							QDF_STATUS_SUCCESS,
-							(uint32_t *)msg);
 			return;
 		}
 
@@ -3578,7 +3523,7 @@ void __lim_process_sme_assoc_cnf_new(tpAniSirGlobal mac_ctx, uint32_t msg_type,
 				       sta_ds->mlmStaContext.subType,
 				       true, sta_ds->mlmStaContext.authType,
 				       sta_ds->assocId, true,
-				       eSIR_MAC_UNSPEC_FAILURE_STATUS,
+				       eSIR_SME_UNEXPECTED_REQ_RESULT_CODE,
 				       session_entry);
 	}
 end:
@@ -4833,9 +4778,9 @@ static void lim_set_pdev_ht_ie(tpAniSirGlobal mac_ctx, uint8_t pdev_id,
 				ie_params->ie_len);
 
 		if (NSS_1x1_MODE == i) {
-			p_ie = wlan_cfg_get_ie_ptr(ie_params->ie_ptr,
-						   ie_params->ie_len,
-						   DOT11F_EID_HTCAPS, ONE_BYTE);
+			p_ie = lim_get_ie_ptr_new(mac_ctx, ie_params->ie_ptr,
+					ie_params->ie_len,
+					DOT11F_EID_HTCAPS, ONE_BYTE);
 			if (NULL == p_ie) {
 				qdf_mem_free(ie_params->ie_ptr);
 				qdf_mem_free(ie_params);
@@ -4907,10 +4852,9 @@ static void lim_set_pdev_vht_ie(tpAniSirGlobal mac_ctx, uint8_t pdev_id,
 				ie_params->ie_len);
 
 		if (NSS_1x1_MODE == i) {
-			p_ie = wlan_cfg_get_ie_ptr(ie_params->ie_ptr,
-						   ie_params->ie_len,
-						   DOT11F_EID_VHTCAPS,
-						   ONE_BYTE);
+			p_ie = lim_get_ie_ptr_new(mac_ctx, ie_params->ie_ptr,
+					ie_params->ie_len,
+					DOT11F_EID_VHTCAPS, ONE_BYTE);
 			if (NULL == p_ie) {
 				qdf_mem_free(ie_params->ie_ptr);
 				qdf_mem_free(ie_params);
@@ -5057,7 +5001,7 @@ static void lim_process_sme_update_access_policy_vendor_ie(
 {
 	struct sme_update_access_policy_vendor_ie *update_vendor_ie;
 	struct sPESession *pe_session_entry;
-	uint16_t num_bytes;
+	uint8_t num_bytes;
 
 	if (!msg) {
 		pe_err("Buffer is Pointing to NULL");
@@ -5470,13 +5414,10 @@ static void lim_process_sme_channel_change_request(tpAniSirGlobal mac_ctx,
 		session_entry->channelChangeReasonCode =
 			LIM_SWITCH_CHANNEL_OPERATION;
 
-	pe_debug("switch old chnl %d to new chnl %d, ch_bw %d, nw_type %d, dot11mode %d",
+	pe_debug("switch old chnl %d to new chnl %d, ch_bw %d",
 			session_entry->currentOperChannel,
 			ch_change_req->targetChannel,
-			ch_change_req->ch_width,
-			ch_change_req->nw_type,
-			ch_change_req->dot11mode
-			);
+			ch_change_req->ch_width);
 
 	/* Store the New Channel Params in session_entry */
 	session_entry->ch_width = ch_change_req->ch_width;
@@ -5503,7 +5444,6 @@ static void lim_process_sme_channel_change_request(tpAniSirGlobal mac_ctx,
 
 	session_entry->lim11hEnable = val;
 	session_entry->dot11mode = ch_change_req->dot11mode;
-	session_entry->nwType = ch_change_req->nw_type;
 	qdf_mem_copy(&session_entry->rateSet,
 			&ch_change_req->operational_rateset,
 			sizeof(session_entry->rateSet));
@@ -5659,21 +5599,9 @@ lim_update_ibss_prop_add_ies(tpAniSirGlobal pMac, uint8_t **pDstData_buff,
 		qdf_mem_copy(vendor_ie, pModifyIE->pIEBuffer,
 				pModifyIE->ieBufferlength);
 	} else {
-		uint16_t new_length;
-		uint8_t *new_ptr;
+		uint16_t new_length = pModifyIE->ieBufferlength + *pDstDataLen;
+		uint8_t *new_ptr = qdf_mem_malloc(new_length);
 
-		/*
-		 * check for uint16 overflow before using sum of two numbers as
-		 * length of size to malloc
-		 */
-		if (USHRT_MAX - pModifyIE->ieBufferlength < *pDstDataLen) {
-			pe_err("U16 overflow due to %d + %d",
-				pModifyIE->ieBufferlength, *pDstDataLen);
-			return false;
-		}
-
-		new_length = pModifyIE->ieBufferlength + *pDstDataLen;
-		new_ptr = qdf_mem_malloc(new_length);
 		if (NULL == new_ptr) {
 			pe_err("Memory allocation failed");
 			return false;
@@ -5726,7 +5654,7 @@ static void lim_process_modify_add_ies(tpAniSirGlobal mac_ctx,
 	if ((0 == modify_add_ies->modifyIE.ieBufferlength) ||
 		(0 == modify_add_ies->modifyIE.ieIDLen) ||
 		(NULL == modify_add_ies->modifyIE.pIEBuffer)) {
-		pe_err("Invalid request pIEBuffer %pK ieBufferlength %d ieIDLen %d ieID %d. update Type %d",
+		pe_err("Invalid request pIEBuffer %p ieBufferlength %d ieIDLen %d ieID %d. update Type %d",
 				modify_add_ies->modifyIE.pIEBuffer,
 				modify_add_ies->modifyIE.ieBufferlength,
 				modify_add_ies->modifyIE.ieID,
@@ -5847,18 +5775,8 @@ static void lim_process_update_add_ies(tpAniSirGlobal mac_ctx,
 		if (update_ie->append) {
 			/*
 			 * In case of append, allocate new memory
-			 * with combined length.
-			 * Multiple back to back append commands
-			 * can lead to a huge length.So, check
-			 * for the validity of the length.
+			 * with combined length
 			 */
-			if (addn_ie->probeRespDataLen >
-				(USHRT_MAX - update_ie->ieBufferlength)) {
-				pe_err("IE Length overflow, curr:%d, new:%d",
-					addn_ie->probeRespDataLen,
-					update_ie->ieBufferlength);
-				goto end;
-			}
 			new_length = update_ie->ieBufferlength +
 				addn_ie->probeRespDataLen;
 			new_ptr = qdf_mem_malloc(new_length);
@@ -6113,6 +6031,7 @@ skip_vht:
 	lim_send_chan_switch_action_frame(mac_ctx,
 		session_entry->gLimChannelSwitch.primaryChannel,
 		ch_offset, session_entry);
+	session_entry->gLimChannelSwitch.switchCount--;
 }
 
 /**

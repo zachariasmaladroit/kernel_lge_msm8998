@@ -115,10 +115,7 @@ static int __wlan_hdd_cfg80211_spectral_scan_start(struct wiphy *wiphy,
 		return -EPERM;
 	}
 	adapter = WLAN_HDD_GET_PRIV_PTR(dev);
-	if (wlan_hdd_validate_session_id(adapter->sessionId)) {
-		hdd_err("invalid session id: %d", adapter->sessionId);
-		return -EINVAL;
-	}
+
 	/* initialize config parameters*/
 	config_req = hdd_ctx->ss_config;
 
@@ -210,9 +207,7 @@ static int __wlan_hdd_cfg80211_spectral_scan_start(struct wiphy *wiphy,
 
 	ss_req.vdev_id = adapter->sessionId;
 	ss_req.active = 1;
-	ss_req.active_valid = 1;
 	ss_req.enabled = 1;
-	ss_req.enabled_valid = 1;
 
 	status = sme_start_spectral_scan(&ss_req);
 	if (QDF_STATUS_SUCCESS != status)
@@ -297,9 +292,7 @@ static int __wlan_hdd_cfg80211_spectral_scan_stop(struct wiphy *wiphy,
 
 	ss_req.vdev_id = adapter->sessionId;
 	ss_req.active = 0;
-	ss_req.active_valid = 1;
 	ss_req.enabled = 0;
-	ss_req.enabled_valid = 1;
 
 	status = sme_start_spectral_scan(&ss_req);
 	if (QDF_STATUS_SUCCESS != status)

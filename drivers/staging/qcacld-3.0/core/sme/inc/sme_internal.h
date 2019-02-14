@@ -191,9 +191,8 @@ typedef struct tagSmeStruct {
 	void (*pChAvoidNotificationCb)(void *hdd_context, void *indi_param);
 #endif /* FEATURE_WLAN_CH_AVOID */
 #ifdef WLAN_FEATURE_LINK_LAYER_STATS
-	void *ll_stats_context;
 	void (*pLinkLayerStatsIndCallback)(void *callbackContext,
-			int indType, void *pRsp, void *context);
+			int indType, void *pRsp);
 	void (*link_layer_stats_ext_cb)(tHddHandle callback_ctx,
 					tSirLLStatsResults *rsp);
 #endif /* WLAN_FEATURE_LINK_LAYER_STATS */
@@ -250,6 +249,9 @@ typedef struct tagSmeStruct {
 	void *preferred_network_found_ind_cb_ctx;
 #endif /* FEATURE_WLAN_SCAN_PNO */
 	void (*rssi_threshold_breached_cb)(void *, struct rssi_breach_event *);
+#ifdef WLAN_FEATURE_MEMDUMP
+	void (*fw_dump_callback)(void *context, struct fw_dump_rsp *rsp);
+#endif
 	hw_mode_transition_cb sme_hw_mode_trans_cb;
 	/* OCB callbacks */
 	void *ocb_set_config_context;
@@ -275,13 +277,11 @@ typedef struct tagSmeStruct {
 			struct sir_lost_link_info *lost_link_info);
 	void (*rso_cmd_status_cb)(void *hdd_context,
 			 struct rso_cmd_status *rso_status);
-	void *get_arp_stats_context;
-	void (*get_arp_stats_cb)(void *, struct rsp_stats *, void *);
+	void (*get_arp_stats_cb)(void *, struct rsp_stats *);
 	void (*bt_activity_info_cb)(void *context, uint32_t bt_activity);
 	void (*chip_power_save_fail_cb)(void *,
 			struct chip_pwr_save_fail_detected_params *);
-	void *pchain_rssi_ind_ctx;
-	void (*pchain_rssi_ind_cb)(void *hdd_ctx, void *pmsg, void *context);
+	void (*pchain_rssi_ind_cb)(void *ctx, void *pmsg);
 	void (*spectral_scan_cb)(void *context,
 			struct spectral_samp_msg *samp_msg);
 	void (*stats_ext2_cb)(void *, struct stats_ext2_event *);
