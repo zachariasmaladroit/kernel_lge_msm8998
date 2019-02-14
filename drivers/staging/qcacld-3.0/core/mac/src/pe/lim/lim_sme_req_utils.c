@@ -298,7 +298,7 @@ lim_set_rs_nie_wp_aiefrom_sme_start_bss_req_message(tpAniSirGlobal mac_ctx,
 		   && (rsn_ie->rsnIEdata[0] == SIR_MAC_WPA_EID)) {
 		pe_debug("Only WPA IE is present");
 		ret = dot11f_unpack_ie_wpa(mac_ctx, &rsn_ie->rsnIEdata[6],
-					   (uint8_t) rsn_ie->length - 4,
+					   rsn_ie->rsnIEdata[1] - 4,
 					   &session->gStartBssWPAIe, false);
 		if (!DOT11F_SUCCEEDED(ret)) {
 			pe_err("unpack failed, ret: %d", ret);
@@ -511,7 +511,13 @@ uint8_t lim_is_sme_join_req_valid(tpAniSirGlobal pMac, tpSirSmeJoinReq pJoinReq)
 {
 	uint8_t valid = true;
 
-	if (!lim_is_rsn_ie_valid_in_sme_req_message(pMac, &pJoinReq->rsnIE)) {
+	/*
+	 * If force_rsne_override is enabled that mean User has provided the
+	 * test RSNIE which need to be send as it is in assoc req and thus RSNIE
+	 * validity is not required.
+	 */
+	if (!pJoinReq->force_rsne_override &&
+	    !lim_is_rsn_ie_valid_in_sme_req_message(pMac, &pJoinReq->rsnIE)) {
 		pe_err("received SME_JOIN_REQ with invalid RSNIE");
 		valid = false;
 		goto end;
