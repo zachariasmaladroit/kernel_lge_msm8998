@@ -410,7 +410,9 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -ftree-loop-distribution \
 		   -ftree-loop-distribute-patterns \
 		   -freorder-blocks -freorder-blocks-and-partition \
-		   -fdelete-null-pointer-checks -fisolate-erroneous-paths-dereference \
+		   -floop-unroll-and-jam -floop-interchange \
+		   -fgraphite-identity -floop-nest-optimize \
+		   -fno-delete-null-pointer-checks \
 		   -march=armv8-a+crc+crypto -mtune=cortex-a73.cortex-a53 \
 		   -std=gnu89 $(call cc-option,-fno-PIE)
 
