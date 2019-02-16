@@ -179,11 +179,13 @@ static int dyn_fsync_fb_notifier_callback(struct notifier_block *self,
 
 		if (*blank == FB_BLANK_UNBLANK) {
 			dyn_sync_scr_suspended = false;
+			break;
 		} else {
 			if (dyn_sync_scr_suspended)
 				return 0;
 			dyn_sync_scr_suspended = true;
 			dyn_fsync_suspend();
+			break;
 		}
 	}
 
