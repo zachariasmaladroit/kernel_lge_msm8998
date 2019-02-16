@@ -142,16 +142,14 @@ CONFIG_FAIR_GROUP_SCHED=y
 # CONFIG_CFS_BANDWIDTH is not set
 CONFIG_RT_GROUP_SCHED=y
 # CONFIG_BLK_CGROUP is not set
-CONFIG_SCHED_HMP=y
-CONFIG_SCHED_HMP_CSTATE_AWARE=y
-CONFIG_SCHED_CORE_CTL=y
+
 # CONFIG_CHECKPOINT_RESTORE is not set
 CONFIG_NAMESPACES=y
 # CONFIG_UTS_NS is not set
 # CONFIG_USER_NS is not set
 # CONFIG_PID_NS is not set
 CONFIG_NET_NS=y
-CONFIG_SCHED_AUTOGROUP=y
+
 CONFIG_SCHED_TUNE=y
 # CONFIG_DEFAULT_USE_ENERGY_AWARE is not set
 # CONFIG_SYSFS_DEPRECATED is not set
@@ -493,11 +491,6 @@ CONFIG_LGE_ADAPTIVE_READAHEAD=y
 CONFIG_SECCOMP=y
 # CONFIG_XEN is not set
 CONFIG_FORCE_MAX_ZONEORDER=11
-CONFIG_ARMV8_DEPRECATED=y
-CONFIG_SWP_EMULATION=y
-CONFIG_CP15_BARRIER_EMULATION=y
-CONFIG_SETEND_EMULATION=y
-CONFIG_ARM64_SW_TTBR0_PAN=y
 
 #
 # ARMv8.1 architectural features
@@ -5664,8 +5657,9 @@ CONFIG_CPU_BOOST=y
 CONFIG_DYNAMIC_STUNE_BOOST=y
 
 CONFIG_APSS_CORE_EA=y # needed for thermal (!?)
-CONFIG_MSM_PERFORMANCE=y
-CONFIG_MSM_PERFORMANCE_CPUFREQ_LIMITS_VOTING_ONLY=y # ours or ocean/HTC ?
+# CONFIG_MSM_PERFORMANCE is not set
+# CONFIG_MSM_PERFORMANCE_CPUFREQ_LIMITS_VOTING_ONLY is not set # ours or ocean/HTC ?
+# CONFIG_SCHED_CORE_CTL is not set
 
 # code optimizations
 # CONFIG_CC_OPTIMIZE_FOR_SIZE is not set
@@ -5699,6 +5693,39 @@ CONFIG_MODULE_SIG_HASH="sha512"
 # CONFIG_USB_GSPCA is not set
 CONFIG_BRIDGE_NETFILTER=y
 
+# DVB, disable or needed for some weird streaming usage-case ?
+# CONFIG_DVB_MPQ is not set # =m
+# CONFIG_DVB_MPQ_DEMUX is not set # =m
+CONFIG_DVB_MPQ_NUM_DMX_DEVICES=4
+# CONFIG_DVB_MPQ_TSPP1 is not set # =y
+# CONFIG_DVB_MPQ_SW is not set
+# CONFIG_DVB_MPQ_MEDIA_BOX_DEMUX is not set
+# CONFIG_TSPP is not set # =m
+
+# media tuners (DVB, etc.)
+# CONFIG_MEDIA_DIGITAL_TV_SUPPORT is not set
+# CONFIG_DVB_CORE is not set
+# CONFIG_DVB_NET is not set
+# CONFIG_TTPCI_EEPROM is not set
+CONFIG_DVB_MAX_ADAPTERS=8
+# CONFIG_DVB_DYNAMIC_MINORS is not set
+# CONFIG_LGE_BROADCAST_ISDBT_JAPAN is not set
+CONFIG_MEDIA_SUBDRV_AUTOSELECT=y
+# CONFIG_MEDIA_TUNER is not set
+# CONFIG_MEDIA_TUNER_SIMPLE is not set
+# CONFIG_MEDIA_TUNER_TDA8290 is not set
+# CONFIG_MEDIA_TUNER_TDA827X is not set
+# CONFIG_MEDIA_TUNER_TDA18271 is not set
+# CONFIG_MEDIA_TUNER_TDA9887 is not set
+# CONFIG_MEDIA_TUNER_MT20XX is not set
+# CONFIG_MEDIA_TUNER_XC2028 is not set
+# CONFIG_MEDIA_TUNER_XC5000 is not set
+# CONFIG_MEDIA_TUNER_XC4000 is not set
+# CONFIG_MEDIA_TUNER_MC44S803 is not set
+
+# build drivers INto the kernel
+# CONFIG_USB_GSPCA is not set # most likely NOT needed , disable it
+
 # DVB & TV functionality (ko only)
 # CONFIG_DVB_MPQ is not set
 CONFIG_DVB_MPQ_DEMUX=m
@@ -5712,29 +5739,35 @@ CONFIG_DVB_MPQ_TSPP1=y
 CONFIG_TCP_CONG_ADVANCED=y
 CONFIG_TCP_CONG_BIC=y
 CONFIG_TCP_CONG_CUBIC=y
-CONFIG_TCP_CONG_WESTWOOD=y
-CONFIG_TCP_CONG_HTCP=y
+CONFIG_TCP_CONG_WESTWOOD=y # =m
+CONFIG_TCP_CONG_HTCP=y # =m
 # CONFIG_TCP_CONG_HSTCP is not set
-# CONFIG_TCP_CONG_HYBLA is not set
-# CONFIG_TCP_CONG_VEGAS is not set
-# CONFIG_TCP_CONG_SCALABLE is not set
-# CONFIG_TCP_CONG_LP is not set
-# CONFIG_TCP_CONG_VENO is not set
+CONFIG_TCP_CONG_HYBLA=y
+CONFIG_TCP_CONG_VEGAS=y
+CONFIG_TCP_CONG_SCALABLE=y
+CONFIG_TCP_CONG_LP=y
+CONFIG_TCP_CONG_VENO=y
 # CONFIG_TCP_CONG_YEAH is not set
 # CONFIG_TCP_CONG_ILLINOIS is not set
 # CONFIG_TCP_CONG_DCTCP is not set
 # CONFIG_TCP_CONG_CDG is not set
 CONFIG_TCP_CONG_LIA=y
 CONFIG_TCP_CONG_OLIA=y
-CONFIG_TCP_CONG_WVEGAS=y
-# CONFIG_TCP_CONG_BALIA is not set
-CONFIG_DEFAULT_BIC=y
+# CONFIG_TCP_CONG_WVEGAS is not set
+CONFIG_TCP_CONG_BALIA=y
+# CONFIG_DEFAULT_BIC is not set # =y
 # CONFIG_DEFAULT_CUBIC is not set
+# CONFIG_DEFAULT_WESTWOOD is not set
 # CONFIG_DEFAULT_LIA is not set
-# CONFIG_DEFAULT_OLIA is not set
+# CONFIG_DEFAULT_OLIA is not set # MPTCP default
 # CONFIG_DEFAULT_WVEGAS is not set
 # CONFIG_DEFAULT_RENO is not set
-CONFIG_DEFAULT_TCP_CONG="bic"
+CONFIG_DEFAULT_VENO=y
+CONFIG_DEFAULT_TCP_CONG="veno"
+# CONFIG_TCP_MD5SIG is not set
+
+# Wireguard VPN
+CONFIG_WIREGUARD=y
 
 # WiGig
 # CONFIG_WIL6210 is not set
@@ -5743,6 +5776,14 @@ CONFIG_WIL6210_TRACING=y
 CONFIG_WIL6210_WRITE_IOCTL=y
 CONFIG_WIL6210_PLATFORM_MSM=y
 # CONFIG_MSM_11AD is not set # dep
+
+# Android needed ("required by Android to nuke connections"):
+CONFIG_INET_DIAG=y
+CONFIG_INET_DIAG_DESTROY=y
+CONFIG_INET_TCP_DIAG=y
+CONFIG_INET_UDP_DIAG=y
+
+CONFIG_INET_LRO=y
 
 # PowerEfficient Workqueues
 CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y
@@ -5837,3 +5878,182 @@ CONFIG_WLAN_FEATURE_FILS=y # needed for successful compilation
 # qcacld-3.0 debug stuff
 # CONFIG_FEATURE_TSO_DEBUG is not set
 # CONFIG_WLAN_NAPI_DEBUG is not set
+
+CONFIG_IKCONFIG_PROC=y # spr
+CONFIG_BLK_DEV_BSG=y # default =y
+
+# disable for debug, security, attack surface
+# CONFIG_MSM_RDBG is not set # remote debugger driver (=m by default)
+# CONFIG_MAGIC_SYSRQ is not set
+
+# Jump labels:
+# the kernel will compile trace point locations with just a nop instruction.
+# When trace points are enabled, the nop will be converted to a jump
+# to the trace function. This technique lowers overhead and stress
+# on the branch prediction of the processor.
+#
+CONFIG_JUMP_LABEL=y # assumedly leads to latency spikes, thus discouraged; performance (?)
+
+# Profiling, Tracepoints [eval, research disabling]
+
+#
+# RCU Subsystem
+#
+CONFIG_PREEMPT_RCU=y
+CONFIG_RCU_EXPERT=y
+CONFIG_SRCU=y
+# CONFIG_TASKS_RCU is not set
+CONFIG_RCU_STALL_COMMON=y
+CONFIG_RCU_FANOUT=64
+CONFIG_RCU_FANOUT_LEAF=16
+CONFIG_RCU_FAST_NO_HZ=y
+# CONFIG_TREE_RCU_TRACE is not set
+CONFIG_RCU_BOOST=y
+CONFIG_RCU_BOOST_DELAY=331
+CONFIG_RCU_KTHREAD_PRIO=51
+CONFIG_RCU_NOCB_CPU=y
+# CONFIG_RCU_NOCB_CPU_NONE is not set
+# CONFIG_RCU_NOCB_CPU_ZERO is not set
+CONFIG_RCU_NOCB_CPU_ALL=y
+CONFIG_RCU_EXPEDITE_BOOT=y
+
+# ION
+CONFIG_ION=y
+# CONFIG_ION_TEST is not set
+# CONFIG_ION_DUMMY is not set
+CONFIG_ION_MSM=y
+# CONFIG_ALLOC_BUFFERS_IN_4K_CHUNKS is not set # default =y
+
+# later added performance enhancements and tweaks behind a config entry
+# RSEQ (selected via Makefile by default)
+CONFIG_HAVE_RSEQ=y
+CONFIG_RSEQ=y
+
+# AIO
+# CONFIG_AIO has legitimate use for the functionfs
+# driver, which is used with adb and mtp. It is now required to be enabled
+# for better performance with those services.
+CONFIG_AIO=y
+
+# add additional drivers that might be needed
+# CONFIG_RELAY is not set
+
+# dmesg/printk: raise size of kernel log
+CONFIG_LOG_BUF_SHIFT=22
+CONFIG_LOG_CPU_MAX_BUF_SHIFT=21
+
+# pstore functionality
+CONFIG_PSTORE=y
+CONFIG_PSTORE_CONSOLE=y
+CONFIG_PSTORE_PMSG=y
+CONFIG_PSTORE_RAM=y
+# PSTORE_FTRACE is not set
+
+# LGE_USB_SUPPORT_LIST_NETWORK
+CONFIG_USB_NET_DRIVERS=y # needed by LGE_USB_SUPPORT_LIST_NETWORK (USB_NET_DRIVERS && USB_NET_CDC_SUBSET) 
+CONFIG_USB_NET_CDC_SUBSET=y
+
+# tshoot for bringup, etc.
+CONFIG_USB_F_CDEV=y
+CONFIG_USB_CONFIGFS_F_CDEV=y
+
+# LGE_USB_SUPPORT_LIST_INPUT
+CONFIG_INPUT_MOUSE=y
+
+# lge-oreo, stock config; and other discoveries
+CONFIG_BT_BDA=y
+CONFIG_SPI_SLAVE=y # SPI slave protocol handlers
+
+# tshoot security features
+# CONFIG_SEEMP_CORE is not set
+# TTBR0 PAN emulation
+# CONFIG_ARM64_SW_TTBR0_PAN is not set
+
+# eval / security vs. performance [vdso32 ?]
+# resource hog: 50% improved syscall performance by disabling
+CONFIG_HAVE_ARCH_SECCOMP_FILTER=y
+# CONFIG_SECCOMP_FILTER is not set
+# CONFIG_SECCOMP is not set
+
+# security frameworks & related
+# CONFIG_AUDIT is not set
+CONFIG_SECURITY_SELINUX=y
+# CONFIG_SECURITY_SELINUX_BOOTPARAM is not set
+# CONFIG_SECURITY_SELINUX_DISABLE is not set
+CONFIG_SECURITY_SELINUX_DEVELOP=y
+# CONFIG_SECURITY_SELINUX_AVC_STATS is not set
+CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE=0
+# CONFIG_SECURITY_SELINUX_POLICYDB_VERSION_MAX is not set
+# CONFIG_SECURITY_SMACK is not set
+# CONFIG_SECURITY_SMACK_BRINGUP is not set
+# CONFIG_SECURITY_SMACK_NETFILTER is not set
+# CONFIG_SECURITY_TOMOYO is not set
+# CONFIG_SECURITY_APPARMOR is not set
+CONFIG_SECURITY_YAMA=y
+
+# SSP stackprotector, degrades sound quality, let's set protection to "regular"
+CONFIG_HAVE_CC_STACKPROTECTOR=y
+CONFIG_CC_STACKPROTECTOR=y
+# CONFIG_CC_STACKPROTECTOR_NONE is not set
+CONFIG_CC_STACKPROTECTOR_REGULAR=y # boot eval
+# CONFIG_CC_STACKPROTECTOR_STRONG is not set
+
+# Kernel (self)protection
+CONFIG_DEFAULT_MMAP_MIN_ADDR=4096 # Disallow allocating the first 32k of memory (cannot be 64k due to ARM loader). 32768 invalid for ARM loader
+CONFIG_DEBUG_RODATA=y
+CONFIG_DEBUG_ALIGN_RODATA=y # This prevents sections from being split into pages and avoids a potential TLB penalty.
+# DEBUG_SET_MODULE_RONX is not set # for Stock ROM "Set loadable kernel module data as NX and text as RO"
+CONFIG_SCHED_STACK_END_CHECK=y # The runtime overhead introduced is minimal.
+CONFIG_STRICT_DEVMEM=y # If this option is disabled,
+# you allow userspace (root) access to all of memory, including kernel and userspace memory. Accidental
+# access to this is obviously disastrous, but specific access can be used by people debugging the kernel.
+#
+# data integrity/DEBUG (in combination with the below, follow-up checks)
+# CONFIG_PANIC_ON_DATA_CORRUPTION=y # NOT needed in production/stable (?)
+# CONFIG_DEBUG_CREDENTIALS=y # (+ SELinux, checks to see that this number never exceeds the usage count of the cred struct)
+# CONFIG_DEBUG_NOTIFIERS is not set # modules, This is a relatively cheap check
+# CONFIG_DEBUG_LIST=y
+# CONFIG_DEBUG_SG=y # This can help find problems with drivers that do not properly initialize their sg tables.
+
+# disable workarounds NOT applicable to our hardware (modified later revision cortex A53, A73)
+# (some of those actually ARE applied)
+
+# keep legacy emulation, compatibility w.r.t. ARMv8
+# disabling breaks WeChat (crash on startup) and others ...
+CONFIG_ARMV8_DEPRECATED=y
+CONFIG_SWP_EMULATION=y
+CONFIG_CP15_BARRIER_EMULATION=y
+CONFIG_SETEND_EMULATION=y
+
+# use thin archives instead of ld -r
+CONFIG_THIN_ARCHIVES=y
+
+# DTS/sound processing variants
+CONFIG_SND_LGE_DTS=y
+CONFIG_AINUR_DTS_HW=y
+
+#
+# LGE Board Selection
+#
+# CONFIG_MACH_MSM8998_TAIMEN is not set
+# CONFIG_MACH_MSM8998_LUCY is not set
+# CONFIG_MACH_MSM8998_LUCY_KR is not set
+# CONFIG_MACH_MSM8998_LUCY_LGU_KR is not set
+# CONFIG_MACH_MSM8998_LUCY_DCM_JP is not set
+CONFIG_MACH_MSM8998_JOAN=y
+# CONFIG_MACH_MSM8998_JOAN_KR is not set # V300 (general?)
+# CONFIG_MACH_MSM8998_JOAN_LGU_KR is not set # V300L
+# CONFIG_MACH_MSM8998_JOAN_SKT_KR is not set # V300S
+# CONFIG_MACH_MSM8998_JOAN_KT_KR is not set # V300K
+# CONFIG_MACH_MSM8998_JOAN_VZW is not set # VS996
+# CONFIG_MACH_MSM8998_JOAN_ATT_US is not set # H931
+# CONFIG_MACH_MSM8998_JOAN_SPR_US is not set # LS998
+# CONFIG_MACH_MSM8998_JOAN_NAO_US is not set
+# CONFIG_MACH_MSM8998_JOAN_TMO_US is not set # H932, config similar to SPR_US
+# CONFIG_MACH_MSM8998_JOAN_CLR_PR is not set
+CONFIG_MACH_MSM8998_JOAN_GLOBAL_COM=y # H930
+# CONFIG_MACH_MSM8998_JOAN_GLOBAL_CA is not set # H933
+# CONFIG_MACH_MSM8998_JOAN_ACG_US is not set # AS998
+# CONFIG_MACH_MSM8998_JOAN_GLOBAL_LDU is not set
+# CONFIG_MACH_MSM8998_JOAN_KDDI_JP is not set
+# CONFIG_MACH_MSM8998_JOAN_DCM_JP is not set
