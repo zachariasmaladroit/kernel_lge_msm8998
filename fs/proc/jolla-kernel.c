@@ -6,8 +6,8 @@
 
 static int jolla_kernel_proc_show(struct seq_file *m, void *v)
 {
-	seq_printf(m, "{\"kernel-name\": \"jolla_kernel_joan\","
-			"\"version\": \"v2.2\","
+	seq_printf(m, "{\"kernel-name\": \"orion_kernel_joan\","
+			"\"version\": \"II_WIP3_2\","
 			"\"buildtime\": \"%s\"}\n", JOLLA_KERNEL_TIMESTAMP);
 	return 0;
 }
