@@ -3213,14 +3213,14 @@ retry:
 			rcu_read_unlock();
 			spin_unlock_irq(bfqd->queue->queue_lock);
 			new_bfqq = kmem_cache_alloc_node(bfq_pool,
-					gfp_mask | __GFP_ZERO | __GFP_NOWARN,
+					gfp_mask | __GFP_ZERO,
 					bfqd->queue->node);
 			spin_lock_irq(bfqd->queue->queue_lock);
 			if (new_bfqq)
 				goto retry;
 		} else {
 			bfqq = kmem_cache_alloc_node(bfq_pool,
-					gfp_mask | __GFP_ZERO | __GFP_NOWARN,
+					gfp_mask | __GFP_ZERO,
 					bfqd->queue->node);
 		}
 
