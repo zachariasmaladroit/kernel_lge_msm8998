@@ -403,13 +403,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fdiagnostics-color=always \
 		   -Wno-unused-value -Wno-unused-parameter \
 		   -Wno-missing-field-initializers \
-		   -fno-store-merging \
 		   -fivopts \
-		   -fshrink-wrap -fshrink-wrap-separate \
-		   -flive-range-shrinkage -ftree-vrp \
-		   -ftree-loop-distribution \
-		   -ftree-loop-distribute-patterns \
-		   -freorder-blocks -freorder-blocks-and-partition \
 		   -fno-delete-null-pointer-checks \
 		   -march=armv8-a+crc+crypto -mtune=cortex-a73.cortex-a53 \
 		   -std=gnu89 $(call cc-option,-fno-PIE)
@@ -418,6 +412,14 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 #		   -fgraphite-identity -floop-nest-optimize \
 #		   -floop-unroll-and-jam -floop-interchange \
 #		   -fgraphite-identity -floop-nest-optimize \
+#
+# CLANG/LLVM
+#		   -fno-store-merging \
+#		   -fshrink-wrap -fshrink-wrap-separate \
+#		   -flive-range-shrinkage -ftree-vrp \
+#		   -ftree-loop-distribution \
+#		   -ftree-loop-distribute-patterns \
+#		   -freorder-blocks -freorder-blocks-and-partition \
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
