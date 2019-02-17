@@ -405,23 +405,6 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-delete-null-pointer-checks \
 		   -std=gnu89 $(call cc-option,-fno-PIE)
 
-#		   -fmodulo-sched -fmodulo-sched-allow-regmoves \
-#		   -fgraphite-identity -floop-nest-optimize \
-#		   -floop-unroll-and-jam -floop-interchange \
-#		   -fgraphite-identity -floop-nest-optimize \
-#
-# CLANG/LLVM
-#		   -fno-store-merging \
-#		   -fshrink-wrap -fshrink-wrap-separate \
-#		   -flive-range-shrinkage -ftree-vrp \
-#		   -ftree-loop-distribution \
-#		   -ftree-loop-distribute-patterns \
-#		   -freorder-blocks -freorder-blocks-and-partition \
-#		   -fivopts \
-#
-#		   -Wno-maybe-uninitialized -Wno-misleading-indentation \
-#		   -march=armv8-a+crc+crypto -mcpu=cortex-a73 -mtune=cortex-a73 \
-
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
 KBUILD_AFLAGS   := -D__ASSEMBLY__ $(call cc-option,-fno-PIE)
