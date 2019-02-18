@@ -362,15 +362,11 @@ void __init setup_arch(char **cmdline_p)
 
 #ifdef CONFIG_ARM64_SW_TTBR0_PAN
 	/*
-	 * Make sure thread_info.ttbr0 always generates translation
+	 * Make sure init_thread_info.ttbr0 always generates translation
 	 * faults in case uaccess_enable() is inadvertently called by the init
 	 * thread.
 	 */
-#ifdef CONFIG_THREAD_INFO_IN_TASK
-	init_task.thread_info.ttbr0 = virt_to_phys(empty_zero_page);
-#else
-	init_thread_info.ttbr0 = (init_thread_union.thread_info);
-#endif
+	init_thread_info.ttbr0 = virt_to_phys(empty_zero_page);
 #endif
 
 #ifdef CONFIG_VT
