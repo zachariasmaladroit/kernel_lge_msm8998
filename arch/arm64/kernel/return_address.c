@@ -12,7 +12,6 @@
 #include <linux/export.h>
 #include <linux/ftrace.h>
 
-#include <asm/stack_pointer.h>
 #include <asm/stacktrace.h>
 
 struct return_address_data {
