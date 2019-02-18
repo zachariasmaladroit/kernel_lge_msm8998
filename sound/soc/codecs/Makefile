@@ -435,4 +435,5 @@ obj-y += msm_sdw/
 
 # TODO: remove me b/62058353
 subdir-ccflags-y += \
-	-Wno-enum-conversion
+	-Wno-enum-conversion \
+	-Wno-self-assign
