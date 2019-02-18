@@ -25,8 +25,8 @@ export TARGET=aarch64-linux-gnu-
 # Kernel make function
 function kmake() {
 
-ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- make -j8 CC=clang \
-HOSTCC="/home/matthias/android/toolchains/clang_google/clang-r349610/bin/clang" \
+ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- make -j8 CC="${CCACHE} clang" \
+HOSTCC="${CCACHE} /home/matthias/android/toolchains/clang_google/clang-r349610/bin/clang" \
 KBUILD_COMPILER_STRING="$(/home/matthias/android/toolchains/clang_google/clang-r349610/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')" \
 "${@}"
 
