@@ -47,3 +47,7 @@ obj-$(CONFIG_FSL_MC_BUS)	+= fsl-mc/
 obj-$(CONFIG_WILC1000)		+= wilc1000/
 obj-$(CONFIG_QCA_CLD_WLAN)	+= qcacld-3.0/
 obj-$(CONFIG_MOST)		+= most/
+
+# TODO: remove me
+subdir-ccflags-y += \
+	-Wno-enum-conversion
