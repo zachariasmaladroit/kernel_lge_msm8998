@@ -14,8 +14,8 @@ KBUILD_BUILD_HOST=BuildHost
 #~/android/toolchains/gcc-linaro-7.4.1-2019.02-x86_64_aarch64-linux-gnu/bin:
 #CROSS_COMPILE=aarch64-linux-gnu- \
 
-export PATH="/home/matthias/android/toolchains/clang_google/clang-r349610/bin/:/home/matthias/android/toolchains/gcc-linaro-7.4.1-2019.02-x86_64_aarch64-linux-gnu/bin/:$PATH"
-export LD_LIBRARY_PATH="/home/matthias/android/toolchains/clang_google/clang-r349610/lib64/:$LD_LIBRARY_PATH"
+export PATH="/home/matthias/android/toolchains/dtc9_celtare21/bin/:/home/matthias/android/toolchains/gcc-linaro-7.4.1-2019.02-x86_64_aarch64-linux-gnu/bin/:$PATH"
+export LD_LIBRARY_PATH="/home/matthias/android/toolchains/dtc9_celtare21/lib64/:$LD_LIBRARY_PATH"
 export ARCH="arm64"
 export SUBARCH="arm64"
 export TARGET=aarch64-linux-gnu-
@@ -26,8 +26,8 @@ export TARGET=aarch64-linux-gnu-
 function kmake() {
 
 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- make -j8 CC="${CCACHE} clang" \
-HOSTCC="${CCACHE} /home/matthias/android/toolchains/clang_google/clang-r349610/bin/clang" \
-KBUILD_COMPILER_STRING="$(/home/matthias/android/toolchains/clang_google/clang-r349610/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')" \
+HOSTCC="${CCACHE} /home/matthias/android/toolchains/dtc9_celtare21/bin/clang" \
+KBUILD_COMPILER_STRING="$(/home/matthias/android/toolchains/dtc9_celtare21/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')" \
 "${@}"
 
 }
