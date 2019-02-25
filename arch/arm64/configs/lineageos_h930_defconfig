@@ -6048,6 +6048,12 @@ CONFIG_STRICT_DEVMEM=y # If this option is disabled,
 # CONFIG_DEBUG_LIST=y
 # CONFIG_DEBUG_SG=y # This can help find problems with drivers that do not properly initialize their sg tables.
 
+# performance tuning knobs:
+CONFIG_VM_MAX_READAHEAD=128
+CONFIG_VM_MIN_READAHEAD=16
+CONFIG_BLKDEV_MAX_RQ=16
+CONFIG_BLKDEV_MIN_RQ=4
+
 # use thin archives instead of ld -r
 ## CONFIG_THIN_ARCHIVES=y # needs build infrastructure changes
 
