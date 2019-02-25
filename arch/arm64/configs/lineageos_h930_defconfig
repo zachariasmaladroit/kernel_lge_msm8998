@@ -6006,6 +6006,7 @@ CONFIG_SPI_SLAVE=y
 # CONFIG_SEEMP_CORE is not set
 # TTBR0 PAN emulation
 # CONFIG_ARM64_SW_TTBR0_PAN is not set
+# CONFIG_PROC_KALLSYMS is not set
 
 # eval / security vs. performance [vdso32 ?]
 # resource hog: 50% improved syscall performance by disabling
