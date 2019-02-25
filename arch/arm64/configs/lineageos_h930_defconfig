@@ -6053,3 +6053,6 @@ CONFIG_STRICT_DEVMEM=y # If this option is disabled,
 # DTS/sound processing variants
 CONFIG_SND_LGE_DTS=y
 CONFIG_AINUR_DTS_HW=y
+
+# video processing
+CONFIG_FB_MSM_MDSS_KCAL_CTRL=y
