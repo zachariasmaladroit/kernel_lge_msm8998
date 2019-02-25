@@ -385,3 +385,10 @@ config CPU_INPUT_BOOST_MDSS_TIMEOUT
 	help
 	  Timeout in milliseconds to prevent general boosting on MDSS frame
 	  updates when interaction does not occur within this value.
+
+config KLAPSE
+    bool CONFIG_KLAPSE
+    depends on FB_MSM_MDSS
+    default n
+    help
+        A simple rgb dynamic lapsing module similar to LineageOS' livedisplay
