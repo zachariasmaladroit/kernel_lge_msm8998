@@ -6055,7 +6055,8 @@ CONFIG_BLKDEV_MAX_RQ=16
 CONFIG_BLKDEV_MIN_RQ=4
 
 # use thin archives instead of ld -r
-## CONFIG_THIN_ARCHIVES=y # needs build infrastructure changes
+# needs (k)build infrastructure changes
+CONFIG_THIN_ARCHIVES=y
 
 # DTS/sound processing variants
 CONFIG_SND_LGE_DTS=y
