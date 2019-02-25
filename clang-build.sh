@@ -6,8 +6,9 @@
 #
 # Script to build a zImage from a kernel tree
 
-USE_CCACHE=1
-CACHE_DIR=~/.ccache
+#USE_CCACHE=1
+#CACHE_DIR=~/.ccache
+
 KBUILD_BUILD_USER=zacharias.maladroit
 KBUILD_BUILD_HOST=BuildHost
 
