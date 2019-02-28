@@ -2264,6 +2264,8 @@ EXPORT_SYMBOL(cpufreq_get_policy);
 
 #define UNDERCLK_MAX_PERFCL 1958400
 static bool disable_underclock;
+module_param_named(disable_underclock,
+	disable_underclock, bool, S_IRUGO | S_IWUSR | S_IWGRP);
 
 /*
  * policy : current policy.
