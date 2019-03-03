@@ -1912,7 +1912,11 @@ void mdss_fb_update_backlight(struct msm_fb_data_type *mfd)
 	mutex_lock(&mfd->bl_lock);
 	if (!mfd->allow_bl_update) {
 		pdata = dev_get_platdata(&mfd->pdev->dev);
+#if defined(CONFIG_LGE_DISPLAY_COMMON)
+		if ((pdata) && (pdata->set_backlight) && mdss_fb_is_power_on_interactive(mfd)) {
+#else
 		if ((pdata) && (pdata->set_backlight)) {
+#endif
 			mfd->bl_level = mfd->unset_bl_level;
 			temp = mfd->bl_level;
 			if (mfd->mdp.ad_calc_bl)

@@ -2748,6 +2748,10 @@ static long fastrpc_device_ioctl(struct file *file, unsigned int ioctl_num,
 			p.init.init.memlen >= 0);
 		if (err)
 			goto bail;
+		VERIFY(err, p.init.init.filelen >= 0 &&
+			p.init.init.memlen >= 0);
+		if (err)
+			goto bail;
 		VERIFY(err, 0 == fastrpc_init_process(fl, &p.init));
 		if (err)
 			goto bail;
@@ -2783,7 +2787,7 @@ static int fastrpc_restart_notifier_cb(struct notifier_block *nb,
 			else
 				smd_close(ctx->chan);
 
-			ctx->chan = 0;
+			ctx->chan = NULL;
 			pr_info("'restart notifier: closed /dev/%s c %d %d'\n",
 				 gcinfo[cid].name, MAJOR(me->dev_no), cid);
 		}

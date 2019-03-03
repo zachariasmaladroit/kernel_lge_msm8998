@@ -389,6 +389,32 @@ static ssize_t gadget_dev_desc_UDC_store(struct config_item *item,
 			goto err;
 		kfree(name);
 	} else {
+#ifdef CONFIG_LGE_USB_GADGET
+		if (!gi->connected && gi->sw_connected) {
+			struct usb_configuration *c;
+			bool has_rndis = false;
+
+			list_for_each_entry(c, &gi->cdev.configs, list) {
+				struct usb_function *f, *tmp;
+				struct config_usb_cfg *cfg;
+
+				cfg = container_of(c, struct config_usb_cfg, c);
+
+				list_for_each_entry_safe(f,
+							 tmp,
+							 &cfg->func_list,
+							 list) {
+					if (!strcmp(f->name, "rndis")) {
+						has_rndis = true;
+						break;
+					}
+				}
+			}
+
+			if (!has_rndis)
+				schedule_work(&gi->work);
+		}
+#endif
 		if (gi->udc_name) {
 			ret = -EBUSY;
 			goto err;

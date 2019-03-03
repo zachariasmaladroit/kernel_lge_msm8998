@@ -3503,6 +3503,7 @@ static int _sparse_add_to_bind_tree(struct kgsl_mem_entry *entry,
 	return 0;
 }
 
+/* entry->bind_lock must be held by the caller */
 static int _sparse_rm_from_bind_tree(struct kgsl_mem_entry *entry,
 		struct sparse_bind_object *obj,
 		uint64_t v_offset, uint64_t size)

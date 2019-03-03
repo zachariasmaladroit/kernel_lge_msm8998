@@ -23,6 +23,8 @@
 			qcom,set = <3>;
 			regulator-min-microvolt =
 				<RPM_SMD_REGULATOR_LEVEL_RETENTION>;
+			regulator-chargerlogo-min-microvolt =
+				<RPM_SMD_REGULATOR_LEVEL_MIN_SVS>;
 			regulator-max-microvolt =
 				<RPM_SMD_REGULATOR_LEVEL_TURBO>;
 			qcom,use-voltage-level;
@@ -119,6 +121,8 @@
 			qcom,set = <3>;
 			regulator-min-microvolt =
 				<RPM_SMD_REGULATOR_LEVEL_RETENTION>;
+			regulator-chargerlogo-min-microvolt =
+				<RPM_SMD_REGULATOR_LEVEL_MIN_SVS>;
 			regulator-max-microvolt =
 				<RPM_SMD_REGULATOR_LEVEL_TURBO>;
 			qcom,use-voltage-level;
