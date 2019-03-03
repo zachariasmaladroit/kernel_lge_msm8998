@@ -524,7 +524,8 @@ static void lge_monitor_batt_temp_work(struct work_struct *work){
 
 	if (((res.change_lvl != STS_CHE_NONE) && req.is_charger) ||
 			(res.force_update == true) ||
-			cc->otp_float_voltage != res.float_voltage) {
+			cc->otp_float_voltage != res.float_voltage ||
+			cc->otp_ibat_current != res.chg_current) {
 		if (res.state == CHG_BATT_NORMAL_STATE) {
 			pr_info("ibatmax_set CHG_BATT_NORMAL_STATE\n");
 			cc->otp_ibat_current = res.chg_current;

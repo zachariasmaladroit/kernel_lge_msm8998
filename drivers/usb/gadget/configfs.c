@@ -109,6 +109,7 @@ struct gadget_info {
 	struct usb_composite_driver composite;
 	struct usb_composite_dev cdev;
 	bool use_os_desc;
+	bool unbinding;
 	char b_vendor_code;
 	char qw_sign[OS_STRING_QW_SIGN_LEN];
 #ifdef CONFIG_USB_CONFIGFS_UEVENT
@@ -350,9 +351,12 @@ static int unregister_gadget(struct gadget_info *gi)
 	if (!gi->udc_name)
 		return -ENODEV;
 
+	gi->unbinding = true;
 	ret = usb_gadget_unregister_driver(&gi->composite.gadget_driver);
 	if (ret)
 		return ret;
+
+	gi->unbinding = false;
 	kfree(gi->udc_name);
 	gi->udc_name = NULL;
 	return 0;
@@ -385,6 +389,32 @@ static ssize_t gadget_dev_desc_UDC_store(struct config_item *item,
 		if (ret)
 			goto err;
 	} else {
+#ifdef CONFIG_LGE_USB_GADGET
+		if (!gi->connected && gi->sw_connected) {
+			struct usb_configuration *c;
+			bool has_rndis = false;
+
+			list_for_each_entry(c, &gi->cdev.configs, list) {
+				struct usb_function *f, *tmp;
+				struct config_usb_cfg *cfg;
+
+				cfg = container_of(c, struct config_usb_cfg, c);
+
+				list_for_each_entry_safe(f,
+							 tmp,
+							 &cfg->func_list,
+							 list) {
+					if (!strcmp(f->name, "rndis")) {
+						has_rndis = true;
+						break;
+					}
+				}
+			}
+
+			if (!has_rndis)
+				schedule_work(&gi->work);
+		}
+#endif
 		if (gi->udc_name) {
 			ret = -EBUSY;
 			goto err;
@@ -1812,7 +1842,8 @@ static void android_disconnect(struct usb_gadget *gadget)
 	acc_disconnect();
 #endif
 	gi->connected = 0;
-	schedule_work(&gi->work);
+	if (!gi->unbinding)
+		schedule_work(&gi->work);
 	composite_disconnect(gadget);
 }
 #endif

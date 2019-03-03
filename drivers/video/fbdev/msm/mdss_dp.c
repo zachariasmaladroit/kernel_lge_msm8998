@@ -1648,15 +1648,6 @@ static int mdss_dp_on_irq(struct mdss_dp_drv_pdata *dp_drv, bool lt_needed)
 
 		dp_drv->power_on = true;
 
-		if (dp_drv->psm_enabled) {
-			ret = mdss_dp_aux_send_psm_request(dp_drv, false);
-			if (ret) {
-				pr_err("Failed to exit low power mode, rc=%d\n",
-					ret);
-				goto exit_loop;
-			}
-		}
-
 		ret = mdss_dp_setup_main_link(dp_drv, lt_needed);
 		if (ret) {
 			if (ret == -ENODEV) {
@@ -1731,14 +1722,6 @@ int mdss_dp_on_hpd(struct mdss_dp_drv_pdata *dp_drv)
 	reinit_completion(&dp_drv->idle_comp);
 
 	mdss_dp_configure_source_params(dp_drv, ln_map);
-
-	if (dp_drv->psm_enabled) {
-		ret = mdss_dp_aux_send_psm_request(dp_drv, false);
-		if (ret) {
-			pr_err("Failed to exit low power mode, rc=%d\n", ret);
-			goto exit;
-		}
-	}
 
 
 link_training:
@@ -3983,6 +3966,15 @@ static void usbpd_disconnect_callback(struct usbpd_svid_handler *hdlr)
 		mdss_dp_off_hpd(dp_drv);
 	} else {
 		mdss_dp_notify_clients(dp_drv, NOTIFY_DISCONNECT);
+		if (atomic_read(&dp_drv->notification_pending)) {
+			int ret;
+			pr_debug("waiting for the disconnect to finish\n");
+			ret = wait_for_completion_timeout(&dp_drv->notification_comp, 2 * HZ);
+			if (ret <= 0) {
+				pr_warn("NOTIFY_DISCONNECT timed out\n");
+				return;
+			}
+		}
 	}
 
 	/*

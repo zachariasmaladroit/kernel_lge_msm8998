@@ -3576,6 +3576,9 @@ static int fg_get_battery_cycle(struct fg_chip *chip)
 static int fg_get_cycle_count(struct fg_chip *chip)
 {
 	int count;
+#ifdef CONFIG_LGE_PM
+	int i, bucket_sum_now = 0;
+#endif
 
 	if (!chip->cyc_ctr.en)
 		return 0;
@@ -3587,6 +3590,11 @@ static int fg_get_cycle_count(struct fg_chip *chip)
 	count = chip->cyc_ctr.count[chip->cyc_ctr.id - 1];
 #ifdef CONFIG_LGE_PM_CYCLE_BASED_CHG_VOLTAGE
 	fg_get_battery_cycle(chip);
+#endif
+#ifdef CONFIG_LGE_PM
+	for (i = 0; i < BUCKET_COUNT; i++)
+		bucket_sum_now += chip->cyc_ctr.count[i];
+	count = bucket_sum_now / BUCKET_COUNT;
 #endif
 	mutex_unlock(&chip->cyc_ctr.lock);
 	return count;

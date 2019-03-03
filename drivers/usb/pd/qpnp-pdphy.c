@@ -741,6 +741,10 @@ static irqreturn_t pdphy_msg_rx_irq_thread(int irq, void *data)
 		false);
 	pdphy->rx_bytes += size + 1;
 done:
+#ifdef CONFIG_LGE_USB
+	if (ret)
+		dev_dbg(pdphy->dev, "%s return %d\n", __func__, ret);
+#endif
 #ifndef CONFIG_LGE_USB
 	pdphy->rx_busy = false;
 #endif
@@ -830,8 +834,8 @@ static int pdphy_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_LGE_USB
 	ret = pdphy_request_irq(pdphy, pdev->dev.of_node,
-		&pdphy->msg_rx_irq, "msg-rx", NULL,
-		pdphy_msg_rx_irq_thread, (IRQF_TRIGGER_RISING | IRQF_ONESHOT));
+		&pdphy->msg_rx_irq, "msg-rx", pdphy_msg_rx_irq_thread,
+		NULL, (IRQF_TRIGGER_RISING | IRQF_ONESHOT));
 #else
 	ret = pdphy_request_irq(pdphy, pdev->dev.of_node,
 		&pdphy->msg_rx_irq, "msg-rx", pdphy_msg_rx_irq,

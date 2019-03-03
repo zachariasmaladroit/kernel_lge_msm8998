@@ -3538,7 +3538,8 @@ int smblib_get_prop_fastchg_state(struct smb_charger *chg,
 
 	if ((chg->real_charger_type == POWER_SUPPLY_TYPE_USB_HVDCP ||
 			chg->real_charger_type == POWER_SUPPLY_TYPE_USB_HVDCP_3) &&
-			!get_effective_result(chg->hvdcp_disable_votable_indirect)) {
+			!get_effective_result(chg->hvdcp_disable_votable_indirect) &&
+			!is_client_vote_enabled_locked(chg->hvdcp_hw_inov_dis_votable, DISABLE_HVDCP_VOTER)) {
 		fastchg_state = 1;
 		reason = HVDCP_MODE;
 		goto out;
@@ -4981,7 +4982,7 @@ irqreturn_t smblib_handle_usbin_ov(int irq, void *data)
 	return IRQ_HANDLED;
 }
 
-#define INITIAL_DELAY_MS 500
+#define INITIAL_DELAY_MS 5000
 irqreturn_t smblib_handle_aicl_fail(int irq, void *data)
 {
 	struct smb_irq_data *irq_data = data;
@@ -4992,8 +4993,10 @@ irqreturn_t smblib_handle_aicl_fail(int irq, void *data)
 	aicl_fail = smblib_get_aicl_fail(chg);
 
 	smblib_dbg(chg, PR_LGE, "IRQ: %s %s - apsd_disable(%d)\n", irq_data->name, aicl_fail ? "rising" : "falling", apsd_disable);
-	if (!apsd_disable && aicl_fail)
+	if (!apsd_disable && aicl_fail && !workaround_force_incompatible_hvdcp_enabled())
 		smblib_rerun_apsd(chg);
+
+	workaround_force_incompatible_hvdcp_require();
 
 	if (delayed_work_pending(&chg->aicl_fail_wa_work))
 		cancel_delayed_work(&chg->aicl_fail_wa_work);
@@ -5262,7 +5265,6 @@ static void smblib_lge_usb_removal(struct smb_charger *chg) {
 		vote(chg->usb_icl_votable, BOOST_BACK_VOTER, false, 0);
 
 	chg->checking_pd_active = false;
-	chg->disable_inov_for_hvdcp = false;
 	chg->pre_settled_ua = -1;
 	if (chg->is_abnormal_gendor && !chg->pd_hard_reset) {
 		chg->is_abnormal_gendor = false;
@@ -5277,6 +5279,8 @@ static void smblib_lge_usb_removal(struct smb_charger *chg) {
 			chg->real_charger_type == POWER_SUPPLY_TYPE_USB_FLOAT) {
 		vote(chg->pd_disallowed_votable_indirect, HVDCP_TIMEOUT_VOTER, true, 0);
 	}
+	workaround_force_incompatible_hvdcp_clear(chg);
+
 	smblib_update_usb_type(chg);
 }
 
@@ -5606,27 +5610,7 @@ static void smblib_handle_hvdcp_3p0_auth_done(struct smb_charger *chg,
 
 	/* the APSD done handler will set the USB supply type */
 	apsd_result = smblib_get_apsd_result(chg);
-#ifdef CONFIG_LGE_PM
-	if (apsd_result->pst == POWER_SUPPLY_TYPE_USB_HVDCP && !chg->disable_inov_for_hvdcp) {
-		chg->disable_inov_for_hvdcp =true;
-		vote(chg->hvdcp_hw_inov_dis_votable, FAST_HVDCP_DETECTION_VOTER, true, 0);
-
-		rc = smblib_masked_write(chg, CMD_HVDCP_2_REG,
-				FORCE_9V_BIT, FORCE_9V_BIT);
-		if (rc < 0)
-			smblib_err(chg,
-				"Couldn't force 9V HVDCP rc=%d\n", rc);
-		msleep(50);
-
-		rc = smblib_masked_write(chg, CMD_HVDCP_2_REG,
-				FORCE_5V_BIT, FORCE_5V_BIT);
-		if (rc < 0)
-			smblib_err(chg,
-				"Couldn't force 5V HVDCP rc=%d\n", rc);
-
-		vote(chg->hvdcp_hw_inov_dis_votable, FAST_HVDCP_DETECTION_VOTER, false, 0);
-	}
-#endif
+#ifndef CONFIG_LGE_PM
 	if (get_effective_result(chg->hvdcp_hw_inov_dis_votable)) {
 		if (apsd_result->pst == POWER_SUPPLY_TYPE_USB_HVDCP) {
 			/* force HVDCP2 to 9V if INOV is disabled */
@@ -5637,6 +5621,7 @@ static void smblib_handle_hvdcp_3p0_auth_done(struct smb_charger *chg,
 					"Couldn't force 9V HVDCP rc=%d\n", rc);
 		}
 	}
+#endif
 
 	smblib_dbg(chg, PR_INTERRUPT, "IRQ: hvdcp-3p0-auth-done rising; %s detected\n",
 		   apsd_result->name);
@@ -5953,6 +5938,10 @@ irqreturn_t smblib_handle_usb_source_change(int irq, void *data)
 		return IRQ_HANDLED;
 	}
 	smblib_dbg(chg, PR_REGISTER, "APSD_STATUS = 0x%02x\n", stat);
+
+#ifdef CONFIG_LGE_PM_DEBUG
+	workaround_force_incompatible_hvdcp_trigger(chg);
+#endif
 
 	return IRQ_HANDLED;
 }
@@ -6502,8 +6491,11 @@ irqreturn_t smblib_handle_wdog_bark(int irq, void *data)
 irqreturn_t smblib_handle_cc_protect(int irq, void* data) {
 	struct smb_charger *chg = data;
 
-	smblib_dbg(chg, PR_LGE, "irq: cc protect\n");
-	vote(chg->hvdcp_disable_votable_indirect, CC_PROTECT_VOTER, true, 0);
+	smblib_dbg(chg, PR_LGE, "irq: cc protect. first irq : %d\n",chg->is_cc_first_irq);
+	if (chg->is_cc_first_irq)
+		chg->is_cc_first_irq = false;
+	else
+		vote(chg->hvdcp_disable_votable_indirect, CC_PROTECT_VOTER, true, 0);
 
 	return IRQ_HANDLED;
 }
@@ -7918,3 +7910,114 @@ int smblib_deinit(struct smb_charger *chg)
 
 	return 0;
 }
+
+#ifdef CONFIG_LGE_PM
+////////////////////////////////////////////////////////////////////////////
+// LGE Workaround : Helper functions
+////////////////////////////////////////////////////////////////////////////
+static struct smb_charger* workaround_helper_chg(void) {
+	// getting smb_charger from air
+	struct power_supply*	psy
+		= power_supply_get_by_name("battery");
+	struct smb_charger*	chg
+		= psy ? power_supply_get_drvdata(psy) : NULL;
+	if (psy)
+		power_supply_put(psy);
+
+	return chg;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// LGE Workaround : Force incompatible HVDCP charger
+////////////////////////////////////////////////////////////////////////////
+
+static bool workaround_force_incompatible_hvdcp_running = false;
+static bool workaround_force_incompatible_hvdcp_required = false;
+
+void workaround_force_incompatible_hvdcp_clear(struct smb_charger* chg) {
+	workaround_force_incompatible_hvdcp_running = false;
+	workaround_force_incompatible_hvdcp_required = false;
+
+	vote(chg->hvdcp_hw_inov_dis_votable, FORCE9V_HVDCP_VOTER, false, 0);
+	vote(chg->hvdcp_hw_inov_dis_votable, DISABLE_HVDCP_VOTER, false, 0);
+}
+
+static void workaround_force_incompatible_hvdcp_func(struct work_struct *unused) {
+	struct smb_charger* chg = workaround_helper_chg();
+	int rc = 0;
+	u8 stat;
+
+	if (!chg) {
+		pr_info("[W/A] FIH) 'chg' is not ready\n");
+		return;
+	}
+
+	pr_info("[W/A] FIH) Start force 9V HVDCP.\n");
+	workaround_force_incompatible_hvdcp_required = false;
+
+// 1. Disable HVDCP_AUTONOMOUS_MODE_EN_CFG_BIT
+	vote(chg->hvdcp_hw_inov_dis_votable, FORCE9V_HVDCP_VOTER, true, 0);
+
+// 2. Force to 9V
+	rc = smblib_masked_write(chg, CMD_HVDCP_2_REG, FORCE_9V_BIT, FORCE_9V_BIT);
+	if (rc < 0)
+		pr_info("[W/A] FIH) Couldn't force 9V HVDCP rc=%d\n", rc);
+
+// 3. delay 2s
+	msleep(2000);
+
+// 4. Read USB present
+	rc = smblib_read(chg, USBIN_BASE + INT_RT_STS_OFFSET, &stat);
+	if (rc < 0) {
+		pr_info("[W/A] FIH) Couldn't read USBIN_RT_STS rc=%d\n", rc);
+		return;
+	}
+
+// 4.5 Disable HVDCP if aicl-fail is occurred.
+	if (workaround_force_incompatible_hvdcp_required && (stat & USBIN_PLUGIN_RT_STS_BIT)) {
+		pr_info("[W/A] FIH) Disable HVDCP.\n");
+		vote(chg->hvdcp_hw_inov_dis_votable, DISABLE_HVDCP_VOTER, true, 0);
+		power_supply_changed(chg->usb_psy);
+	}
+
+// 5. Force to 5V
+	rc = smblib_masked_write(chg, CMD_HVDCP_2_REG, FORCE_5V_BIT, FORCE_5V_BIT);
+	if (rc < 0)
+		pr_info("[W/A] FIH) Couldn't force 5V HVDCP rc=%d\n", rc);
+
+// 6. Enable HVDCP_AUTONOMOUS_MODE_EN_CFG_BIT
+	vote(chg->hvdcp_hw_inov_dis_votable, FORCE9V_HVDCP_VOTER, false, 0);
+}
+
+static DECLARE_WORK(workaround_force_incompatible_hvdcp_dwork, workaround_force_incompatible_hvdcp_func);
+
+void workaround_force_incompatible_hvdcp_trigger(struct smb_charger* chg) {
+	int rc = 0;
+	u8 stat;
+
+	rc = smblib_read(chg, APSD_STATUS_REG, &stat);
+	if (rc < 0) {
+		pr_info("[W/A] FIH) Couldn't read APSD_STATUS_REG rc=%d\n", rc);
+		return;
+	}
+
+	if (!workaround_force_incompatible_hvdcp_running
+		&& (stat & QC_AUTH_DONE_STATUS_BIT)
+		&& chg->real_charger_type == POWER_SUPPLY_TYPE_USB_HVDCP) {
+		workaround_force_incompatible_hvdcp_running = true;
+		schedule_work(&workaround_force_incompatible_hvdcp_dwork);
+	}
+}
+
+void workaround_force_incompatible_hvdcp_require(void) {
+       /* The condition for disabling HVDCP is the aicl-fail during QC detection.
+	* Place this function in the ISR of 'aicl-fail'
+	*/
+	workaround_force_incompatible_hvdcp_required = true;
+}
+
+bool workaround_force_incompatible_hvdcp_enabled(void) {
+	return workaround_force_incompatible_hvdcp_running;
+}
+#endif
