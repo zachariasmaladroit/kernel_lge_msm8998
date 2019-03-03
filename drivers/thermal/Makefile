@@ -56,3 +56,4 @@ obj-$(CONFIG_LIMITS_MONITOR)	+= lmh_interface.o
 obj-$(CONFIG_LIMITS_LITE_HW)	+= lmh_lite.o
 obj-$(CONFIG_QCOM_THERMAL_LIMITS_DCVS)	+= msm_lmh_dcvs.o
 obj-$(CONFIG_LGE_PM_THERMAL_VTS) += virtual_temp_sensor.o
+obj-$(CONFIG_MSM_THERMAL_SIMPLE) += msm_thermal_simple.o
