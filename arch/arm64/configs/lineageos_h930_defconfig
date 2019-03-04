@@ -6049,7 +6049,9 @@ CONFIG_STRICT_DEVMEM=y # If this option is disabled,
 # access to this is obviously disastrous, but specific access can be used by people debugging the kernel.
 #
 # data integrity/DEBUG (in combination with the below, follow-up checks)
-# CONFIG_PANIC_ON_DATA_CORRUPTION=y # NOT needed in production/stable (?)
+# advised for stability/integrity of data with the advent of phones becoming sole business aggregators, etc.
+CONFIG_PANIC_ON_DATA_CORRUPTION=y
+CONFIG_BUG_ON_DATA_CORRUPTION=y
 # CONFIG_DEBUG_CREDENTIALS=y # (+ SELinux, checks to see that this number never exceeds the usage count of the cred struct)
 # CONFIG_DEBUG_NOTIFIERS is not set # modules, This is a relatively cheap check
 # CONFIG_DEBUG_LIST=y
