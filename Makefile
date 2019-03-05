@@ -400,6 +400,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fdiagnostics-color=always \
 		   -Wno-unused-value -Wno-unused-parameter \
 		   -Wno-missing-field-initializers \
+		   -Wno-strict-prototypes \
 		   -fno-delete-null-pointer-checks \
 		   -march=armv8-a+crc+crypto \
 		   -mcpu=cortex-a53+crypto+crc \
