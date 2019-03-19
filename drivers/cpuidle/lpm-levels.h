@@ -164,3 +164,4 @@ static inline bool is_IPI_pending(const struct cpumask *mask)
 	return false;
 }
 #endif
+void lpm_cluster_use_deepest_state(bool enable);
