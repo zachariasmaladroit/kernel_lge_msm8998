@@ -165,13 +165,6 @@ struct f2fs_mount_info {
 /* bio stuffs */
 #define REQ_OP_READ	READ
 #define REQ_OP_WRITE	WRITE
-#define bio_op(bio)	((bio)->bi_rw & 1)
-
-static inline void bio_set_op_attrs(struct bio *bio, unsigned op,
-		unsigned op_flags)
-{
-	bio->bi_rw = op | op_flags;
-}
 
 static inline int wbc_to_write_flags(struct writeback_control *wbc)
 {
