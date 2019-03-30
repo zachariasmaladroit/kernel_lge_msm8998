@@ -2744,17 +2744,6 @@ static void *cache_free_debugcheck(struct kmem_cache *cachep, void *objp,
 #define cache_free_debugcheck(x,objp,z) (objp)
 #endif
 
-static inline void fixup_slab_list(struct kmem_cache *cachep,
-				struct kmem_cache_node *n, struct page *page)
-{
-	/* move slabp to correct slabp list: */
-	list_del(&page->lru);
-	if (page->active == cachep->num)
-		list_add(&page->lru, &n->slabs_full);
-	else
-		list_add(&page->lru, &n->slabs_partial);
-}
-
 static struct page *get_first_slab(struct kmem_cache_node *n)
 {
 	struct page *page;
@@ -2828,7 +2817,12 @@ retry:
 			ac_put_obj(cachep, ac, slab_get_obj(cachep, page));
 		}
 
-		fixup_slab_list(cachep, n, page);
+		/* move slabp to correct slabp list: */
+		list_del(&page->lru);
+		if (page->active == cachep->num)
+			list_add(&page->lru, &n->slabs_full);
+		else
+			list_add(&page->lru, &n->slabs_partial);
 	}
 
 must_grow:
@@ -3101,8 +3095,13 @@ retry:
 
 	obj = slab_get_obj(cachep, page);
 	n->free_objects--;
+	/* move slabp to correct slabp list: */
+	list_del(&page->lru);
 
-	fixup_slab_list(cachep, n, page);
+	if (page->active == cachep->num)
+		list_add(&page->lru, &n->slabs_full);
+	else
+		list_add(&page->lru, &n->slabs_partial);
 
 	spin_unlock(&n->list_lock);
 	goto done;
