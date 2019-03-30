@@ -2779,18 +2779,18 @@ retry:
 	}
 
 	while (batchcount > 0) {
+		struct list_head *entry;
 		struct page *page;
 		/* Get slab alloc is to come from. */
-		page = list_first_entry_or_null(&n->slabs_partial,
-				struct page, lru);
-		if (!page) {
+		entry = n->slabs_partial.next;
+		if (entry == &n->slabs_partial) {
 			n->free_touched = 1;
-			page = list_first_entry_or_null(&n->slabs_free,
-					struct page, lru);
-			if (!page)
+			entry = n->slabs_free.next;
+			if (entry == &n->slabs_free)
 				goto must_grow;
 		}
 
+		page = list_entry(entry, struct page, lru);
 		check_spinlock_acquired(cachep);
 
 		/*
@@ -3060,6 +3060,7 @@ retry:
 static void *____cache_alloc_node(struct kmem_cache *cachep, gfp_t flags,
 				int nodeid)
 {
+	struct list_head *entry;
 	struct page *page;
 	struct kmem_cache_node *n;
 	void *obj;
@@ -3072,16 +3073,15 @@ static void *____cache_alloc_node(struct kmem_cache *cachep, gfp_t flags,
 retry:
 	check_irq_off();
 	spin_lock(&n->list_lock);
-	page = list_first_entry_or_null(&n->slabs_partial,
-			struct page, lru);
-	if (!page) {
+	entry = n->slabs_partial.next;
+	if (entry == &n->slabs_partial) {
 		n->free_touched = 1;
-		page = list_first_entry_or_null(&n->slabs_free,
-				struct page, lru);
-		if (!page)
+		entry = n->slabs_free.next;
+		if (entry == &n->slabs_free)
 			goto must_grow;
 	}
 
+	page = list_entry(entry, struct page, lru);
 	check_spinlock_acquired_node(cachep, nodeid);
 
 	STATS_INC_NODEALLOCS(cachep);
