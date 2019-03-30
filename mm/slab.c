@@ -4274,7 +4274,7 @@ size_t ksize(const void *objp)
 	/* We assume that ksize callers could use the whole allocated area,
 	 * so we need to unpoison this area.
 	 */
-	kasan_unpoison_shadow(objp, size);
+	kasan_krealloc(objp, size, GFP_NOWAIT);
 
 	return size;
 }
