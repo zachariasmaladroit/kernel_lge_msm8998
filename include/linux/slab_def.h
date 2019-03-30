@@ -80,7 +80,7 @@ struct kmem_cache {
 #endif
 
 #ifdef CONFIG_SLAB_FREELIST_RANDOM
-	unsigned int *random_seq;
+	void *random_seq;
 #endif
 
 	struct kmem_cache_node *node[MAX_NUMNODES];
