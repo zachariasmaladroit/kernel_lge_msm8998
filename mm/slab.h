@@ -38,10 +38,6 @@ struct kmem_cache {
 #endif
 
 #include <linux/memcontrol.h>
-#include <linux/fault-inject.h>
-#include <linux/kmemcheck.h>
-#include <linux/kasan.h>
-#include <linux/kmemleak.h>
 
 /*
  * State of the slab allocator.
@@ -323,6 +319,7 @@ static inline struct kmem_cache *cache_from_obj(struct kmem_cache *s, void *x)
 	return s;
 }
 
+<<<<<<< HEAD
 static inline size_t slab_ksize(const struct kmem_cache *s)
 {
 #ifndef CONFIG_SLUB
@@ -381,6 +378,8 @@ static inline void slab_post_alloc_hook(struct kmem_cache *s, gfp_t flags,
 	memcg_kmem_put_cache(s);
 }
 
+=======
+>>>>>>> parent of 0c3e16e872b9... mm/slab: move SLUB alloc hooks to common mm/slab.h
 #ifndef CONFIG_SLOB
 /*
  * The slab lists for all objects.
