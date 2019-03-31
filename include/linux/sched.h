@@ -1443,7 +1443,7 @@ struct sched_statistics {
 #endif
 
 #ifdef CONFIG_SCHED_WALT
-#define RAVG_HIST_SIZE_MAX  8
+#define RAVG_HIST_SIZE_MAX  5
 
 /* ravg represents frequency scaled cpu-demand of tasks */
 struct ravg {
