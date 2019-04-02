@@ -2388,9 +2388,8 @@ static u32 mdss_mdp_scaler_init(struct mdss_data_type *mdata,
 		mdata->scaler_off->ndest_scalers = len/sizeof(u32);
 
 		mdata->scaler_off->dest_scaler_off =
-			devm_kcalloc(dev,
+			devm_kzalloc(dev, sizeof(u32) *
 					mdata->scaler_off->ndest_scalers,
-					sizeof(u32),
 					GFP_KERNEL);
 		if  (!mdata->scaler_off->dest_scaler_off) {
 			return -ENOMEM;
@@ -2403,9 +2402,8 @@ static u32 mdss_mdp_scaler_init(struct mdss_data_type *mdata,
 			return ret;
 
 		mdata->scaler_off->dest_scaler_lut_off =
-			devm_kcalloc(dev,
+			devm_kzalloc(dev, sizeof(u32) *
 					mdata->scaler_off->ndest_scalers,
-					sizeof(u32),
 					GFP_KERNEL);
 		if  (!mdata->scaler_off->dest_scaler_lut_off) {
 			return -ENOMEM;
@@ -3258,10 +3256,8 @@ int mdss_mdp_parse_dt_hw_settings(struct platform_device *pdev)
 	if (!(mdp_len + vbif_len + vbif_nrt_len))
 		return 0;
 
-	hws = devm_kcalloc(&pdev->dev,
-			   vbif_len + mdp_len + vbif_nrt_len + 1,
-			   sizeof(*hws),
-			   GFP_KERNEL);
+	hws = devm_kzalloc(&pdev->dev, sizeof(*hws) * (vbif_len + mdp_len +
+			vbif_nrt_len + 1), GFP_KERNEL);
 	if (!hws)
 		return -ENOMEM;
 
@@ -3829,8 +3825,8 @@ static int mdss_mdp_cdm_addr_setup(struct mdss_data_type *mdata,
 	struct mdss_mdp_cdm *head;
 	u32 i = 0;
 
-	head = devm_kcalloc(&mdata->pdev->dev,
-			    len, sizeof(struct mdss_mdp_cdm), GFP_KERNEL);
+	head = devm_kzalloc(&mdata->pdev->dev, sizeof(struct mdss_mdp_cdm) *
+				len, GFP_KERNEL);
 	if (!head) {
 		pr_err("%s: no memory for CDM info\n", __func__);
 		return -ENOMEM;
@@ -3899,8 +3895,8 @@ static int mdss_mdp_dsc_addr_setup(struct mdss_data_type *mdata,
 	struct mdss_mdp_dsc *head;
 	u32 i = 0;
 
-	head = devm_kcalloc(&mdata->pdev->dev,
-			    len, sizeof(struct mdss_mdp_dsc), GFP_KERNEL);
+	head = devm_kzalloc(&mdata->pdev->dev, sizeof(struct mdss_mdp_dsc) *
+				len, GFP_KERNEL);
 	if (!head) {
 		pr_err("no memory for DSC info\n");
 		return -ENOMEM;
@@ -4344,10 +4340,8 @@ static void mdss_mdp_parse_max_bandwidth(struct platform_device *pdev)
 
 	max_bw_settings_cnt /= 2 * sizeof(u32);
 
-	max_bw_settings = devm_kcalloc(&pdev->dev,
-				       max_bw_settings_cnt,
-				       sizeof(*max_bw_settings),
-				       GFP_KERNEL);
+	max_bw_settings = devm_kzalloc(&pdev->dev, sizeof(*max_bw_settings)
+			* max_bw_settings_cnt, GFP_KERNEL);
 	if (!max_bw_settings) {
 		pr_err("Memory allocation failed for max_bw_settings\n");
 		return;
@@ -4388,8 +4382,8 @@ static void mdss_mdp_parse_per_pipe_bandwidth(struct platform_device *pdev)
 
 	max_bw_settings_cnt /= 2 * sizeof(u32);
 
-	max_bw_per_pipe_settings = devm_kcalloc(&pdev->dev,
-		    max_bw_settings_cnt, sizeof(struct mdss_max_bw_settings),
+	max_bw_per_pipe_settings = devm_kzalloc(&pdev->dev,
+		    sizeof(struct mdss_max_bw_settings) * max_bw_settings_cnt,
 		    GFP_KERNEL);
 	if (!max_bw_per_pipe_settings) {
 		pr_err("Memory allocation failed for max_bw_settings\n");
@@ -4652,8 +4646,8 @@ static int mdss_mdp_parse_dt_ppb_off(struct platform_device *pdev)
 	arr = of_get_property(pdev->dev.of_node, "qcom,mdss-ppb-ctl-off", &len);
 	if (arr) {
 		mdata->nppb_ctl = len / sizeof(u32);
-		mdata->ppb_ctl = devm_kcalloc(&mdata->pdev->dev,
-				mdata->nppb_ctl, sizeof(u32), GFP_KERNEL);
+		mdata->ppb_ctl = devm_kzalloc(&mdata->pdev->dev,
+				sizeof(u32) * mdata->nppb_ctl, GFP_KERNEL);
 
 		if (mdata->ppb_ctl == NULL)
 			return -ENOMEM;
@@ -4665,8 +4659,8 @@ static int mdss_mdp_parse_dt_ppb_off(struct platform_device *pdev)
 	arr = of_get_property(pdev->dev.of_node, "qcom,mdss-ppb-cfg-off", &len);
 	if (arr) {
 		mdata->nppb_cfg = len / sizeof(u32);
-		mdata->ppb_cfg = devm_kcalloc(&mdata->pdev->dev,
-				mdata->nppb_cfg, sizeof(u32), GFP_KERNEL);
+		mdata->ppb_cfg = devm_kzalloc(&mdata->pdev->dev,
+				sizeof(u32) * mdata->nppb_cfg, GFP_KERNEL);
 
 		if (mdata->ppb_cfg == NULL)
 			return -ENOMEM;
