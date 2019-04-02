@@ -35,8 +35,7 @@
 static int subdev_fh_init(struct v4l2_subdev_fh *fh, struct v4l2_subdev *sd)
 {
 #if defined(CONFIG_VIDEO_V4L2_SUBDEV_API)
-	fh->pad = kvmalloc_array(sd->entity.num_pads, sizeof(*fh->pad),
-				 GFP_KERNEL | __GFP_ZERO);
+	fh->pad = kzalloc(sizeof(*fh->pad) * sd->entity.num_pads, GFP_KERNEL);
 	if (fh->pad == NULL)
 		return -ENOMEM;
 #endif
@@ -46,7 +45,7 @@ static int subdev_fh_init(struct v4l2_subdev_fh *fh, struct v4l2_subdev *sd)
 static void subdev_fh_free(struct v4l2_subdev_fh *fh)
 {
 #if defined(CONFIG_VIDEO_V4L2_SUBDEV_API)
-	kvfree(fh->pad);
+	kfree(fh->pad);
 	fh->pad = NULL;
 #endif
 }
