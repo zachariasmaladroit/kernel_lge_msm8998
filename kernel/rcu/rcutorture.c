@@ -841,7 +841,8 @@ rcu_torture_cbflood(void *arg)
 	    cbflood_intra_holdoff > 0 &&
 	    cur_ops->call &&
 	    cur_ops->cb_barrier) {
-		rhp = vmalloc(array3_size(cbflood_n_burst, cbflood_n_per_burst, sizeof(*rhp)));
+		rhp = vmalloc(sizeof(*rhp) *
+			      cbflood_n_burst * cbflood_n_per_burst);
 		err = !rhp;
 	}
 	if (err) {

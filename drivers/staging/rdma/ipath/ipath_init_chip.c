@@ -92,7 +92,7 @@ static int create_port0_egr(struct ipath_devdata *dd)
 
 	egrcnt = dd->ipath_p0_rcvegrcnt;
 
-	skbinfo = vmalloc(array_size(egrcnt, sizeof(*dd->ipath_port0_skbinfo)));
+	skbinfo = vmalloc(sizeof(*dd->ipath_port0_skbinfo) * egrcnt);
 	if (skbinfo == NULL) {
 		ipath_dev_err(dd, "allocation error for eager TID "
 			      "skb array\n");
@@ -453,7 +453,8 @@ static void init_shadow_tids(struct ipath_devdata *dd)
 		return;
 	}
 
-	addrs = vmalloc(array_size(sizeof(dma_addr_t), (dd->ipath_cfgports * dd->ipath_rcvtidcnt)));
+	addrs = vmalloc(dd->ipath_cfgports * dd->ipath_rcvtidcnt *
+			sizeof(dma_addr_t));
 	if (!addrs) {
 		ipath_dev_err(dd, "failed to allocate shadow dma handle "
 			      "array, no expected sends!\n");
