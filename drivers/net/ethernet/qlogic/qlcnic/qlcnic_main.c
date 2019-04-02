@@ -913,7 +913,8 @@ int qlcnic_82xx_mq_intrpt(struct qlcnic_adapter *adapter, int op_type)
 	if (qlcnic_check_multi_tx(adapter) &&
 	    !ahw->diag_test &&
 	    (adapter->flags & QLCNIC_MSIX_ENABLED)) {
-		ahw->intr_tbl = vzalloc(array_size(sizeof(struct qlcnic_intrpt_config), ahw->num_msix));
+		ahw->intr_tbl = vzalloc(ahw->num_msix *
+					sizeof(struct qlcnic_intrpt_config));
 		if (!ahw->intr_tbl)
 			return -ENOMEM;
 

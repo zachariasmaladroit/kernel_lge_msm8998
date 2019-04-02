@@ -67,7 +67,7 @@ static int space_init(struct entry_space *es, unsigned nr_entries)
 		return 0;
 	}
 
-	es->begin = vzalloc(array_size(nr_entries, sizeof(struct entry)));
+	es->begin = vzalloc(sizeof(struct entry) * nr_entries);
 	if (!es->begin)
 		return -ENOMEM;
 

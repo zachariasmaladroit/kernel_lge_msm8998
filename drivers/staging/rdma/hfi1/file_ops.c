@@ -1246,12 +1246,14 @@ static int setup_ctxt(struct file *fp)
 				goto done;
 		}
 		/* Setup Expected Rcv memories */
-		uctxt->tid_pg_list = vzalloc(array_size(sizeof(struct page **), uctxt->expected_count));
+		uctxt->tid_pg_list = vzalloc(uctxt->expected_count *
+					     sizeof(struct page **));
 		if (!uctxt->tid_pg_list) {
 			ret = -ENOMEM;
 			goto done;
 		}
-		uctxt->physshadow = vzalloc(array_size(sizeof(*uctxt->physshadow), uctxt->expected_count));
+		uctxt->physshadow = vzalloc(uctxt->expected_count *
+					    sizeof(*uctxt->physshadow));
 		if (!uctxt->physshadow) {
 			ret = -ENOMEM;
 			goto done;
