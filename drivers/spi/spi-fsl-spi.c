@@ -727,8 +727,7 @@ static int of_fsl_spi_get_chipselects(struct device *dev)
 		return 0;
 	}
 
-	pinfo->gpios = kmalloc_array(ngpios, sizeof(*pinfo->gpios),
-				     GFP_KERNEL);
+	pinfo->gpios = kmalloc(ngpios * sizeof(*pinfo->gpios), GFP_KERNEL);
 	if (!pinfo->gpios)
 		return -ENOMEM;
 	memset(pinfo->gpios, -1, ngpios * sizeof(*pinfo->gpios));

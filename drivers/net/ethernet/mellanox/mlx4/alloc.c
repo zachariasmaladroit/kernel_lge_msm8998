@@ -632,7 +632,7 @@ int mlx4_buf_alloc(struct mlx4_dev *dev, int size, int max_direct,
 
 		if (BITS_PER_LONG == 64) {
 			struct page **pages;
-			pages = kmalloc_array(buf->nbufs, sizeof(*pages), gfp);
+			pages = kmalloc(sizeof *pages * buf->nbufs, gfp);
 			if (!pages)
 				goto err_free;
 			for (i = 0; i < buf->nbufs; ++i)
