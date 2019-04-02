@@ -1691,8 +1691,8 @@ int qib_setup_eagerbufs(struct qib_ctxtdata *rcd)
 	size = rcd->rcvegrbuf_size;
 	if (!rcd->rcvegrbuf) {
 		rcd->rcvegrbuf =
-			kcalloc_node(chunk, sizeof(rcd->rcvegrbuf[0]),
-				     GFP_KERNEL, rcd->node_id);
+			kzalloc_node(chunk * sizeof(rcd->rcvegrbuf[0]),
+				GFP_KERNEL, rcd->node_id);
 		if (!rcd->rcvegrbuf)
 			goto bail;
 	}
