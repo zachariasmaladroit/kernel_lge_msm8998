@@ -1165,7 +1165,7 @@ static int _mdss_dsi_refresh_cmd(struct buf_data *new_cmds,
 		return -EINVAL;
 	}
 	/* Reallocate space for dcs commands */
-	cmds = kcalloc(cnt, sizeof(struct dsi_cmd_desc), GFP_KERNEL);
+	cmds = kzalloc(cnt * sizeof(struct dsi_cmd_desc), GFP_KERNEL);
 	if (!cmds) {
 		pr_err("%s: Failed to allocate memory\n", __func__);
 		return -ENOMEM;

@@ -527,7 +527,7 @@ int iris_dsi_parse_dcs_cmds(struct device_node *np,
 		return -ENOMEM;
 	}
 
-	buf = kzalloc(blen, GFP_KERNEL);
+	buf = kzalloc(sizeof(char) * blen, GFP_KERNEL);
 	if (!buf)
 		return -ENOMEM;
 
@@ -558,7 +558,7 @@ int iris_dsi_parse_dcs_cmds(struct device_node *np,
 		goto exit_free;
 	}
 
-	pcmds->cmds = kcalloc(cnt, sizeof(struct dsi_cmd_desc),
+	pcmds->cmds = kzalloc(cnt * sizeof(struct dsi_cmd_desc),
 						GFP_KERNEL);
 	if (!pcmds->cmds)
 		goto exit_free;

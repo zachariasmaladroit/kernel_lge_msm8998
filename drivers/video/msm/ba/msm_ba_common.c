@@ -548,7 +548,7 @@ int msm_ba_ctrl_init(struct msm_ba_inst *inst)
 		return -EINVAL;
 	}
 
-	inst->ctrls = kcalloc(BA_NUM_CTRLS, sizeof(struct v4l2_ctrl *),
+	inst->ctrls = kzalloc(sizeof(struct v4l2_ctrl *) * BA_NUM_CTRLS,
 				GFP_KERNEL);
 	if (!inst->ctrls) {
 		dprintk(BA_ERR, "%s - failed to allocate ctrl", __func__);

@@ -1024,7 +1024,7 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
 		}
 	}
 
-	rdata = kcalloc(s2mps11->rdev_num, sizeof(*rdata), GFP_KERNEL);
+	rdata = kzalloc(sizeof(*rdata) * s2mps11->rdev_num, GFP_KERNEL);
 	if (!rdata)
 		return -ENOMEM;
 

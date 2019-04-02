@@ -1540,11 +1540,11 @@ int pwm_enable_synchronized(struct pwm_device **pwms, size_t num)
 		return -EINVAL;
 	}
 
-	flags = kcalloc(num, sizeof(unsigned long), GFP_KERNEL);
+	flags = kzalloc(sizeof(unsigned long) * num, GFP_KERNEL);
 	if (!flags)
 		return -ENOMEM;
 
-	chips = kcalloc(num, sizeof(struct qpnp_pwm_chip *), GFP_KERNEL);
+	chips = kzalloc(sizeof(struct qpnp_pwm_chip *) * num, GFP_KERNEL);
 	if (!chips) {
 		kfree(flags);
 		return -ENOMEM;

@@ -59,13 +59,14 @@ static type **allocate_2d_array_##type(int idx)\
 	type **ptr = NULL;\
 	if (!idx) \
 		return ERR_PTR(-EINVAL);\
-	ptr = kcalloc(TEMP_DATA_POINTS, sizeof(*ptr), \
+	ptr = kzalloc(sizeof(*ptr) * TEMP_DATA_POINTS, \
 				GFP_KERNEL);\
 	if (!ptr) { \
 		return ERR_PTR(-ENOMEM); \
 	} \
 	for (i = 0; i < TEMP_DATA_POINTS; i++) { \
-		ptr[i] = kcalloc(idx, sizeof(*ptr[i]), GFP_KERNEL);\
+		ptr[i] = kzalloc(sizeof(*ptr[i]) * \
+					idx, GFP_KERNEL);\
 		if (!ptr[i]) {\
 			goto done;\
 		} \
