@@ -31,7 +31,6 @@
 #include <linux/ipc_router.h>
 #include <linux/ipc_router_xprt.h>
 #include <linux/kref.h>
-#include <linux/kthread.h>
 #include <soc/qcom/subsystem_notif.h>
 #include <soc/qcom/subsystem_restart.h>
 
@@ -139,21 +138,18 @@ struct msm_ipc_router_xprt_info {
 	struct msm_ipc_router_xprt *xprt;
 	uint32_t remote_node_id;
 	uint32_t initialized;
-	u32 hello_sent;
 	struct list_head pkt_list;
 	struct wakeup_source ws;
 	struct mutex rx_lock_lhb2;
 	struct mutex tx_lock_lhb2;
 	uint32_t need_len;
 	uint32_t abort_data_read;
+	struct work_struct read_data;
+	struct workqueue_struct *workqueue;
 	void *log_ctx;
 	struct kref ref;
 	struct completion ref_complete;
 	bool dynamic_ws;
-
-	struct kthread_worker kworker;
-	struct task_struct *task;
-	struct kthread_work read_data;
 };
 
 #define RT_HASH_SIZE 4
@@ -180,7 +176,7 @@ static struct list_head routing_table[RT_HASH_SIZE];
 static DECLARE_RWSEM(routing_table_lock_lha3);
 static int routing_table_inited;
 
-static void do_read_data(struct kthread_work *work);
+static void do_read_data(struct work_struct *work);
 
 static LIST_HEAD(xprt_info_list);
 static DECLARE_RWSEM(xprt_info_list_lock_lha5);
@@ -2501,36 +2497,12 @@ static void do_version_negotiation(struct msm_ipc_router_xprt_info *xprt_info,
 	}
 }
 
-static int send_hello_msg(struct msm_ipc_router_xprt_info *xprt_info)
-{
-	int rc = 0;
-	union rr_control_msg ctl;
-
-	if (!xprt_info->hello_sent) {
-		xprt_info->hello_sent = 1;
-		/* Send a HELLO message */
-		memset(&ctl, 0, sizeof(ctl));
-		ctl.hello.cmd = IPC_ROUTER_CTRL_CMD_HELLO;
-		ctl.hello.checksum = IPC_ROUTER_HELLO_MAGIC;
-		ctl.hello.versions = (uint32_t)IPC_ROUTER_VER_BITMASK;
-		ctl.hello.checksum = ipc_router_calc_checksum(&ctl);
-		rc = ipc_router_send_ctl_msg(xprt_info, &ctl,
-					     IPC_ROUTER_DUMMY_DEST_NODE);
-		if (rc < 0) {
-			xprt_info->hello_sent = 0;
-			IPC_RTR_ERR("%s: Error sending HELLO message\n",
-				    __func__);
-			return rc;
-		}
-	}
-	return rc;
-}
-
 static int process_hello_msg(struct msm_ipc_router_xprt_info *xprt_info,
 				union rr_control_msg *msg,
 				struct rr_header_v1 *hdr)
 {
 	int i, rc = 0;
+	union rr_control_msg ctl;
 	struct msm_ipc_routing_table_entry *rt_entry;
 
 	if (!hdr)
@@ -2545,10 +2517,19 @@ static int process_hello_msg(struct msm_ipc_router_xprt_info *xprt_info,
 	kref_put(&rt_entry->ref, ipc_router_release_rtentry);
 
 	do_version_negotiation(xprt_info, msg);
-	rc = send_hello_msg(xprt_info);
-	if (rc < 0)
+	/* Send a reply HELLO message */
+	memset(&ctl, 0, sizeof(ctl));
+	ctl.hello.cmd = IPC_ROUTER_CTRL_CMD_HELLO;
+	ctl.hello.checksum = IPC_ROUTER_HELLO_MAGIC;
+	ctl.hello.versions = (uint32_t)IPC_ROUTER_VER_BITMASK;
+	ctl.hello.checksum = ipc_router_calc_checksum(&ctl);
+	rc = ipc_router_send_ctl_msg(xprt_info, &ctl,
+				     IPC_ROUTER_DUMMY_DEST_NODE);
+	if (rc < 0) {
+		IPC_RTR_ERR("%s: Error sending reply HELLO message\n",
+								__func__);
 		return rc;
-
+	}
 	xprt_info->initialized = 1;
 
 	/* Send list of servers from the local node and from nodes
@@ -2763,7 +2744,7 @@ static int process_control_msg(struct msm_ipc_router_xprt_info *xprt_info,
 	return rc;
 }
 
-static void do_read_data(struct kthread_work *work)
+static void do_read_data(struct work_struct *work)
 {
 	struct rr_header_v1 *hdr;
 	struct rr_packet *pkt = NULL;
@@ -3982,7 +3963,6 @@ static void debugfs_init(void) {}
  * global list. This log context can be reused from the list in case of a
  * subsystem restart.
  */
-#ifdef CONFIG_IPC_LOGGING
 static void *ipc_router_create_log_ctx(char *name)
 {
 #ifdef CONFIG_IPC_LOGGING
@@ -3992,7 +3972,6 @@ static void *ipc_router_create_log_ctx(char *name)
 				GFP_KERNEL);
 	if (!sub_log_ctx)
 		return NULL;
-
 	sub_log_ctx->log_ctx = ipc_log_context_create(
 				IPC_RTR_INFO_PAGES, name, 0);
 	if (!sub_log_ctx->log_ctx) {
@@ -4001,7 +3980,6 @@ static void *ipc_router_create_log_ctx(char *name)
 		kfree(sub_log_ctx);
 		return NULL;
 	}
-
 	strlcpy(sub_log_ctx->log_ctx_name, name,
 			LOG_CTX_NAME_LEN);
 	INIT_LIST_HEAD(&sub_log_ctx->list);
@@ -4011,12 +3989,6 @@ static void *ipc_router_create_log_ctx(char *name)
 	return NULL;
 #endif
 }
-#else
-static void *ipc_router_create_log_ctx(char *name)
-{
-	return NULL;
-}
-#endif
 
 static void ipc_router_log_ctx_init(void)
 {
@@ -4112,7 +4084,6 @@ static void ipc_router_release_xprt_info_ref(struct kref *ref)
 static int msm_ipc_router_add_xprt(struct msm_ipc_router_xprt *xprt)
 {
 	struct msm_ipc_router_xprt_info *xprt_info;
-	struct sched_param param = {.sched_priority = 1};
 
 	xprt_info = kmalloc(sizeof(struct msm_ipc_router_xprt_info),
 			    GFP_KERNEL);
@@ -4121,7 +4092,6 @@ static int msm_ipc_router_add_xprt(struct msm_ipc_router_xprt *xprt)
 
 	xprt_info->xprt = xprt;
 	xprt_info->initialized = 0;
-	xprt_info->hello_sent = 0;
 	xprt_info->remote_node_id = -1;
 	INIT_LIST_HEAD(&xprt_info->pkt_list);
 	mutex_init(&xprt_info->rx_lock_lhb2);
@@ -4129,6 +4099,7 @@ static int msm_ipc_router_add_xprt(struct msm_ipc_router_xprt *xprt)
 	wakeup_source_init(&xprt_info->ws, xprt->name);
 	xprt_info->need_len = 0;
 	xprt_info->abort_data_read = 0;
+	INIT_WORK(&xprt_info->read_data, do_read_data);
 	INIT_LIST_HEAD(&xprt_info->list);
 	kref_init(&xprt_info->ref);
 	init_completion(&xprt_info->ref_complete);
@@ -4136,17 +4107,11 @@ static int msm_ipc_router_add_xprt(struct msm_ipc_router_xprt *xprt)
 	if (xprt->get_ws_info)
 		xprt_info->dynamic_ws = xprt->get_ws_info(xprt);
 
-	init_kthread_work(&xprt_info->read_data, do_read_data);
-	init_kthread_worker(&xprt_info->kworker);
-	xprt_info->task = kthread_run(kthread_worker_fn,
-				      &xprt_info->kworker,
-				      "%s", xprt->name);
-	if (IS_ERR(xprt_info->task)) {
+	xprt_info->workqueue = create_singlethread_workqueue(xprt->name);
+	if (!xprt_info->workqueue) {
 		kfree(xprt_info);
 		return -ENOMEM;
 	}
-	if (xprt->get_latency_info && xprt->get_latency_info(xprt))
-		sched_setscheduler(xprt_info->task, SCHED_FIFO, &param);
 
 	xprt_info->log_ctx = ipc_router_get_log_ctx(xprt->name);
 
@@ -4169,7 +4134,6 @@ static int msm_ipc_router_add_xprt(struct msm_ipc_router_xprt *xprt)
 	up_write(&routing_table_lock_lha3);
 
 	xprt->priv = xprt_info;
-	send_hello_msg(xprt_info);
 
 	return 0;
 }
@@ -4187,9 +4151,8 @@ static void msm_ipc_router_remove_xprt(struct msm_ipc_router_xprt *xprt)
 		mutex_lock(&xprt_info->rx_lock_lhb2);
 		xprt_info->abort_data_read = 1;
 		mutex_unlock(&xprt_info->rx_lock_lhb2);
-		flush_kthread_worker(&xprt_info->kworker);
-		kthread_stop(xprt_info->task);
-		xprt_info->task = NULL;
+		flush_workqueue(xprt_info->workqueue);
+		destroy_workqueue(xprt_info->workqueue);
 		mutex_lock(&xprt_info->rx_lock_lhb2);
 		list_for_each_entry_safe(pkt, temp_pkt,
 					 &xprt_info->pkt_list, list) {
@@ -4341,7 +4304,7 @@ void msm_ipc_router_xprt_notify(struct msm_ipc_router_xprt *xprt,
 		}
 	}
 	mutex_unlock(&xprt_info->rx_lock_lhb2);
-	queue_kthread_work(&xprt_info->kworker, &xprt_info->read_data);
+	queue_work(xprt_info->workqueue, &xprt_info->read_data);
 }
 
 /**
