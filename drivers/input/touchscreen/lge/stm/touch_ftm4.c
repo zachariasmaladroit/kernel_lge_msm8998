@@ -3507,6 +3507,16 @@ static int ftm4_resume(struct device *dev)
 	return 0;
 }
 
+static void ftm4_touch_pm_worker(struct work_struct *work)
+{
+	struct touch_core_data *ts = container_of(work, typeof(*ts), ftm4_pm_work);
+
+	if (ts->ftm4_screen_off)
+		touch_suspend(ts->dev);
+	else
+		touch_resume(ts->dev);
+}
+
 static int ftm4_fb_notifier_callback(struct notifier_block *self,
 		unsigned long event, void *data)
 {
@@ -3525,11 +3535,9 @@ static int ftm4_fb_notifier_callback(struct notifier_block *self,
 		TOUCH_I("%s: fb_blank - prev[%d] curr[%d]\n",
 				__func__, d->fb_blank.prev, d->fb_blank.curr);
 
-		if (event == FB_EVENT_BLANK && d->fb_blank.curr == FB_BLANK_UNBLANK) {
-			touch_resume(ts->dev);
-		} else if (event == FB_EARLY_EVENT_BLANK && d->fb_blank.prev == FB_BLANK_UNBLANK) {
-			touch_suspend(ts->dev);
-		}
+		flush_work(&ts->ftm4_pm_work);
+		ts->ftm4_screen_off = (event == FB_EARLY_EVENT_BLANK && *blank != FB_BLANK_UNBLANK);
+		schedule_work(&ts->ftm4_pm_work);
 	}
 
 	return 0;
@@ -3542,6 +3550,8 @@ int ftm4_init(struct device *dev)
 	int ret = 0;
 
 	TOUCH_TRACE();
+
+	INIT_WORK(&ts->ftm4_pm_work, ftm4_touch_pm_worker);
 
 	if (atomic_read(&ts->state.core) == CORE_PROBE) {
 		TOUCH_I("%s: fb_notif change\n", __func__);
