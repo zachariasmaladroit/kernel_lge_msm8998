@@ -2436,15 +2436,12 @@ EXPORT_SYMBOL(skb_queue_purge);
  */
 void skb_rbtree_purge(struct rb_root *root)
 {
-	struct rb_node *p = rb_first(root);
+	struct sk_buff *skb, *next;
 
-	while (p) {
-		struct sk_buff *skb = rb_entry(p, struct sk_buff, rbnode);
-
-		p = rb_next(p);
-		rb_erase(&skb->rbnode, root);
+	rbtree_postorder_for_each_entry_safe(skb, next, root, rbnode)
 		kfree_skb(skb);
-	}
+
+	*root = RB_ROOT;
 }
 
 /**
