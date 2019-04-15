@@ -74,12 +74,12 @@ static ssize_t dyn_fsync_version_show(struct kobject *kobj,
 }
 
 static struct kobj_attribute dyn_fsync_active_attribute =
-	__ATTR(Dyn_fsync_active, S_IWUSR|S_IRUGO,
+	__ATTR(Dyn_fsync_active, 0666,
 		dyn_fsync_active_show,
 		dyn_fsync_active_store);
 
 static struct kobj_attribute dyn_fsync_version_attribute =
-	__ATTR(Dyn_fsync_version, S_IRUGO, dyn_fsync_version_show, NULL);
+	__ATTR(Dyn_fsync_version, 0444, dyn_fsync_version_show, NULL);
 
 static struct attribute *dyn_fsync_active_attrs[] =
 	{
