@@ -495,6 +495,16 @@ static int touch_init_pm(struct touch_core_data *ts)
 	return 0;
 }
 #elif defined(CONFIG_FB)
+static void touch_pm_worker(struct work_struct *work)
+{
+	struct touch_core_data *ts = container_of(work, typeof(*ts), pm_work);
+
+	if (ts->screen_off)
+		touch_suspend(ts->dev);
+	else
+		touch_resume(ts->dev);
+}
+
 static int touch_fb_notifier_callback(struct notifier_block *self,
 		unsigned long event, void *data)
 {
@@ -504,11 +514,10 @@ static int touch_fb_notifier_callback(struct notifier_block *self,
 
 	if (ev && ev->data) {
 		int *blank = (int *)ev->data;
-		if (event == FB_EARLY_EVENT_BLANK && *blank != FB_BLANK_UNBLANK) {
-			touch_suspend(ts->dev);
-		} else if (event == FB_EVENT_BLANK && *blank == FB_BLANK_UNBLANK) {
-			touch_resume(ts->dev);
-		}
+
+		flush_work(&ts->pm_work);
+		ts->screen_off = (event == FB_EARLY_EVENT_BLANK && *blank != FB_BLANK_UNBLANK);
+		schedule_work(&ts->pm_work);
 	}
 
 	return 0;
@@ -518,6 +527,7 @@ static int touch_init_pm(struct touch_core_data *ts)
 {
 	TOUCH_TRACE();
 
+	INIT_WORK(&ts->pm_work, touch_pm_worker);
 	ts->fb_notif.notifier_call = touch_fb_notifier_callback;
 	return fb_register_client(&ts->fb_notif);
 }
