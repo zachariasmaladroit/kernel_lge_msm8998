@@ -1,7 +1,7 @@
 VERSION = 4
 PATCHLEVEL = 4
 SUBLEVEL = 174
-EXTRAVERSION = _jolla_kernel_joan_v2.3
+EXTRAVERSION = _marduk_I_base
 NAME = Blurry Fish Butt
 
 # *DOCUMENTATION*
