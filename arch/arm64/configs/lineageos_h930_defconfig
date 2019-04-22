@@ -5650,6 +5650,12 @@ CONFIG_ARCH_HAS_SG_CHAIN=y
 CONFIG_QMI_ENCDEC=y
 # CONFIG_QMI_ENCDEC_DEBUG is not set
 
+# code optimizations
+CONFIG_CC_OPTIMIZE_FOR_SIZE=y
+# CONFIG_PROFILE_ALL_BRANCHES is not set
+# CONFIG_OPTIMIZE_INLINING is not set
+CONFIG_DEBUG_INFO_REDUCED=y
+
 # external module support
 # CONFIG_MODULES is not set
 # CONFIG_MODULE_FORCE_LOAD is not set
@@ -5939,3 +5945,7 @@ CONFIG_SPI_SLAVE=y
 
 # eval / security vs. performance [vdso32 ?]
 # resource hog: 50% improved syscall performance by disabling (SECCOMP)
+
+# use thin archives instead of ld -r (mostly build-size saving, build-host)
+# needs (k)build infrastructure changes (scripts/ folder)
+CONFIG_THIN_ARCHIVES=y
