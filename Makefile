@@ -399,6 +399,17 @@ KBUILD_CFLAGS   := -mcpu=cortex-a73 -mtune=cortex-a73 \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
+		   -fdiagnostics-color=always \
+		   -Wno-unused-value -Wno-unused-parameter \
+		   -Wno-missing-field-initializers \
+		   -fivopts \
+		   -fshrink-wrap -fshrink-wrap-separate \
+		   -flive-range-shrinkage -ftree-vrp \
+		   -ftree-loop-distribution \
+		   -ftree-loop-distribute-patterns \
+		   -freorder-blocks -freorder-blocks-and-partition \
+		   -fipa-icf -flra-remat -fipa-ra \
+		   -fno-delete-null-pointer-checks \
 		   -std=gnu89 $(call cc-option,-fno-PIE) \
 		   -fmodulo-sched -fmodulo-sched-allow-regmoves
 
