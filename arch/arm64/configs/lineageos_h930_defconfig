@@ -5650,6 +5650,12 @@ CONFIG_ARCH_HAS_SG_CHAIN=y
 CONFIG_QMI_ENCDEC=y
 # CONFIG_QMI_ENCDEC_DEBUG is not set
 
+# code optimizations
+# CONFIG_CC_OPTIMIZE_FOR_SIZE is not set
+# CONFIG_PROFILE_ALL_BRANCHES is not set
+CONFIG_OPTIMIZE_INLINING=y
+CONFIG_DEBUG_INFO_REDUCED=y
+
 # external module support
 # CONFIG_MODULES is not set
 # CONFIG_MODULE_FORCE_LOAD is not set
@@ -5982,3 +5988,7 @@ CONFIG_VM_MAX_READAHEAD=128
 CONFIG_VM_MIN_READAHEAD=16
 CONFIG_BLKDEV_MAX_RQ=16
 CONFIG_BLKDEV_MIN_RQ=4
+
+# use thin archives instead of ld -r
+# needs (k)build infrastructure changes (scripts/ folder)
+CONFIG_THIN_ARCHIVES=y
