@@ -5868,6 +5868,25 @@ CONFIG_ANDROID_SIMPLE_LMK_MINFREE=64
 CONFIG_ANDROID_SIMPLE_LMK_KSWAPD_TIMEOUT=100
 CONFIG_ANDROID_SIMPLE_LMK_OOM_TIMEOUT=50
 
+# i/o schedulers
+CONFIG_IOSCHED_NOOP=y
+# CONFIG_IOSCHED_TEST is not set
+CONFIG_IOSCHED_DEADLINE=y
+CONFIG_IOSCHED_CFQ=y
+CONFIG_IOSCHED_FIOPS=y
+CONFIG_IOSCHED_SIO=y
+CONFIG_IOSCHED_ZEN=y
+CONFIG_IOSCHED_BFQ=y
+CONFIG_IOSCHED_ANXIETY=y
+# CONFIG_DEFAULT_DEADLINE is not set
+# CONFIG_DEFAULT_CFQ is not set
+# CONFIG_DEFAULT_NOOP is not set
+# CONFIG_DEFAULT_SIO is not set
+# CONFIG_DEFAULT_FIOPS is not set
+# CONFIG_DEFAULT_ZEN is not set
+CONFIG_DEFAULT_ANXIETY=y
+CONFIG_DEFAULT_IOSCHED="anxiety"
+
 # disable for debug, security, attack surface
 # CONFIG_MSM_RDBG is not set # remote debugger driver (=m by default)
 # CONFIG_MAGIC_SYSRQ is not set
@@ -5939,3 +5958,27 @@ CONFIG_SPI_SLAVE=y
 
 # eval / security vs. performance [vdso32 ?]
 # resource hog: 50% improved syscall performance by disabling (SECCOMP)
+
+# Kernel (self)protection
+# Disallow allocating the first 32k of memory (cannot be 64k due to ARM loader). 32768 invalid for ARM loader
+CONFIG_DEFAULT_MMAP_MIN_ADDR=4096
+CONFIG_DEBUG_RODATA=y
+CONFIG_DEBUG_ALIGN_RODATA=y # This prevents sections from being split into pages and avoids a potential TLB penalty.
+# DEBUG_SET_MODULE_RONX is not set # for Stock ROM "Set loadable kernel module data as NX and text as RO"
+CONFIG_SCHED_STACK_END_CHECK=y # The runtime overhead introduced is minimal.
+CONFIG_STRICT_DEVMEM=y # If this option is disabled,
+# you allow userspace (root) access to all of memory, including kernel and userspace memory. Accidental
+# access to this is obviously disastrous, but specific access can be used by people debugging the kernel.
+#
+# data integrity/DEBUG (in combination with the below, follow-up checks)
+# CONFIG_PANIC_ON_DATA_CORRUPTION=y # NOT needed in production/stable (?)
+# CONFIG_DEBUG_CREDENTIALS=y # (+ SELinux, checks to see that this number never exceeds the usage count of the cred struct)
+# CONFIG_DEBUG_NOTIFIERS is not set # modules, This is a relatively cheap check
+# CONFIG_DEBUG_LIST=y
+# CONFIG_DEBUG_SG=y # This can help find problems with drivers that do not properly initialize their sg tables.
+
+# performance tuning knobs:
+CONFIG_VM_MAX_READAHEAD=128
+CONFIG_VM_MIN_READAHEAD=16
+CONFIG_BLKDEV_MAX_RQ=16
+CONFIG_BLKDEV_MIN_RQ=4
