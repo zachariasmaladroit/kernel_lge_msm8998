@@ -5958,6 +5958,9 @@ CONFIG_SPI_SLAVE=y
 
 # eval / security vs. performance [vdso32 ?]
 # resource hog: 50% improved syscall performance by disabling (SECCOMP)
+CONFIG_HAVE_ARCH_SECCOMP_FILTER=y
+# CONFIG_SECCOMP_FILTER is not set
+# CONFIG_SECCOMP is not set
 
 # Kernel (self)protection
 # Disallow allocating the first 32k of memory (cannot be 64k due to ARM loader). 32768 invalid for ARM loader
