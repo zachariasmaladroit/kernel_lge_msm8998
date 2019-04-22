@@ -403,7 +403,7 @@ KBUILD_CFLAGS   := -mcpu=cortex-a73 -mtune=cortex-a73 \
 		   -Wno-unused-value -Wno-unused-parameter \
 		   -Wno-missing-field-initializers \
 		   -fivopts \
-		   -fshrink-wrap -fshrink-wrap-separate \
+		   -fshrink-wrap \
 		   -flive-range-shrinkage -ftree-vrp \
 		   -ftree-loop-distribution \
 		   -ftree-loop-distribute-patterns \
