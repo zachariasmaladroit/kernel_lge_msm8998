@@ -401,6 +401,14 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Wno-array-bounds -Wno-shift-overflow \
 		   -Wno-format-security \
 		   -fdiagnostics-color=always \
+		   -fivopts \
+		   -fshrink-wrap -fshrink-wrap-separate \
+		   -flive-range-shrinkage -ftree-vrp \
+		   -ftree-loop-distribution \
+		   -ftree-loop-distribute-patterns \
+		   -freorder-blocks -freorder-blocks-and-partition \
+		   -fipa-icf -flra-remat -fipa-ra \
+		   -fno-delete-null-pointer-checks \
 		   -march=armv8-a+crypto+crc \
 		   -mcpu=cortex-a53+crypto+crc \
 		   -std=gnu89 $(call cc-option,-fno-PIE)
