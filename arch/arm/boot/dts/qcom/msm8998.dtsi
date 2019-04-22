@@ -2790,7 +2790,7 @@
 		compatible = "qcom,msm-thermal-simple";
 		qcom,thermal-vadc = <&pm8998_vadc>;
 		qcom,adc-channel = <0x4c>;
-		qcom,poll-ms = <3000>;
+		qcom,poll-ms = <300>;
 		qcom,start-delay = <60>;
 
 		zone@0 {
