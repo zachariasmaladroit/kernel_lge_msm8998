@@ -5887,12 +5887,12 @@ CONFIG_IOSCHED_BFQ=y
 CONFIG_IOSCHED_ANXIETY=y
 # CONFIG_DEFAULT_DEADLINE is not set
 # CONFIG_DEFAULT_CFQ is not set
-# CONFIG_DEFAULT_NOOP is not set
+CONFIG_DEFAULT_NOOP=y
 # CONFIG_DEFAULT_SIO is not set
 # CONFIG_DEFAULT_FIOPS is not set
 # CONFIG_DEFAULT_ZEN is not set
-CONFIG_DEFAULT_ANXIETY=y
-CONFIG_DEFAULT_IOSCHED="anxiety"
+# CONFIG_DEFAULT_ANXIETY is not set
+CONFIG_DEFAULT_IOSCHED="noop"
 
 # disable for debug, security, attack surface
 # CONFIG_MSM_RDBG is not set # remote debugger driver (=m by default)
