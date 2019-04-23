@@ -7,7 +7,7 @@
 static int jolla_kernel_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "{\"kernel-name\": \"marduk_kernel_joan\","
-			"\"version\": \"vI_test01\","
+			"\"version\": \"vI_test01_mk2\","
 			"\"buildtime\": \"%s\"}\n", JOLLA_KERNEL_TIMESTAMP);
 	return 0;
 }

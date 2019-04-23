@@ -1,7 +1,7 @@
 VERSION = 4
 PATCHLEVEL = 4
 SUBLEVEL = 174
-EXTRAVERSION = _marduk_I_test01
+EXTRAVERSION = _marduk_I_test01_mk2
 NAME = Blurry Fish Butt
 
 # *DOCUMENTATION*
