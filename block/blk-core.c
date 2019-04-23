@@ -3844,7 +3844,6 @@ void blk_flush_plug_list(struct blk_plug *plug, bool from_schedule)
 	if (q)
 		queue_unplugged(q, depth, from_schedule);
 }
-EXPORT_SYMBOL(blk_flush_plug_list);
 
 void blk_finish_plug(struct blk_plug *plug)
 {
