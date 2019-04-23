@@ -5994,4 +5994,4 @@ CONFIG_BLKDEV_MIN_RQ=4
 
 # use thin archives instead of ld -r
 # needs (k)build infrastructure changes (scripts/ folder)
-CONFIG_THIN_ARCHIVES=y
+# CONFIG_THIN_ARCHIVES is not set
