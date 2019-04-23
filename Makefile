@@ -404,6 +404,8 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fivopts \
 		   -fshrink-wrap -fshrink-wrap-separate \
 		   -flive-range-shrinkage -ftree-vrp \
+		   -fipa-bit-cp -fipa-vrp -fsplit-loops \
+		   -floop-nest-optimize -floop-interchange -floop-unroll-and-jam \
 		   -ftree-loop-distribution \
 		   -ftree-loop-distribute-patterns \
 		   -freorder-blocks -freorder-blocks-and-partition \
