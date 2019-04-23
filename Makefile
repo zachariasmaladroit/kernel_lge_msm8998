@@ -394,11 +394,13 @@ LINUXINCLUDE    := \
 
 KBUILD_CPPFLAGS := -D__KERNEL__
 
-KBUILD_CFLAGS   := -mcpu=cortex-a73 -mtune=cortex-a73 \
-		   -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
+KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
+		   -fdiagnostics-color=always \
+		   -march=armv8-a+crypto+crc \
+		   -mcpu=cortex-a53+crypto+crc \
 		   -std=gnu89 $(call cc-option,-fno-PIE) \
 		   -fmodulo-sched -fmodulo-sched-allow-regmoves
 
