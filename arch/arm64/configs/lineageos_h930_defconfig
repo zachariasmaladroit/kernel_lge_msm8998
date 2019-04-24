@@ -5770,3 +5770,52 @@ CONFIG_MODULE_SIG_SHA512=y
 CONFIG_MODULE_SIG_HASH="sha512"
 # CONFIG_MODULE_COMPRESS is not set
 CONFIG_MODULES_TREE_LOOKUP=y
+
+# no modules load
+# CONFIG_IOSCHED_TEST is not set
+# CONFIG_SCSI_UFS_TEST is not set
+# CONFIG_MSM_RDBG is not set # remote debug
+# CONFIG_USB_GSPCA is not set
+CONFIG_BRIDGE_NETFILTER=y
+
+# DVB, disable or needed for some weird streaming usage-case ?
+# CONFIG_DVB_MPQ is not set # =m
+# CONFIG_DVB_MPQ_DEMUX is not set # =m
+CONFIG_DVB_MPQ_NUM_DMX_DEVICES=4
+# CONFIG_DVB_MPQ_TSPP1 is not set # =y
+# CONFIG_DVB_MPQ_SW is not set
+# CONFIG_DVB_MPQ_MEDIA_BOX_DEMUX is not set
+# CONFIG_TSPP is not set # =m
+
+# media tuners (DVB, etc.)
+# CONFIG_MEDIA_DIGITAL_TV_SUPPORT is not set
+# CONFIG_DVB_CORE is not set
+# CONFIG_DVB_NET is not set
+# CONFIG_TTPCI_EEPROM is not set
+CONFIG_DVB_MAX_ADAPTERS=8
+# CONFIG_DVB_DYNAMIC_MINORS is not set
+# CONFIG_LGE_BROADCAST_ISDBT_JAPAN is not set
+CONFIG_MEDIA_SUBDRV_AUTOSELECT=y
+# CONFIG_MEDIA_TUNER is not set
+# CONFIG_MEDIA_TUNER_SIMPLE is not set
+# CONFIG_MEDIA_TUNER_TDA8290 is not set
+# CONFIG_MEDIA_TUNER_TDA827X is not set
+# CONFIG_MEDIA_TUNER_TDA18271 is not set
+# CONFIG_MEDIA_TUNER_TDA9887 is not set
+# CONFIG_MEDIA_TUNER_MT20XX is not set
+# CONFIG_MEDIA_TUNER_XC2028 is not set
+# CONFIG_MEDIA_TUNER_XC5000 is not set
+# CONFIG_MEDIA_TUNER_XC4000 is not set
+# CONFIG_MEDIA_TUNER_MC44S803 is not set
+
+# build drivers INto the kernel
+# CONFIG_USB_GSPCA is not set # most likely NOT needed , disable it
+
+# DVB & TV functionality (ko only)
+# CONFIG_DVB_MPQ is not set
+CONFIG_DVB_MPQ_DEMUX=m
+CONFIG_DVB_MPQ_NUM_DMX_DEVICES=4
+CONFIG_DVB_MPQ_TSPP1=y
+# CONFIG_DVB_MPQ_SW is not set
+# CONFIG_DVB_MPQ_MEDIA_BOX_DEMUX is not set
+# CONFIG_TSPP is not set # dep
