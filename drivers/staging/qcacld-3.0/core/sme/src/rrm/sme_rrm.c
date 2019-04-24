@@ -172,7 +172,8 @@ sme_rrm_send_beacon_report_xmit_ind(tpAniSirGlobal mac_ctx,
 {
 	tpSirBssDescription bss_desc = NULL;
 	tpSirBeaconReportXmitInd beacon_rep;
-	uint16_t length, ie_len, tot_len;
+	uint16_t length;
+	uint32_t size;
 	uint8_t  i = 0, j = 0, counter = 0;
 	tCsrScanResultInfo *cur_result = NULL;
 	QDF_STATUS status = QDF_STATUS_E_FAILURE;
@@ -207,18 +208,13 @@ sme_rrm_send_beacon_report_xmit_ind(tpAniSirGlobal mac_ctx,
 			bss_desc = &cur_result->BssDescriptor;
 			if (bss_desc == NULL)
 				break;
-			ie_len = GET_IE_LEN_IN_BSS(bss_desc->length);
-			tot_len = ie_len + sizeof(*bss_desc);
-			beacon_rep->pBssDescription[i] =
-				qdf_mem_malloc(tot_len);
+			size =  bss_desc->length + sizeof(bss_desc->length);
+			beacon_rep->pBssDescription[i] = qdf_mem_malloc(size);
 			if (NULL ==
 				beacon_rep->pBssDescription[i])
 				break;
 			qdf_mem_copy(beacon_rep->pBssDescription[i],
-				bss_desc, sizeof(tSirBssDescription));
-			qdf_mem_copy(
-				&beacon_rep->pBssDescription[i]->ieFields[0],
-				bss_desc->ieFields, ie_len);
+				bss_desc, size);
 			bss_desc_to_free[i] =
 				beacon_rep->pBssDescription[i];
 			sme_debug("RRM Result Bssid = " MAC_ADDRESS_STR
@@ -837,6 +833,14 @@ QDF_STATUS sme_rrm_process_beacon_report_req_ind(tpAniSirGlobal pMac,
 
 	sme_debug("Received Beacon report request ind Channel = %d",
 		pBeaconReq->channelInfo.channelNum);
+
+	if (pBeaconReq->channelList.numChannels >
+	    SIR_ESE_MAX_MEAS_IE_REQS) {
+		sme_err("Beacon report request numChannels:%u exceeds max num channels",
+			pBeaconReq->channelList.numChannels);
+		return QDF_STATUS_E_INVAL;
+	}
+
 	/* section 11.10.8.1 (IEEE Std 802.11k-2008) */
 	/* channel 0 and 255 has special meaning. */
 	if ((pBeaconReq->channelInfo.channelNum == 0) ||

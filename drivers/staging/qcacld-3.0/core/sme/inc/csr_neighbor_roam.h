@@ -332,6 +332,8 @@ void csr_roam_reset_roam_params(tpAniSirGlobal mac_ptr);
 #define REASON_SUPPLICANT_DISABLED_ROAMING          39
 #define REASON_CTX_INIT                             40
 #define REASON_FILS_PARAMS_CHANGED                  41
+#define REASON_SME_ISSUED                           42
+#define REASON_DRIVER_ENABLED                       43
 
 #if defined(WLAN_FEATURE_HOST_ROAM) || defined(WLAN_FEATURE_ROAM_OFFLOAD)
 QDF_STATUS csr_roam_offload_scan(tpAniSirGlobal pMac, uint8_t sessionId,
@@ -358,6 +360,19 @@ static inline QDF_STATUS csr_roam_offload_scan(tpAniSirGlobal pMac,
 QDF_STATUS csr_update_fils_config(tpAniSirGlobal mac, uint8_t session_id,
 				  tCsrRoamProfile *src_profile);
 #endif
+
+/**
+ * csr_get_roam_enabled_sta_sessionid() - get the session id of the sta on which
+ * roaming is enabled.
+ * @mac_ctx:  pointer to global mac structure
+ *
+ * The function check if any sta is present and has roaming enabled and return
+ * the session id of the sta with roaming enabled else if roaming is not enabled
+ * on any STA return CSR_SESSION_ID_INVALID
+ *
+ * Return: session id of STA on which roaming is enabled
+ */
+uint8_t csr_get_roam_enabled_sta_sessionid(tpAniSirGlobal mac_ctx);
 
 QDF_STATUS csr_neighbor_roam_handoff_req_hdlr(tpAniSirGlobal pMac, void *pMsg);
 QDF_STATUS csr_neighbor_roam_proceed_with_handoff_req(tpAniSirGlobal pMac,
@@ -411,5 +426,19 @@ static inline void csr_neighbor_roam_send_lfr_metric_event(
 QDF_STATUS csr_roam_stop_wait_for_key_timer(tpAniSirGlobal pMac);
 QDF_STATUS csr_roam_copy_connected_profile(tpAniSirGlobal pMac,
 		uint32_t sessionId, tCsrRoamProfile *pDstProfile);
+
+/**
+ * csr_invoke_neighbor_report_request - Send neighbor report invoke command to
+ *					WMA
+ * @mac_ctx: MAC context
+ * @session_id: session id
+ *
+ * API called from IW to invoke neighbor report request to WMA then to FW
+ *
+ * Return: QDF_STATUS
+ */
+QDF_STATUS csr_invoke_neighbor_report_request(uint8_t session_id,
+				struct sRrmNeighborReq *neighbor_report_req,
+				bool send_resp_to_host);
 
 #endif /* CSR_NEIGHBOR_ROAM_H */
