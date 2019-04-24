@@ -5626,3 +5626,7 @@ CONFIG_OID_REGISTRY=y
 CONFIG_ARCH_HAS_SG_CHAIN=y
 CONFIG_QMI_ENCDEC=y
 # CONFIG_QMI_ENCDEC_DEBUG is not set
+
+# use thin archives instead of ld -r
+# needs (k)build infrastructure changes (scripts/ folder)
+CONFIG_THIN_ARCHIVES=y
