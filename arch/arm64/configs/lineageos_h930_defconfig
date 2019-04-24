@@ -5815,3 +5815,7 @@ CONFIG_AUDIO_EXT_CLK=y
 CONFIG_SND_SOC_WCD_MBHC=y
 CONFIG_SND_SOC_WCD_DSP_MGR=y
 CONFIG_SND_SOC_WCD_SPI=y
+
+# eval / security vs. performance [vdso32 ?]
+# resource hog: 50% improved syscall performance by disabling (SECCOMP)
+# CONFIG_SECCOMP is not set
