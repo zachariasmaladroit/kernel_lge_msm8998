@@ -1,9 +1,6 @@
 /*
  * Copyright (c) 2016-2017 The Linux Foundation. All rights reserved.
  *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
  * above copyright notice and this permission notice appear in all
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 #include "hif.h"
@@ -81,6 +72,7 @@ QDF_STATUS hif_initialize_snoc_ops(struct hif_bus_ops *bus_ops)
 		&hif_snoc_display_stats;
 	bus_ops->hif_clear_stats =
 		&hif_snoc_clear_stats;
+	bus_ops->hif_addr_in_boundary = &hif_dummy_addr_in_boundary;
 
 	return QDF_STATUS_SUCCESS;
 }

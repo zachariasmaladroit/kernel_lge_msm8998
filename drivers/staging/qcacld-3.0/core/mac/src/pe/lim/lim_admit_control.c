@@ -1,9 +1,6 @@
 /*
  * Copyright (c) 2011-2017 The Linux Foundation. All rights reserved.
  *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
  * above copyright notice and this permission notice appear in all
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 /*
@@ -193,6 +184,7 @@ lim_validate_tspec(tpAniSirGlobal pMac,
 		   tSirMacTspecIE *pTspec, tpPESession psessionEntry)
 {
 	tSirRetStatus retval = eSIR_SUCCESS;
+
 	switch (pTspec->tsinfo.traffic.accessPolicy) {
 	case SIR_MAC_ACCESSPOLICY_EDCA:
 		retval = lim_validate_tspec_edca(pMac, pTspec, psessionEntry);
@@ -391,7 +383,7 @@ static void lim_tspec_delete(tpAniSirGlobal pMac, tpLimTspecInfo pInfo)
 	if (pInfo == NULL)
 		return;
 	/* pierre */
-	pe_debug("tspec entry: %d delete tspec: %p", pInfo->idx, pInfo);
+	pe_debug("tspec entry: %d delete tspec: %pK", pInfo->idx, pInfo);
 	pInfo->inuse = 0;
 
 	return;
@@ -554,6 +546,7 @@ tSirRetStatus lim_tspec_add(tpAniSirGlobal pMac,
 			 * LIM TSPEC list and add this new entry
 			 */
 			uint8_t ctspec = 0;
+
 			for (ctspec = 0, pTspecList = &pMac->lim.tspecInfo[0];
 			     ctspec < LIM_NUM_TSPEC_MAX;
 			     ctspec++, pTspecList++) {
@@ -832,6 +825,7 @@ tSirRetStatus lim_admit_control_init(tpAniSirGlobal pMac)
 tSirRetStatus lim_update_admit_policy(tpAniSirGlobal pMac)
 {
 	uint32_t val;
+
 	if (wlan_cfg_get_int(pMac, WNI_CFG_ADMIT_POLICY, &val) != eSIR_SUCCESS) {
 		pe_err("Unable to get CFG_ADMIT_POLICY");
 		return eSIR_FAILURE;
@@ -880,6 +874,7 @@ lim_send_hal_msg_add_ts(tpAniSirGlobal pMac,
 	tpAddTsParams pAddTsParam;
 
 	tpPESession psessionEntry = pe_find_session_by_session_id(pMac, sessionId);
+
 	if (psessionEntry == NULL) {
 		pe_err("Unable to get Session for session Id: %d",
 			sessionId);

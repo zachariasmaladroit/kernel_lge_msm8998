@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2011-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2011-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 #include <qdf_nbuf.h>               /* qdf_nbuf_t, etc. */
@@ -144,7 +135,12 @@ void ol_rx_send_pktlog_event(struct ol_txrx_pdev_t *pdev,
 {
 	struct ol_rx_remote_data data;
 
-	if (!pktlog_bit)
+	/**
+	 * pktlog is meant to log rx_desc information which is
+	 * already overwritten by radio header when monitor mode is ON.
+	 * Therefore, Do not log pktlog event when monitor mode is ON.
+	 */
+	if (!pktlog_bit || (cds_get_conparam() == QDF_GLOBAL_MONITOR_MODE))
 		return;
 
 	data.msdu = msdu;
@@ -160,6 +156,14 @@ void ol_rx_send_pktlog_event(struct ol_txrx_pdev_t *pdev,
 	struct ol_txrx_peer_t *peer, qdf_nbuf_t msdu, uint8_t pktlog_bit)
 {
 	struct ol_rx_remote_data data;
+
+	/**
+	 * pktlog is meant to log rx_desc information which is
+	 * already overwritten by radio header when monitor mode is ON.
+	 * Therefore, Do not log pktlog event when monitor mode is ON.
+	 */
+	if (cds_get_conparam() == QDF_GLOBAL_MONITOR_MODE)
+		return;
 
 	data.msdu = msdu;
 	if (peer)
@@ -194,7 +198,7 @@ void ol_rx_trigger_restore(htt_pdev_handle htt_pdev, qdf_nbuf_t head_msdu,
 	while (head_msdu) {
 		next = qdf_nbuf_next(head_msdu);
 		QDF_TRACE(QDF_MODULE_ID_TXRX, QDF_TRACE_LEVEL_INFO,
-			  "freeing %p\n", head_msdu);
+			  "freeing %pK\n", head_msdu);
 		qdf_nbuf_free(head_msdu);
 		head_msdu = next;
 	}
@@ -381,7 +385,7 @@ static void process_reorder(ol_txrx_pdev_handle pdev,
 			    qdf_nbuf_t head_msdu,
 			    qdf_nbuf_t tail_msdu,
 			    int num_mpdu_ranges,
-			    int num_pdus,
+			    int num_mpdus,
 			    bool rx_ind_release)
 {
 	htt_pdev_handle htt_pdev = pdev->htt_pdev;
@@ -756,7 +760,7 @@ ol_rx_sec_ind_handler(ol_txrx_pdev_handle pdev,
 		return;
 	}
 	ol_txrx_dbg(
-		"sec spec for peer %p (%02x:%02x:%02x:%02x:%02x:%02x): %s key of type %d\n",
+		"sec spec for peer %pK (%02x:%02x:%02x:%02x:%02x:%02x): %s key of type %d\n",
 		peer,
 		peer->mac_addr.raw[0], peer->mac_addr.raw[1],
 		peer->mac_addr.raw[2], peer->mac_addr.raw[3],
@@ -792,6 +796,8 @@ ol_rx_sec_ind_handler(ol_txrx_pdev_handle pdev,
 			peer->tids_last_pn[i].pn128[0] =
 				qdf_cpu_to_le64(
 					peer->tids_last_pn[i].pn128[0]);
+			if (sec_index == txrx_sec_ucast)
+				peer->tids_rekey_flag[i] = 1;
 		}
 	}
 }
@@ -915,13 +921,24 @@ ol_rx_inspect(struct ol_txrx_vdev_t *vdev,
 
 void
 ol_rx_offload_deliver_ind_handler(ol_txrx_pdev_handle pdev,
-				  qdf_nbuf_t msg, int msdu_cnt)
+				  qdf_nbuf_t msg, uint16_t msdu_cnt)
 {
 	int vdev_id, peer_id, tid;
 	qdf_nbuf_t head_buf, tail_buf, buf;
 	struct ol_txrx_peer_t *peer;
 	uint8_t fw_desc;
 	htt_pdev_handle htt_pdev = pdev->htt_pdev;
+
+	if (msdu_cnt > htt_rx_offload_msdu_cnt(htt_pdev)) {
+		ol_txrx_err("%s: invalid msdu_cnt=%u\n",
+			__func__,
+			msdu_cnt);
+
+		if (pdev->cfg.is_high_latency)
+			htt_rx_desc_frame_free(htt_pdev, msg);
+
+		return;
+	}
 
 	while (msdu_cnt) {
 		if (!htt_rx_offload_msdu_pop(htt_pdev, msg, &vdev_id, &peer_id,
@@ -1137,9 +1154,13 @@ ol_rx_filter(struct ol_txrx_vdev_t *vdev,
 }
 
 #ifdef WLAN_FEATURE_TSF_PLUS
-static inline void ol_rx_timestamp(void *rx_desc, qdf_nbuf_t msdu)
+static inline void ol_rx_timestamp(ol_pdev_handle pdev,
+				   void *rx_desc, qdf_nbuf_t msdu)
 {
 	struct htt_rx_ppdu_desc_t *rx_ppdu_desc;
+
+	if (!ol_cfg_is_ptp_rx_opt_enabled(pdev))
+		return;
 
 	if (!rx_desc || !msdu)
 		return;
@@ -1147,10 +1168,11 @@ static inline void ol_rx_timestamp(void *rx_desc, qdf_nbuf_t msdu)
 	rx_ppdu_desc = (struct htt_rx_ppdu_desc_t *)((uint8_t *)(rx_desc) -
 			HTT_RX_IND_HL_BYTES + HTT_RX_IND_HDR_PREFIX_BYTES);
 	msdu->tstamp = ns_to_ktime((u_int64_t)rx_ppdu_desc->tsf32 *
-			NSEC_PER_USEC);
+				   NSEC_PER_USEC);
 }
 #else
-static inline void ol_rx_timestamp(void *rx_desc, qdf_nbuf_t msdu)
+static inline void ol_rx_timestamp(ol_pdev_handle pdev,
+				   void *rx_desc, qdf_nbuf_t msdu)
 {
 }
 #endif
@@ -1196,7 +1218,7 @@ ol_rx_deliver(struct ol_txrx_vdev_t *vdev,
 		if (OL_RX_DECAP(vdev, peer, msdu, &info) != A_OK) {
 			discard = 1;
 			ol_txrx_dbg(
-				"decap error %p from peer %p (%02x:%02x:%02x:%02x:%02x:%02x) len %d\n",
+				"decap error %pK from peer %pK (%02x:%02x:%02x:%02x:%02x:%02x) len %d\n",
 				msdu, peer,
 				peer->mac_addr.raw[0], peer->mac_addr.raw[1],
 				peer->mac_addr.raw[2], peer->mac_addr.raw[3],
@@ -1336,7 +1358,7 @@ DONE:
 					       OL_RX_ERR_NONE);
 			TXRX_STATS_MSDU_INCR(vdev->pdev, rx.delivered, msdu);
 
-			ol_rx_timestamp(rx_desc, msdu);
+			ol_rx_timestamp(pdev->ctrl_pdev, rx_desc, msdu);
 			OL_TXRX_LIST_APPEND(deliver_list_head,
 					    deliver_list_tail, msdu);
 		}
@@ -1373,7 +1395,7 @@ ol_rx_discard(struct ol_txrx_vdev_t *vdev,
 
 		msdu_list = qdf_nbuf_next(msdu_list);
 		ol_txrx_dbg(
-			"discard rx %p from partly-deleted peer %p (%02x:%02x:%02x:%02x:%02x:%02x)\n",
+			"discard rx %pK from partly-deleted peer %pK (%02x:%02x:%02x:%02x:%02x:%02x)\n",
 			msdu, peer,
 			peer->mac_addr.raw[0], peer->mac_addr.raw[1],
 			peer->mac_addr.raw[2], peer->mac_addr.raw[3],
@@ -1405,9 +1427,7 @@ void ol_rx_peer_init(struct ol_txrx_pdev_t *pdev, struct ol_txrx_peer_t *peer)
 	peer->keyinstalled = 0;
 
 	peer->last_assoc_rcvd = 0;
-	peer->last_disassoc_rcvd = 0;
-	peer->last_deauth_rcvd = 0;
-
+	peer->last_disassoc_deauth_rcvd = 0;
 	qdf_atomic_init(&peer->fw_pn_check);
 }
 
@@ -1416,8 +1436,7 @@ ol_rx_peer_cleanup(struct ol_txrx_vdev_t *vdev, struct ol_txrx_peer_t *peer)
 {
 	peer->keyinstalled = 0;
 	peer->last_assoc_rcvd = 0;
-	peer->last_disassoc_rcvd = 0;
-	peer->last_deauth_rcvd = 0;
+	peer->last_disassoc_deauth_rcvd = 0;
 	ol_rx_reorder_peer_cleanup(vdev, peer);
 }
 
@@ -1454,6 +1473,11 @@ ol_rx_in_order_indication_handler(ol_txrx_pdev_handle pdev,
 	uint8_t pktlog_bit;
 #endif
 	uint32_t filled = 0;
+	if (tid >= OL_TXRX_NUM_EXT_TIDS) {
+		ol_txrx_err("%s:  invalid tid, %u\n", __FUNCTION__, tid);
+		WARN_ON(1);
+		return;
+	}
 
 	if (pdev) {
 		if (qdf_unlikely(QDF_GLOBAL_MONITOR_MODE == cds_get_conparam()))
@@ -1468,7 +1492,7 @@ ol_rx_in_order_indication_handler(ol_txrx_pdev_handle pdev,
 	}
 
 #if defined(HELIUMPLUS_DEBUG)
-	qdf_print("%s %d: rx_ind_msg 0x%p peer_id %d tid %d is_offload %d\n",
+	qdf_print("%s %d: rx_ind_msg 0x%pK peer_id %d tid %d is_offload %d\n",
 		  __func__, __LINE__, rx_ind_msg, peer_id, tid, is_offload);
 #endif
 
@@ -1650,7 +1674,7 @@ ol_rx_offload_paddr_deliver_ind_handler(htt_pdev_handle htt_pdev,
 			msdu_iter++;
 			msdu_count--;
 			QDF_TRACE(QDF_MODULE_ID_TXRX, QDF_TRACE_LEVEL_INFO,
-				  "skip msg_word %p, msdu #%d, continue next",
+				  "skip msg_word %pK, msdu #%d, continue next",
 				  msg_word, msdu_iter);
 			continue;
 		}

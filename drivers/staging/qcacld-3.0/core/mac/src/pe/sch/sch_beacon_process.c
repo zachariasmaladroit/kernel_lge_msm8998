@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 /*
@@ -72,6 +63,7 @@ ap_beacon_process_5_ghz(tpAniSirGlobal mac_ctx, uint8_t *rx_pkt_info,
 			uint32_t phy_mode)
 {
 	tpSirMacMgmtHdr mac_hdr = WMA_GET_RX_MAC_HEADER(rx_pkt_info);
+
 	if (!session->htCapability)
 		return;
 
@@ -393,10 +385,9 @@ sch_bcn_process_sta(tpAniSirGlobal mac_ctx,
 	beaconParams->bssIdx = *bssIdx;
 	qdf_mem_copy((uint8_t *) &session->lastBeaconTimeStamp,
 			(uint8_t *) bcn->timeStamp, sizeof(uint64_t));
-	session->lastBeaconDtimCount = bcn->tim.dtimCount;
 	session->currentBssBeaconCnt++;
-	if (session->lastBeaconDtimPeriod != bcn->tim.dtimPeriod) {
-		session->lastBeaconDtimPeriod = bcn->tim.dtimPeriod;
+	if (session->bcon_dtim_period != bcn->tim.dtimPeriod) {
+		session->bcon_dtim_period = bcn->tim.dtimPeriod;
 		lim_send_set_dtim_period(mac_ctx, bcn->tim.dtimPeriod,
 				session);
 	}
@@ -417,13 +408,9 @@ sch_bcn_process_sta(tpAniSirGlobal mac_ctx,
 		beaconParams->beaconInterval = (uint16_t) bi;
 	}
 
-	if (bcn->cfPresent) {
+	if (bcn->cfPresent)
 		cfg_set_int(mac_ctx, WNI_CFG_CFP_PERIOD,
 			    bcn->cfParamSet.cfpPeriod);
-		lim_send_cf_params(mac_ctx, *bssIdx,
-				   bcn->cfParamSet.cfpCount,
-				   bcn->cfParamSet.cfpPeriod);
-	}
 
 	/* No need to send DTIM Period and Count to HAL/SMAC */
 	/* SMAC already parses TIM bit. */
@@ -492,6 +479,10 @@ static void update_nss(tpAniSirGlobal mac_ctx, tpDphHashNode sta_ds,
 		       tpSirMacMgmtHdr mgmt_hdr)
 {
 	if (sta_ds->vhtSupportedRxNss != (beacon->OperatingMode.rxNSS + 1)) {
+		if (session_entry->nss_forced_1x1) {
+			pe_debug("Not Updating NSS for special AP");
+			return;
+		}
 		sta_ds->vhtSupportedRxNss =
 			beacon->OperatingMode.rxNSS + 1;
 		lim_set_nss_change(mac_ctx, session_entry,
@@ -533,10 +524,15 @@ sch_bcn_process_sta_ibss(tpAniSirGlobal mac_ctx,
 	uint32_t fw_vht_ch_wd = wma_get_vht_ch_width();
 	bool skip_opmode_update = false;
 
-	if (CHAN_ENUM_14 >= session->currentOperChannel)
-		cb_mode = mac_ctx->roam.configParam.channelBondingMode24GHz;
+	if (CDS_IS_CHANNEL_24GHZ(session->currentOperChannel)) {
+		if (session->force_24ghz_in_ht20)
+			cb_mode = WNI_CFG_CHANNEL_BONDING_MODE_DISABLE;
+		else
+			cb_mode = mac_ctx->roam.configParam.channelBondingMode24GHz;
+	}
 	else
 		cb_mode = mac_ctx->roam.configParam.channelBondingMode5GHz;
+
 	/* check for VHT capability */
 	pStaDs = dph_lookup_hash_entry(mac_ctx, pMh->sa, &aid,
 			&session->dph.dphHashTable);
@@ -756,6 +752,7 @@ static void __sch_beacon_process_for_session(tpAniSirGlobal mac_ctx,
 	uint8_t sendProbeReq = false;
 	tpSirMacMgmtHdr pMh = WMA_GET_RX_MAC_HEADER(rx_pkt_info);
 	int8_t regMax = 0, maxTxPower = 0, local_constraint;
+
 	qdf_mem_zero(&beaconParams, sizeof(tUpdateBeaconParams));
 	beaconParams.paramChangeBitmap = 0;
 
@@ -787,8 +784,12 @@ static void __sch_beacon_process_for_session(tpAniSirGlobal mac_ctx,
 			 * delete all TDLS peers before leaving BSS and proceed
 			 * for channel switch
 			 */
-			if (LIM_IS_STA_ROLE(session))
+			if (LIM_IS_STA_ROLE(session)) {
+#ifdef FEATURE_WLAN_TDLS
+				session->is_tdls_csa = true;
+#endif
 				lim_delete_tdls_peers(mac_ctx, session);
+			}
 
 			lim_update_channel_switch(mac_ctx, bcn, session);
 		} else if (session->gLimSpecMgmt.dot11hChanSwState ==
@@ -854,7 +855,7 @@ static void __sch_beacon_process_for_session(tpAniSirGlobal mac_ctx,
 	if (sendProbeReq)
 		lim_send_probe_req_mgmt_frame(mac_ctx, &session->ssId,
 			session->bssId, session->currentOperChannel,
-			session->selfMacAddr, session->dot11mode, 0, NULL);
+			session->selfMacAddr, session->dot11mode, NULL, NULL);
 
 	if ((false == mac_ctx->sap.SapDfsInfo.is_dfs_cac_timer_running)
 	    && beaconParams.paramChangeBitmap) {
@@ -900,8 +901,6 @@ sch_beacon_process(tpAniSirGlobal mac_ctx, uint8_t *rx_pkt_info,
 		return;
 	}
 
-	if (bcn.ssidPresent)
-		bcn.ssId.ssId[bcn.ssId.length] = 0;
 	/*
 	 * First process the beacon in the context of any existing AP or BTAP
 	 * session. This takes cares of following two scenarios:

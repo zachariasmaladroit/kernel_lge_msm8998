@@ -1,9 +1,6 @@
 /*
  * Copyright (c) 2015-2017 The Linux Foundation. All rights reserved.
  *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
  * above copyright notice and this permission notice appear in all
@@ -19,12 +16,6 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
- */
-
 /**
  * DOC: if_snoc.c
  *
@@ -38,7 +29,6 @@
 #include "ce_main.h"
 #include "ce_tasklet.h"
 #include "snoc_api.h"
-#include <soc/qcom/icnss.h>
 #include "pld_common.h"
 #include "qdf_util.h"
 #ifdef IPA_OFFLOAD
@@ -389,7 +379,7 @@ QDF_STATUS hif_snoc_setup_wakeup_sources(struct hif_softc *scn, bool enable)
 		return status;
 	}
 
-	irq_to_wake_on = icnss_get_irq(dl_pipe);
+	irq_to_wake_on = pld_get_irq(scn->qdf_dev->dev, dl_pipe);
 	if (irq_to_wake_on < 0) {
 		HIF_ERROR("%s: failed to map ce to irq", __func__);
 		return QDF_STATUS_E_RESOURCES;

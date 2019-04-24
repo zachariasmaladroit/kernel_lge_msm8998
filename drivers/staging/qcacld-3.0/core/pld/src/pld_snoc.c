@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2016-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2016-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 #include <linux/platform_device.h>
@@ -263,10 +254,6 @@ static int pld_snoc_uevent(struct device *dev,
 		data.uevent = PLD_FW_DOWN;
 		data.fw_down.crashed = uevent_data->crashed;
 		break;
-	case ICNSS_UEVENT_FW_READY:
-		data.uevent = PLD_FW_READY;
-		break;
-
 	default:
 		return 0;
 	}
@@ -275,8 +262,14 @@ static int pld_snoc_uevent(struct device *dev,
 	return 0;
 }
 
+#ifdef MULTI_IF_NAME
+#define PLD_SNOC_OPS_NAME "pld_snoc_" MULTI_IF_NAME
+#else
+#define PLD_SNOC_OPS_NAME "pld_snoc"
+#endif
+
 struct icnss_driver_ops pld_snoc_ops = {
-	.name       = "pld_snoc",
+	.name       = PLD_SNOC_OPS_NAME,
 	.probe      = pld_snoc_probe,
 	.remove     = pld_snoc_remove,
 	.shutdown   = pld_snoc_shutdown,
@@ -311,6 +304,7 @@ void pld_snoc_unregister_driver(void)
 
 /**
  * pld_snoc_wlan_enable() - Enable WLAN
+ * @dev: device
  * @config: WLAN configuration data
  * @mode: WLAN mode
  * @host_version: host software version
@@ -321,11 +315,15 @@ void pld_snoc_unregister_driver(void)
  * Return: 0 for success
  *         Non zero failure code for errors
  */
-int pld_snoc_wlan_enable(struct pld_wlan_enable_cfg *config,
+
+int pld_snoc_wlan_enable(struct device *dev, struct pld_wlan_enable_cfg *config,
 			 enum pld_driver_mode mode, const char *host_version)
 {
 	struct icnss_wlan_enable_cfg cfg;
 	enum icnss_driver_mode icnss_mode;
+
+	if (!dev)
+		return -ENODEV;
 
 	cfg.num_ce_tgt_cfg = config->num_ce_tgt_cfg;
 	cfg.ce_tgt_cfg = (struct ce_tgt_pipe_cfg *)
@@ -348,11 +346,13 @@ int pld_snoc_wlan_enable(struct pld_wlan_enable_cfg *config,
 		icnss_mode = ICNSS_MISSION;
 		break;
 	}
-	return icnss_wlan_enable(&cfg, icnss_mode, host_version);
+
+	return icnss_wlan_enable(dev, &cfg, icnss_mode, host_version);
 }
 
 /**
  * pld_snoc_wlan_disable() - Disable WLAN
+ * @dev: device
  * @mode: WLAN mode
  *
  * This function disables WLAN FW. It passes WLAN mode to FW.
@@ -360,13 +360,17 @@ int pld_snoc_wlan_enable(struct pld_wlan_enable_cfg *config,
  * Return: 0 for success
  *         Non zero failure code for errors
  */
-int pld_snoc_wlan_disable(enum pld_driver_mode mode)
+int pld_snoc_wlan_disable(struct device *dev, enum pld_driver_mode mode)
 {
-	return icnss_wlan_disable(ICNSS_OFF);
+	if (!dev)
+		return -ENODEV;
+
+	return icnss_wlan_disable(dev, ICNSS_OFF);
 }
 
 /**
  * pld_snoc_get_soc_info() - Get SOC information
+ * @dev: device
  * @info: buffer to SOC information
  *
  * Return SOC info to the buffer.
@@ -374,15 +378,15 @@ int pld_snoc_wlan_disable(enum pld_driver_mode mode)
  * Return: 0 for success
  *         Non zero failure code for errors
  */
-int pld_snoc_get_soc_info(struct pld_soc_info *info)
+int pld_snoc_get_soc_info(struct device *dev, struct pld_soc_info *info)
 {
 	int ret = 0;
 	struct icnss_soc_info icnss_info;
 
-	if (info == NULL)
+	if (info == NULL || !dev)
 		return -ENODEV;
 
-	ret = icnss_get_soc_info(&icnss_info);
+	ret = icnss_get_soc_info(dev, &icnss_info);
 	if (0 != ret)
 		return ret;
 

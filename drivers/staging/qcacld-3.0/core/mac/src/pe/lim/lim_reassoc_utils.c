@@ -1,8 +1,6 @@
 /*
  * Copyright (c) 2016-2017 The Linux Foundation. All rights reserved.
  *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
  * above copyright notice and this permission notice appear in all
@@ -129,6 +127,7 @@ void lim_handle_del_bss_in_re_assoc_context(tpAniSirGlobal pMac,
 		tpDphHashNode pStaDs;
 		tSirRetStatus retStatus = eSIR_SUCCESS;
 		tpSchBeaconStruct beacon_struct;
+
 		beacon_struct = qdf_mem_malloc(sizeof(tSchBeaconStruct));
 		if (NULL == beacon_struct) {
 			pe_err("beaconStruct alloc failed");
@@ -259,6 +258,7 @@ void lim_handle_add_bss_in_re_assoc_context(tpAniSirGlobal pMac,
 		tpDphHashNode pStaDs;
 		tSirRetStatus retStatus = eSIR_SUCCESS;
 		tSchBeaconStruct *pBeaconStruct;
+
 		pBeaconStruct =
 			qdf_mem_malloc(sizeof(tSchBeaconStruct));
 		if (NULL == pBeaconStruct) {

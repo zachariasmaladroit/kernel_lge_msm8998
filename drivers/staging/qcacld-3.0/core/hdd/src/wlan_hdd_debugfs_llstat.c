@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -38,6 +35,8 @@ struct ll_stats_buf {
 
 static struct ll_stats_buf ll_stats;
 
+static DEFINE_MUTEX(llstats_mutex);
+
 void hdd_debugfs_process_iface_stats(hdd_adapter_t *adapter,
 		void *data, uint32_t num_peers)
 {
@@ -51,14 +50,22 @@ void hdd_debugfs_process_iface_stats(hdd_adapter_t *adapter,
 	uint8_t *buffer;
 
 	ENTER();
-	iface_stat = data;
 
+	mutex_lock(&llstats_mutex);
+	if (!ll_stats.result) {
+		mutex_unlock(&llstats_mutex);
+		hdd_err("LL statistics buffer is NULL");
+		return;
+	}
+
+	iface_stat = data;
 	buffer = ll_stats.result;
 	buffer += ll_stats.len;
 	len = scnprintf(buffer, DEBUGFS_LLSTATS_BUF_SIZE - ll_stats.len,
 			"\n\n===LL_STATS_IFACE: num_peers: %d===", num_peers);
 
 	if (false == hdd_get_interface_info(adapter, &iface_stat->info)) {
+		mutex_unlock(&llstats_mutex);
 		hdd_err("hdd_get_interface_info get fail");
 		return;
 	}
@@ -136,6 +143,7 @@ void hdd_debugfs_process_iface_stats(hdd_adapter_t *adapter,
 	}
 
 	ll_stats.len += len;
+	mutex_unlock(&llstats_mutex);
 	EXIT();
 }
 
@@ -150,7 +158,9 @@ void hdd_debugfs_process_peer_stats(hdd_adapter_t *adapter, void *data)
 
 	ENTER();
 
+	mutex_lock(&llstats_mutex);
 	if (!ll_stats.result) {
+		mutex_unlock(&llstats_mutex);
 		hdd_err("LL statistics buffer is NULL");
 		return;
 	}
@@ -197,6 +207,7 @@ void hdd_debugfs_process_peer_stats(hdd_adapter_t *adapter, void *data)
 				(num_rate * sizeof(tSirWifiRateStat)));
 	}
 	ll_stats.len += len;
+	mutex_unlock(&llstats_mutex);
 	EXIT();
 
 }
@@ -212,7 +223,9 @@ void hdd_debugfs_process_radio_stats(hdd_adapter_t *adapter,
 
 	ENTER();
 
+	mutex_lock(&llstats_mutex);
 	if (!ll_stats.result) {
+		mutex_unlock(&llstats_mutex);
 		hdd_err("LL statistics buffer is NULL");
 		return;
 	}
@@ -274,26 +287,35 @@ void hdd_debugfs_process_radio_stats(hdd_adapter_t *adapter,
 		radio_stat++;
 	}
 	ll_stats.len += len;
+	mutex_unlock(&llstats_mutex);
 	EXIT();
 }
 
 static inline void wlan_hdd_llstats_free_buf(void)
 {
+	mutex_lock(&llstats_mutex);
 	qdf_mem_free(ll_stats.result);
 	ll_stats.result = NULL;
 	ll_stats.len =  0;
+	mutex_unlock(&llstats_mutex);
 }
 
 static int wlan_hdd_llstats_alloc_buf(void)
 {
+	mutex_lock(&llstats_mutex);
+	if (ll_stats.result) {
+		mutex_unlock(&llstats_mutex);
+		hdd_err("Buffer is already allocated");
+		return 0;
+	}
 	ll_stats.len = 0;
-
 	ll_stats.result = qdf_mem_malloc(DEBUGFS_LLSTATS_BUF_SIZE);
 	if (!ll_stats.result) {
+		mutex_unlock(&llstats_mutex);
 		hdd_err("LL Stats buffer allocation failed");
 		return -EINVAL;
 	}
-
+	mutex_unlock(&llstats_mutex);
 	return 0;
 }
 
@@ -314,15 +336,17 @@ static ssize_t hdd_debugfs_stats_update(char __user *buf, size_t count,
 	ssize_t ret_cnt;
 
 	ENTER();
-
+	mutex_lock(&llstats_mutex);
 	if (!ll_stats.result) {
+		mutex_unlock(&llstats_mutex);
 		hdd_err("Trying to read from NULL buffer");
 		return 0;
 	}
 
-	hdd_info("LL stats read req: count: %zu, pos: %lld", count, *pos);
 	ret_cnt = simple_read_from_buffer(buf, count, pos,
 			ll_stats.result, ll_stats.len);
+	mutex_unlock(&llstats_mutex);
+	hdd_debug("LL stats read req: count: %zu, pos: %lld", count, *pos);
 
 	EXIT();
 	return ret_cnt;
@@ -400,7 +424,7 @@ static int __wlan_hdd_open_ll_stats_debugfs(struct inode *inode,
 {
 	hdd_adapter_t *adapter;
 	hdd_context_t *hdd_ctx;
-	int ret;
+	int errno;
 
 	ENTER();
 
@@ -408,26 +432,28 @@ static int __wlan_hdd_open_ll_stats_debugfs(struct inode *inode,
 		file->private_data = inode->i_private;
 
 	adapter = (hdd_adapter_t *)file->private_data;
-	if ((NULL == adapter) || (WLAN_HDD_ADAPTER_MAGIC != adapter->magic)) {
-		hdd_err("Invalid adapter or adapter has invalid magic");
-		return -EINVAL;
-	}
+	errno = hdd_validate_adapter(adapter);
+	if (errno)
+		return errno;
 
 	hdd_ctx = WLAN_HDD_GET_CTX(adapter);
-	ret = wlan_hdd_validate_context(hdd_ctx);
-	if (0 != ret)
-		return ret;
+	errno = wlan_hdd_validate_context(hdd_ctx);
+	if (errno)
+		return errno;
 
-	ret = wlan_hdd_llstats_alloc_buf();
-	if (0 != ret)
-		return ret;
+	errno = wlan_hdd_llstats_alloc_buf();
+	if (errno)
+		return errno;
 
-	ret = wlan_hdd_ll_stats_get(adapter, DEBUGFS_LLSTATS_REQID,
-				    DEBUGFS_LLSTATS_REQMASK);
-	if (0 != ret)
-		return ret;
+	errno = wlan_hdd_ll_stats_get(adapter, DEBUGFS_LLSTATS_REQID,
+				      DEBUGFS_LLSTATS_REQMASK);
+	if (errno) {
+		wlan_hdd_llstats_free_buf();
+		return errno;
+	}
 
 	EXIT();
+
 	return 0;
 }
 

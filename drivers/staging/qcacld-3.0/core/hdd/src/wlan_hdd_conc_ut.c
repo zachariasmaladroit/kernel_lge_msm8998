@@ -1,9 +1,6 @@
 /*
  * Copyright (c) 2015-2017 The Linux Foundation. All rights reserved.
  *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
  * above copyright notice and this permission notice appear in all
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 /* Include files */
@@ -150,6 +141,7 @@ static const char *pcl_type_to_string(uint8_t idx)
 void clean_report(hdd_context_t *hdd_ctx)
 {
 	uint32_t idx = 0;
+
 	while (idx < NUMBER_OF_SCENARIO) {
 		qdf_mem_zero(&report[idx], sizeof(struct report_t));
 		idx++;
@@ -160,6 +152,7 @@ void clean_report(hdd_context_t *hdd_ctx)
 void print_report(hdd_context_t *hdd_ctx)
 {
 	uint32_t idx = 0;
+
 	pr_info("+----------Report start -----------+\n");
 	while (idx < report_idx) {
 		pr_info("Idx:[%d]\nTitle:%s\nResult:[%s]\n\t1st_person[%s]\n\t2nd_persona[%s]\n\t3rd_persona[%s]\n\tDBS[%s]\n\tsystem_config[%s]\n\treason[%s]\n\tpcl[%s]\n",

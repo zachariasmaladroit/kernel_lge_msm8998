@@ -1,9 +1,6 @@
 /*
  * Copyright (c) 2015-2017 The Linux Foundation. All rights reserved.
  *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
  * above copyright notice and this permission notice appear in all
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 #ifndef __HIF_NAPI_H__
@@ -96,7 +87,7 @@ enum qca_napi_event {
 #define NAPI_ID2PIPE(i) ((i)-1)
 #define NAPI_PIPE2ID(p) ((p)+1)
 
-int hif_napi_lro_flush_cb_register(struct hif_opaque_softc *hif_hdl,
+int hif_napi_offld_flush_cb_register(struct hif_opaque_softc *hif_hdl,
 				   void (lro_flush_handler)(void *arg),
 				   void *(lro_init_handler)(void));
 
@@ -123,6 +114,7 @@ int hif_napi_destroy(struct hif_opaque_softc  *hif,
 		     int               force);
 
 struct qca_napi_data *hif_napi_get_all(struct hif_opaque_softc   *hif);
+struct qca_napi_info *hif_get_napi(int napi_id, void *napi_d);
 
 int hif_napi_event(struct hif_opaque_softc     *hif,
 		   enum  qca_napi_event event,
@@ -238,6 +230,11 @@ static inline int hif_napi_destroy(struct hif_opaque_softc  *hif,
 static inline struct qca_napi_data *hif_napi_get_all(
 				struct hif_opaque_softc *hif)
 { return NULL; }
+
+static inline struct napi_struct *hif_get_napi(int napi_id, void *napi_d)
+{
+	return NULL;
+}
 
 static inline int hif_napi_event(struct hif_opaque_softc     *hif,
 				 enum  qca_napi_event event,

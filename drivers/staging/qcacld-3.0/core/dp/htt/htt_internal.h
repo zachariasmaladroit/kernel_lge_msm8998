@@ -1,9 +1,6 @@
 /*
  * Copyright (c) 2011, 2014-2017 The Linux Foundation. All rights reserved.
  *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
  * above copyright notice and this permission notice appear in all
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 #ifndef _HTT_INTERNAL__H_
@@ -182,7 +173,7 @@ static inline struct htt_host_rx_desc_base *htt_rx_desc(qdf_nbuf_t msdu)
 		~HTT_RX_DESC_ALIGN_MASK);
 }
 
-#if defined(FEATURE_LRO)
+#if defined(HELIUMPLUS)
 /**
  * htt_print_rx_desc_lro() - print LRO information in the rx
  * descriptor
@@ -223,7 +214,7 @@ static inline void htt_print_rx_desc_lro(struct htt_host_rx_desc_base *rx_desc)
 }
 
 /**
- * htt_print_rx_desc_lro() - extract LRO information from the rx
+ * htt_rx_extract_lro_info() - extract LRO information from the rx
  * descriptor
  * @msdu: network buffer
  * @rx_desc: HTT rx descriptor
@@ -265,13 +256,16 @@ static inline void htt_rx_extract_lro_info(qdf_nbuf_t msdu,
 			rx_desc->msdu_start.flow_id_toeplitz;
 	}
 }
-#else
-static inline void htt_print_rx_desc_lro(struct htt_host_rx_desc_base *rx_desc)
-{}
+#else /* !HELIUMPLUS */
 static inline void htt_rx_extract_lro_info(qdf_nbuf_t msdu,
-	 struct htt_host_rx_desc_base *rx_desc) {}
-#endif /* FEATURE_LRO */
+	 struct htt_host_rx_desc_base *rx_desc)
+{
+}
 
+static inline void htt_print_rx_desc_lro(struct htt_host_rx_desc_base *rx_desc)
+{
+}
+#endif /* !HELIUMPLUS */
 static inline void htt_print_rx_desc(struct htt_host_rx_desc_base *rx_desc)
 {
 	qdf_print
@@ -700,7 +694,7 @@ static inline int htt_display_rx_buf_debug(struct htt_pdev_t *pdev)
 			if (buf[i].posted != 0)
 				QDF_TRACE(QDF_MODULE_ID_HTT,
 					  QDF_TRACE_LEVEL_INFO,
-					  "[%d][0x%x] %p %lu %p %llu %llu",
+					  "[%d][0x%x] %pK %lu %pK %llu %llu",
 					  i, buf[i].cpu,
 					  buf[i].nbuf_data,
 					  (unsigned long)buf[i].paddr,

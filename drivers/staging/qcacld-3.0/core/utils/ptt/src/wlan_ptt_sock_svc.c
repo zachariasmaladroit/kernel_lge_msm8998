@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -19,12 +16,6 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
- */
-
 /******************************************************************************
 * wlan_ptt_sock_svc.c
 *
@@ -38,6 +29,7 @@
 #include <wlan_ptt_sock_svc.h>
 #include <qdf_types.h>
 #include <qdf_trace.h>
+#include "wlan_hdd_main.h"
 
 #ifdef CNSS_GENL
 #include <net/cnss_nl.h>
@@ -63,7 +55,7 @@ static void ptt_sock_dump_buf(const unsigned char *pbuf, int cnt)
 	for (i = 0; i < cnt; i++) {
 		if ((i % 16) == 0)
 			QDF_TRACE(QDF_MODULE_ID_QDF, QDF_TRACE_LEVEL_INFO,
-				  "\n%p:", pbuf);
+				  "\n%pK:", pbuf);
 		QDF_TRACE(QDF_MODULE_ID_QDF, QDF_TRACE_LEVEL_INFO, " %02X",
 			  *pbuf);
 		pbuf++;
@@ -139,7 +131,7 @@ int ptt_sock_send_msg_to_app(tAniHdr *wmsg, int radio, int src_mod, int pid)
 			  __func__, radio);
 		return -EINVAL;
 	}
-	payload_len = wmsg_length + sizeof(wnl->radio) + sizeof(*wmsg);
+	payload_len = wmsg_length + sizeof(wnl->radio);
 	tot_msg_len = NLMSG_SPACE(payload_len);
 	skb = dev_alloc_skb(tot_msg_len);
 	if (skb  == NULL) {
@@ -269,6 +261,7 @@ static int ptt_sock_rx_nlink_msg(struct sk_buff *skb)
  */
 static void ptt_cmd_handler(const void *data, int data_len, void *ctx, int pid)
 {
+	uint16_t length;
 	struct sptt_app_reg_req *payload;
 	struct nlattr *tb[CLD80211_ATTR_MAX + 1];
 
@@ -276,7 +269,7 @@ static void ptt_cmd_handler(const void *data, int data_len, void *ctx, int pid)
 	 * audit note: it is ok to pass a NULL policy here since a
 	 * length check on the data is added later already
 	 */
-	if (nla_parse(tb, CLD80211_ATTR_MAX, data, data_len, NULL)) {
+	if (hdd_nla_parse(tb, CLD80211_ATTR_MAX, data, data_len, NULL)) {
 		PTT_TRACE(QDF_TRACE_LEVEL_ERROR, "Invalid ATTR");
 		return;
 	}
@@ -293,6 +286,14 @@ static void ptt_cmd_handler(const void *data, int data_len, void *ctx, int pid)
 	}
 
 	payload = (struct sptt_app_reg_req *)(nla_data(tb[CLD80211_ATTR_DATA]));
+	length = be16_to_cpu(payload->wmsg.length);
+
+	if (nla_len(tb[CLD80211_ATTR_DATA]) <  (length +
+						sizeof(payload->radio))) {
+		PTT_TRACE(QDF_TRACE_LEVEL_ERROR, "ATTR_DATA len check failed");
+		return;
+	}
+
 	switch (payload->wmsg.type) {
 	case ANI_MSG_APP_REG_REQ:
 		ptt_sock_send_msg_to_app(&payload->wmsg, payload->radio,
@@ -305,52 +306,30 @@ static void ptt_cmd_handler(const void *data, int data_len, void *ctx, int pid)
 	}
 }
 
-/**
- * ptt_sock_activate_svc() - API to register PTT/PUMAC command handler
- *
- * API to register the PTT/PUMAC command handlers. Argument @pAdapter
- * is sent for prototype compatibility between new genl and legacy
- * implementation
- *
- * Return: 0
- */
-int ptt_sock_activate_svc(void)
+void ptt_sock_activate_svc(void)
 {
 	register_cld_cmd_cb(ANI_NL_MSG_PUMAC, ptt_cmd_handler, NULL);
 	register_cld_cmd_cb(ANI_NL_MSG_PTT, ptt_cmd_handler, NULL);
-	return 0;
 }
 
-/**
- * ptt_sock_deactivate_svc() - Dummy API to deactivate PTT service
- *
- * Return: Void
- */
 void ptt_sock_deactivate_svc(void)
 {
+	deregister_cld_cmd_cb(ANI_NL_MSG_PTT);
+	deregister_cld_cmd_cb(ANI_NL_MSG_PUMAC);
 }
 #else
 
-/**
- * ptt_sock_activate_svc() - activate PTT service
- *
- * Return: 0
- */
-int ptt_sock_activate_svc(void)
+void ptt_sock_activate_svc(void)
 {
 	ptt_pid = INVALID_PID;
 	nl_srv_register(ANI_NL_MSG_PUMAC, ptt_sock_rx_nlink_msg);
 	nl_srv_register(ANI_NL_MSG_PTT, ptt_sock_rx_nlink_msg);
-	return 0;
 }
 
-/**
- * ptt_sock_deactivate_svc() - deactivate PTT service
- *
- * Return: Void
- */
 void ptt_sock_deactivate_svc(void)
 {
+	nl_srv_unregister(ANI_NL_MSG_PTT, ptt_sock_rx_nlink_msg);
+	nl_srv_unregister(ANI_NL_MSG_PUMAC, ptt_sock_rx_nlink_msg);
 	ptt_pid = INVALID_PID;
 }
 #endif

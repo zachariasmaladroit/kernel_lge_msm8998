@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 #include <qdf_nbuf.h>         /* qdf_nbuf_t, etc. */
@@ -341,7 +332,8 @@ ol_tx_tid(
 	return tid;
 }
 
-#if defined(CONFIG_HL_SUPPORT) && defined(FEATURE_WLAN_TDLS)
+#if defined(CONFIG_HL_SUPPORT) && \
+	defined(FEATURE_WLAN_TDLS) && defined(QCA_SUPPORT_TXRX_LOCAL_PEER_ID)
 static inline
 struct ol_txrx_peer_t *ol_tx_tdls_peer_find(struct ol_txrx_pdev_t *pdev,
 						struct ol_txrx_vdev_t *vdev,
@@ -350,14 +342,14 @@ struct ol_txrx_peer_t *ol_tx_tdls_peer_find(struct ol_txrx_pdev_t *pdev,
 	struct ol_txrx_peer_t *peer = NULL;
 
 	if (vdev->hlTdlsFlag) {
-		peer = ol_txrx_find_peer_by_addr(pdev,
-						vdev->hl_tdls_ap_mac_addr.raw,
-						peer_id);
+		peer = ol_txrx_peer_find_hash_find_inc_ref(pdev,
+					vdev->hl_tdls_ap_mac_addr.raw, 0, 1);
 		if (peer &&  (peer->peer_ids[0] == HTT_INVALID_PEER_ID)) {
+			OL_TXRX_PEER_UNREF_DELETE(peer);
 			peer = NULL;
 		} else {
 			if (peer)
-				OL_TXRX_PEER_INC_REF_CNT(peer);
+				*peer_id = peer->local_id;
 		}
 	}
 	if (!peer)
@@ -420,7 +412,7 @@ ol_tx_classify(
 			if (!peer) {
 				QDF_TRACE(QDF_MODULE_ID_TXRX,
 					  QDF_TRACE_LEVEL_ERROR,
-					  "Error: STA %p (%02x:%02x:%02x:%02x:%02x:%02x) trying to send bcast DA tx data frame w/o association\n",
+					  "Error: STA %pK (%02x:%02x:%02x:%02x:%02x:%02x) trying to send bcast DA tx data frame w/o association\n",
 					  vdev,
 					  vdev->mac_addr.raw[0],
 					  vdev->mac_addr.raw[1],
@@ -470,7 +462,7 @@ ol_tx_classify(
 			if (!peer) {
 				QDF_TRACE(QDF_MODULE_ID_TXRX,
 					  QDF_TRACE_LEVEL_ERROR,
-					  "Error: vdev %p (%02x:%02x:%02x:%02x:%02x:%02x) trying to send bcast/mcast, but no self-peer found\n",
+					  "Error: vdev %pK (%02x:%02x:%02x:%02x:%02x:%02x) trying to send bcast/mcast, but no self-peer found\n",
 					  vdev,
 					  vdev->mac_addr.raw[0],
 					  vdev->mac_addr.raw[1],
@@ -536,7 +528,7 @@ ol_tx_classify(
 			 */
 			QDF_TRACE(QDF_MODULE_ID_TXRX,
 				  QDF_TRACE_LEVEL_ERROR,
-				  "Error: vdev %p (%02x:%02x:%02x:%02x:%02x:%02x) trying to send unicast tx data frame to an unknown peer\n",
+				  "Error: vdev %pK (%02x:%02x:%02x:%02x:%02x:%02x) trying to send unicast tx data frame to an unknown peer\n",
 				  vdev,
 				  vdev->mac_addr.raw[0], vdev->mac_addr.raw[1],
 				  vdev->mac_addr.raw[2], vdev->mac_addr.raw[3],
@@ -600,7 +592,7 @@ ol_tx_classify(
 				wlan_op_mode_sta && tx_msdu_info->peer !=
 								NULL) {
 		ol_txrx_dbg(
-			   "%s: remove the peer reference %p\n",
+			   "%s: remove the peer reference %pK\n",
 			   __func__, peer);
 		/* remove the peer reference added above */
 		OL_TXRX_PEER_UNREF_DELETE(tx_msdu_info->peer);

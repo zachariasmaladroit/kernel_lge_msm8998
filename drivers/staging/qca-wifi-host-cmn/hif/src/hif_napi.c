@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2015-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2015-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -19,19 +16,13 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
- */
-
 /**
  * DOC: hif_napi.c
  *
  * HIF NAPI interface implementation
  */
 
-#include <string.h> /* memset */
+#include <linux/string.h> /* memset */
 
 /* Linux headers */
 #include <linux/cpumask.h>
@@ -44,7 +35,7 @@
 #ifdef CONFIG_SCHED_CORE_CTL
 #include <linux/sched/core_ctl.h>
 #endif
-#include <pld_snoc.h>
+#include <pld_common.h>
 #endif
 #include <linux/pm.h>
 
@@ -54,6 +45,7 @@
 #include <hif_io32.h>
 #include <ce_api.h>
 #include <ce_internal.h>
+#include "qdf_cpuhp.h"
 
 enum napi_decision_vector {
 	HIF_NAPI_NOEVENT = 0,
@@ -63,12 +55,12 @@ enum napi_decision_vector {
 #define ENABLE_NAPI_MASK (HIF_NAPI_INITED | HIF_NAPI_CONF_UP)
 
 #ifdef HELIUMPLUS
-static inline int hif_get_irq_for_ce(int ce_id)
+static inline int hif_get_irq_for_ce(struct device *dev, int ce_id)
 {
-	return pld_snoc_get_irq(ce_id);
+	return pld_get_irq(dev, ce_id);
 }
 #else /* HELIUMPLUS */
-static inline int hif_get_irq_for_ce(int ce_id)
+static inline int hif_get_irq_for_ce(struct device *dev, int ce_id)
 {
 	return -EINVAL;
 }
@@ -173,7 +165,8 @@ int hif_napi_create(struct hif_opaque_softc   *hif_ctx,
 		napii->scale = scale;
 		napii->id    = NAPI_PIPE2ID(i);
 		napii->hif_ctx = hif_ctx;
-		napii->irq   = hif_get_irq_for_ce(i);
+		if (hif->qdf_dev)
+			napii->irq   = hif_get_irq_for_ce(hif->qdf_dev->dev, i);
 
 		if (napii->irq < 0)
 			HIF_WARN("%s: bad IRQ value for CE %d: %d",
@@ -184,6 +177,7 @@ int hif_napi_create(struct hif_opaque_softc   *hif_ctx,
 		NAPI_DEBUG("adding napi=%pK to netdev=%pK (poll=%pK, bdgt=%d)",
 			   &(napii->napi), &(napii->netdev), poll, budget);
 		netif_napi_add(&(napii->netdev), &(napii->napi), poll, budget);
+		napii->offld_ctx = NULL;
 
 		NAPI_DEBUG("after napi_add");
 		NAPI_DEBUG("napi=0x%pK, netdev=0x%pK",
@@ -323,16 +317,18 @@ int hif_napi_destroy(struct hif_opaque_softc *hif_ctx,
 }
 
 /**
- * hif_napi_lro_flush_cb_register() - init and register flush callback for LRO
+ * hif_napi_offld_flush_cb_register() - init and register flush callback
  * @hif_hdl: pointer to hif context
- * @lro_flush_handler: register LRO flush callback
- * @lro_init_handler: Callback for initializing LRO
+ * @offld_flush_handler: register Rx offload flush callback
+ * @offld_init_handler: Callback for initializing Rx offfload
+ *
+ * Init and register flush callback for LRO or GRO Rx offload features
  *
  * Return: positive value on success and 0 on failure
  */
-int hif_napi_lro_flush_cb_register(struct hif_opaque_softc *hif_hdl,
-				   void (lro_flush_handler)(void *),
-				   void *(lro_init_handler)(void))
+int hif_napi_offld_flush_cb_register(struct hif_opaque_softc *hif_hdl,
+				   void (offld_flush_handler)(void *),
+				   void *(offld_init_handler)(void))
 {
 	int rc = 0;
 	int i;
@@ -348,17 +344,17 @@ int hif_napi_lro_flush_cb_register(struct hif_opaque_softc *hif_hdl,
 		for (i = 0; i < scn->ce_count; i++) {
 			napii = napid->napis[i];
 			if (napii) {
-				data = lro_init_handler();
+				data = offld_init_handler();
 				if (data == NULL) {
-					HIF_ERROR("%s: Failed to init LRO for CE %d",
+					HIF_ERROR("%s: Failed to init offld for CE %d",
 						  __func__, i);
 					continue;
 				}
-				napii->lro_flush_cb = lro_flush_handler;
-				napii->lro_ctx = data;
-				HIF_DBG("Registering LRO for ce_id %d NAPI callback for %d flush_cb %pK, lro_data %pK\n",
-					i, napii->id, napii->lro_flush_cb,
-					napii->lro_ctx);
+				napii->offld_flush_cb = offld_flush_handler;
+				napii->offld_ctx = data;
+				HIF_DBG("Registering offld for ce_id %d NAPI callback for %d flush_cb %pK, offld_data %pK\n",
+					i, napii->id, napii->offld_flush_cb,
+					napii->offld_ctx);
 				rc++;
 			}
 		}
@@ -366,6 +362,14 @@ int hif_napi_lro_flush_cb_register(struct hif_opaque_softc *hif_hdl,
 		HIF_ERROR("%s: hif_state NULL!", __func__);
 	}
 	return rc;
+}
+
+struct qca_napi_info *hif_get_napi(int napi_id, void *napi_d)
+{
+	struct qca_napi_data *napid = napi_d;
+	int id = NAPI_ID2PIPE(napi_id);
+
+	return napid->napis[id];
 }
 
 /**
@@ -391,11 +395,11 @@ void hif_napi_lro_flush_cb_deregister(struct hif_opaque_softc *hif_hdl,
 			napii = napid->napis[i];
 			if (napii) {
 				HIF_DBG("deRegistering LRO for ce_id %d NAPI callback for %d flush_cb %pK, lro_data %pK\n",
-					i, napii->id, napii->lro_flush_cb,
-					napii->lro_ctx);
-				napii->lro_flush_cb = NULL;
-				lro_deinit_cb(napii->lro_ctx);
-				napii->lro_ctx = NULL;
+					i, napii->id, napii->offld_flush_cb,
+					napii->offld_ctx);
+				napii->offld_flush_cb = NULL;
+				lro_deinit_cb(napii->offld_ctx);
+				napii->offld_ctx = NULL;
 			}
 		}
 	} else {
@@ -424,7 +428,7 @@ void *hif_napi_get_lro_info(struct hif_opaque_softc *hif_hdl, int napi_id)
 	napii = napid->napis[NAPI_ID2PIPE(napi_id)];
 
 	if (napii)
-		return napii->lro_ctx;
+		return napii->offld_ctx;
 	return 0;
 }
 
@@ -859,8 +863,8 @@ int hif_napi_poll(struct hif_opaque_softc *hif_ctx,
 	NAPI_DEBUG("%s: ce_per_engine_service processed %d msgs",
 		    __func__, rc);
 
-	if (napi_info->lro_flush_cb)
-		napi_info->lro_flush_cb(napi_info->lro_ctx);
+	if (napi_info->offld_flush_cb)
+		napi_info->offld_flush_cb(napi_info->offld_ctx);
 
 	/* do not return 0, if there was some work done,
 	 * even if it is below the scale
@@ -872,9 +876,10 @@ int hif_napi_poll(struct hif_opaque_softc *hif_ctx,
 			normalized++;
 		bucket = normalized / (QCA_NAPI_BUDGET / QCA_NAPI_NUM_BUCKETS);
 		if (bucket >= QCA_NAPI_NUM_BUCKETS) {
+			HIF_ERROR("Bad bucket#(%d) > QCA_NAPI_NUM_BUCKETS(%d)"
+				  " (rc=%d/normalized=%d- corrected",
+				  bucket, QCA_NAPI_NUM_BUCKETS, rc, normalized);
 			bucket = QCA_NAPI_NUM_BUCKETS - 1;
-			HIF_ERROR("Bad bucket#(%d) > QCA_NAPI_NUM_BUCKETS(%d)",
-				bucket, QCA_NAPI_NUM_BUCKETS);
 		}
 		napi_info->stats[cpu].napi_budget_uses[bucket]++;
 	} else {
@@ -902,8 +907,8 @@ int hif_napi_poll(struct hif_opaque_softc *hif_ctx,
 		if (normalized >= budget)
 			normalized = budget - 1;
 
-		/* enable interrupts */
 		napi_complete(napi);
+		/* enable interrupts */
 		hif_napi_enable_irq(hif_ctx, napi_info->id);
 		/* support suspend/resume */
 		qdf_atomic_dec(&(hif->active_tasklet_cnt));
@@ -1090,7 +1095,6 @@ static int hnc_link_clusters(struct qca_napi_data *napid)
 				   i, cl);
 			if ((cl < HNC_MIN_CLUSTER) || (cl > HNC_MAX_CLUSTER)) {
 				NAPI_DEBUG("Bad cluster (%d). SKIPPED\n", cl);
-				QDF_ASSERT(0);
 				/* continue if ASSERTs are disabled */
 				continue;
 			};
@@ -1152,102 +1156,91 @@ static int hnc_link_clusters(struct qca_napi_data *napid)
  */
 
 /**
- * hnc_cpu_notify_cb() - handles CPU hotplug events
+ * hnc_cpu_online_cb() - handles CPU hotplug "up" events
+ * @context: the associated HIF context
+ * @cpu: the CPU Id of the CPU the event happened on
  *
- * On transitions to online, we onlu handle the ONLINE event,
- * and ignore the PREP events, because we dont want to act too
- * early.
- * On transtion to offline, we act on PREP events, because
- * we may need to move the irqs/NAPIs to another CPU before
- * it is actually off-lined.
- *
- * Return: NOTIFY_OK (dont block action)
+ * Return: None
  */
-static int hnc_cpu_notify_cb(struct notifier_block *nb,
-			     unsigned long          action,
-			     void                  *hcpu)
+static void hnc_cpu_online_cb(void *context, uint32_t cpu)
 {
-	int rc = NOTIFY_OK;
-	unsigned long cpu = (unsigned long)hcpu;
-	struct hif_opaque_softc *hif;
-	struct qca_napi_data *napid = NULL;
+	struct hif_softc *hif = context;
+	struct qca_napi_data *napid = &hif->napi_data;
 
-	NAPI_DEBUG("-->%s(act=%ld, cpu=%ld)", __func__, action, cpu);
+	if (cpu >= NR_CPUS)
+		return;
 
-	napid = qdf_container_of(nb, struct qca_napi_data, hnc_cpu_notifier);
-	hif = &qdf_container_of(napid, struct hif_softc, napi_data)->osc;
+	NAPI_DEBUG("-->%s(act=online, cpu=%u)", __func__, cpu);
 
-	switch (action) {
-	case CPU_ONLINE:
-		napid->napi_cpu[cpu].state = QCA_NAPI_CPU_UP;
-		NAPI_DEBUG("%s: CPU %ld marked %d",
-			   __func__, cpu, napid->napi_cpu[cpu].state);
-		break;
-	case CPU_DEAD: /* already dead; we have marked it before, but ... */
-	case CPU_DEAD_FROZEN:
-		napid->napi_cpu[cpu].state = QCA_NAPI_CPU_DOWN;
-		NAPI_DEBUG("%s: CPU %ld marked %d",
-			   __func__, cpu, napid->napi_cpu[cpu].state);
-		break;
-	case CPU_DOWN_PREPARE:
-	case CPU_DOWN_PREPARE_FROZEN:
-		napid->napi_cpu[cpu].state = QCA_NAPI_CPU_DOWN;
+	napid->napi_cpu[cpu].state = QCA_NAPI_CPU_UP;
+	NAPI_DEBUG("%s: CPU %u marked %d",
+		   __func__, cpu, napid->napi_cpu[cpu].state);
 
-		NAPI_DEBUG("%s: CPU %ld marked %d; updating affinity",
-			   __func__, cpu, napid->napi_cpu[cpu].state);
-
-		/**
-		 * we need to move any NAPIs on this CPU out.
-		 * if we are in LO throughput mode, then this is valid
-		 * if the CPU is the the low designated CPU.
-		 */
-		hif_napi_event(hif,
-			       NAPI_EVT_CPU_STATE,
-			       (void *)
-			       ((cpu << 16) | napid->napi_cpu[cpu].state));
-		break;
-	default:
-		NAPI_DEBUG("%s: ignored. action: %ld", __func__, action);
-		break;
-	} /* switch */
-	NAPI_DEBUG("<--%s [%d]", __func__, rc);
-	return rc;
+	NAPI_DEBUG("<--%s", __func__);
 }
 
 /**
- * hnc_hotplug_hook() - installs a hotplug notifier
- * @hif_sc: hif_sc context
- * @register: !0 => register , =0 => deregister
+ * hnc_cpu_before_offline_cb() - handles CPU hotplug "prepare down" events
+ * @context: the associated HIF context
+ * @cpu: the CPU Id of the CPU the event happened on
  *
- * Because the callback relies on the data layout of
- * struct hif_softc & its napi_data member, this callback
- * registration requires that the hif_softc is passed in.
+ * On transtion to offline, we act on PREP events, because we may need to move
+ * the irqs/NAPIs to another CPU before it is actually off-lined.
  *
- * Note that this is different from the cpu notifier used by
- * rx_thread (cds_schedule.c).
- * We may consider combining these modifiers in the future.
- *
- * Return: 0: success
- *        <0: error
+ * Return: None
  */
-static int hnc_hotplug_hook(struct hif_softc *hif_sc, int install)
+static void hnc_cpu_before_offline_cb(void *context, uint32_t cpu)
 {
-	int rc = 0;
+	struct hif_softc *hif = context;
+	struct qca_napi_data *napid = &hif->napi_data;
 
-	NAPI_DEBUG("-->%s(%d)", __func__, install);
+	if (cpu >= NR_CPUS)
+		return;
 
-	if (install) {
-		hif_sc->napi_data.hnc_cpu_notifier.notifier_call
-			= hnc_cpu_notify_cb;
-		rc = register_hotcpu_notifier(
-			&hif_sc->napi_data.hnc_cpu_notifier);
-	} else {
-		unregister_hotcpu_notifier(
-			&hif_sc->napi_data.hnc_cpu_notifier);
-	}
+	NAPI_DEBUG("-->%s(act=before_offline, cpu=%u)", __func__, cpu);
 
-	NAPI_DEBUG("<--%s()[%d]", __func__, rc);
-	return rc;
+	napid->napi_cpu[cpu].state = QCA_NAPI_CPU_DOWN;
+
+	NAPI_DEBUG("%s: CPU %u marked %d; updating affinity",
+		   __func__, cpu, napid->napi_cpu[cpu].state);
+
+	/**
+	 * we need to move any NAPIs on this CPU out.
+	 * if we are in LO throughput mode, then this is valid
+	 * if the CPU is the the low designated CPU.
+	 */
+	hif_napi_event(GET_HIF_OPAQUE_HDL(hif),
+		       NAPI_EVT_CPU_STATE,
+		       (void *)
+		       ((size_t)cpu << 16 | napid->napi_cpu[cpu].state));
+
+	NAPI_DEBUG("<--%s", __func__);
+}
+
+static int hnc_hotplug_register(struct hif_softc *hif_sc)
+{
+	QDF_STATUS status;
+
+	NAPI_DEBUG("-->%s", __func__);
+
+	status = qdf_cpuhp_register(&hif_sc->napi_data.cpuhp_handler,
+				    hif_sc,
+				    hnc_cpu_online_cb,
+				    hnc_cpu_before_offline_cb);
+
+	NAPI_DEBUG("<--%s [%d]", __func__, status);
+
+	return qdf_status_to_os_return(status);
+}
+
+static void hnc_hotplug_unregister(struct hif_softc *hif_sc)
+{
+	NAPI_DEBUG("-->%s", __func__);
+
+	if (hif_sc->napi_data.cpuhp_handler)
+		qdf_cpuhp_unregister(&hif_sc->napi_data.cpuhp_handler);
+
+	NAPI_DEBUG("<--%s", __func__);
 }
 
 /**
@@ -1328,7 +1321,7 @@ int hif_napi_cpu_init(struct hif_opaque_softc *hif)
 		goto lab_err_topology;
 
 	/* install hotplug notifier */
-	rc = hnc_hotplug_hook(HIF_GET_SOFTC(hif), 1);
+	rc = hnc_hotplug_register(HIF_GET_SOFTC(hif));
 	if (0 != rc)
 		goto lab_err_hotplug;
 
@@ -1339,7 +1332,7 @@ int hif_napi_cpu_init(struct hif_opaque_softc *hif)
 
 lab_err_hotplug:
 	hnc_tput_hook(0);
-	hnc_hotplug_hook(HIF_GET_SOFTC(hif), 0);
+	hnc_hotplug_unregister(HIF_GET_SOFTC(hif));
 lab_err_topology:
 	memset(napid->napi_cpu, 0, sizeof(struct qca_napi_cpu) * NR_CPUS);
 lab_rss_init:
@@ -1366,7 +1359,7 @@ int hif_napi_cpu_deinit(struct hif_opaque_softc *hif)
 	rc = hnc_tput_hook(0);
 
 	/* uninstall hotplug notifier */
-	rc = hnc_hotplug_hook(HIF_GET_SOFTC(hif), 0);
+	hnc_hotplug_unregister(HIF_GET_SOFTC(hif));
 
 	/* clear the topology table */
 	memset(napid->napi_cpu, 0, sizeof(struct qca_napi_cpu) * NR_CPUS);

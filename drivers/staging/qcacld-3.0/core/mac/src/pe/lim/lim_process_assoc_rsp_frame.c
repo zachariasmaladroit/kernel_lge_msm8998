@@ -1,9 +1,6 @@
 /*
  * Copyright (c) 2011-2017 The Linux Foundation. All rights reserved.
  *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
  * above copyright notice and this permission notice appear in all
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 /*
@@ -219,6 +210,7 @@ void lim_update_assoc_sta_datas(tpAniSirGlobal mac_ctx,
 	if (qos_mode) {
 		if (assoc_rsp->edcaPresent) {
 			tSirRetStatus status;
+
 			status =
 				sch_beacon_edca_process(mac_ctx,
 					&assoc_rsp->edca, session_entry);
@@ -238,6 +230,7 @@ void lim_update_assoc_sta_datas(tpAniSirGlobal mac_ctx,
 	sta_ds->wsmEnabled = 0;
 	if (session_entry->limWmeEnabled && assoc_rsp->wmeEdcaPresent) {
 		tSirRetStatus status;
+
 		status = sch_beacon_edca_process(mac_ctx, &assoc_rsp->edca,
 				session_entry);
 		pe_debug("WME Edca set update based on AssocRsp: status %d",
@@ -431,6 +424,7 @@ static void lim_update_stads_ext_cap(tpAniSirGlobal mac_ctx,
 	tpDphHashNode sta_ds)
 {
 	struct s_ext_cap *ext_cap;
+
 	if (!assoc_rsp->ExtCap.present) {
 		sta_ds->timingMeasCap = 0;
 #ifdef FEATURE_WLAN_TDLS

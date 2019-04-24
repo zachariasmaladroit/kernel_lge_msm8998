@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 #ifndef __HDD_TDLS_H
@@ -496,6 +487,7 @@ typedef struct {
 	uint32_t puapsd_rx_frame_threshold;
 	uint32_t teardown_notification_ms;
 	uint32_t tdls_peer_kickout_threshold;
+	uint32_t tdls_discovery_wake_timeout;
 } tdlsInfo_t;
 
 int wlan_hdd_tdls_init(hdd_adapter_t *pAdapter);
@@ -715,7 +707,8 @@ bool wlan_hdd_tdls_check_enable_tdls_scan(hdd_context_t *hdd_ctx);
 bool wlan_hdd_tdls_check_peer_buf_capable(hdd_context_t *hdd_ctx,
 					  uint16_t connectedTdlsPeers);
 void hdd_update_tdls_ct_and_teardown_links(hdd_context_t *hdd_ctx);
-void wlan_hdd_tdls_disable_offchan_and_teardown_links(hdd_context_t *hddctx);
+void wlan_hdd_tdls_disable_offchan_and_teardown_links(hdd_context_t *hddctx,
+		bool disable_tdls_state);
 
 hddTdlsPeer_t *wlan_hdd_tdls_find_first_connected_peer(hdd_adapter_t *adapter);
 int hdd_set_tdls_offchannel(hdd_context_t *hdd_ctx, int offchannel);
@@ -851,7 +844,8 @@ static inline void hdd_update_tdls_ct_and_teardown_links(hdd_context_t *hdd_ctx)
 {
 }
 static inline void
-wlan_hdd_tdls_disable_offchan_and_teardown_links(hdd_context_t *hddctx)
+wlan_hdd_tdls_disable_offchan_and_teardown_links(hdd_context_t *hddctx,
+		bool disable_tdls_state)
 {
 }
 static inline void wlan_hdd_tdls_exit(hdd_adapter_t *adapter)
@@ -956,5 +950,23 @@ static inline void hdd_wlan_block_scan_by_tdls_event(void) {}
  */
 void process_rx_tdls_disc_resp_frame(hdd_adapter_t *adapter,
 				     uint8_t *peer_addr, int8_t rx_rssi);
+
+#ifdef FEATURE_WLAN_TDLS
+/**
+ * hdd_tdls_init_completion() - Initialize completion var
+ * @adapter: Hdd adapter
+ *
+ * This function Initialize the completion variables for a
+ * particular adapter
+ *
+ * Return: none
+ */
+void hdd_tdls_init_completion(hdd_adapter_t *adapter);
+#else
+static inline void
+hdd_tdls_init_completion(hdd_adapter_t *adapter)
+{
+}
+#endif /* End of FEATURE_WLAN_TDLS */
 
 #endif /* __HDD_TDLS_H */

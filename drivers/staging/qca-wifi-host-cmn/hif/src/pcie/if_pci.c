@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2013-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2013-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 #include <linux/pci.h>
@@ -164,8 +155,8 @@ irqreturn_t hif_pci_interrupt_handler(int irq, void *arg)
 	struct HIF_CE_state *hif_state = HIF_GET_CE_STATE(arg);
 
 	volatile int tmp;
-	uint16_t val;
-	uint32_t bar0;
+	uint16_t val = 0;
+	uint32_t bar0 = 0;
 	uint32_t fw_indicator_address, fw_indicator;
 	bool ssr_irq = false;
 	unsigned int host_cause, host_enable;
@@ -598,7 +589,7 @@ int hif_check_fw_reg(struct hif_opaque_softc *hif_ctx)
 int hif_check_soc_status(struct hif_opaque_softc *hif_ctx)
 {
 	struct hif_softc *scn = HIF_GET_SOFTC(hif_ctx);
-	uint16_t device_id;
+	uint16_t device_id = 0;
 	uint32_t val;
 	uint16_t timeout_count = 0;
 	struct hif_pci_softc *sc = HIF_GET_PCI_SOFTC(scn);
@@ -1488,7 +1479,7 @@ static void soc_wake_reset(struct hif_softc *scn)
  * allow the target to go to sleep and cancel the sleep timer.
  * otherwise reschedule the sleep timer.
  */
-static void hif_sleep_entry(void *arg)
+static void hif_sleep_entry(unsigned long arg)
 {
 	struct HIF_CE_state *hif_state = (struct HIF_CE_state *)arg;
 	struct hif_softc *scn = HIF_GET_SOFTC(hif_state);
@@ -2059,7 +2050,7 @@ static int hif_enable_pci(struct hif_pci_softc *sc,
 {
 	void __iomem *mem;
 	int ret = 0;
-	uint16_t device_id;
+	uint16_t device_id = 0;
 	struct hif_softc *ol_sc = HIF_GET_SOFTC(sc);
 
 	pci_read_config_word(pdev, PCI_DEVICE_ID, &device_id);
@@ -2134,6 +2125,7 @@ static int hif_enable_pci(struct hif_pci_softc *sc,
 		goto err_iomap;
 	}
 	sc->mem = mem;
+	sc->mem_len = pci_resource_len(pdev, BAR_NUM);
 	sc->pdev = pdev;
 	sc->dev = &pdev->dev;
 	sc->devid = id->device;
@@ -2568,10 +2560,15 @@ static void hif_runtime_prevent_linkdown(struct hif_softc *scn, bool flag)
  */
 void hif_pci_prevent_linkdown(struct hif_softc *scn, bool flag)
 {
-	HIF_DBG("wlan: %s pcie power collapse",
-			(flag ? "disable" : "enable"));
+	int errno;
+
+	HIF_DBG("wlan: %s pcie power collapse", flag ? "disable" : "enable");
 	hif_runtime_prevent_linkdown(scn, flag);
-	pld_wlan_pm_control(scn->qdf_dev->dev, flag);
+
+	errno = pld_wlan_pm_control(scn->qdf_dev->dev, flag);
+	if (errno)
+		HIF_ERROR("%s: Failed pld_wlan_pm_control; errno %d",
+			  __func__, errno);
 }
 #else
 void hif_pci_prevent_linkdown(struct hif_softc *scn, bool flag)
@@ -2733,7 +2730,7 @@ int hif_pci_bus_suspend(struct hif_softc *scn)
  */
 static int __hif_check_link_status(struct hif_softc *scn)
 {
-	uint16_t dev_id;
+	uint16_t dev_id = 0;
 	struct hif_pci_softc *sc = HIF_GET_PCI_SOFTC(scn);
 	struct hif_driver_state_callbacks *cbk = hif_get_callbacks_handle(scn);
 
@@ -3095,8 +3092,8 @@ static inline void hif_msm_pcie_debug_info(struct hif_pci_softc *sc) {};
  */
 static int hif_log_soc_wakeup_timeout(struct hif_pci_softc *sc)
 {
-	uint16_t val;
-	uint32_t bar;
+	uint16_t val = 0;
+	uint32_t bar = 0;
 	struct hif_opaque_softc *hif_hdl = GET_HIF_OPAQUE_HDL(sc);
 	struct hif_softc *scn = HIF_GET_SOFTC(sc);
 	struct HIF_CE_state *hif_state = HIF_GET_CE_STATE(sc);
@@ -4120,3 +4117,16 @@ void hif_runtime_lock_deinit(struct hif_opaque_softc *hif_ctx,
 	qdf_mem_free(context);
 }
 #endif /* FEATURE_RUNTIME_PM */
+
+int hif_pci_addr_in_boundary(struct hif_softc *scn, uint32_t offset)
+{
+	struct hif_pci_softc *sc = HIF_GET_PCI_SOFTC(scn);
+
+	if (unlikely(offset + sizeof(unsigned int) > sc->mem_len)) {
+		HIF_TRACE("Refusing to read memory at 0x%x - 0x%x (max 0x%x)\n",
+			  offset, offset + sizeof(unsigned int), sc->mem_len);
+		return -EINVAL;
+	}
+
+	return 0;
+}

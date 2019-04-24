@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2012, 2014-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2012, 2014-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 #ifndef __WLAN_HDD_POWER_H
@@ -42,6 +33,12 @@
 
 #define HDD_WAKELOCK_TIMEOUT_CONNECT 1000
 #define HDD_WAKELOCK_TIMEOUT_RESUME 1000
+/*
+ * HDD_WAKELOCK_CONNECT_COMPLETE = CSR_JOIN_FAILURE_TIMEOUT_DEFAULT (3000) +
+ *                      WNI_CFG_AUTHENTICATE_FAILURE_TIMEOUT_STADEF (1000) +
+ *                      WNI_CFG_ASSOCIATION_FAILURE_TIMEOUT_STADEF  (2000)
+ */
+#define HDD_WAKELOCK_CONNECT_COMPLETE 6000
 
 /**
  * enum pkt_filter_protocol_layer - packet filter protocol layer
@@ -157,10 +154,12 @@ void hdd_conf_hostoffload(hdd_adapter_t *pAdapter, bool fenable);
  * hdd_conf_hw_filter_mode() - configure the given mode for the given adapter
  * @adapter: the adapter to configure the hw filter for
  * @mode: the hw filter mode to configure
+ * @filter_enable: True: Enable HW filter, False: Disable
  *
  * Return: Errno
  */
-int hdd_conf_hw_filter_mode(hdd_adapter_t *adapter, enum hw_filter_mode mode);
+int hdd_conf_hw_filter_mode(hdd_adapter_t *adapter, enum hw_filter_mode mode,
+			    bool filter_enable);
 
 #ifdef WLAN_FEATURE_PACKET_FILTERING
 int wlan_hdd_set_mc_addr_list(hdd_adapter_t *pAdapter, uint8_t set);
@@ -286,5 +285,13 @@ hdd_wlan_fake_apps_suspend(struct wiphy *wiphy, struct net_device *dev)
 	return 0;
 }
 #endif /* WLAN_SUSPEND_RESUME_TEST */
-
+/**
+ * hdd_is_interface_down_during_ssr - Check if the interface went down during
+ * SSR
+ * @hdd_ctx: HDD context
+ *
+ * Check if any of the interface went down while the device is recovering.
+ * If the interface went down close the session.
+ */
+void hdd_is_interface_down_during_ssr(hdd_context_t *hdd_ctx);
 #endif /* __WLAN_HDD_POWER_H */

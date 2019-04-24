@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 #ifndef _PKTLOG_AC_H_
@@ -142,7 +133,7 @@ int pktlog_disable(struct hif_opaque_softc *scn);
 int pktlogmod_init(void *context);
 void pktlogmod_exit(void *context);
 int pktlog_htc_attach(void);
-void pktlog_process_fw_msg(uint32_t *msg_word);
+void pktlog_process_fw_msg(uint32_t *msg_word, uint32_t msg_len);
 
 #define ol_pktlog_attach(_scn)			\
 	do {					\
@@ -192,7 +183,7 @@ static inline int pktlog_htc_attach(void)
 {
 	return 0;
 }
-static inline void pktlog_process_fw_msg(uint32_t *msg_word)
+static inline void pktlog_process_fw_msg(uint32_t *msg_word, uint32_t msg_len)
 { }
 #endif /* REMOVE_PKT_LOG */
 #endif /* _PKTLOG_AC_H_ */

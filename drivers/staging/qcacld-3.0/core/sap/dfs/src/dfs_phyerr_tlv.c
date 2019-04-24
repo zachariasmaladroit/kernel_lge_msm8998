@@ -1,9 +1,6 @@
 /*
  * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
  *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
  * above copyright notice and this permission notice appear in all
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 #include "dfs.h"
@@ -318,7 +309,7 @@ radar_summary_parse(struct ath_dfs *dfs, const char *buf, size_t len,
 			rs[1]);
 		/*
 		 * DFS_DPRINTK(dfs, ATH_DEBUG_DFS_PHYERR,
-				"%s (p=%p):", __func__, buf);
+				"%s (p=%pK):", __func__, buf);
 		 */
 
 		is_chip_oversampling = PERE_IS_OVERSAMPLING(dfs);
@@ -584,7 +575,7 @@ static int tlv_calc_freq_info(struct ath_dfs *dfs, struct rx_radar_status *rs)
 	 * For now, just handle up to VHT80 correctly.
 	 */
 	if (dfs->ic == NULL || dfs->ic->ic_curchan == NULL) {
-		DFS_PRINTK("%s: dfs->ic=%p, that or curchan is null?",
+		DFS_PRINTK("%s: dfs->ic=%pK, that or curchan is null?",
 			   __func__, dfs->ic);
 		return 0;
 	}
@@ -870,6 +861,8 @@ dfs_process_phyerr_bb_tlv(struct ath_dfs *dfs, void *buf, uint16_t datalen,
 	e->is_ext = 0;
 	e->is_dc = 0;
 	e->is_early = 0;
+	e->pulse_delta_peak = rs.delta_peak;
+	e->pulse_delta_diff = rs.delta_diff;
 
 	/*
 	 * Copy the segment ID from the radar summary report

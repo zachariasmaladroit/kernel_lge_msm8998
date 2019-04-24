@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2011-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2011-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 /**
@@ -209,7 +200,7 @@ lim_send_probe_req_mgmt_frame(tpAniSirGlobal mac_ctx,
 			      uint8_t channel,
 			      tSirMacAddr self_macaddr,
 			      uint32_t dot11mode,
-			      uint32_t additional_ielen, uint8_t *additional_ie)
+			      uint16_t *additional_ielen, uint8_t *additional_ie)
 {
 	tDot11fProbeRequest pr;
 	uint32_t status, bytes, payload;
@@ -223,10 +214,14 @@ lim_send_probe_req_mgmt_frame(tpAniSirGlobal mac_ctx,
 	uint8_t sme_sessionid = 0;
 	bool is_vht_enabled = false;
 	uint8_t txPower;
-	uint16_t addn_ielen = additional_ielen;
+	uint16_t addn_ielen = 0;
 	bool extracted_ext_cap_flag = false;
 	tDot11fIEExtCap extracted_ext_cap;
 	tSirRetStatus sir_status;
+	uint8_t *qcn_ie = NULL;
+
+	if (additional_ielen)
+		addn_ielen = *additional_ielen;
 
 	/* The probe req should not send 11ac capabilieties if band is 2.4GHz,
 	 * unless enableVhtFor24GHz is enabled in INI. So if enableVhtFor24GHz
@@ -347,9 +342,6 @@ lim_send_probe_req_mgmt_frame(tpAniSirGlobal mac_ctx,
 		populate_dot11f_ext_cap(mac_ctx, is_vht_enabled, &pr.ExtCap,
 			pesession);
 
-	if (mac_ctx->roam.configParam.qcn_ie_support)
-		populate_dot11f_qcn_ie(&pr.QCN_IE);
-
 	if (addn_ielen) {
 		qdf_mem_zero((uint8_t *)&extracted_ext_cap,
 			sizeof(tDot11fIEExtCap));
@@ -370,8 +362,16 @@ lim_send_probe_req_mgmt_frame(tpAniSirGlobal mac_ctx,
 					(&extracted_ext_cap);
 			extracted_ext_cap_flag =
 				(extracted_ext_cap.num_bytes > 0);
+			if (additional_ielen)
+				*additional_ielen = addn_ielen;
 		}
+		qcn_ie = cfg_get_vendor_ie_ptr_from_oui(mac_ctx,
+				SIR_MAC_QCN_OUI_TYPE, SIR_MAC_QCN_OUI_TYPE_SIZE,
+				additional_ie, addn_ielen);
 	}
+	/* Add qcn_ie only if qcn ie is not present in additional_ie */
+	if (mac_ctx->roam.configParam.qcn_ie_support && !qcn_ie)
+		populate_dot11f_qcn_ie(&pr.QCN_IE);
 
 	/*
 	 * Extcap IE now support variable length, merge Extcap IE from addn_ie
@@ -449,7 +449,7 @@ lim_send_probe_req_mgmt_frame(tpAniSirGlobal mac_ctx,
 			   (uint16_t) sizeof(tSirMacMgmtHdr) + payload,
 			   TXRX_FRM_802_11_MGMT, ANI_TXDIR_TODS, 7,
 			   lim_tx_complete, frame, txflag, sme_sessionid,
-			   0);
+			   0, RATEID_DEFAULT);
 	if (!QDF_IS_STATUS_SUCCESS(qdf_status)) {
 		pe_err("could not send Probe Request frame!");
 		/* Pkt will be freed up by the callback */
@@ -852,7 +852,7 @@ lim_send_probe_rsp_mgmt_frame(tpAniSirGlobal mac_ctx,
 				TXRX_FRM_802_11_MGMT,
 				ANI_TXDIR_TODS,
 				7, lim_tx_complete, frame, tx_flag,
-				sme_sessionid, 0);
+				sme_sessionid, 0, RATEID_DEFAULT);
 
 	/* Pkt will be freed up by the callback */
 	if (!QDF_IS_STATUS_SUCCESS(qdf_status))
@@ -1066,7 +1066,7 @@ lim_send_addts_req_action_frame(tpAniSirGlobal pMac,
 				TXRX_FRM_802_11_MGMT,
 				ANI_TXDIR_TODS,
 				7, lim_tx_complete, pFrame, txFlag,
-				smeSessionId, 0);
+				smeSessionId, 0, RATEID_DEFAULT);
 	MTRACE(qdf_trace(QDF_MODULE_ID_PE, TRACE_CODE_TX_COMPLETE,
 			 psessionEntry->peSessionId, qdf_status));
 
@@ -1222,25 +1222,16 @@ lim_send_assoc_rsp_mgmt_frame(tpAniSirGlobal mac_ctx,
 			populate_dot11f_vht_operation(mac_ctx, pe_session,
 					&frm.VHTOperation);
 			is_vht = true;
-		} else {
-			/*
-			 * 2G-AS platform: SAP associates with HT (11n)clients
-			 * as 2x1 in 2G and 2X2 in 5G
-			 * Non-2G-AS platform: SAP associates with HT (11n)
-			 * clients as 2X2 in 2G and 5G
-			 * 5G-AS: Don’t care
-			 */
-			if (frm.HTCaps.present && mac_ctx->hw_dbs_capable &&
-				mac_ctx->lteCoexAntShare &&
-				IS_24G_CH(pe_session->currentOperChannel))
-				frm.HTCaps.supportedMCSSet[1] = 0;
 		}
+
 		if (pe_session->vhtCapability &&
 		    pe_session->vendor_vht_sap &&
 		    (assoc_req != NULL) &&
 		    assoc_req->vendor_vht_ie.VHTCaps.present) {
 			pe_debug("Populate Vendor VHT IEs in Assoc Rsponse");
 			frm.vendor_vht_ie.present = 1;
+			frm.vendor_vht_ie.sub_type =
+				pe_session->vendor_specific_vht_ie_sub_type;
 			frm.vendor_vht_ie.VHTCaps.present = 1;
 			populate_dot11f_vht_caps(mac_ctx, pe_session,
 				&frm.vendor_vht_ie.VHTCaps);
@@ -1411,7 +1402,7 @@ lim_send_assoc_rsp_mgmt_frame(tpAniSirGlobal mac_ctx,
 				TXRX_FRM_802_11_MGMT,
 				ANI_TXDIR_TODS,
 				7, lim_tx_complete, frame, tx_flag,
-				sme_session, 0);
+				sme_session, 0, RATEID_DEFAULT);
 	MTRACE(qdf_trace(QDF_MODULE_ID_PE, TRACE_CODE_TX_COMPLETE,
 			 pe_session->peSessionId, qdf_status));
 
@@ -1558,7 +1549,7 @@ lim_send_delts_req_action_frame(tpAniSirGlobal pMac,
 				TXRX_FRM_802_11_MGMT,
 				ANI_TXDIR_TODS,
 				7, lim_tx_complete, pFrame, txFlag,
-				smeSessionId, 0);
+				smeSessionId, 0, RATEID_DEFAULT);
 	MTRACE(qdf_trace(QDF_MODULE_ID_PE, TRACE_CODE_TX_COMPLETE,
 			 psessionEntry->peSessionId, qdf_status));
 	/* Pkt will be freed up by the callback */
@@ -1612,6 +1603,7 @@ lim_send_assoc_req_mgmt_frame(tpAniSirGlobal mac_ctx,
 			      tLimMlmAssocReq *mlm_assoc_req,
 			      tpPESession pe_session)
 {
+	int ret;
 	tDot11fAssocRequest *frm;
 	uint16_t caps;
 	uint8_t *frame;
@@ -1637,6 +1629,9 @@ lim_send_assoc_req_mgmt_frame(tpAniSirGlobal mac_ctx,
 	uint8_t *bcn_ie = NULL;
 	uint32_t bcn_ie_len = 0;
 	uint32_t aes_block_size_len = 0;
+	enum rateid min_rid = RATEID_DEFAULT;
+	uint8_t *mbo_ie = NULL;
+	uint8_t mbo_ie_len = 0;
 
 	if (NULL == pe_session) {
 		pe_err("pe_session is NULL");
@@ -1829,7 +1824,14 @@ lim_send_assoc_req_mgmt_frame(tpAniSirGlobal mac_ctx,
 			pe_session->is_vendor_specific_vhtcaps) {
 		pe_debug("Populate Vendor VHT IEs in Assoc Request");
 		frm->vendor_vht_ie.present = 1;
+		frm->vendor_vht_ie.sub_type =
+			pe_session->vendor_specific_vht_ie_sub_type;
 		frm->vendor_vht_ie.VHTCaps.present = 1;
+		if (!mac_ctx->roam.configParam.enable_subfee_vendor_vhtie &&
+		    pe_session->vht_config.su_beam_formee) {
+			pe_debug("Disable SU beamformee for vendor IE");
+			pe_session->vht_config.su_beam_formee = 0;
+		}
 		populate_dot11f_vht_caps(mac_ctx, pe_session,
 				&frm->vendor_vht_ie.VHTCaps);
 		vht_enabled = true;
@@ -1893,8 +1895,7 @@ lim_send_assoc_req_mgmt_frame(tpAniSirGlobal mac_ctx,
 		if (pe_session->beacon && pe_session->bcnLen > ie_offset) {
 			bcn_ie = pe_session->beacon + ie_offset;
 			bcn_ie_len = pe_session->bcnLen - ie_offset;
-			p_ext_cap = lim_get_ie_ptr_new(mac_ctx,
-							bcn_ie,
+			p_ext_cap = wlan_cfg_get_ie_ptr(bcn_ie,
 							bcn_ie_len,
 							DOT11F_EID_EXTCAP,
 							ONE_BYTE);
@@ -1915,13 +1916,49 @@ lim_send_assoc_req_mgmt_frame(tpAniSirGlobal mac_ctx,
 	}
 
 	/*
+	 * MBO IE needs to be appendded at the end of the assoc request
+	 * frame and is not parsed and unpacked by the frame parser
+	 * as the supplicant can send multiple TLVs with same Attribute
+	 * in the MBO IE and the frame parser does not support multiple
+	 * TLVs with same attribute in a single IE.
+	 * Strip off the MBO IE from add_ie and append it at the end.
+	 */
+	if (cfg_get_vendor_ie_ptr_from_oui(mac_ctx, SIR_MAC_MBO_OUI,
+	    SIR_MAC_MBO_OUI_SIZE, add_ie, add_ie_len)) {
+		mbo_ie = qdf_mem_malloc(DOT11F_IE_MBO_IE_MAX_LEN + 2);
+		if (!mbo_ie) {
+			pe_err("Failed to allocate mbo_ie");
+			goto end;
+		}
+
+		sir_status = lim_strip_ie(mac_ctx, add_ie, &add_ie_len,
+					  SIR_MAC_EID_VENDOR, ONE_BYTE,
+					  SIR_MAC_MBO_OUI,
+					  SIR_MAC_MBO_OUI_SIZE,
+					  mbo_ie, DOT11F_IE_MBO_IE_MAX_LEN);
+		if (sir_status != eSIR_SUCCESS) {
+			pe_err("Failed to strip MBO IE");
+			goto free_mbo_ie;
+		}
+
+		/* Include the EID and length fields */
+		mbo_ie_len = mbo_ie[1] + 2;
+		pe_debug("Stripped MBO IE of length %d", mbo_ie_len);
+	}
+
+	/*
 	 * Do unpack to populate the add_ie buffer to frm structure
 	 * before packing the frm structure. In this way, the IE ordering
 	 * which the latest 802.11 spec mandates is maintained.
 	 */
-	if (add_ie_len)
-		dot11f_unpack_assoc_request(mac_ctx, add_ie,
+	if (add_ie_len) {
+		ret = dot11f_unpack_assoc_request(mac_ctx, add_ie,
 					    add_ie_len, frm, true);
+		if (DOT11F_FAILED(ret)) {
+			pe_err("unpack failed, ret: 0x%x", ret);
+			goto end;
+		}
+	}
 
 	status = dot11f_get_packed_assoc_request_size(mac_ctx, frm, &payload);
 	if (DOT11F_FAILED(status)) {
@@ -1935,7 +1972,7 @@ lim_send_assoc_req_mgmt_frame(tpAniSirGlobal mac_ctx,
 	}
 
 	bytes = payload + sizeof(tSirMacMgmtHdr) +
-			aes_block_size_len;
+			aes_block_size_len + mbo_ie_len;
 
 	qdf_status = cds_packet_alloc((uint16_t) bytes, (void **)&frame,
 				(void **)&packet);
@@ -1951,8 +1988,6 @@ lim_send_assoc_req_mgmt_frame(tpAniSirGlobal mac_ctx,
 		assoc_cnf.sessionId = pe_session->peSessionId;
 
 		assoc_cnf.resultCode = eSIR_SME_RESOURCES_UNAVAILABLE;
-
-		cds_packet_free((void *)packet);
 
 		lim_post_sme_message(mac_ctx, LIM_MLM_ASSOC_CNF,
 			(uint32_t *) &assoc_cnf);
@@ -1976,6 +2011,11 @@ lim_send_assoc_req_mgmt_frame(tpAniSirGlobal mac_ctx,
 	} else if (DOT11F_WARNED(status)) {
 		pe_warn("Assoc request pack warning (0x%08x)", status);
 	}
+
+	/* Copy the MBO IE to the end of the frame */
+	qdf_mem_copy(frame + sizeof(tSirMacMgmtHdr) + payload,
+		     mbo_ie, mbo_ie_len);
+	payload = payload + mbo_ie_len;
 
 	if (pe_session->assocReq != NULL) {
 		qdf_mem_free(pe_session->assocReq);
@@ -2028,13 +2068,14 @@ lim_send_assoc_req_mgmt_frame(tpAniSirGlobal mac_ctx,
 	MTRACE(qdf_trace(QDF_MODULE_ID_PE, TRACE_CODE_TX_MGMT,
 			 pe_session->peSessionId, mac_hdr->fc.subType));
 
+	min_rid = lim_get_min_session_txrate(pe_session);
 	pe_debug("Sending Association Request length %d to ", bytes);
 	qdf_status = wma_tx_frameWithTxComplete(mac_ctx, packet,
 				(uint16_t) (sizeof(tSirMacMgmtHdr) + payload),
 				TXRX_FRM_802_11_MGMT, ANI_TXDIR_TODS, 7,
 				lim_tx_complete, frame,
 				lim_assoc_tx_complete_cnf,
-				tx_flag, sme_sessionid, false, 0);
+				tx_flag, sme_sessionid, false, 0, min_rid);
 	MTRACE(qdf_trace(QDF_MODULE_ID_PE, TRACE_CODE_TX_COMPLETE,
 		pe_session->peSessionId, qdf_status));
 
@@ -2047,6 +2088,10 @@ lim_send_assoc_req_mgmt_frame(tpAniSirGlobal mac_ctx,
 		/* Pkt will be freed up by the callback */
 		goto end;
 	}
+
+free_mbo_ie:
+	if (mbo_ie)
+		qdf_mem_free(mbo_ie);
 
 end:
 	/* Free up buffer allocated for mlm_assoc_req */
@@ -2071,7 +2116,8 @@ static QDF_STATUS lim_auth_tx_complete_cnf(tpAniSirGlobal mac_ctx,
 	uint16_t auth_ack_status;
 	uint16_t reason_code;
 
-	pe_debug("tx_complete= %d", tx_complete);
+	pe_debug("tx_complete = %d %s", tx_complete,
+		(tx_complete ? "success":"fail"));
 	if (tx_complete) {
 		mac_ctx->auth_ack_status = LIM_AUTH_ACK_RCD_SUCCESS;
 		auth_ack_status = ACKED;
@@ -2119,6 +2165,7 @@ lim_send_auth_mgmt_frame(tpAniSirGlobal mac_ctx,
 	uint8_t sme_sessionid = 0;
 	uint16_t ft_ies_length = 0, auth_ack_status;
 	bool challenge_req = false;
+	enum rateid min_rid = RATEID_DEFAULT;
 
 	if (NULL == session) {
 		pe_err("Error: psession Entry is NULL");
@@ -2395,12 +2442,15 @@ alloc_packet:
 			 session->peSessionId, mac_hdr->fc.subType));
 
 	mac_ctx->auth_ack_status = LIM_AUTH_ACK_NOT_RCD;
+
+	min_rid = lim_get_min_session_txrate(session);
 	qdf_status = wma_tx_frameWithTxComplete(mac_ctx, packet,
 					 (uint16_t)frame_len,
 					 TXRX_FRM_802_11_MGMT, ANI_TXDIR_TODS,
 					 7, lim_tx_complete, frame,
 					 lim_auth_tx_complete_cnf,
-					 tx_flag, sme_sessionid, false, 0);
+					 tx_flag, sme_sessionid, false, 0,
+					 min_rid);
 	MTRACE(qdf_trace(QDF_MODULE_ID_PE, TRACE_CODE_TX_COMPLETE,
 		session->peSessionId, qdf_status));
 	if (!QDF_IS_STATUS_SUCCESS(qdf_status)) {
@@ -2458,7 +2508,7 @@ QDF_STATUS lim_send_deauth_cnf(tpAniSirGlobal pMac)
 #endif
 				 (psessionEntry->isFastRoamIniFeatureEnabled) ||
 				 (psessionEntry->is11Rconnection))) {
-			pe_debug("FT Preauth (%p,%d) Deauth rc %d src = %d",
+			pe_debug("FT Preauth (%pK,%d) Deauth rc %d src = %d",
 					psessionEntry,
 					psessionEntry->peSessionId,
 					pMlmDeauthReq->reasonCode,
@@ -2555,7 +2605,7 @@ QDF_STATUS lim_send_disassoc_cnf(tpAniSirGlobal mac_ctx)
 		if (LIM_IS_STA_ROLE(pe_session) &&
 			(disassoc_req->reasonCode !=
 				eSIR_MAC_DISASSOC_DUE_TO_FTHANDOFF_REASON)) {
-			pe_debug("FT Preauth Session (%p,%d) Clean up"
+			pe_debug("FT Preauth Session (%pK,%d) Clean up"
 #ifdef FEATURE_WLAN_ESE
 				" isESE %d"
 #endif
@@ -2644,6 +2694,7 @@ lim_send_disassoc_mgmt_frame(tpAniSirGlobal pMac,
 	uint8_t txFlag = 0;
 	uint32_t val = 0;
 	uint8_t smeSessionId = 0;
+
 	if (NULL == psessionEntry) {
 		return;
 	}
@@ -2740,7 +2791,8 @@ lim_send_disassoc_mgmt_frame(tpAniSirGlobal pMac,
 					 TXRX_FRM_802_11_MGMT,
 					 ANI_TXDIR_TODS, 7, lim_tx_complete,
 					 pFrame, lim_disassoc_tx_complete_cnf,
-					 txFlag, smeSessionId, false, 0);
+					 txFlag, smeSessionId, false, 0,
+					 RATEID_DEFAULT);
 		MTRACE(qdf_trace
 			       (QDF_MODULE_ID_PE, TRACE_CODE_TX_COMPLETE,
 			       psessionEntry->peSessionId, qdf_status));
@@ -2770,7 +2822,7 @@ lim_send_disassoc_mgmt_frame(tpAniSirGlobal pMac,
 					ANI_TXDIR_TODS,
 					7,
 					lim_tx_complete, pFrame, txFlag,
-					smeSessionId, 0);
+					smeSessionId, 0, RATEID_DEFAULT);
 		MTRACE(qdf_trace
 			       (QDF_MODULE_ID_PE, TRACE_CODE_TX_COMPLETE,
 			       psessionEntry->peSessionId, qdf_status));
@@ -2915,7 +2967,8 @@ lim_send_deauth_mgmt_frame(tpAniSirGlobal pMac,
 					 TXRX_FRM_802_11_MGMT,
 					 ANI_TXDIR_TODS, 7, lim_tx_complete,
 					 pFrame, lim_deauth_tx_complete_cnf,
-					 txFlag, smeSessionId, false, 0);
+					 txFlag, smeSessionId, false, 0,
+					 RATEID_DEFAULT);
 		MTRACE(qdf_trace
 			       (QDF_MODULE_ID_PE, TRACE_CODE_TX_COMPLETE,
 			       psessionEntry->peSessionId, qdf_status));
@@ -2958,7 +3011,7 @@ lim_send_deauth_mgmt_frame(tpAniSirGlobal pMac,
 				wma_tx_frame(pMac, pPacket, (uint16_t) nBytes,
 					   TXRX_FRM_802_11_MGMT, ANI_TXDIR_IBSS,
 					   7, lim_tx_complete, pFrame, txFlag,
-					   smeSessionId, 0);
+					   smeSessionId, 0, RATEID_DEFAULT);
 		} else {
 #endif
 		/* Queue Disassociation frame in high priority WQ */
@@ -2966,7 +3019,7 @@ lim_send_deauth_mgmt_frame(tpAniSirGlobal pMac,
 			wma_tx_frame(pMac, pPacket, (uint16_t) nBytes,
 				   TXRX_FRM_802_11_MGMT, ANI_TXDIR_TODS,
 				   7, lim_tx_complete, pFrame, txFlag,
-				   smeSessionId, 0);
+				   smeSessionId, 0, RATEID_DEFAULT);
 #ifdef FEATURE_WLAN_TDLS
 	}
 #endif
@@ -3096,7 +3149,7 @@ lim_send_meas_report_frame(tpAniSirGlobal pMac,
 	qdf_status =
 		wma_tx_frame(pMac, pPacket, (uint16_t) nBytes,
 			   TXRX_FRM_802_11_MGMT, ANI_TXDIR_TODS, 7,
-			   lim_tx_complete, pFrame, 0, 0);
+			   lim_tx_complete, pFrame, 0, 0, RATEID_DEFAULT);
 	MTRACE(qdf_trace
 		       (QDF_MODULE_ID_PE, TRACE_CODE_TX_COMPLETE,
 		       ((psessionEntry) ? psessionEntry->peSessionId : NO_SESSION),
@@ -3196,7 +3249,7 @@ lim_send_tpc_request_frame(tpAniSirGlobal pMac,
 	qdf_status =
 		wma_tx_frame(pMac, pPacket, (uint16_t) nBytes,
 			   TXRX_FRM_802_11_MGMT, ANI_TXDIR_TODS, 7,
-			   lim_tx_complete, pFrame, 0, 0);
+			   lim_tx_complete, pFrame, 0, 0, RATEID_DEFAULT);
 	MTRACE(qdf_trace
 		       (QDF_MODULE_ID_PE, TRACE_CODE_TX_COMPLETE,
 		       ((psessionEntry) ? psessionEntry->peSessionId : NO_SESSION),
@@ -3299,7 +3352,7 @@ lim_send_tpc_report_frame(tpAniSirGlobal pMac,
 	qdf_status =
 		wma_tx_frame(pMac, pPacket, (uint16_t) nBytes,
 			   TXRX_FRM_802_11_MGMT, ANI_TXDIR_TODS, 7,
-			   lim_tx_complete, pFrame, 0, 0);
+			   lim_tx_complete, pFrame, 0, 0, RATEID_DEFAULT);
 	MTRACE(qdf_trace
 		(QDF_MODULE_ID_PE, TRACE_CODE_TX_COMPLETE,
 		((psessionEntry) ? psessionEntry->peSessionId : NO_SESSION),
@@ -3429,7 +3482,7 @@ lim_send_channel_switch_mgmt_frame(tpAniSirGlobal pMac,
 				TXRX_FRM_802_11_MGMT,
 				ANI_TXDIR_TODS,
 				7, lim_tx_complete, pFrame, txFlag,
-				smeSessionId, 0);
+				smeSessionId, 0, RATEID_DEFAULT);
 	MTRACE(qdf_trace(QDF_MODULE_ID_PE, TRACE_CODE_TX_COMPLETE,
 			 psessionEntry->peSessionId, qdf_status));
 	if (!QDF_IS_STATUS_SUCCESS(qdf_status)) {
@@ -3464,6 +3517,7 @@ lim_send_extended_chan_switch_action_frame(tpAniSirGlobal mac_ctx,
 		uint8_t new_channel, uint8_t count, tpPESession session_entry)
 {
 	tDot11fext_channel_switch_action_frame frm;
+	tLimWiderBWChannelSwitchInfo *wide_bw_ie;
 	uint8_t                  *frame;
 	tpSirMacMgmtHdr          mac_hdr;
 	uint32_t                 num_bytes, n_payload, status;
@@ -3471,6 +3525,7 @@ lim_send_extended_chan_switch_action_frame(tpAniSirGlobal mac_ctx,
 	QDF_STATUS               qdf_status;
 	uint8_t                  txFlag = 0;
 	uint8_t                  sme_session_id = 0;
+	uint8_t                  ch_spacing;
 
 	if (session_entry == NULL) {
 		pe_err("Session entry is NULL!!!");
@@ -3489,6 +3544,25 @@ lim_send_extended_chan_switch_action_frame(tpAniSirGlobal mac_ctx,
 	frm.ext_chan_switch_ann_action.new_channel = new_channel;
 	frm.ext_chan_switch_ann_action.switch_count = count;
 
+	ch_spacing = cds_reg_dmn_get_chanwidth_from_opclass(
+			mac_ctx->scan.countryCodeCurrent, new_channel,
+			new_op_class);
+	pe_debug("wrapper: ch_spacing %hu", ch_spacing);
+
+	if ((ch_spacing == 80) || (ch_spacing == 160)) {
+		wide_bw_ie = &session_entry->gLimWiderBWChannelSwitch;
+		frm.WiderBWChanSwitchAnn.newChanWidth =
+			wide_bw_ie->newChanWidth;
+		frm.WiderBWChanSwitchAnn.newCenterChanFreq0 =
+			wide_bw_ie->newCenterChanFreq0;
+		frm.WiderBWChanSwitchAnn.newCenterChanFreq1 =
+			wide_bw_ie->newCenterChanFreq1;
+		frm.WiderBWChanSwitchAnn.present = 1;
+		pe_debug("wrapper: width:%d f0:%d f1:%d",
+			 frm.WiderBWChanSwitchAnn.newChanWidth,
+			 frm.WiderBWChanSwitchAnn.newCenterChanFreq0,
+			 frm.WiderBWChanSwitchAnn.newCenterChanFreq1);
+	}
 
 	status = dot11f_get_packed_ext_channel_switch_action_frame_size(mac_ctx,
 							    &frm, &n_payload);
@@ -3524,6 +3598,8 @@ lim_send_extended_chan_switch_action_frame(tpAniSirGlobal mac_ctx,
 				   (uint8_t *) session_entry->bssId,
 				   sizeof(tSirMacAddr));
 
+	lim_set_protected_bit(mac_ctx, session_entry, peer, mac_hdr);
+
 	status = dot11f_pack_ext_channel_switch_action_frame(mac_ctx, &frm,
 		frame + sizeof(tSirMacMgmtHdr), n_payload, &n_payload);
 	if (DOT11F_FAILED(status)) {
@@ -3556,7 +3632,8 @@ lim_send_extended_chan_switch_action_frame(tpAniSirGlobal mac_ctx,
 						 ANI_TXDIR_TODS,
 						 7,
 						 lim_tx_complete, frame,
-						 txFlag, sme_session_id, 0);
+						 txFlag, sme_session_id, 0,
+						 RATEID_DEFAULT);
 	MTRACE(qdf_trace(QDF_MODULE_ID_PE, TRACE_CODE_TX_COMPLETE,
 			session_entry->peSessionId, qdf_status));
 	if (!QDF_IS_STATUS_SUCCESS(qdf_status)) {
@@ -3700,7 +3777,7 @@ lim_p2p_oper_chan_change_confirm_action_frame(tpAniSirGlobal mac_ctx,
 			TXRX_FRM_802_11_MGMT, ANI_TXDIR_TODS,
 			7, lim_tx_complete, frame,
 			lim_oper_chan_change_confirm_tx_complete_cnf,
-			tx_flag, sme_session_id, false, 0);
+			tx_flag, sme_session_id, false, 0, RATEID_DEFAULT);
 
 	MTRACE(qdf_trace(QDF_MODULE_ID_PE, TRACE_CODE_TX_COMPLETE,
 			session_entry->peSessionId, qdf_status));
@@ -3803,7 +3880,7 @@ lim_send_vht_opmode_notification_frame(tpAniSirGlobal pMac,
 				TXRX_FRM_802_11_MGMT,
 				ANI_TXDIR_TODS,
 				7, lim_tx_complete, pFrame, txFlag,
-				smeSessionId, 0);
+				smeSessionId, 0, RATEID_DEFAULT);
 	MTRACE(qdf_trace(QDF_MODULE_ID_PE, TRACE_CODE_TX_COMPLETE,
 			 psessionEntry->peSessionId, qdf_status));
 	if (!QDF_IS_STATUS_SUCCESS(qdf_status)) {
@@ -3938,7 +4015,7 @@ lim_send_neighbor_report_request_frame(tpAniSirGlobal pMac,
 				TXRX_FRM_802_11_MGMT,
 				ANI_TXDIR_TODS,
 				7, lim_tx_complete, pFrame, txFlag,
-				smeSessionId, 0);
+				smeSessionId, 0, RATEID_DEFAULT);
 	MTRACE(qdf_trace(QDF_MODULE_ID_PE, TRACE_CODE_TX_COMPLETE,
 			 psessionEntry->peSessionId, qdf_status));
 	if (QDF_STATUS_SUCCESS != qdf_status) {
@@ -4085,7 +4162,7 @@ lim_send_link_report_action_frame(tpAniSirGlobal pMac,
 				TXRX_FRM_802_11_MGMT,
 				ANI_TXDIR_TODS,
 				7, lim_tx_complete, pFrame, txFlag,
-				smeSessionId, 0);
+				smeSessionId, 0, RATEID_DEFAULT);
 	MTRACE(qdf_trace(QDF_MODULE_ID_PE, TRACE_CODE_TX_COMPLETE,
 			 psessionEntry->peSessionId, qdf_status));
 	if (QDF_STATUS_SUCCESS != qdf_status) {
@@ -4102,34 +4179,14 @@ returnAfterError:
 	return statusCode;
 } /* End lim_send_link_report_action_frame. */
 
-/**
- * \brief Send a Beacon Report Action frame
- *
- *
- * \param pMac Pointer to the global MAC structure
- *
- * \param dialog_token dialog token to be used in the action frame.
- *
- * \param num_report number of reports in pRRMReport.
- *
- * \param pRRMReport Address of a tSirMacRadioMeasureReport.
- *
- * \param peer mac address of peer station.
- *
- * \param psessionEntry address of session entry.
- *
- * \return eSIR_SUCCESS on success, eSIR_FAILURE else
- *
- *
- */
-
 tSirRetStatus
 lim_send_radio_measure_report_action_frame(tpAniSirGlobal pMac,
-					   uint8_t dialog_token,
-					   uint8_t num_report,
-					   tpSirMacRadioMeasureReport pRRMReport,
-					   tSirMacAddr peer,
-					   tpPESession psessionEntry)
+				uint8_t dialog_token,
+				uint8_t num_report,
+				bool is_last_frame,
+				tpSirMacRadioMeasureReport pRRMReport,
+				tSirMacAddr peer,
+				tpPESession psessionEntry)
 {
 	tSirRetStatus statusCode = eSIR_SUCCESS;
 	uint8_t *pFrame;
@@ -4140,6 +4197,7 @@ lim_send_radio_measure_report_action_frame(tpAniSirGlobal pMac,
 	uint8_t i;
 	uint8_t txFlag = 0;
 	uint8_t smeSessionId = 0;
+	bool is_last_report = false;
 
 	tDot11fRadioMeasurementReport *frm =
 		qdf_mem_malloc(sizeof(tDot11fRadioMeasurementReport));
@@ -4156,8 +4214,8 @@ lim_send_radio_measure_report_action_frame(tpAniSirGlobal pMac,
 
 	smeSessionId = psessionEntry->smeSessionId;
 
-	pe_debug("dialog_token %d num_report %d",
-			dialog_token, num_report);
+	pe_debug("dialog_token %d num_report %d is_last_frame %d",
+		 dialog_token, num_report, is_last_frame);
 
 	frm->Category.category = SIR_MAC_ACTION_RRM;
 	frm->Action.action = SIR_MAC_RRM_RADIO_MEASURE_RPT;
@@ -4174,10 +4232,19 @@ lim_send_radio_measure_report_action_frame(tpAniSirGlobal pMac,
 		frm->MeasurementReport[i].late = 0;     /* IEEE 802.11k section 7.3.22. (always zero in rrm) */
 		switch (pRRMReport[i].type) {
 		case SIR_MAC_RRM_BEACON_TYPE:
+			/*
+			 * Last beacon report indication needs to be set to 1
+			 * only for the last report in the last frame
+			 */
+			if (is_last_frame &&
+			    (i == (frm->num_MeasurementReport - 1)))
+				is_last_report = true;
+
 			populate_dot11f_beacon_report(pMac,
-						      &frm->MeasurementReport[i],
-						      &pRRMReport[i].report.
-						      beaconReport);
+						     &frm->MeasurementReport[i],
+						     &pRRMReport[i].report.
+						     beaconReport,
+						     is_last_report);
 			frm->MeasurementReport[i].incapable =
 				pRRMReport[i].incapable;
 			frm->MeasurementReport[i].refused =
@@ -4272,7 +4339,7 @@ lim_send_radio_measure_report_action_frame(tpAniSirGlobal pMac,
 				TXRX_FRM_802_11_MGMT,
 				ANI_TXDIR_TODS,
 				7, lim_tx_complete, pFrame, txFlag,
-				smeSessionId, 0);
+				smeSessionId, 0, RATEID_DEFAULT);
 	MTRACE(qdf_trace(QDF_MODULE_ID_PE, TRACE_CODE_TX_COMPLETE,
 			 psessionEntry->peSessionId, qdf_status));
 	if (QDF_STATUS_SUCCESS != qdf_status) {
@@ -4408,7 +4475,7 @@ tSirRetStatus lim_send_sa_query_request_frame(tpAniSirGlobal pMac, uint8_t *tran
 				TXRX_FRM_802_11_MGMT,
 				ANI_TXDIR_TODS,
 				7, lim_tx_complete, pFrame, txFlag,
-				smeSessionId, 0);
+				smeSessionId, 0, RATEID_DEFAULT);
 	if (QDF_STATUS_SUCCESS != qdf_status) {
 		pe_err("wma_tx_frame FAILED! Status [%d]", qdf_status);
 		nSirStatus = eSIR_FAILURE;
@@ -4540,7 +4607,7 @@ tSirRetStatus lim_send_sa_query_response_frame(tpAniSirGlobal pMac,
 				TXRX_FRM_802_11_MGMT,
 				ANI_TXDIR_TODS,
 				7, lim_tx_complete, pFrame, txFlag,
-				smeSessionId, 0);
+				smeSessionId, 0, RATEID_DEFAULT);
 	MTRACE(qdf_trace(QDF_MODULE_ID_PE, TRACE_CODE_TX_COMPLETE,
 			 psessionEntry->peSessionId, qdf_status));
 	if (QDF_STATUS_SUCCESS != qdf_status) {
@@ -4557,3 +4624,85 @@ returnAfterError:
 	return nSirStatus;
 } /* End lim_send_sa_query_response_frame */
 #endif
+
+/**
+ * lim_tx_mgmt_frame() - Transmits Auth mgmt frame
+ * @mac_ctx Pointer to Global MAC structure
+ * @mb_msg: Received message info
+ * @msg_len: Received message length
+ * @packet: Packet to be transmitted
+ * @frame: Received frame
+ *
+ * Return: None
+ */
+static void lim_tx_mgmt_frame(tpAniSirGlobal mac_ctx,
+	struct sir_mgmt_msg *mb_msg, uint32_t msg_len,
+	void *packet, uint8_t *frame)
+{
+	tpSirMacFrameCtl fc = (tpSirMacFrameCtl) mb_msg->data;
+	QDF_STATUS qdf_status;
+	uint8_t sme_session_id = 0;
+	tpPESession session;
+	uint16_t auth_ack_status;
+	enum rateid min_rid = RATEID_DEFAULT;
+
+	sme_session_id = mb_msg->session_id;
+	session = pe_find_session_by_sme_session_id(mac_ctx, sme_session_id);
+	if (session == NULL) {
+		pe_err("session not found for given sme session");
+		return;
+	}
+
+	MTRACE(qdf_trace(QDF_MODULE_ID_PE, TRACE_CODE_TX_MGMT,
+			 session->peSessionId, fc->subType));
+
+	mac_ctx->auth_ack_status = LIM_AUTH_ACK_NOT_RCD;
+	min_rid = lim_get_min_session_txrate(session);
+
+	qdf_status = wma_tx_frameWithTxComplete(mac_ctx, packet,
+					 (uint16_t)msg_len,
+					 TXRX_FRM_802_11_MGMT, ANI_TXDIR_TODS,
+					 7, lim_tx_complete, frame,
+					 lim_auth_tx_complete_cnf,
+					 0, sme_session_id, false, 0, min_rid);
+	MTRACE(qdf_trace(QDF_MODULE_ID_PE, TRACE_CODE_TX_COMPLETE,
+		session->peSessionId, qdf_status));
+	if (!QDF_IS_STATUS_SUCCESS(qdf_status)) {
+		pe_err("*** Could not send Auth frame, retCode=%X ***",
+			qdf_status);
+		mac_ctx->auth_ack_status = LIM_AUTH_ACK_RCD_FAILURE;
+		auth_ack_status = SENT_FAIL;
+		lim_diag_event_report(mac_ctx, WLAN_PE_DIAG_AUTH_ACK_EVENT,
+				session, auth_ack_status, eSIR_FAILURE);
+		/* Pkt will be freed up by the callback */
+	}
+}
+
+void lim_send_mgmt_frame_tx(tpAniSirGlobal mac_ctx,
+		uint32_t *msg_buf)
+{
+	struct sir_mgmt_msg *mb_msg = (struct sir_mgmt_msg *)msg_buf;
+	uint32_t msg_len;
+	tpSirMacFrameCtl fc = (tpSirMacFrameCtl) mb_msg->data;
+	uint8_t sme_session_id;
+	QDF_STATUS qdf_status;
+	uint8_t *frame;
+	void *packet;
+
+	msg_len = mb_msg->msg_len - sizeof(*mb_msg);
+	pe_debug("sending fc->type: %d fc->subType: %d",
+		fc->type, fc->subType);
+
+	sme_session_id = mb_msg->session_id;
+
+	qdf_status = cds_packet_alloc((uint16_t) msg_len, (void **)&frame,
+				 (void **)&packet);
+	if (!QDF_IS_STATUS_SUCCESS(qdf_status)) {
+		pe_err("call to bufAlloc failed for AUTH frame");
+		return;
+	}
+
+	qdf_mem_copy(frame, mb_msg->data, msg_len);
+
+	lim_tx_mgmt_frame(mac_ctx, mb_msg, msg_len, packet, frame);
+}

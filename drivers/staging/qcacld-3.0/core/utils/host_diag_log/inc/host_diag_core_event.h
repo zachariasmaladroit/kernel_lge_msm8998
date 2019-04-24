@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2014-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2014-2019 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 #if !defined(__HOST_DIAG_CORE_EVENT_H)
@@ -44,7 +35,6 @@
    Include Files
    ------------------------------------------------------------------------*/
 #include "qdf_types.h"
-#include "cds_pack_align.h"
 #include "i_host_diag_core_event.h"
 
 /*--------------------------------------------------------------------------
@@ -55,6 +45,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 #define WAKE_LOCK_NAME_LEN 80
+#define RSN_OUI_SIZE 4
 
 /*-------------------------------------------------------------------------
    Event ID: EVENT_WLAN_SECURITY
@@ -184,23 +175,6 @@ typedef struct {
 	char driverVersion[10];
 } host_event_wlan_bringup_status_payload_type;
 
-CDS_PACK_START
-/*-------------------------------------------------------------------------
-   Event ID: EVENT_WLAN_POWERSAVE_GENERIC
-   ------------------------------------------------------------------------*/
-typedef CDS_PACK_PRE struct {
-	uint8_t event_subtype;
-	uint8_t full_power_request_reason;
-	uint8_t pmc_current_state;
-	uint8_t enable_disable_powersave_mode;
-	uint8_t winmob_d_power_state;
-	uint8_t dtim_period;
-	uint16_t final_listen_intv;
-	uint16_t bmps_auto_timer_duration;
-	uint16_t bmps_period;
-} CDS_PACK_POST host_event_wlan_powersave_payload_type;
-
-CDS_PACK_END
 /*-------------------------------------------------------------------------
    Event ID: EVENT_WLAN_POWERSAVE_WOW
    ------------------------------------------------------------------------*/
@@ -335,6 +309,27 @@ enum resource_failure_type {
 };
 
 /*-------------------------------------------------------------------------
+  Event ID: EVENT_WLAN_RSN_INFO
+  -------------------------------------------------------------------------
+ */
+/**
+ * struct event_wlan_csr_rsn_info - Structure holding the
+ * RSN information for assoc request
+ * @akm_suite: Gives information about akm suites used in assoc request
+ * @ucast_cipher: Unicast cipher used in assoc request
+ * @mcast_cipher: Multicast cipher used in assoc request
+ * @group_mgmt: Requested group mgmt cipher suite
+ *
+ * This structure will hold the RSN information for assoc request
+ */
+struct event_wlan_csr_rsn_info {
+	uint8_t   akm_suite[RSN_OUI_SIZE];
+	uint8_t   ucast_cipher[RSN_OUI_SIZE];
+	uint8_t   mcast_cipher[RSN_OUI_SIZE];
+	uint8_t   group_mgmt[RSN_OUI_SIZE];
+};
+
+/*-------------------------------------------------------------------------
   Event ID: EVENT_WLAN_WAKE_LOCK
   ------------------------------------------------------------------------*/
 /**
@@ -447,6 +442,8 @@ struct host_event_wlan_ssr_shutdown {
  * reason unspecified
  * @HOST_STA_KICKOUT_REASON_KEEP_ALIVE: Indicate sta is disconnected
  * because of keep alive
+ * @HOST_STA_KICKOUT_REASON_BTM: BTM request from AP with disassoc imminent
+ * reason
  *
  * This enum contains the event subtype
  */
@@ -455,6 +452,7 @@ enum host_sta_kickout_events {
 	HOST_STA_KICKOUT_REASON_XRETRY,
 	HOST_STA_KICKOUT_REASON_UNSPECIFIED,
 	HOST_STA_KICKOUT_REASON_KEEP_ALIVE,
+	HOST_STA_KICKOUT_REASON_BTM,
 };
 
 /*-------------------------------------------------------------------------
@@ -462,14 +460,32 @@ enum host_sta_kickout_events {
    ------------------------------------------------------------------------*/
 /**
  * enum host_datastall_events - Enum containing datastall subtype
+ * @DATA_STALL_NONE: Indicate no data stall
+ * @FW_VDEV_PAUSE: Indicate FW vdev Pause
+ * @HWSCHED_CMD_FILTER:Indicate HW sched command filter
+ * @HWSCHED_CMD_FLUSH: Indicate HW sched command flush
+ * @FW_RX_REFILL_FAILED:Indicate FW rx refill failed
+ * @FW_RX_FCS_LEN_ERROR:Indicate FW fcs len error
+ * @FW_WDOG_ERRORS:Indicate watchdog error
+ * @FW_BB_WDOG_ERROR:Indicate BB watchdog error
  * @STA_TX_TIMEOUT: Indicate sta tx timeout
  * @SOFTAP_TX_TIMEOUT:Indicate softap tx timeout
+ * @NUD_FAILURE: Indicare NUD Failure
  *
  * This enum contains the event subtype
  */
 enum host_datastall_events {
+	DATA_STALL_NONE,
+	FW_VDEV_PAUSE,
+	HWSCHED_CMD_FILTER,
+	HWSCHED_CMD_FLUSH,
+	FW_RX_REFILL_FAILED,
+	FW_RX_FCS_LEN_ERROR,
+	FW_WDOG_ERRORS,
+	FW_BB_WDOG_ERROR,
 	STA_TX_TIMEOUT,
 	SOFTAP_TX_TIMEOUT,
+	NUD_FAILURE,
 };
 
 /*-------------------------------------------------------------------------
@@ -605,6 +621,8 @@ enum wifi_connectivity_events {
  * @WIFI_POWER_EVENT_WAKELOCK_DHCP: DHCP negotiation under way
  * @WIFI_POWER_EVENT_WAKELOCK_MGMT_TX: MGMT Tx wake lock
  * @WIFI_POWER_EVENT_WAKELOCK_CONNECT: connection in progress
+ * @WIFI_POWER_EVENT_WAKELOCK_IFACE_CHANGE_TIMER: iface change timer running
+ * @WIFI_POWER_EVENT_WAKELOCK_MONITOR_MODE: Montitor mode wakelock
  *
  * Indicates the reason for which the wakelock was taken/released
  */
@@ -630,6 +648,8 @@ enum wake_lock_reason {
 	WIFI_POWER_EVENT_WAKELOCK_DHCP,
 	WIFI_POWER_EVENT_WAKELOCK_MGMT_TX,
 	WIFI_POWER_EVENT_WAKELOCK_CONNECT,
+	WIFI_POWER_EVENT_WAKELOCK_IFACE_CHANGE_TIMER,
+	WIFI_POWER_EVENT_WAKELOCK_MONITOR_MODE,
 };
 
 #ifdef __cplusplus

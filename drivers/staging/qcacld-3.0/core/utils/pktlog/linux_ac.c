@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 #ifndef REMOVE_PKT_LOG
@@ -78,6 +69,8 @@ static struct ath_pktlog_info *g_pktlog_info;
 
 static struct proc_dir_entry *g_pktlog_pde;
 
+static DEFINE_MUTEX(proc_mutex);
+
 static int pktlog_attach(struct hif_opaque_softc *sc);
 static void pktlog_detach(struct hif_opaque_softc *sc);
 static int pktlog_open(struct inode *i, struct file *f);
@@ -98,6 +91,7 @@ static struct file_operations pktlog_fops = {
 static struct ol_pktlog_dev_t *get_pl_handle(struct hif_opaque_softc *scn)
 {
 	ol_txrx_pdev_handle pdev_txrx_handle;
+
 	pdev_txrx_handle = cds_get_context(QDF_MODULE_ID_TXRX);
 	if (!pdev_txrx_handle)
 		return NULL;
@@ -107,6 +101,7 @@ static struct ol_pktlog_dev_t *get_pl_handle(struct hif_opaque_softc *scn)
 void ol_pl_set_name(hif_opaque_softc_handle scn, net_device_handle dev)
 {
 	ol_txrx_pdev_handle pdev_txrx_handle;
+
 	pdev_txrx_handle = cds_get_context(QDF_MODULE_ID_TXRX);
 	if (pdev_txrx_handle && pdev_txrx_handle->pl_dev && dev)
 		pdev_txrx_handle->pl_dev->name = dev->name;
@@ -115,6 +110,7 @@ void ol_pl_set_name(hif_opaque_softc_handle scn, net_device_handle dev)
 void pktlog_disable_adapter_logging(struct hif_opaque_softc *scn)
 {
 	struct ol_pktlog_dev_t *pl_dev = get_pl_handle(scn);
+
 	if (pl_dev)
 		pl_dev->pl_info->log_state = 0;
 }
@@ -127,6 +123,7 @@ int pktlog_alloc_buf(struct hif_opaque_softc *scn)
 	struct ath_pktlog_info *pl_info;
 	struct ath_pktlog_buf *buffer;
 	ol_txrx_pdev_handle pdev_txrx_handle;
+
 	pdev_txrx_handle = cds_get_context(QDF_MODULE_ID_TXRX);
 
 	if (!pdev_txrx_handle || !pdev_txrx_handle->pl_dev) {
@@ -184,6 +181,7 @@ void pktlog_release_buf(struct hif_opaque_softc *scn)
 	struct page *vpg;
 	struct ath_pktlog_info *pl_info;
 	ol_txrx_pdev_handle pdev_txrx_handle;
+
 	pdev_txrx_handle = cds_get_context(QDF_MODULE_ID_TXRX);
 
 	if (!pdev_txrx_handle || !pdev_txrx_handle->pl_dev) {
@@ -225,9 +223,11 @@ qdf_sysctl_decl(ath_sysctl_pktlog_enable, ctl, write, filp, buffer, lenp, ppos)
 	ol_ath_generic_softc_handle scn;
 	struct ol_pktlog_dev_t *pl_dev;
 
+	mutex_lock(&proc_mutex);
 	scn = (ol_ath_generic_softc_handle) ctl->extra1;
 
 	if (!scn) {
+		mutex_unlock(&proc_mutex);
 		printk("%s: Invalid scn context\n", __func__);
 		ASSERT(0);
 		return -EINVAL;
@@ -236,6 +236,7 @@ qdf_sysctl_decl(ath_sysctl_pktlog_enable, ctl, write, filp, buffer, lenp, ppos)
 	pl_dev = get_pl_handle((struct hif_opaque_softc *)scn);
 
 	if (!pl_dev) {
+		mutex_unlock(&proc_mutex);
 		printk("%s: Invalid pktlog context\n", __func__);
 		ASSERT(0);
 		return -ENODEV;
@@ -266,6 +267,7 @@ qdf_sysctl_decl(ath_sysctl_pktlog_enable, ctl, write, filp, buffer, lenp, ppos)
 
 	ctl->data = NULL;
 	ctl->maxlen = 0;
+	mutex_unlock(&proc_mutex);
 
 	return ret;
 }
@@ -283,9 +285,11 @@ qdf_sysctl_decl(ath_sysctl_pktlog_size, ctl, write, filp, buffer, lenp, ppos)
 	ol_ath_generic_softc_handle scn;
 	struct ol_pktlog_dev_t *pl_dev;
 
+	mutex_lock(&proc_mutex);
 	scn = (ol_ath_generic_softc_handle) ctl->extra1;
 
 	if (!scn) {
+		mutex_unlock(&proc_mutex);
 		printk("%s: Invalid scn context\n", __func__);
 		ASSERT(0);
 		return -EINVAL;
@@ -294,6 +298,7 @@ qdf_sysctl_decl(ath_sysctl_pktlog_size, ctl, write, filp, buffer, lenp, ppos)
 	pl_dev = get_pl_handle((struct hif_opaque_softc *)scn);
 
 	if (!pl_dev) {
+		mutex_unlock(&proc_mutex);
 		printk("%s: Invalid pktlog handle\n", __func__);
 		ASSERT(0);
 		return -ENODEV;
@@ -316,6 +321,7 @@ qdf_sysctl_decl(ath_sysctl_pktlog_size, ctl, write, filp, buffer, lenp, ppos)
 
 	ctl->data = NULL;
 	ctl->maxlen = 0;
+	mutex_unlock(&proc_mutex);
 
 	return ret;
 }

@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2015-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2015-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -19,18 +16,12 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
- */
-
 /**
  * DOC: wlan_hdd_napi.c
  *
  * WLAN HDD NAPI interface implementation
  */
-#include <smp.h> /* get_cpu */
+#include <linux/smp.h> /* get_cpu */
 
 #include "wlan_hdd_napi.h"
 #include "cds_api.h"       /* cds_get_context */
@@ -64,7 +55,7 @@ struct qca_napi_data *hdd_napi_get_all(void)
 	else
 		rp = hif_napi_get_all(hif);
 
-	NAPI_DEBUG("<-- [addr=%p]", rp);
+	NAPI_DEBUG("<-- [addr=%pK]", rp);
 	return rp;
 }
 
@@ -128,7 +119,7 @@ int hdd_napi_create(void)
 			hdd_err("ERR(%d) creating NAPI instances",
 				rc);
 		} else {
-			hdd_info("napi instances were created. Map=0x%x", rc);
+			hdd_debug("napi instances were created. Map=0x%x", rc);
 			hdd_ctx = cds_get_context(QDF_MODULE_ID_HDD);
 			if (unlikely(NULL == hdd_ctx)) {
 				QDF_ASSERT(0);
@@ -237,7 +228,7 @@ int hdd_napi_event(enum qca_napi_event event, void *data)
 	int rc = -EFAULT;  /* assume err */
 	struct hif_opaque_softc *hif;
 
-	NAPI_DEBUG("-->(event=%d, aux=%p)", event, data);
+	NAPI_DEBUG("-->(event=%d, aux=%pK)", event, data);
 
 	hif = cds_get_context(QDF_MODULE_ID_HIF);
 	if (unlikely(NULL == hif))
@@ -249,7 +240,7 @@ int hdd_napi_event(enum qca_napi_event event, void *data)
 	return rc;
 }
 
-#ifdef HELIUMPLUS
+#if defined HELIUMPLUS && defined MSM_PLATFORM
 /**
  * hdd_napi_perfd_cpufreq() - set/reset min CPU freq for cores
  * @req_state:  high/low
@@ -379,11 +370,12 @@ int hdd_napi_apply_throughput_policy(struct hdd_context_s *hddctx,
 	else
 		req_state = QCA_NAPI_TPUT_LO;
 
-	if (req_state != napid->napi_mode)
+	if (req_state != napid->napi_mode) {
 		/* [re]set the floor frequency of high cluster */
 		rc = hdd_napi_perfd_cpufreq(req_state);
 		/* blacklist/boost_mode on/off */
 		rc = hdd_napi_event(NAPI_EVT_TPUT_STATE, (void *)req_state);
+	}
 	return rc;
 }
 
@@ -426,7 +418,7 @@ int hdd_napi_serialize(int is_on)
 	}
 	return rc;
 }
-#endif /* HELIUMPLUS */
+#endif /* HELIUMPLUS && MSM_PLATFORM */
 
 /**
  * hdd_napi_poll() - NAPI poll function
@@ -472,7 +464,8 @@ int hdd_display_napi_stats(void)
 		hdd_err("%s unable to retrieve napi structure", __func__);
 		return -EFAULT;
 	}
-	qdf_print("[NAPI %u][BL %d]:  scheds   polls   comps    done t-lim p-lim  corr  max_time napi-buckets(%d)",
+	hdd_log(QDF_TRACE_LEVEL_INFO_LOW,
+		"[NAPI %u][BL %d]:  scheds   polls   comps    done t-lim p-lim  corr  max_time napi-buckets(%d)",
 		  napid->napi_mode,
 		  hif_napi_cpu_blacklist(napid, BLACKLIST_QUERY),
 		  QCA_NAPI_NUM_BUCKETS);
@@ -495,7 +488,8 @@ int hdd_display_napi_stats(void)
 				}
 
 				if (napis->napi_schedules != 0)
-					qdf_print("NAPI[%2d]CPU[%d]: %7d %7d %7d %7d %5d %5d %5d %9llu %s",
+					hdd_log(QDF_TRACE_LEVEL_INFO_LOW,
+					"NAPI[%2d]CPU[%d]: %7d %7d %7d %7d %5d %5d %5d %9llu %s",
 						  i, j,
 						  napis->napi_schedules,
 						  napis->napi_polls,
@@ -513,3 +507,33 @@ int hdd_display_napi_stats(void)
 	return 0;
 }
 
+/**
+ * hdd_clear_napi_stats() - clear NAPI stats
+ *
+ * Return: == 0: success; !=0: failure
+ */
+int hdd_clear_napi_stats(void)
+{
+	int i, j;
+	struct qca_napi_data *napid;
+	struct qca_napi_info *napii;
+	struct qca_napi_stat *napis;
+
+	napid = hdd_napi_get_all();
+	if (NULL == napid) {
+		hdd_err("%s unable to retrieve napi structure", __func__);
+		return -EFAULT;
+	}
+
+	for (i = 0; i < CE_COUNT_MAX; i++)
+		if (napid->ce_map & (0x01 << i)) {
+			napii = napid->napis[i];
+			for (j = 0; j < NR_CPUS; j++) {
+				napis = &(napii->stats[j]);
+				qdf_mem_zero(napis,
+					     sizeof(struct qca_napi_stat));
+			}
+		}
+
+	return 0;
+}

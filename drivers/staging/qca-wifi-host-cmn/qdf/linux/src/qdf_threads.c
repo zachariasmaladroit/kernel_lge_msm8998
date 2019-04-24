@@ -1,9 +1,6 @@
 /*
  * Copyright (c) 2014-2017 The Linux Foundation. All rights reserved.
  *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
  * above copyright notice and this permission notice appear in all
@@ -19,12 +16,6 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
- */
-
 /**
  * DOC: qdf_threads
  * QCA driver framework (QDF) thread APIs
@@ -36,11 +27,16 @@
 #include <qdf_trace.h>
 #include <qdf_module.h>
 #include <linux/jiffies.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 11, 0)
 #include <linux/sched.h>
+#else
+#include <linux/sched/signal.h>
+#endif /* KERNEL_VERSION(4, 11, 0) */
 #include <linux/delay.h>
 #include <linux/interrupt.h>
 #include <linux/export.h>
-#include <stacktrace.h>
+#include <linux/stacktrace.h>
+#include <qdf_defer.h>
 
 /* Function declarations and documenation */
 
@@ -108,8 +104,8 @@ void qdf_busy_wait(uint32_t us_interval)
 }
 qdf_export_symbol(qdf_busy_wait);
 
-#if defined(CONFIG_MCL) && (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 9, 0))
-/* save_stack_trace_tsk is not generally exported for arm architectures */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0) || \
+	defined(BACKPORTED_EXPORT_SAVE_STACK_TRACE_TSK_ARM)
 #define QDF_PRINT_TRACE_COUNT 32
 void qdf_print_thread_trace(qdf_thread_t *thread)
 {
@@ -128,6 +124,11 @@ void qdf_print_thread_trace(qdf_thread_t *thread)
 }
 #else
 void qdf_print_thread_trace(qdf_thread_t *thread) { }
-#endif /* CONFIG_MCL */
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0) */
 qdf_export_symbol(qdf_print_thread_trace);
 
+qdf_thread_t *qdf_get_current_task(void)
+{
+	return current;
+}
+qdf_export_symbol(qdf_get_current_task);

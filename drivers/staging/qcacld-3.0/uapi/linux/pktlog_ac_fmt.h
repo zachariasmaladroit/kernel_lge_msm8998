@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2012-2016 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 #ifndef REMOVE_PKT_LOG
@@ -299,7 +290,7 @@ struct ath_pktlog_buf {
 
 #define PKTLOG_MOV_RD_IDX(_rd_offset, _log_buf, _log_size)  \
 	do { \
-		if((_rd_offset + sizeof(struct ath_pktlog_hdr) + \
+		if ((_rd_offset + sizeof(struct ath_pktlog_hdr) + \
 		    ((struct ath_pktlog_hdr *)((_log_buf)->log_data + \
 					       (_rd_offset)))->size) <= _log_size) { \
 			_rd_offset = ((_rd_offset) + sizeof(struct ath_pktlog_hdr) + \
@@ -311,7 +302,7 @@ struct ath_pktlog_buf {
 		} \
 		(_rd_offset) = (((_log_size) - (_rd_offset)) >=	\
 				sizeof(struct ath_pktlog_hdr)) ? _rd_offset : 0; \
-	} while(0)
+	} while (0)
 
 /**
  * enum tx_pkt_fate - tx packet fate

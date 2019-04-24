@@ -1,9 +1,6 @@
 /*
  * Copyright (c) 2016-2017 The Linux Foundation. All rights reserved.
  *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
  * above copyright notice and this permission notice appear in all
@@ -19,11 +16,6 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
- */
 struct hif_softc;
 
 void hif_dummy_bus_prevent_linkdown(struct hif_softc *scn, bool flag);
@@ -60,4 +52,4 @@ void hif_dummy_clear_stats(struct hif_softc *hif_ctx);
 void hif_dummy_set_bundle_mode(struct hif_softc *hif_ctx,
 					bool enabled, int rx_bundle_cnt);
 int hif_dummy_bus_reset_resume(struct hif_softc *hif_ctx);
-
+int hif_dummy_addr_in_boundary(struct hif_softc *scn, uint32_t offset);

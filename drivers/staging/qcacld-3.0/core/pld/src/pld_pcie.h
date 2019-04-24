@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2016-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2016-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 #ifndef __PLD_PCIE_H__
@@ -119,6 +110,15 @@ static inline int pld_pcie_wlan_pm_control(bool vote)
 #endif
 
 #ifndef CONFIG_PLD_PCIE_CNSS
+static inline void *pld_pcie_smmu_get_mapping(void)
+{
+	return NULL;
+}
+static inline int pld_pcie_smmu_map(phys_addr_t paddr,
+				    uint32_t *iova_addr, size_t size)
+{
+	return 0;
+}
 static inline int
 pld_pcie_get_fw_files_for_target(struct pld_fw_files *pfw_files,
 				 u32 target_type, u32 target_version)
@@ -130,25 +130,6 @@ static inline void pld_pcie_link_down(void)
 {
 }
 static inline int pld_pcie_shadow_control(bool enable)
-{
-	return 0;
-}
-static inline int
-pld_pcie_set_wlan_unsafe_channel(u16 *unsafe_ch_list, u16 ch_count)
-{
-	return 0;
-}
-static inline int
-pld_pcie_get_wlan_unsafe_channel(u16 *unsafe_ch_list,
-				 u16 *ch_count, u16 buf_len)
-{
-	return 0;
-}
-static inline int pld_pcie_wlan_set_dfs_nol(void *info, u16 info_len)
-{
-	return 0;
-}
-static inline int pld_pcie_wlan_get_dfs_nol(void *info, u16 info_len)
 {
 	return 0;
 }
@@ -204,23 +185,16 @@ static inline int pld_pcie_power_off(struct device *dev)
 {
 	return 0;
 }
-
-static inline uint8_t *pld_pcie_get_wlan_mac_address(struct device *dev,
-						     uint32_t *num)
-{
-	*num = 0;
-	return NULL;
-}
-
-static inline void pld_pcie_increment_driver_load_cnt(void)
-{
-}
-
-static inline int pld_pcie_get_driver_load_cnt(void)
-{
-	return 0;
-}
 #else
+static inline void *pld_pcie_smmu_get_mapping(void)
+{
+	return cnss_smmu_get_mapping();
+}
+static inline int pld_pcie_smmu_map(phys_addr_t paddr,
+				    uint32_t *iova_addr, size_t size)
+{
+	return cnss_smmu_map(paddr, iova_addr, size);
+}
 int pld_pcie_get_fw_files_for_target(struct pld_fw_files *pfw_files,
 				     u32 target_type, u32 target_version);
 int pld_pcie_get_platform_cap(struct pld_platform_cap *cap);
@@ -233,24 +207,6 @@ static inline void pld_pcie_link_down(void)
 static inline int pld_pcie_shadow_control(bool enable)
 {
 	return 0;
-}
-static inline int pld_pcie_set_wlan_unsafe_channel(u16 *unsafe_ch_list,
-						   u16 ch_count)
-{
-	return cnss_set_wlan_unsafe_channel(unsafe_ch_list, ch_count);
-}
-static inline int pld_pcie_get_wlan_unsafe_channel(u16 *unsafe_ch_list,
-						   u16 *ch_count, u16 buf_len)
-{
-	return cnss_get_wlan_unsafe_channel(unsafe_ch_list, ch_count, buf_len);
-}
-static inline int pld_pcie_wlan_set_dfs_nol(void *info, u16 info_len)
-{
-	return cnss_wlan_set_dfs_nol(info, info_len);
-}
-static inline int pld_pcie_wlan_get_dfs_nol(void *info, u16 info_len)
-{
-	return cnss_wlan_get_dfs_nol(info, info_len);
 }
 static inline void pld_pcie_schedule_recovery_work(void)
 {
@@ -304,21 +260,5 @@ static inline int pld_pcie_power_off(struct device *dev)
 {
 	return cnss_power_down(dev);
 }
-
-static inline uint8_t *pld_pcie_get_wlan_mac_address(struct device *dev,
-						     uint32_t *num)
-{
-	return cnss_common_get_wlan_mac_address(dev, num);
-}
-
-static inline void pld_pcie_increment_driver_load_cnt(void)
-{
-}
-
-static inline int pld_pcie_get_driver_load_cnt(void)
-{
-	return 0;
-}
-
 #endif
 #endif

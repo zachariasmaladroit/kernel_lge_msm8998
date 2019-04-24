@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2012-2019 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 /*
@@ -60,6 +51,7 @@
 #include "nan_datapath.h"
 #include "lim_assoc_utils.h"
 #include "lim_process_fils.h"
+#include "wma.h"
 
 static void lim_handle_join_rsp_status(tpAniSirGlobal mac_ctx,
 	tpPESession session_entry, tSirResultCodes result_code,
@@ -362,7 +354,7 @@ static void lim_handle_join_rsp_status(tpAniSirGlobal mac_ctx,
 			ht_profile->apChanWidth = session_entry->ch_width;
 		}
 #endif
-		pe_debug("pLimJoinReq:%p, pLimReAssocReq:%p",
+		pe_debug("pLimJoinReq:%pK, pLimReAssocReq:%pK",
 			session_entry->pLimJoinReq,
 			session_entry->pLimReAssocReq);
 
@@ -385,8 +377,8 @@ static void lim_handle_join_rsp_status(tpAniSirGlobal mac_ctx,
 			bss_ies, bss_ie_len) != NULL);
 
 		if (mac_ctx->roam.configParam.is_force_1x1 &&
-			is_vendor_ap_1_present && (session_entry->nss == 2) &&
-			(mac_ctx->lteCoexAntShare == 0 ||
+		    is_vendor_ap_1_present && (session_entry->nss == 2) &&
+		    (mac_ctx->lteCoexAntShare == 0 ||
 				IS_5G_CH(session_entry->currentOperChannel))) {
 			/* SET vdev param */
 			pe_debug("sending SMPS intolrent vdev_param");
@@ -896,7 +888,7 @@ lim_send_sme_disassoc_ntf(tpAniSirGlobal pMac,
 	tpPESession session = NULL;
 	uint16_t i, assoc_id;
 	tpDphHashNode sta_ds = NULL;
-	struct sir_sme_discon_done_ind *sir_sme_dis_ind;
+	QDF_STATUS status;
 
 	pe_debug("Disassoc Ntf with trigger : %d reasonCode: %d",
 		disassocTrigger, reasonCode);
@@ -920,6 +912,8 @@ lim_send_sme_disassoc_ntf(tpAniSirGlobal pMac,
 				sta_ds = dph_lookup_hash_entry(pMac,
 						peerMacAddr, &assoc_id,
 						&session->dph.dphHashTable);
+				if (sta_ds)
+					break;
 			}
 		}
 		if (sta_ds
@@ -932,7 +926,12 @@ lim_send_sme_disassoc_ntf(tpAniSirGlobal pMac,
 					pe_err("could not Add STA with assocId: %d",
 					sta_ds->assocId);
 		}
-		failure = true;
+		status = lim_prepare_disconnect_done_ind(pMac, &pMsg,
+				smesessionId, reasonCode, &peerMacAddr[0]);
+		if (!QDF_IS_STATUS_SUCCESS(status)) {
+			pe_err("Failed to prepare message");
+			return;
+		}
 		break;
 
 	case eLIM_HOST_DISASSOC:
@@ -982,36 +981,13 @@ lim_send_sme_disassoc_ntf(tpAniSirGlobal pMac,
 
 	case eLIM_PEER_ENTITY_DISASSOC:
 	case eLIM_LINK_MONITORING_DISASSOC:
-		sir_sme_dis_ind =
-			qdf_mem_malloc(sizeof(*sir_sme_dis_ind));
-		if (!sir_sme_dis_ind) {
-			pe_err("call to AllocateMemory failed for disconnect indication");
+		status = lim_prepare_disconnect_done_ind(pMac, &pMsg,
+						smesessionId,
+						reasonCode, &peerMacAddr[0]);
+		if (!QDF_IS_STATUS_SUCCESS(status)) {
+			pe_err("Failed to prepare message");
 			return;
 		}
-
-		pe_debug("send  eWNI_SME_DISCONNECT_DONE_IND with retCode: %d",
-				reasonCode);
-
-		sir_sme_dis_ind->message_type =
-			eWNI_SME_DISCONNECT_DONE_IND;
-		sir_sme_dis_ind->length =
-			sizeof(*sir_sme_dis_ind);
-		qdf_mem_copy(sir_sme_dis_ind->peer_mac, peerMacAddr,
-			     sizeof(tSirMacAddr));
-		sir_sme_dis_ind->session_id   = smesessionId;
-		sir_sme_dis_ind->reason_code  = reasonCode;
-		/*
-		 * Instead of sending deauth reason code as 505 which is
-		 * internal value(eSIR_SME_LOST_LINK_WITH_PEER_RESULT_CODE)
-		 * Send reason code as zero to Supplicant
-		 */
-		if (reasonCode == eSIR_SME_LOST_LINK_WITH_PEER_RESULT_CODE)
-			sir_sme_dis_ind->reason_code = 0;
-		else
-			sir_sme_dis_ind->reason_code = reasonCode;
-
-		pMsg = (uint32_t *)sir_sme_dis_ind;
-
 		break;
 
 	default:
@@ -1368,6 +1344,45 @@ void lim_send_sme_tdls_event_notify(tpAniSirGlobal pMac, uint16_t msgType,
 }
 #endif /* FEATURE_WLAN_TDLS */
 
+QDF_STATUS lim_prepare_disconnect_done_ind(tpAniSirGlobal mac_ctx,
+					   uint32_t **msg,
+					   uint8_t session_id,
+					   tSirResultCodes reason_code,
+					   uint8_t *peer_mac_addr)
+{
+	struct sir_sme_discon_done_ind *sir_sme_dis_ind;
+
+	sir_sme_dis_ind = qdf_mem_malloc(sizeof(*sir_sme_dis_ind));
+	if (!sir_sme_dis_ind) {
+		pe_err("Failed to allocate memory");
+		return QDF_STATUS_E_FAILURE;
+	}
+
+	pe_debug("Prepare eWNI_SME_DISCONNECT_DONE_IND withretCode: %d",
+		 reason_code);
+
+	sir_sme_dis_ind->message_type = eWNI_SME_DISCONNECT_DONE_IND;
+	sir_sme_dis_ind->length = sizeof(*sir_sme_dis_ind);
+	sir_sme_dis_ind->session_id = session_id;
+	if (peer_mac_addr)
+		qdf_mem_copy(sir_sme_dis_ind->peer_mac,
+			     peer_mac_addr, ETH_ALEN);
+
+	/*
+	 * Instead of sending deauth reason code as 505 which is
+	 * internal value(eSIR_SME_LOST_LINK_WITH_PEER_RESULT_CODE)
+	 * Send reason code as zero to Supplicant
+	 */
+	if (reason_code == eSIR_SME_LOST_LINK_WITH_PEER_RESULT_CODE)
+		sir_sme_dis_ind->reason_code = 0;
+	else
+		sir_sme_dis_ind->reason_code = reason_code;
+
+	*msg = (uint32_t *)sir_sme_dis_ind;
+
+	return QDF_STATUS_SUCCESS;
+}
+
 /**
  * lim_send_sme_deauth_ntf()
  *
@@ -1406,8 +1421,8 @@ lim_send_sme_deauth_ntf(tpAniSirGlobal pMac, tSirMacAddr peerMacAddr,
 	tSirSmeDeauthInd *pSirSmeDeauthInd;
 	tpPESession psessionEntry;
 	uint8_t sessionId;
-	uint32_t *pMsg;
-	struct sir_sme_discon_done_ind *sir_sme_dis_ind;
+	uint32_t *pMsg = NULL;
+	QDF_STATUS status;
 
 	psessionEntry = pe_find_session_by_bssid(pMac, peerMacAddr, &sessionId);
 	switch (deauthTrigger) {
@@ -1443,38 +1458,14 @@ lim_send_sme_deauth_ntf(tpAniSirGlobal pMac, tSirMacAddr peerMacAddr,
 
 	case eLIM_PEER_ENTITY_DEAUTH:
 	case eLIM_LINK_MONITORING_DEAUTH:
-		sir_sme_dis_ind =
-			qdf_mem_malloc(sizeof(*sir_sme_dis_ind));
-		if (!sir_sme_dis_ind) {
-			pe_err("call to AllocateMemory failed for disconnect indication");
+		status = lim_prepare_disconnect_done_ind(pMac, &pMsg,
+						smesessionId, reasonCode,
+						&peerMacAddr[0]);
+		if (!QDF_IS_STATUS_SUCCESS(status)) {
+			pe_err("Failed to prepare message");
 			return;
 		}
-
-		pe_debug("send eWNI_SME_DISCONNECT_DONE_IND withretCode: %d",
-				reasonCode);
-
-		sir_sme_dis_ind->message_type =
-			eWNI_SME_DISCONNECT_DONE_IND;
-		sir_sme_dis_ind->length =
-			sizeof(*sir_sme_dis_ind);
-		sir_sme_dis_ind->session_id = smesessionId;
-		sir_sme_dis_ind->reason_code = reasonCode;
-		qdf_mem_copy(sir_sme_dis_ind->peer_mac, peerMacAddr,
-			 ETH_ALEN);
-		/*
-		 * Instead of sending deauth reason code as 505 which is
-		 * internal value(eSIR_SME_LOST_LINK_WITH_PEER_RESULT_CODE)
-		 * Send reason code as zero to Supplicant
-		 */
-		if (reasonCode == eSIR_SME_LOST_LINK_WITH_PEER_RESULT_CODE)
-			sir_sme_dis_ind->reason_code = 0;
-		else
-			sir_sme_dis_ind->reason_code = reasonCode;
-
-		pMsg = (uint32_t *)sir_sme_dis_ind;
-
 		break;
-
 	default:
 		/**
 		 * Deauthentication indication due to Deauthentication
@@ -1523,9 +1514,8 @@ lim_send_sme_deauth_ntf(tpAniSirGlobal pMac, tSirMacAddr peerMacAddr,
 	}
 
 	/*Delete the PE session  created */
-	if (psessionEntry != NULL) {
+	if ((psessionEntry != NULL) && LIM_IS_STA_ROLE(psessionEntry))
 		pe_delete_session(pMac, psessionEntry);
-	}
 
 	lim_send_sme_disassoc_deauth_ntf(pMac, QDF_STATUS_SUCCESS,
 					 (uint32_t *) pMsg);
@@ -1638,7 +1628,7 @@ lim_send_sme_set_context_rsp(tpAniSirGlobal pMac,
 			     tpPESession psessionEntry, uint8_t smesessionId,
 			     uint16_t smetransactionId)
 {
-	tSirMsgQ mmhMsg;
+	cds_msg_t msg;
 	tSirSmeSetContextRsp *pSirSmeSetContextRsp;
 
 	pSirSmeSetContextRsp = qdf_mem_malloc(sizeof(tSirSmeSetContextRsp));
@@ -1658,15 +1648,15 @@ lim_send_sme_set_context_rsp(tpAniSirGlobal pMac,
 	pSirSmeSetContextRsp->sessionId = smesessionId;
 	pSirSmeSetContextRsp->transactionId = smetransactionId;
 
-	mmhMsg.type = eWNI_SME_SETCONTEXT_RSP;
-	mmhMsg.bodyptr = pSirSmeSetContextRsp;
-	mmhMsg.bodyval = 0;
+	msg.type = eWNI_SME_SETCONTEXT_RSP;
+	msg.bodyptr = pSirSmeSetContextRsp;
+	msg.bodyval = 0;
 	if (NULL == psessionEntry) {
 		MTRACE(mac_trace(pMac, TRACE_CODE_TX_SME_MSG,
-				 NO_SESSION, mmhMsg.type));
+				 NO_SESSION, msg.type));
 	} else {
 		MTRACE(mac_trace(pMac, TRACE_CODE_TX_SME_MSG,
-				 psessionEntry->peSessionId, mmhMsg.type));
+				 psessionEntry->peSessionId, msg.type));
 	}
 
 #ifdef FEATURE_WLAN_DIAG_SUPPORT_LIM    /* FEATURE_WLAN_DIAG_SUPPORT */
@@ -1674,87 +1664,8 @@ lim_send_sme_set_context_rsp(tpAniSirGlobal pMac,
 			      psessionEntry, (uint16_t) resultCode, 0);
 #endif /* FEATURE_WLAN_DIAG_SUPPORT */
 
-	lim_sys_process_mmh_msg_api(pMac, &mmhMsg, ePROT);
+	pMac->lim.sme_msg_callback(pMac, &msg);
 } /*** end lim_send_sme_set_context_rsp() ***/
-
-/**
- * lim_send_sme_neighbor_bss_ind()
- *
- ***FUNCTION:
- * This function is called by lim_lookup_nadd_hash_entry() to send
- * eWNI_SME_NEIGHBOR_BSS_IND message to host
- *
- ***PARAMS:
- *
- ***LOGIC:
- *
- ***ASSUMPTIONS:
- * NA
- *
- ***NOTE:
- * This function is used for sending eWNI_SME_NEIGHBOR_BSS_IND to
- * host upon detecting new BSS during background scanning if CFG
- * option is enabled for sending such indication
- *
- * @param  pMac - Pointer to Global MAC structure
- * @return None
- */
-
-void
-lim_send_sme_neighbor_bss_ind(tpAniSirGlobal pMac, tLimScanResultNode *pBssDescr)
-{
-	tSirMsgQ msgQ;
-	uint32_t val;
-	tSirSmeNeighborBssInd *pNewBssInd;
-
-	if ((pMac->lim.gLimSmeState != eLIM_SME_LINK_EST_WT_SCAN_STATE) ||
-	    ((pMac->lim.gLimSmeState == eLIM_SME_LINK_EST_WT_SCAN_STATE) &&
-	     pMac->lim.gLimRspReqd)) {
-		/* LIM is not in background scan state OR */
-		/* current scan is initiated by HDD. */
-		/* No need to send new BSS indication to HDD */
-		return;
-	}
-
-	if (wlan_cfg_get_int(pMac, WNI_CFG_NEW_BSS_FOUND_IND, &val) !=
-	    eSIR_SUCCESS) {
-		pe_err("could not get NEIGHBOR_BSS_IND from CFG");
-		return;
-	}
-
-	if (val == 0)
-		return;
-
-	/**
-	 * Need to indicate new BSSs found during
-	 * background scanning to host.
-	 * Allocate buffer for sending indication.
-	 * Length of buffer is length of BSS description
-	 * and length of header itself
-	 */
-	val = pBssDescr->bssDescription.length + sizeof(uint16_t) +
-		sizeof(uint32_t) + sizeof(uint8_t);
-	pNewBssInd = qdf_mem_malloc(val);
-	if (NULL == pNewBssInd) {
-		/* Log error */
-		pe_err("call to AllocateMemory failed for eWNI_SME_NEIGHBOR_BSS_IND");
-		return;
-	}
-
-	pNewBssInd->messageType = eWNI_SME_NEIGHBOR_BSS_IND;
-	pNewBssInd->length = (uint16_t) val;
-	pNewBssInd->sessionId = 0;
-
-	qdf_mem_copy((uint8_t *) pNewBssInd->bssDescription,
-		     (uint8_t *) &pBssDescr->bssDescription,
-		     pBssDescr->bssDescription.length + sizeof(uint16_t));
-
-	msgQ.type = eWNI_SME_NEIGHBOR_BSS_IND;
-	msgQ.bodyptr = pNewBssInd;
-	msgQ.bodyval = 0;
-	MTRACE(mac_trace(pMac, TRACE_CODE_TX_SME_MSG, NO_SESSION, msgQ.type));
-	lim_sys_process_mmh_msg_api(pMac, &msgQ, ePROT);
-} /*** end lim_send_sme_neighbor_bss_ind() ***/
 
 /** -----------------------------------------------------------------
    \brief lim_send_sme_addts_rsp() - sends SME ADDTS RSP
@@ -1983,8 +1894,8 @@ void lim_send_sme_pe_ese_tsm_rsp(tpAniSirGlobal pMac,
 	tpPESession pPeSessionEntry = NULL;
 
 	/* Get the Session Id based on Sta Id */
-	pPeSessionEntry =
-		pe_find_session_by_sta_id(pMac, pPeStats->staId, &sessionId);
+	pPeSessionEntry = pe_find_session_by_bssid(pMac, pPeStats->bssid.bytes,
+						   &sessionId);
 
 	/* Fill the Session Id */
 	if (NULL != pPeSessionEntry) {
@@ -2064,7 +1975,7 @@ lim_send_sme_ibss_peer_ind(tpAniSirGlobal pMac,
  *
  * Return: None
  */
-static void lim_process_csa_wbw_ie(tpAniSirGlobal mac_ctx,
+static QDF_STATUS lim_process_csa_wbw_ie(tpAniSirGlobal mac_ctx,
 		struct csa_offload_params *csa_params,
 		tLimWiderBWChannelSwitchInfo *chnl_switch_info,
 		tpPESession session_entry)
@@ -2073,8 +1984,27 @@ static void lim_process_csa_wbw_ie(tpAniSirGlobal mac_ctx,
 	uint8_t ap_new_ch_width;
 	bool new_ch_width_dfn = false;
 	uint8_t center_freq_diff;
+	uint32_t fw_vht_ch_wd = wma_get_vht_ch_width() + 1;
 
 	ap_new_ch_width = csa_params->new_ch_width + 1;
+
+	pe_info("new channel: %d new_ch_width: %d seg0: %d seg1: %d",
+			csa_params->channel, ap_new_ch_width,
+			csa_params->new_ch_freq_seg1,
+			csa_params->new_ch_freq_seg2);
+
+	if ((ap_new_ch_width != CH_WIDTH_80MHZ) &&
+			(ap_new_ch_width != CH_WIDTH_160MHZ) &&
+			(ap_new_ch_width != CH_WIDTH_80P80MHZ)) {
+		pe_err("CSA wide BW IE has wrong ch_width %d",
+				csa_params->new_ch_width);
+		return QDF_STATUS_E_INVAL;
+	}
+
+	if (!csa_params->new_ch_freq_seg1 && !csa_params->new_ch_freq_seg2) {
+		pe_err("CSA wide BW IE has invalid center freq");
+		return QDF_STATUS_E_INVAL;
+	}
 	if ((ap_new_ch_width == CH_WIDTH_80MHZ) &&
 			csa_params->new_ch_freq_seg2) {
 		new_ch_width_dfn = true;
@@ -2096,12 +2026,55 @@ static void lim_process_csa_wbw_ie(tpAniSirGlobal mac_ctx,
 		eLIM_CHANNEL_SWITCH_PRIMARY_AND_SECONDARY;
 	if ((ap_new_ch_width == CH_WIDTH_160MHZ) &&
 			!new_ch_width_dfn) {
-		ch_params.ch_width = CH_WIDTH_160MHZ;
+		if (csa_params->new_ch_freq_seg1 != csa_params->channel +
+				CH_TO_CNTR_FREQ_DIFF_160MHz) {
+			pe_err("CSA wide BW IE has invalid center freq");
+			return QDF_STATUS_E_INVAL;
+		}
+
+		if (ap_new_ch_width > fw_vht_ch_wd) {
+			pe_info("New BW is not supported, setting BW to %d",
+					fw_vht_ch_wd);
+			ap_new_ch_width = fw_vht_ch_wd;
+		}
+		ch_params.ch_width = ap_new_ch_width ;
 		cds_set_channel_params(csa_params->channel, 0,
 				&ch_params);
 		ap_new_ch_width = ch_params.ch_width;
 		csa_params->new_ch_freq_seg1 = ch_params.center_freq_seg0;
 		csa_params->new_ch_freq_seg2 = ch_params.center_freq_seg1;
+	} else if (!new_ch_width_dfn) {
+		if (ap_new_ch_width > fw_vht_ch_wd) {
+			pe_info("New BW is not supported, setting BW to %d",
+					fw_vht_ch_wd);
+			ap_new_ch_width = fw_vht_ch_wd;
+		}
+		if (csa_params->new_ch_freq_seg1 != csa_params->channel +
+				CH_TO_CNTR_FREQ_DIFF_80MHz) {
+			pe_err("CSA wide BW IE has invalid center freq");
+			return QDF_STATUS_E_INVAL;
+		}
+		csa_params->new_ch_freq_seg2 = 0;
+	}
+	if (new_ch_width_dfn) {
+		if (csa_params->new_ch_freq_seg1 != csa_params->channel +
+				CH_TO_CNTR_FREQ_DIFF_80MHz) {
+			pe_err("CSA wide BW IE has invalid center freq");
+			return QDF_STATUS_E_INVAL;
+		}
+		if (ap_new_ch_width > fw_vht_ch_wd) {
+			pe_info("New width is not supported, setting BW to %d",
+					fw_vht_ch_wd);
+			ap_new_ch_width = fw_vht_ch_wd;
+		}
+		if ((ap_new_ch_width == CH_WIDTH_160MHZ) &&
+				(csa_params->new_ch_freq_seg1 !=
+				 csa_params->channel +
+				 CH_TO_CNTR_FREQ_DIFF_160MHz)) {
+			pe_err("wide BW IE has invalid 160M center freq");
+			csa_params->new_ch_freq_seg2 = 0;
+			ap_new_ch_width = CH_WIDTH_80MHZ;
+		}
 	}
 	chnl_switch_info->newChanWidth = ap_new_ch_width;
 	chnl_switch_info->newCenterChanFreq0 = csa_params->new_ch_freq_seg1;
@@ -2123,7 +2096,10 @@ prnt_log:
 			chnl_switch_info->newChanWidth,
 			chnl_switch_info->newCenterChanFreq0,
 			chnl_switch_info->newCenterChanFreq1);
+
+	return QDF_STATUS_SUCCESS;
 }
+
 /**
  * lim_handle_csa_offload_msg() - Handle CSA offload message
  * @mac_ctx:         pointer to global adapter context
@@ -2142,7 +2118,7 @@ void lim_handle_csa_offload_msg(tpAniSirGlobal mac_ctx, tpSirMsgQ msg)
 	uint8_t session_id;
 	uint16_t aid = 0;
 	uint16_t chan_space = 0;
-	struct ch_params_s ch_params;
+	struct ch_params_s ch_params = {0};
 
 	tLimWiderBWChannelSwitchInfo *chnl_switch_info = NULL;
 	tLimChannelSwitchInfo *lim_ch_switch = NULL;
@@ -2154,12 +2130,19 @@ void lim_handle_csa_offload_msg(tpAniSirGlobal mac_ctx, tpSirMsgQ msg)
 		return;
 	}
 
+	csa_offload_ind = qdf_mem_malloc(sizeof(tSmeCsaOffloadInd));
+	if (NULL == csa_offload_ind) {
+		pe_err("memalloc fail eWNI_SME_CSA_OFFLOAD_EVENT");
+		goto err;
+	}
+
 	session_entry =
 		pe_find_session_by_bssid(mac_ctx,
 			csa_params->bssId, &session_id);
 	if (!session_entry) {
 		pe_err("Session does not exists for %pM",
 				csa_params->bssId);
+		qdf_mem_free(csa_offload_ind);
 		goto err;
 	}
 
@@ -2168,18 +2151,23 @@ void lim_handle_csa_offload_msg(tpAniSirGlobal mac_ctx, tpSirMsgQ msg)
 
 	if (!sta_ds) {
 		pe_err("sta_ds does not exist");
+		qdf_mem_free(csa_offload_ind);
 		goto err;
 	}
 
 	if (!LIM_IS_STA_ROLE(session_entry)) {
 		pe_debug("Invalid role to handle CSA");
+		qdf_mem_free(csa_offload_ind);
 		goto err;
 	}
 
+#ifdef FEATURE_WLAN_TDLS
 	/*
 	 * on receiving channel switch announcement from AP, delete all
 	 * TDLS peers before leaving BSS and proceed for channel switch
 	 */
+	session_entry->is_tdls_csa = true;
+#endif
 	lim_delete_tdls_peers(mac_ctx, session_entry);
 
 	lim_ch_switch = &session_entry->gLimChannelSwitch;
@@ -2199,12 +2187,13 @@ void lim_handle_csa_offload_msg(tpAniSirGlobal mac_ctx, tpSirMsgQ msg)
 	chnl_switch_info =
 		&session_entry->gLimWiderBWChannelSwitch;
 
-	pe_debug("vht: %d ht: %d flag: %x chan: %d",
+	pe_info("vht: %d ht: %d flag: %x chan: %d, sec_ch_offset %d",
 			session_entry->vhtCapability,
 			session_entry->htSupportedChannelWidthSet,
 			csa_params->ies_present_flag,
-			csa_params->channel);
-	pe_debug("seg1: %d seg2: %d width: %d country: %s class: %d",
+			csa_params->channel,
+			csa_params->sec_chan_offset);
+	pe_info("seg1: %d seg2: %d width: %d country: %s class: %d",
 			csa_params->new_ch_freq_seg1,
 			csa_params->new_ch_freq_seg2,
 			csa_params->new_ch_width,
@@ -2213,9 +2202,11 @@ void lim_handle_csa_offload_msg(tpAniSirGlobal mac_ctx, tpSirMsgQ msg)
 
 	if (session_entry->vhtCapability &&
 			session_entry->htSupportedChannelWidthSet) {
-		if (csa_params->ies_present_flag & lim_wbw_ie_present) {
-			lim_process_csa_wbw_ie(mac_ctx, csa_params,
-					chnl_switch_info, session_entry);
+		if ((csa_params->ies_present_flag & lim_wbw_ie_present) &&
+			(QDF_STATUS_SUCCESS == lim_process_csa_wbw_ie(mac_ctx,
+					csa_params, chnl_switch_info,
+					session_entry))) {
+			pe_debug("CSA wide BW IE process successful");
 			lim_ch_switch->sec_ch_offset =
 				PHY_SINGLE_CHANNEL_CENTERED;
 			if (chnl_switch_info->newChanWidth) {
@@ -2268,6 +2259,18 @@ void lim_handle_csa_offload_msg(tpAniSirGlobal mac_ctx, tpSirMsgQ msg)
 			lim_ch_switch->sec_ch_offset =
 				ch_params.sec_ch_offset;
 
+		} else {
+			lim_ch_switch->state =
+				eLIM_CHANNEL_SWITCH_PRIMARY_AND_SECONDARY;
+			ch_params.ch_width = CH_WIDTH_40MHZ;
+			cds_set_channel_params(csa_params->channel,
+					0, &ch_params);
+			lim_ch_switch->sec_ch_offset =
+				ch_params.sec_ch_offset;
+			chnl_switch_info->newChanWidth = CH_WIDTH_40MHZ;
+			chnl_switch_info->newCenterChanFreq0 =
+				ch_params.center_freq_seg0;
+			chnl_switch_info->newCenterChanFreq1 = 0;
 		}
 		session_entry->gLimChannelSwitch.ch_center_freq_seg0 =
 			chnl_switch_info->newCenterChanFreq0;
@@ -2331,15 +2334,25 @@ void lim_handle_csa_offload_msg(tpAniSirGlobal mac_ctx, tpSirMsgQ msg)
 		(session_entry->ch_width ==
 		 session_entry->gLimChannelSwitch.ch_width)) {
 		pe_err("Ignore CSA, no change in ch and bw");
+		qdf_mem_free(csa_offload_ind);
 		goto err;
 	}
 
+	if (CDS_IS_CHANNEL_24GHZ(csa_params->channel) &&
+	    (session_entry->dot11mode == WNI_CFG_DOT11_MODE_11A))
+		session_entry->dot11mode = WNI_CFG_DOT11_MODE_11G;
+	else if (CDS_IS_CHANNEL_5GHZ(csa_params->channel) &&
+		 ((session_entry->dot11mode == WNI_CFG_DOT11_MODE_11G) ||
+		 (session_entry->dot11mode == WNI_CFG_DOT11_MODE_11G_ONLY)))
+		session_entry->dot11mode = WNI_CFG_DOT11_MODE_11A;
+
+	/* Send RSO Stop to FW before triggering the vdev restart for CSA */
+	if (mac_ctx->lim.stop_roaming_callback)
+		mac_ctx->lim.stop_roaming_callback(mac_ctx,
+						   session_entry->smeSessionId,
+						   eCsrDriverDisabled);
+
 	lim_prepare_for11h_channel_switch(mac_ctx, session_entry);
-	csa_offload_ind = qdf_mem_malloc(sizeof(tSmeCsaOffloadInd));
-	if (NULL == csa_offload_ind) {
-		pe_err("memalloc fail eWNI_SME_CSA_OFFLOAD_EVENT");
-		goto err;
-	}
 
 	csa_offload_ind->mesgType = eWNI_SME_CSA_OFFLOAD_EVENT;
 	csa_offload_ind->mesgLen = sizeof(tSmeCsaOffloadInd);
@@ -2382,8 +2395,10 @@ void lim_handle_delete_bss_rsp(tpAniSirGlobal pMac, tpSirMsgQ MsgQ)
 		pe_err("Session Does not exist for given sessionID: %d",
 			pDelBss->sessionId);
 		qdf_mem_free(MsgQ->bodyptr);
+		MsgQ->bodyptr = NULL;
 		return;
 	}
+
 	/*
 	 * During DEL BSS handling, the PE Session will be deleted, but it is
 	 * better to clear this flag if the session is hanging around due
@@ -2473,36 +2488,11 @@ void
 lim_send_sme_dfs_event_notify(tpAniSirGlobal pMac, uint16_t msgType, void *event)
 {
 	tSirMsgQ mmhMsg;
+
 	mmhMsg.type = eWNI_SME_DFS_RADAR_FOUND;
 	mmhMsg.bodyptr = event;
 	mmhMsg.bodyval = 0;
 	lim_sys_process_mmh_msg_api(pMac, &mmhMsg, ePROT);
-	return;
-}
-
-/*--------------------------------------------------------------------------
-   \brief lim_send_dfs_chan_sw_ie_update()
-   This timer handler updates the channel switch IE in beacon template
-
-   \param pMac - pointer to global adapter context
-   \return     - channel to scan from valid session else zero.
-   \sa
-   --------------------------------------------------------------------------*/
-static void
-lim_send_dfs_chan_sw_ie_update(tpAniSirGlobal pMac, tpPESession psessionEntry)
-{
-
-	/* Update the beacon template and send to FW */
-	if (sch_set_fixed_beacon_fields(pMac, psessionEntry) != eSIR_SUCCESS) {
-		pe_err("Unable to set CSA IE in beacon");
-		return;
-	}
-
-	/* Send update beacon template message */
-	lim_send_beacon_ind(pMac, psessionEntry);
-	pe_debug("Updated CSA IE, IE COUNT: %d",
-		       psessionEntry->gLimChannelSwitch.switchCount);
-
 	return;
 }
 
@@ -2577,7 +2567,8 @@ lim_send_sme_ap_channel_switch_resp(tpAniSirGlobal pMac,
 	if (!is_ch_dfs) {
 		if (channelId == psessionEntry->currentOperChannel) {
 			lim_apply_configuration(pMac, psessionEntry);
-			lim_send_beacon_ind(pMac, psessionEntry);
+			lim_send_beacon_ind(pMac, psessionEntry,
+					    REASON_CONFIG_UPDATE);
 		} else {
 			pe_debug("Failed to Transmit Beacons on channel: %d after AP channel change response",
 				       psessionEntry->bcnLen);
@@ -2586,107 +2577,36 @@ lim_send_sme_ap_channel_switch_resp(tpAniSirGlobal pMac,
 	return;
 }
 
-/** -----------------------------------------------------------------
-   \brief lim_process_beacon_tx_success_ind() - This function is used
-   explicitely to handle successful beacon transmission indication
-   from the FW. This is a generic event generated by the FW afer the
-   first beacon is sent out after the beacon template update by the
-   host
-   \param pMac - global mac structure
-   \param psessionEntry - session info
-   \return none
-   \sa
-   ----------------------------------------------------------------- */
-void
-lim_process_beacon_tx_success_ind(tpAniSirGlobal pMac, uint16_t msgType, void *event)
+void lim_process_beacon_tx_success_ind(tpAniSirGlobal mac_ctx,
+				uint16_t msg_type, void *event)
 {
-	/* Currently, this event is used only for DFS channel switch announcement
-	 * IE update in the template. If required to be used for other IE updates
-	 * add appropriate code by introducing a state variable
-	 */
-	tpPESession psessionEntry;
-	tSirMsgQ mmhMsg;
-	tSirSmeCSAIeTxCompleteRsp *pChanSwTxResponse;
-	struct sir_beacon_tx_complete_rsp *beacon_tx_comp_rsp_ptr;
-	uint8_t length = sizeof(tSirSmeCSAIeTxCompleteRsp);
-	tpSirFirstBeaconTxCompleteInd pBcnTxInd =
+	tpPESession session;
+	tpSirFirstBeaconTxCompleteInd bcn_ind =
 		(tSirFirstBeaconTxCompleteInd *) event;
-	uint8_t ch, ch_width;
 
-	psessionEntry = pe_find_session_by_bss_idx(pMac, pBcnTxInd->bssIdx);
-	if (psessionEntry == NULL) {
-		pe_err("Session Does not exist for given sessionID");
+	session = pe_find_session_by_bss_idx(mac_ctx, bcn_ind->bssIdx);
+	if (session == NULL) {
+		pe_err("Session does not exist for given sessionID");
 		return;
 	}
 
-	pe_debug("role: %d swIe: %d opIe: %d",
-		GET_LIM_SYSTEM_ROLE(psessionEntry),
-		psessionEntry->dfsIncludeChanSwIe,
-		psessionEntry->gLimOperatingMode.present);
+	pe_debug("role: %d opIe: %d dfsIncludeChanSwIe:%d Switch count:%d",
+		 GET_LIM_SYSTEM_ROLE(session),
+		 session->gLimOperatingMode.present,
+		 session->dfsIncludeChanSwIe,
+		 session->gLimChannelSwitch.switchCount);
 
-	if (LIM_IS_AP_ROLE(psessionEntry) &&
-	    true == psessionEntry->dfsIncludeChanSwIe) {
-		/* Send only 5 beacons with CSA IE Set in when a radar is detected */
-		if (psessionEntry->gLimChannelSwitch.switchCount > 0) {
-			/*
-			 * Send the next beacon with updated CSA IE count
-			 */
-			lim_send_dfs_chan_sw_ie_update(pMac, psessionEntry);
+	if (!LIM_IS_AP_ROLE(session))
+		return;
 
-			ch = psessionEntry->gLimChannelSwitch.primaryChannel;
-			ch_width = psessionEntry->gLimChannelSwitch.ch_width;
-			if (pMac->sap.SapDfsInfo.dfs_beacon_tx_enhanced)
-				/* Send Action frame after updating beacon */
-				lim_send_chan_switch_action_frame(pMac,
-					ch, ch_width, psessionEntry);
+	if (session->dfsIncludeChanSwIe &&
+	    (session->gLimChannelSwitch.switchCount ==
+	    mac_ctx->sap.SapDfsInfo.sap_ch_switch_beacon_cnt))
+		lim_process_ap_ecsa_timeout(session);
 
-			/* Decrement the IE count */
-			psessionEntry->gLimChannelSwitch.switchCount--;
-		} else {
-			/* Done with CSA IE update, send response back to SME */
-			psessionEntry->gLimChannelSwitch.switchCount = 0;
-			if (pMac->sap.SapDfsInfo.disable_dfs_ch_switch == false)
-				psessionEntry->gLimChannelSwitch.switchMode = 0;
-			psessionEntry->dfsIncludeChanSwIe = false;
-			psessionEntry->dfsIncludeChanWrapperIe = false;
+	if (session->gLimOperatingMode.present)
+		/* Done with nss update */
+		session->gLimOperatingMode.present = 0;
 
-			pChanSwTxResponse = (tSirSmeCSAIeTxCompleteRsp *)
-					    qdf_mem_malloc(length);
-
-			if (NULL == pChanSwTxResponse) {
-				pe_err("AllocateMemory failed for tSirSmeCSAIeTxCompleteRsp");
-				return;
-			}
-
-			pChanSwTxResponse->sessionId =
-				psessionEntry->smeSessionId;
-			pChanSwTxResponse->chanSwIeTxStatus =
-				QDF_STATUS_SUCCESS;
-
-			mmhMsg.type = eWNI_SME_DFS_CSAIE_TX_COMPLETE_IND;
-			mmhMsg.bodyptr = pChanSwTxResponse;
-			mmhMsg.bodyval = 0;
-			lim_sys_process_mmh_msg_api(pMac, &mmhMsg, ePROT);
-		}
-	}
-
-	if (LIM_IS_AP_ROLE(psessionEntry) &&
-		psessionEntry->gLimOperatingMode.present) {
-		/* Done with nss update, send response back to SME */
-		psessionEntry->gLimOperatingMode.present = 0;
-		beacon_tx_comp_rsp_ptr = (struct sir_beacon_tx_complete_rsp *)
-				qdf_mem_malloc(sizeof(*beacon_tx_comp_rsp_ptr));
-		if (NULL == beacon_tx_comp_rsp_ptr) {
-			pe_err("AllocateMemory failed for beacon_tx_comp_rsp_ptr");
-			return;
-		}
-		beacon_tx_comp_rsp_ptr->session_id =
-			psessionEntry->smeSessionId;
-		beacon_tx_comp_rsp_ptr->tx_status = QDF_STATUS_SUCCESS;
-		mmhMsg.type = eWNI_SME_NSS_UPDATE_RSP;
-		mmhMsg.bodyptr = beacon_tx_comp_rsp_ptr;
-		mmhMsg.bodyval = 0;
-		lim_sys_process_mmh_msg_api(pMac, &mmhMsg, ePROT);
-	}
 	return;
 }

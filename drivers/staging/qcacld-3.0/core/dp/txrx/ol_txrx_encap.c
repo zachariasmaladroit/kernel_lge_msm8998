@@ -1,9 +1,6 @@
 /*
  * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
  *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
  * above copyright notice and this permission notice appear in all
@@ -19,12 +16,6 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
- */
-
 /**
  * @file ol_txrx_encap.c
  * @brief Provide functions to encap/decap on txrx frames.
@@ -37,7 +28,7 @@
 
 #include <qdf_nbuf.h>           /* qdf_nbuf_t, etc. */
 #include <cds_ieee80211_common.h>   /* ieee80211_frame */
-#include <net.h>                /* struct llc, struct ether_header, etc. */
+#include <linux/net.h>              /* struct llc, struct ether_header, etc. */
 #include <ol_txrx_internal.h>   /* TXRX_ASSERT1 */
 #include <ol_txrx_encap.h>      /* struct ol_rx_decap_info_t */
 

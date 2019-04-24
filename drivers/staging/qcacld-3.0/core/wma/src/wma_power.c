@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2013-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2013-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 /**
@@ -1528,6 +1519,11 @@ int wma_p2p_noa_event_handler(void *handle, uint8_t *event,
 		descriptors = WMI_UNIFIED_NOA_ATTR_NUM_DESC_GET(p2p_noa_info);
 		noa_ie.num_descriptors = (uint8_t) descriptors;
 
+		if (noa_ie.num_descriptors > WMA_MAX_NOA_DESCRIPTORS) {
+			WMA_LOGD("Sizing down the no of desc %d to max",
+					noa_ie.num_descriptors);
+			noa_ie.num_descriptors = WMA_MAX_NOA_DESCRIPTORS;
+		}
 		WMA_LOGD("%s: index %u, oppPs %u, ctwindow %u, num_descriptors = %u",
 			 __func__, noa_ie.index,
 			 noa_ie.oppPS, noa_ie.ctwindow, noa_ie.num_descriptors);
@@ -1859,6 +1855,7 @@ static void wma_set_vdev_suspend_dtim(tp_wma_handle wma, uint8_t vdev_id)
 
 		/* get mac to acess CFG data base */
 		struct sAniSirGlobal *mac = cds_get_context(QDF_MODULE_ID_PE);
+
 		if (!mac) {
 			WMA_LOGE(FL("Failed to get mac context"));
 			return;
@@ -1945,15 +1942,23 @@ static inline uint8_t wma_is_user_set_li_params(struct wma_txrx_node *iface)
 void wma_set_suspend_dtim(tp_wma_handle wma)
 {
 	uint8_t i;
+	bool li_offload_support = false;
 
 	if (NULL == wma) {
 		WMA_LOGE("%s: wma is NULL", __func__);
 		return;
 	}
+	if (WMI_SERVICE_EXT_IS_ENABLED(wma->wmi_service_bitmap,
+			wma->wmi_service_ext_bitmap,
+			WMI_SERVICE_LISTEN_INTERVAL_OFFLOAD_SUPPORT)) {
+		WMA_LOGD("%s: listen interval support is enabled", __func__);
+		li_offload_support = true;
+	}
 
 	for (i = 0; i < wma->max_bssid; i++) {
 		if (wma->interfaces[i].handle) {
-			if (!wma_is_user_set_li_params(&wma->interfaces[i]))
+			if (!wma_is_user_set_li_params(&wma->interfaces[i]) &&
+					!li_offload_support)
 				wma_set_vdev_suspend_dtim(wma, i);
 			wma_configure_vdev_suspend_params(wma, i);
 		}
@@ -2093,15 +2098,23 @@ static void wma_set_vdev_resume_dtim(tp_wma_handle wma, uint8_t vdev_id)
 void wma_set_resume_dtim(tp_wma_handle wma)
 {
 	uint8_t i;
+	bool li_offload_support = false;
 
 	if (NULL == wma) {
 		WMA_LOGE("%s: wma is NULL", __func__);
 		return;
 	}
+	if (WMI_SERVICE_EXT_IS_ENABLED(wma->wmi_service_bitmap,
+			wma->wmi_service_ext_bitmap,
+			WMI_SERVICE_LISTEN_INTERVAL_OFFLOAD_SUPPORT)) {
+		WMA_LOGD("%s: listen interval support is enabled", __func__);
+		li_offload_support = true;
+	}
 
 	for (i = 0; i < wma->max_bssid; i++) {
 		if (wma->interfaces[i].handle) {
-			if (!wma_is_user_set_li_params(&wma->interfaces[i]))
+			if (!wma_is_user_set_li_params(&wma->interfaces[i]) &&
+					!li_offload_support)
 				wma_set_vdev_resume_dtim(wma, i);
 			wma_configure_vdev_resume_params(wma, i);
 		}

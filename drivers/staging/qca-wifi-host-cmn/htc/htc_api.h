@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2013-2014, 2016-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2013-2014, 2016-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 #ifndef _HTC_API_H_
@@ -452,18 +443,6 @@ QDF_STATUS htc_wait_target(HTC_HANDLE HTCHandle);
 QDF_STATUS htc_start(HTC_HANDLE HTCHandle);
 
 /**
- * htc_add_receive_pkt - Add receive packet to HTC
- * @HTCHandle - HTC handle
- * @pPacket - HTC receive packet to add
- *
- * User must supply HTC packets for capturing incoming HTC frames.
- * The caller must initialize each HTC packet using the
- * SET_HTC_PACKET_INFO_RX_REFILL() macro.
- * Return: A_OK on success
- */
-A_STATUS htc_add_receive_pkt(HTC_HANDLE HTCHandle, HTC_PACKET *pPacket);
-
-/**
  * htc_connect_service - Connect to an HTC service
  * @HTCHandle - HTC handle
  * @pReq - connection details
@@ -625,25 +604,6 @@ bool htc_get_endpoint_statistics(HTC_HANDLE HTCHandle,
 void htc_unblock_recv(HTC_HANDLE HTCHandle);
 
 /**
- * htc_send_pkts_multiple - Send a series of HTC packets
- * @HTCHandle - HTC handle
- * @pPktQueue - local queue holding packets to send
- *
- * Caller must initialize each packet using SET_HTC_PACKET_INFO_TX()
- * macro. The queue must only contain packets directed at the same
- * endpoint. Caller supplies a pointer to an HTC_PACKET_QUEUE structure
- * holding the TX packets in FIFO order. This API will remove the
- * packets from the pkt queue and place them into the HTC Tx Queue
- * and bundle messages where possible.
- * The caller may allocate the pkt queue on the stack to hold the pkts.
- * This interface is fully asynchronous.  On error, htc_send_pkts will
- * call the registered Endpoint callback to cleanup the packet.
- * Return: QDF_STATUS_SUCCESS
- */
-QDF_STATUS htc_send_pkts_multiple(HTC_HANDLE HTCHandle,
-				HTC_PACKET_QUEUE *pPktQueue);
-
-/**
  * htc_add_receive_pkt_multiple - Add multiple receive packets to HTC
  * @HTCHandle - HTC handle
  * @pPktQueue - HTC receive packet queue holding packets to add
@@ -723,18 +683,6 @@ struct ol_ath_htc_stats *ieee80211_ioctl_get_htc_stats(HTC_HANDLE
  * Return: htc_handle tx queue depth
  */
 int htc_get_tx_queue_depth(HTC_HANDLE *htc_handle, HTC_ENDPOINT_ID endpoint_id);
-
-#ifdef HIF_USB
-#define HTCReturnReceivePkt(target, p, osbuf) \
-	do { \
-		A_NETBUF_FREE(osbuf);  \
-		if (p->Status == A_CLONE) {  \
-			qdf_mem_free(p);  \
-		} \
-	} while (0)
-#else
-#define HTCReturnReceivePkt(target, p, osbuf)   htc_add_receive_pkt(target, p)
-#endif
 
 #ifdef WLAN_FEATURE_FASTPATH
 void htc_ctrl_msg_cmpl(HTC_HANDLE htc_pdev, HTC_ENDPOINT_ID htc_ep_id);

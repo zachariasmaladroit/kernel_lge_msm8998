@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2011-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2011-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 /*
@@ -349,8 +340,8 @@ static inline bool is_non_rsn_cipher(uint8_t cipher_suite)
  * frame handling to determine whether received RSN in
  * Assoc/Reassoc request frames include supported cipher suites or not.
  *
- * Return: eSIR_SUCCESS if ALL BSS basic rates are present in the
- *                  received rateset else failure status.
+ * Return: eSIR_SUCCESS if ALL supported cipher suites are present in the
+ *                  received rsn IE else failure status.
  */
 
 uint8_t
@@ -461,8 +452,8 @@ lim_check_rx_rsn_ie_match(tpAniSirGlobal mac_ctx, tDot11fIERSN rx_rsn_ie,
  * frame handling to determine whether received RSN in
  * Assoc/Reassoc request frames include supported cipher suites or not.
  *
- * Return: Success if ALL BSS basic rates are present in the
- *                  received rateset else failure status.
+ * Return: Success if ALL supported cipher suites are present in the
+ *                  received wpa IE else failure status.
  */
 
 uint8_t
@@ -863,7 +854,7 @@ void
 lim_reject_association(tpAniSirGlobal mac_ctx, tSirMacAddr peer_addr,
 			uint8_t sub_type, uint8_t add_pre_auth_context,
 			tAniAuthType auth_type, uint16_t sta_id,
-			uint8_t delete_sta, tSirResultCodes result_code,
+			uint8_t delete_sta, enum eSirMacStatusCodes result_code,
 			tpPESession session_entry)
 {
 	tpDphHashNode sta_ds;
@@ -1396,6 +1387,25 @@ tSirRetStatus lim_populate_vht_mcs_set(tpAniSirGlobal mac_ctx,
 			VHT_TX_HIGHEST_SUPPORTED_DATA_RATE_1_1;
 		rates->vhtRxHighestDataRate =
 			VHT_RX_HIGHEST_SUPPORTED_DATA_RATE_1_1;
+		if (!session_entry->ch_width &&
+				!mac_ctx->roam.configParam.enable_vht20_mcs9 &&
+				((rates->vhtRxMCSMap & VHT_1x1_MCS_MASK) ==
+				 VHT_1x1_MCS9_MAP)) {
+			DISABLE_VHT_MCS_9(rates->vhtRxMCSMap,
+					NSS_1x1_MODE);
+			DISABLE_VHT_MCS_9(rates->vhtTxMCSMap,
+					NSS_1x1_MODE);
+		}
+	} else {
+		if (!session_entry->ch_width &&
+				!mac_ctx->roam.configParam.enable_vht20_mcs9 &&
+				((rates->vhtRxMCSMap & VHT_2x2_MCS_MASK) ==
+				 VHT_2x2_MCS9_MAP)) {
+			DISABLE_VHT_MCS_9(rates->vhtRxMCSMap,
+					NSS_2x2_MODE);
+			DISABLE_VHT_MCS_9(rates->vhtTxMCSMap,
+					NSS_2x2_MODE);
+		}
 	}
 
 	if ((peer_vht_caps == NULL) || (!peer_vht_caps->present))
@@ -1644,6 +1654,7 @@ lim_populate_peer_rate_set(tpAniSirGlobal pMac,
 	tSirMacRateSet tempRateSet;
 	tSirMacRateSet tempRateSet2;
 	uint32_t i, j, val, min, isArate;
+
 	isArate = 0;
 
 	/* copy operational rate set from psessionEntry */
@@ -1692,6 +1703,7 @@ lim_populate_peer_rate_set(tpAniSirGlobal pMac,
 	{
 		uint8_t aRateIndex = 0;
 		uint8_t bRateIndex = 0;
+
 		qdf_mem_set((uint8_t *) pRates, sizeof(tSirSupportedRates), 0);
 		for (i = 0; i < tempRateSet.numRates; i++) {
 			min = 0;
@@ -2195,27 +2207,22 @@ lim_add_sta(tpAniSirGlobal mac_ctx,
 		add_sta_params->staIdx, add_sta_params->updateSta,
 		add_sta_params->htCapable, add_sta_params->vhtCapable);
 	/*
-	 * 2G-AS platform: SAP associates with HT (11n)clients as 2x1 in 2G and
-	 * 2X2 in 5G
-	 * Non-2G-AS platform: SAP associates with HT (11n) clients as 2X2 in 2G
-	 * and 5G; and disable async dbs scan when HT client connects
-	 * 5G-AS: Don't care
+	 * If HT client is connected to SAP DUT and self cap is NSS = 2 then
+	 * disable ASYNC DBS scan by sending WMI_VDEV_PARAM_SMPS_INTOLERANT
+	 * to FW, because HT client's can't drop down chain using SMPS frames.
 	 */
 	if (LIM_IS_AP_ROLE(session_entry) &&
 		(STA_ENTRY_PEER == sta_ds->staType) &&
 		!add_sta_params->vhtCapable &&
 		(session_entry->nss == 2)) {
 		session_entry->ht_client_cnt++;
-		if ((session_entry->ht_client_cnt == 1) &&
-			!(mac_ctx->lteCoexAntShare &&
-			IS_24G_CH(session_entry->currentOperChannel))) {
+		if (session_entry->ht_client_cnt == 1) {
 			pe_debug("setting SMPS intolrent vdev_param");
 			wma_cli_set_command(session_entry->smeSessionId,
 				(int)WMI_VDEV_PARAM_SMPS_INTOLERANT,
 				1, VDEV_CMD);
 		}
 	}
-
 
 	add_sta_params->greenFieldCapable = sta_ds->htGreenfield;
 	add_sta_params->maxAmpduDensity = sta_ds->htAMpduDensity;
@@ -2953,7 +2960,6 @@ void lim_handle_cnf_wait_timeout(tpAniSirGlobal pMac, uint16_t staId)
 					       true,
 					       pStaDs->mlmStaContext.authType,
 					       pStaDs->assocId, true,
-					       (tSirResultCodes)
 					       eSIR_MAC_UNSPEC_FAILURE_STATUS,
 					       psessionEntry);
 		}
@@ -3049,7 +3055,11 @@ lim_delete_dph_hash_entry(tpAniSirGlobal mac_ctx, tSirMacAddr sta_addr,
 					       session_entry);
 		}
 #ifdef WLAN_FEATURE_11W
-		tx_timer_delete(&sta_ds->pmfSaQueryTimer);
+		if (sta_ds->rmfEnabled) {
+			pe_debug("delete pmf timer sta-idx:%d assoc-id:%d",
+				 sta_ds->staIndex, sta_ds->assocId);
+			tx_timer_delete(&sta_ds->pmfSaQueryTimer);
+		}
 #endif
 	}
 
@@ -3224,6 +3234,8 @@ lim_check_and_announce_join_success(tpAniSirGlobal mac_ctx,
 	if ((IS_DOT11_MODE_VHT(session_entry->dot11mode)) &&
 		beacon_probe_rsp->vendor_vht_ie.VHTCaps.present) {
 		session_entry->is_vendor_specific_vhtcaps = true;
+		session_entry->vendor_specific_vht_ie_sub_type =
+			beacon_probe_rsp->vendor_vht_ie.sub_type;
 		pe_debug("VHT caps are present in vendor specific IE");
 	}
 
@@ -3756,34 +3768,23 @@ tSirRetStatus lim_sta_send_add_bss(tpAniSirGlobal pMac, tpSirAssocRsp pAssocRsp,
 				sta_context->enable_su_tx_bformer = 1;
 		}
 
-		if ((pAssocRsp->HTCaps.supportedChannelWidthSet) &&
-				(chanWidthSupp)) {
-			pAddBssParams->staContext.ch_width = (uint8_t)
-				pAssocRsp->HTInfo.recommendedTxWidthSet;
-			if (pAssocRsp->VHTCaps.present)
-				vht_oper = &pAssocRsp->VHTOperation;
-			else if (pAssocRsp->vendor_vht_ie.VHTCaps.present) {
-				vht_oper = &pAssocRsp->
-						vendor_vht_ie.VHTOperation;
-				pe_debug("VHT Op IE is in vendor Specfic IE");
-			}
-			/*
-			 * in limExtractApCapability function intersection of FW
-			 * advertised channel width and AP advertised channel
-			 * width has been taken into account for calculating
-			 * psessionEntry->ch_width
-			 */
+		chanWidthSupp = lim_get_ht_capability(pMac,
+					eHT_SUPPORTED_CHANNEL_WIDTH_SET,
+					psessionEntry);
+
+		/*
+		 * in limExtractApCapability function intersection of FW
+		 * advertised channel width and AP advertised channel
+		 * width has been taken into account for calculating
+		 * psessionEntry->ch_width
+		 */
+		if (chanWidthSupp &&
+		    ((pAssocRsp->HTCaps.supportedChannelWidthSet) ||
+		    (pBeaconStruct->HTCaps.supportedChannelWidthSet))) {
 			pAddBssParams->staContext.ch_width =
 					psessionEntry->ch_width;
-
-			pe_debug("StaCtx: vhtCap %d ChBW %d TxBF %d",
-					pAddBssParams->staContext.vhtCapable,
-					pAddBssParams->staContext.ch_width,
-					sta_context->vhtTxBFCapable);
-			pe_debug("StaContext su_tx_bfer %d",
-					sta_context->enable_su_tx_bformer);
 		} else {
-			sta_context->ch_width =	CH_WIDTH_20MHZ;
+			sta_context->ch_width = CH_WIDTH_20MHZ;
 			if ((IS_SIR_STATUS_SUCCESS(
 				wlan_cfg_get_int(pMac,
 					WNI_CFG_VHT_ENABLE_TXBF_20MHZ,
@@ -3791,6 +3792,14 @@ tSirRetStatus lim_sta_send_add_bss(tpAniSirGlobal pMac, tpSirAssocRsp pAssocRsp,
 					(false == enableTxBF20MHz))
 				sta_context->vhtTxBFCapable = 0;
 		}
+
+		pe_debug("StaCtx: vhtCap %d ChBW %d TxBF %d",
+				pAddBssParams->staContext.vhtCapable,
+				pAddBssParams->staContext.ch_width,
+				sta_context->vhtTxBFCapable);
+		pe_debug("StaContext su_tx_bfer %d",
+				sta_context->enable_su_tx_bformer);
+
 		pAddBssParams->staContext.mimoPS =
 			(tSirMacHTMIMOPowerSaveState)
 			pAssocRsp->HTCaps.mimoPowerSave;
@@ -4546,6 +4555,7 @@ void lim_init_pre_auth_timer_table(tpAniSirGlobal pMac,
 {
 	uint32_t cfgValue;
 	uint32_t authNodeIdx;
+
 	tLimPreAuthNode **pAuthNode = pPreAuthTimerTable->pTable;
 
 	/* Get AUTH_RSP Timers value */
@@ -4584,6 +4594,7 @@ tLimPreAuthNode *lim_acquire_free_pre_auth_node(tpAniSirGlobal pMac,
 {
 	uint32_t i;
 	tLimPreAuthNode **pTempNode = pPreAuthTimerTable->pTable;
+
 	for (i = 0; i < pPreAuthTimerTable->numEntry; i++) {
 		if (pTempNode[i]->fFree == 1) {
 			pTempNode[i]->fFree = 0;

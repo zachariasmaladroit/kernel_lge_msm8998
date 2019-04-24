@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2016-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2016-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 #ifndef __PLD_COMMON_H__
@@ -44,6 +35,10 @@
 #define PLD_SETUP_FILE               "athsetup.bin"
 #define PLD_EPPING_FILE              "epping.bin"
 #define PLD_EVICTED_FILE             ""
+
+#ifdef CONFIG_WCNSS_MEM_PRE_ALLOC
+#include <net/cnss_prealloc.h>
+#endif
 
 /**
  * enum pld_bus_type - bus type
@@ -113,6 +108,18 @@ enum pld_platform_cap_flag {
 };
 
 /**
+ * enum pld_cc_src - platform country code source
+ * @PLD_SOURCE_CORE: coutry code from core
+ * @PLD_SOURCE_11D: counry code from 11d
+ * @PLD_SOURCE_USER: country code from user
+ */
+enum pld_cc_src {
+	PLD_SOURCE_CORE,
+	PLD_SOURCE_11D,
+	PLD_SOURCE_USER
+};
+
+/**
  * struct pld_platform_cap - platform capabilities
  * @cap_flag: capabilities flag
  *
@@ -143,7 +150,6 @@ enum pld_driver_status {
 enum pld_uevent {
 	PLD_RECOVERY,
 	PLD_FW_DOWN,
-	PLD_FW_READY,
 };
 
 /**
@@ -428,6 +434,24 @@ static inline uint8_t *pld_get_wlan_mac_address(struct device *dev,
 {
 	return cnss_utils_get_wlan_mac_address(dev, num);
 }
+
+/**
+ * pld_get_wlan_derived_mac_address() - API to query derived MAC address
+ * from platform Driver
+ * @dev: Device Structure
+ * @num: Pointer to number of MAC address supported
+ *
+ * Platform Driver can have MAC address stored. This API needs to be used
+ * to get those MAC address
+ *
+ * Return: Pointer to the list of MAC address
+ */
+static inline uint8_t *pld_get_wlan_derived_mac_address(struct device *dev,
+							uint32_t *num)
+{
+	return cnss_utils_get_wlan_derived_mac_address(dev, num);
+}
+
 /**
  * pld_increment_driver_load_cnt() - Maintain driver load count
  * @dev: device
@@ -482,6 +506,14 @@ static inline uint8_t *pld_get_wlan_mac_address(struct device *dev,
 	*num = 0;
 	return NULL;
 }
+
+static inline uint8_t *pld_get_wlan_derived_mac_address(struct device *dev,
+							uint32_t *num)
+{
+	*num = 0;
+	return NULL;
+}
+
 static inline void pld_increment_driver_load_cnt(struct device *dev) {}
 static inline int pld_get_driver_load_cnt(struct device *dev)
 {
@@ -527,6 +559,60 @@ int pld_smmu_map(struct device *dev, phys_addr_t paddr,
 		 uint32_t *iova_addr, size_t size);
 unsigned int pld_socinfo_get_serial_number(struct device *dev);
 int pld_is_qmi_disable(struct device *dev);
+int pld_is_fw_down(void);
 int pld_force_assert_target(struct device *dev);
 bool pld_is_fw_dump_skipped(struct device *dev);
+
+/**
+ * pld_is_fw_rejuvenate() - Check WLAN fw is rejuvenating
+ *
+ * Help the driver decide whether FW down is due to
+ * SSR or FW rejuvenate.
+ *
+ * Return: 1 FW is rejuvenating
+ *         0 FW is not rejuvenating
+ */
+int pld_is_fw_rejuvenate(void);
+
+void pld_set_cc_source(struct device *dev, enum pld_cc_src cc_source);
+enum pld_cc_src pld_get_cc_source(struct device *dev);
+
+#if defined(CONFIG_WCNSS_MEM_PRE_ALLOC) && defined(FEATURE_SKB_PRE_ALLOC)
+
+/**
+ * pld_nbuf_pre_alloc() - get allocated nbuf from platform driver.
+ * @size: Netbuf requested size
+ *
+ * Return: nbuf or NULL if no memory
+ */
+static inline struct sk_buff *pld_nbuf_pre_alloc(size_t size)
+{
+	struct sk_buff *skb = NULL;
+
+	if (size >= WCNSS_PRE_SKB_ALLOC_GET_THRESHOLD)
+		skb = wcnss_skb_prealloc_get(size);
+
+	return skb;
+}
+
+/**
+ * pld_nbuf_pre_alloc_free() - free the nbuf allocated in platform driver.
+ * @skb: Pointer to network buffer
+ *
+ * Return: TRUE if the nbuf is freed
+ */
+static inline int pld_nbuf_pre_alloc_free(struct sk_buff *skb)
+{
+	return wcnss_skb_prealloc_put(skb);
+}
+#else
+static inline struct sk_buff *pld_nbuf_pre_alloc(size_t size)
+{
+	return NULL;
+}
+static inline int pld_nbuf_pre_alloc_free(struct sk_buff *skb)
+{
+	return 0;
+}
+#endif
 #endif

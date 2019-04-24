@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 /**=========================================================================
@@ -91,7 +82,7 @@ void lim_ft_cleanup(tpAniSirGlobal pMac, tpPESession psessionEntry)
 	}
 
 	if (NULL != psessionEntry->ftPEContext.pFTPreAuthReq) {
-		pe_debug("Freeing pFTPreAuthReq: %p",
+		pe_debug("Freeing pFTPreAuthReq: %pK",
 			       psessionEntry->ftPEContext.pFTPreAuthReq);
 		if (NULL !=
 		    psessionEntry->ftPEContext.pFTPreAuthReq->
@@ -839,6 +830,7 @@ lim_ft_send_aggr_qos_rsp(tpAniSirGlobal pMac, uint8_t rspReqd,
 {
 	tpSirAggrQosRsp rsp;
 	int i = 0;
+
 	if (!rspReqd) {
 		return;
 	}
@@ -876,6 +868,7 @@ void lim_process_ft_aggr_qo_s_rsp(tpAniSirGlobal pMac, tpSirMsgQ limMsg)
 	uint8_t rspReqd = 1;
 	tpPESession psessionEntry = NULL;
 	int i = 0;
+
 	pe_debug(" Received AGGR_QOS_RSP from HAL");
 	SET_LIM_PROCESS_DEFD_MESGS(pMac, true);
 	pAggrQosRspMsg = (tpAggrAddTsParams) (limMsg->bodyptr);
@@ -976,6 +969,7 @@ tSirRetStatus lim_process_ft_aggr_qos_req(tpAniSirGlobal pMac, uint32_t *pMsgBuf
 	/* Fill in the sessionId specific to PE */
 	pAggrAddTsParam->sessionId = sessionId;
 	pAggrAddTsParam->tspecIdx = aggrQosReq->aggrInfo.tspecIdx;
+	pAggrAddTsParam->vdev_id = psessionEntry->smeSessionId;
 
 	for (i = 0; i < HAL_QOS_NUM_AC_MAX; i++) {
 		if (aggrQosReq->aggrInfo.tspecIdx & (1 << i)) {

@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 /**
@@ -59,6 +50,7 @@
  * Count to ratelimit the HDD logs during Scan and connect
  */
 #define HDD_SCAN_REJECT_RATE_LIMIT 5
+#define HDD_DBS_SCAN_DISABLE_RATE_LIMIT 10
 
 /**
  * enum essid_bcast_type - SSID broadcast type
@@ -87,17 +79,17 @@ struct hdd_scan_info {
 	char *end;
 };
 
-#ifdef FEATURE_SUPPORT_LGE
-/*LGE_CHNAGE_S, DRIVER scan_suppress command, 2017-07-12, moon-wifi@lge.com*/
-unsigned long static g_scansuppress_mode = 0;
-/*LGE_CHNAGE_E, DRIVER scan_suppress command, 2017-07-12, moon-wifi@lge.com*/
-#endif
-
 static const
 struct nla_policy scan_policy[QCA_WLAN_VENDOR_ATTR_SCAN_MAX + 1] = {
 	[QCA_WLAN_VENDOR_ATTR_SCAN_FLAGS] = {.type = NLA_U32},
 	[QCA_WLAN_VENDOR_ATTR_SCAN_TX_NO_CCK_RATE] = {.type = NLA_FLAG},
 	[QCA_WLAN_VENDOR_ATTR_SCAN_COOKIE] = {.type = NLA_U64},
+	[QCA_WLAN_VENDOR_ATTR_SCAN_IE] = {.type = NLA_BINARY,
+					  .len = MAX_DEFAULT_SCAN_IE_LEN},
+	[QCA_WLAN_VENDOR_ATTR_SCAN_MAC] = {.type = NLA_UNSPEC,
+					   .len = QDF_MAC_ADDR_SIZE},
+	[QCA_WLAN_VENDOR_ATTR_SCAN_MAC_MASK] = {.type = NLA_UNSPEC,
+						.len = QDF_MAC_ADDR_SIZE},
 };
 
 /**
@@ -311,6 +303,7 @@ static int hdd_add_scan_event_from_ies(struct hdd_scan_info *scanInfo,
 					tCsrScanResultInfo *scan_result,
 					char *current_event, char *last_event)
 {
+	int ret;
 	hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR(scanInfo->dev);
 	tHalHandle hHal = WLAN_HDD_GET_HAL_CTX(pAdapter);
 	tSirBssDescription *descriptor = &scan_result->BssDescriptor;
@@ -340,9 +333,13 @@ static int hdd_add_scan_event_from_ies(struct hdd_scan_info *scanInfo,
 	if (ie_length <= 0)
 		return 0;
 
-	dot11f_unpack_beacon_i_es((tpAniSirGlobal)
+	ret = dot11f_unpack_beacon_i_es((tpAniSirGlobal)
 				  hHal, (uint8_t *) descriptor->ieFields,
 				  ie_length, &dot11BeaconIEs, false);
+	if (DOT11F_FAILED(ret)) {
+		hdd_err("unpack failed, ret: 0x%x", ret);
+		return -EINVAL;
+	}
 
 	pDot11SSID = &dot11BeaconIEs.SSID;
 
@@ -431,6 +428,32 @@ static int hdd_add_scan_event_from_ies(struct hdd_scan_info *scanInfo,
 	return 0;
 }
 
+void hdd_init_scan_reject_params(hdd_context_t *hdd_ctx)
+{
+	if (hdd_ctx) {
+		hdd_ctx->last_scan_reject_timestamp = 0;
+		hdd_ctx->last_scan_reject_session_id = 0xFF;
+		hdd_ctx->last_scan_reject_reason = 0;
+		hdd_ctx->scan_reject_cnt = 0;
+	}
+
+	return;
+}
+
+void hdd_reset_scan_reject_params(hdd_context_t *hdd_ctx,
+				 eRoamCmdStatus roam_status,
+				 eCsrRoamResult roam_result)
+{
+
+	if ((roam_status == eCSR_ROAM_ASSOCIATION_FAILURE) ||
+	    (roam_status == eCSR_ROAM_CANCELLED) ||
+	    (roam_result == eCSR_ROAM_RESULT_ASSOCIATED)) {
+		hdd_debug("Reset scan reject params");
+		hdd_init_scan_reject_params(hdd_ctx);
+	}
+
+	return;
+}
 
 /**
  * hdd_indicate_scan_result() - indicate scan results
@@ -609,36 +632,53 @@ static int hdd_indicate_scan_result(struct hdd_scan_info *scanInfo,
  *     2. Directed scan
  *     3. Channel list has only few channels
  *     4. Channel list has single band channels
- * For remaining cases, dbs scan is requested.
+ *     5. A high accuracy scan request is sent by kernel.
  *
+ * DBS scan is enabled for these conditions:
+ *     1. A low power or low span scan request is sent by kernel.
+ * For remaining cases DBS is enabled by default.
  * Return: void
  */
 static void hdd_update_dbs_scan_ctrl_ext_flag(hdd_context_t *hdd_ctx,
 					      tCsrScanRequest *scan_req)
 {
 	uint32_t num_chan;
-	uint32_t scan_dbs_policy = HDD_SCAN_DBS_POLICY_FORCE_NONDBS;
+	uint32_t scan_dbs_policy = SME_SCAN_DBS_POLICY_FORCE_NONDBS;
 	uint32_t conn_cnt;
 
 	/* Resetting the scan_ctrl_flags_ext to 0 */
 	scan_req->scan_ctrl_flags_ext = 0;
 
-	if (!(hdd_ctx->is_dbs_scan_duty_cycle_enabled)) {
-		scan_dbs_policy = HDD_SCAN_DBS_POLICY_IGNORE_DUTY;
-		hdd_info("DBS scan duty cycle is disabled");
+	if ((hdd_ctx->config->dual_mac_feature_disable ==
+	     DISABLE_DBS_CXN_AND_SCAN) ||
+	    (hdd_ctx->config->dual_mac_feature_disable ==
+	     ENABLE_DBS_CXN_AND_DISABLE_DBS_SCAN)) {
+		hdd_debug("DBS is disabled");
 		goto end;
 	}
 
-	if (hdd_ctx->config->dual_mac_feature_disable ==
-				DISABLE_DBS_CXN_AND_SCAN) {
-		hdd_debug("DBS is disabled");
+	if (scan_req->scan_flags & SME_SCAN_FLAG_HIGH_ACCURACY) {
+		hdd_debug("DBS disabled due to high accuracy scan request");
+		goto end;
+	}
+	if (scan_req->scan_flags & SME_SCAN_FLAG_LOW_POWER ||
+	    scan_req->scan_flags & SME_SCAN_FLAG_LOW_SPAN) {
+		hdd_debug("DBS enable due to Low span/power request 0x%x",
+							scan_req->scan_flags);
+		scan_dbs_policy = SME_SCAN_DBS_POLICY_IGNORE_DUTY;
+		goto end;
+	}
+	if (!(hdd_ctx->is_dbs_scan_duty_cycle_enabled)) {
+		scan_dbs_policy = SME_SCAN_DBS_POLICY_IGNORE_DUTY;
+		hdd_debug_ratelimited(HDD_DBS_SCAN_DISABLE_RATE_LIMIT,
+				      "DBS scan duty cycle is disabled");
 		goto end;
 	}
 
 	conn_cnt = cds_get_connection_count();
 	if (conn_cnt > 0) {
 		hdd_debug("%d active connections, go for DBS scan", conn_cnt);
-		scan_dbs_policy = HDD_SCAN_DBS_POLICY_DEFAULT;
+		scan_dbs_policy = SME_SCAN_DBS_POLICY_DEFAULT;
 		goto end;
 	}
 
@@ -660,7 +700,7 @@ static void hdd_update_dbs_scan_ctrl_ext_flag(hdd_context_t *hdd_ctx,
 
 	/* num_chan=0 means all channels */
 	if (!num_chan)
-		scan_dbs_policy = HDD_SCAN_DBS_POLICY_DEFAULT;
+		scan_dbs_policy = SME_SCAN_DBS_POLICY_DEFAULT;
 
 	if (num_chan < HDD_MIN_CHAN_DBS_SCAN_THRESHOLD)
 		goto end;
@@ -669,7 +709,7 @@ static void hdd_update_dbs_scan_ctrl_ext_flag(hdd_context_t *hdd_ctx,
 		if (!CDS_IS_SAME_BAND_CHANNELS(
 			scan_req->ChannelInfo.ChannelList[0],
 			scan_req->ChannelInfo.ChannelList[num_chan-1])) {
-			scan_dbs_policy = HDD_SCAN_DBS_POLICY_DEFAULT;
+			scan_dbs_policy = SME_SCAN_DBS_POLICY_DEFAULT;
 			break;
 		}
 		num_chan--;
@@ -677,8 +717,8 @@ static void hdd_update_dbs_scan_ctrl_ext_flag(hdd_context_t *hdd_ctx,
 
 end:
 	scan_req->scan_ctrl_flags_ext |=
-		((scan_dbs_policy << HDD_SCAN_FLAG_EXT_DBS_SCAN_POLICY_BIT)
-		 & HDD_SCAN_FLAG_EXT_DBS_SCAN_POLICY_MASK);
+		((scan_dbs_policy << SME_SCAN_FLAG_EXT_DBS_SCAN_POLICY_BIT)
+		 & SME_SCAN_FLAG_EXT_DBS_SCAN_POLICY_MASK);
 	hdd_debug("scan_ctrl_flags_ext: 0x%x", scan_req->scan_ctrl_flags_ext);
 }
 
@@ -736,9 +776,9 @@ static bool wlan_hdd_is_scan_pending(hdd_adapter_t *adapter)
  *
  * Return: void
  */
-static void hdd_scan_inactivity_timer_handler(void *scan_req)
+static void hdd_scan_inactivity_timer_handler(unsigned long scan_req)
 {
-	struct hdd_scan_req *hdd_scan_req = scan_req;
+	struct hdd_scan_req *hdd_scan_req = (struct hdd_scan_req *)scan_req;
 
 	hdd_debug("scan_id %d, enqueue timestamp %u, flags 0x%X",
 		hdd_scan_req->scan_id, hdd_scan_req->timestamp,
@@ -747,23 +787,17 @@ static void hdd_scan_inactivity_timer_handler(void *scan_req)
 	if (cds_is_load_or_unload_in_progress())
 		hdd_err("%s: Module (un)loading; Ignore hdd scan req timeout",
 			 __func__);
-	else if (cds_is_driver_recovering())
-		hdd_err("%s: Module recovering; Ignore hdd scan req timeout",
-			 __func__);
-	else if (cds_is_driver_in_bad_state())
-		hdd_err("%s: Module in bad state; Ignore hdd scan req timeout",
-			 __func__);
-	else if (cds_is_self_recovery_enabled())
-		cds_trigger_recovery(CDS_SCAN_REQ_EXPIRED);
 	else
-		QDF_BUG(0);
-
+		cds_trigger_recovery(CDS_SCAN_REQ_EXPIRED);
 }
 
 /**
  * wlan_hdd_scan_request_enqueue() - enqueue Scan Request
  * @adapter: Pointer to the adapter
  * @scan_req: Pointer to the scan request
+ * @source: source of scan request either vendor or nl
+ * @scan_id: scan id from wma
+ * @timestamp: timestamp value
  *
  * Enqueue scan request in the global HDD scan list.This list
  * stores the active scan request information.
@@ -872,7 +906,7 @@ static QDF_STATUS wlan_hdd_scan_request_dequeue(hdd_context_t *hdd_ctx,
 				*timestamp = hdd_scan_req->timestamp;
 				qdf_mem_free(hdd_scan_req);
 				qdf_spin_unlock(&hdd_ctx->hdd_scan_req_q_lock);
-				hdd_debug("removed Scan id: %d, req = %p, pending scans %d",
+				hdd_debug("removed Scan id: %d, req = %pK, pending scans %d",
 				      scan_id, req,
 				      qdf_list_size(&hdd_ctx->hdd_scan_req_q));
 				return QDF_STATUS_SUCCESS;
@@ -921,7 +955,7 @@ hdd_scan_request_callback(tHalHandle halHandle, void *pContext,
 	uint32_t timestamp;
 
 	ENTER();
-	hdd_debug("called with halHandle = %p, pContext = %p, scanID = %d, returned status = %d",
+	hdd_debug("called with halHandle = %pK, pContext = %pK, scanID = %d, returned status = %d",
 		 halHandle, pContext, (int)scanId, (int)status);
 
 	/* if there is a scan request pending when the wlan driver is unloaded
@@ -930,7 +964,7 @@ hdd_scan_request_callback(tHalHandle halHandle, void *pContext,
 	 * do some quick sanity before proceeding
 	 */
 	if (pAdapter->dev != dev) {
-		hdd_debug("device mismatch %p vs %p", pAdapter->dev, dev);
+		hdd_debug("device mismatch %pK vs %pK", pAdapter->dev, dev);
 		return QDF_STATUS_SUCCESS;
 	}
 
@@ -972,8 +1006,8 @@ static int __iw_set_scan(struct net_device *dev, struct iw_request_info *info,
 		union iwreq_data *wrqu, char *extra)
 {
 	hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR(dev);
-	hdd_context_t *hdd_ctx = WLAN_HDD_GET_CTX(pAdapter);
-	hdd_wext_state_t *pwextBuf = WLAN_HDD_GET_WEXT_STATE_PTR(pAdapter);
+	hdd_context_t *hdd_ctx;
+	hdd_wext_state_t *pwextBuf;
 	tCsrScanRequest scanRequest;
 	QDF_STATUS status = QDF_STATUS_SUCCESS;
 	struct iw_scan_req *scanReq = (struct iw_scan_req *)extra;
@@ -986,14 +1020,21 @@ static int __iw_set_scan(struct net_device *dev, struct iw_request_info *info,
 
 	ENTER_DEV(dev);
 
+	if (!pAdapter) {
+		hdd_err("hdd adapter is NULL");
+		return -ENODEV;
+	}
+
 	hdd_ctx = WLAN_HDD_GET_CTX(pAdapter);
 	ret = wlan_hdd_validate_context(hdd_ctx);
 	if (0 != ret)
 		return ret;
 
+	pwextBuf = WLAN_HDD_GET_WEXT_STATE_PTR(pAdapter);
+
 	/* Block All Scan during DFS operation and send null scan result */
 	con_sap_adapter = hdd_get_con_sap_adapter(pAdapter, true);
-	if (con_sap_adapter) {
+	if (con_sap_adapter && !cds_is_sta_sap_scc_allowed_on_dfs_channel()) {
 		con_dfs_ch = con_sap_adapter->sessionCtx.ap.operatingChannel;
 
 		if (CDS_IS_DFS_CH(con_dfs_ch)) {
@@ -1075,7 +1116,14 @@ static int __iw_set_scan(struct net_device *dev, struct iw_request_info *info,
 	scanRequest.requestType = eCSR_SCAN_REQUEST_FULL_SCAN;
 
 	/* if previous genIE is not NULL, update ScanIE */
-	if (0 != pwextBuf->genIE.length) {
+	if (pwextBuf->genIE.length) {
+		if (pwextBuf->genIE.length > (SIR_MAC_MAX_ADD_IE_LENGTH + 2)) {
+			hdd_err("genIE length exceeds max length: %d",
+				pwextBuf->genIE.length);
+			status = QDF_STATUS_E_FAILURE;
+			goto error;
+		}
+
 		memset(&pAdapter->scan_info.scanAddIE, 0,
 		       sizeof(pAdapter->scan_info.scanAddIE));
 		memcpy(pAdapter->scan_info.scanAddIE.addIEdata,
@@ -1100,7 +1148,8 @@ static int __iw_set_scan(struct net_device *dev, struct iw_request_info *info,
 	}
 	hdd_update_dbs_scan_ctrl_ext_flag(hdd_ctx, &scanRequest);
 	scanRequest.timestamp = qdf_mc_timer_get_system_time();
-	wma_get_scan_id(&scanRequest.scan_id);
+	sme_get_scan_id(&scanRequest.scan_id);
+	scanRequest.scan_requestor_id = USER_SCAN_REQUESTOR_ID;
 	pAdapter->scan_info.mScanPending = true;
 	wlan_hdd_scan_request_enqueue(pAdapter, NULL, NL_SCAN,
 			scanRequest.scan_id,
@@ -1112,7 +1161,9 @@ static int __iw_set_scan(struct net_device *dev, struct iw_request_info *info,
 		hdd_err("sme_scan_request  fail %d!!!", status);
 		wlan_hdd_scan_request_dequeue(hdd_ctx, scanRequest.scan_id,
 			&req, &source, &timestamp);
-		pAdapter->scan_info.mScanPending = false;
+		/* Scan is no longer pending */
+		if (!wlan_hdd_is_scan_pending(pAdapter))
+			pAdapter->scan_info.mScanPending = false;
 		goto error;
 	}
 error:
@@ -1259,9 +1310,10 @@ void hdd_abort_mac_scan(hdd_context_t *pHddCtx, uint8_t sessionId,
 
 /**
  * hdd_vendor_scan_callback() - Scan completed callback event
- * @hddctx: HDD context
- * @req : Scan request
- * @aborted : true scan aborted false scan success
+ * @adapter: pointer to adapter
+ * @req: Scan request
+ * @aborted: true scan aborted false scan success
+ * @scan_id: Scan request unique identifier
  *
  * This function sends scan completed callback event to NL.
  *
@@ -1269,14 +1321,14 @@ void hdd_abort_mac_scan(hdd_context_t *pHddCtx, uint8_t sessionId,
  */
 static void hdd_vendor_scan_callback(hdd_adapter_t *adapter,
 					struct cfg80211_scan_request *req,
-					bool aborted)
+					bool aborted, uint32_t scan_id)
 {
-	hdd_context_t *hddctx = WLAN_HDD_GET_CTX(adapter);
+	hdd_context_t *hdd_ctx = WLAN_HDD_GET_CTX(adapter);
 	struct sk_buff *skb;
 	struct nlattr *attr;
 	int i;
 	uint8_t scan_status;
-	uint64_t cookie;
+	u64 cookie = scan_id;
 
 	ENTER();
 
@@ -1285,7 +1337,10 @@ static void hdd_vendor_scan_callback(hdd_adapter_t *adapter,
 		qdf_mem_free(req);
 		return;
 	}
-	skb = cfg80211_vendor_event_alloc(hddctx->wiphy, &(adapter->wdev),
+
+	hdd_debug("vendor scan id: %x", scan_id);
+
+	skb = cfg80211_vendor_event_alloc(hdd_ctx->wiphy, &(adapter->wdev),
 			SCAN_DONE_EVENT_BUF_SIZE + 4 + NLMSG_HDRLEN,
 			QCA_NL80211_VENDOR_SUBCMD_SCAN_DONE_INDEX,
 			GFP_KERNEL);
@@ -1296,7 +1351,6 @@ static void hdd_vendor_scan_callback(hdd_adapter_t *adapter,
 		return;
 	}
 
-	cookie = (uintptr_t)req;
 	attr = nla_nest_start(skb, QCA_WLAN_VENDOR_ATTR_SCAN_SSIDS);
 	if (!attr)
 		goto nla_put_failure;
@@ -1331,8 +1385,8 @@ static void hdd_vendor_scan_callback(hdd_adapter_t *adapter,
 		goto nla_put_failure;
 	}
 	if (hdd_wlan_nla_put_u64(skb,
-				  QCA_WLAN_VENDOR_ATTR_SCAN_COOKIE,
-				  cookie)) {
+				 QCA_WLAN_VENDOR_ATTR_SCAN_COOKIE,
+				 cookie)) {
 		hdd_err("Failed to add scan cookie");
 		goto nla_put_failure;
 	}
@@ -1373,6 +1427,9 @@ static void hdd_cfg80211_scan_done(hdd_adapter_t *adapter,
 
 	if (adapter->dev->flags & IFF_UP)
 		cfg80211_scan_done(req, &info);
+	else
+		hdd_debug("IFF_UP flag reset for %s", adapter->dev->name);
+
 }
 #elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 14, 0))
 /**
@@ -1391,6 +1448,8 @@ static void hdd_cfg80211_scan_done(hdd_adapter_t *adapter,
 {
 	if (adapter->dev->flags & IFF_UP)
 		cfg80211_scan_done(req, aborted);
+	else
+		hdd_debug("IFF_UP flag reset for %s", adapter->dev->name);
 }
 #else
 /**
@@ -1434,19 +1493,17 @@ static QDF_STATUS hdd_cfg80211_scan_done_callback(tHalHandle halHandle,
 	struct cfg80211_scan_request *req = NULL;
 	bool aborted = false;
 	hdd_context_t *hddctx = WLAN_HDD_GET_CTX(pAdapter);
-	int ret = 0;
 	unsigned int current_timestamp, time_elapsed;
 	uint8_t source;
 	uint32_t scan_time;
 	uint32_t size = 0;
 
-	ret = wlan_hdd_validate_context(hddctx);
-	if (ret) {
+	if (hddctx == NULL) {
 		hdd_err("Invalid hdd_ctx; Drop results for scanId %d", scanId);
 		return QDF_STATUS_E_INVAL;
 	}
 
-	hdd_debug("called with hal = %p, pContext = %p, ID = %d, status = %d",
+	hdd_debug("called with hal = %pK, pContext = %pK, ID = %d, status = %d",
 		   halHandle, pContext, (int)scanId, (int)status);
 
 	pScanInfo->mScanPendingCounter = 0;
@@ -1505,7 +1562,7 @@ static QDF_STATUS hdd_cfg80211_scan_done_callback(tHalHandle halHandle,
 	if (NL_SCAN == source)
 		hdd_cfg80211_scan_done(pAdapter, req, aborted);
 	else
-		hdd_vendor_scan_callback(pAdapter, req, aborted);
+		hdd_vendor_scan_callback(pAdapter, req, aborted, scanId);
 
 allow_suspend:
 	qdf_runtime_pm_allow_suspend(&hddctx->runtime_context.scan);
@@ -1603,29 +1660,36 @@ static void __wlan_hdd_cfg80211_scan_block_cb(struct work_struct *work)
 	hdd_adapter_t *adapter = container_of(work,
 					      hdd_adapter_t, scan_block_work);
 	struct cfg80211_scan_request *request;
-	hdd_context_t *hdd_ctx;
+	struct hdd_scan_req *blocked_scan_req;
+	qdf_list_node_t *node = NULL;
 
 	if (WLAN_HDD_ADAPTER_MAGIC != adapter->magic) {
 		hdd_err("HDD adapter context is invalid");
 		return;
 	}
 
-	hdd_ctx = WLAN_HDD_GET_CTX(adapter);
-	if (0 != wlan_hdd_validate_context(hdd_ctx))
-		return;
+	qdf_mutex_acquire(&adapter->blocked_scan_request_q_lock);
 
-	request = adapter->request;
-	if (request) {
+	while (!qdf_list_empty(&adapter->blocked_scan_request_q)) {
+		qdf_list_remove_front(&adapter->blocked_scan_request_q,
+				      &node);
+		blocked_scan_req = qdf_container_of(node, struct hdd_scan_req,
+						    node);
+		request = blocked_scan_req->scan_request;
 		request->n_ssids = 0;
 		request->n_channels = 0;
-
-		hdd_err("##In DFS Master mode. Scan aborted. Null result sent");
-		if (NL_SCAN == adapter->scan_source)
+		if (blocked_scan_req->source == NL_SCAN) {
+			hdd_err("Scan aborted. Null result sent");
 			hdd_cfg80211_scan_done(adapter, request, true);
-		else
-			hdd_vendor_scan_callback(adapter, request, true);
-		adapter->request = NULL;
+		} else {
+			hdd_err("Vendor scan aborted. Null result sent");
+			hdd_vendor_scan_callback(adapter, request, true,
+						 blocked_scan_req->scan_id);
+		}
+		qdf_mem_free(blocked_scan_req);
 	}
+
+	qdf_mutex_release(&adapter->blocked_scan_request_q_lock);
 }
 
 void wlan_hdd_cfg80211_scan_block_cb(struct work_struct *work)
@@ -1761,7 +1825,6 @@ static void wlan_hdd_update_scan_rand_attrs(void *scan_req,
 		flags = request->flags;
 		if (!(flags & NL80211_SCAN_FLAG_RANDOM_ADDR))
 			return;
-
 		cfg_mac_addr = request->mac_addr;
 		cfg_mac_addr_mask = request->mac_addr_mask;
 		scan_randomization = &csr_scan_req->enable_scan_randomization;
@@ -1852,6 +1915,34 @@ static int wlan_hdd_populate_ie_whitelist(hdd_adapter_t *adapter,
 }
 
 /**
+ * wlan_hdd_scan_flags() - Set scan flags according to scan request
+ * @scan_req: Pointer to csr scan req
+ *
+ * Return: None
+ */
+#if defined(CFG80211_SCAN_DBS_CONTROL_SUPPORT) || \
+	   (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 16, 0))
+static void hdd_update_scan_flags(tCsrScanRequest *scan_req,
+					struct cfg80211_scan_request *request)
+{
+	if (!request)
+		return;
+
+	if (request->flags & NL80211_SCAN_FLAG_HIGH_ACCURACY)
+		scan_req->scan_flags |= SME_SCAN_FLAG_HIGH_ACCURACY;
+	if (request->flags & NL80211_SCAN_FLAG_LOW_SPAN)
+		scan_req->scan_flags |= SME_SCAN_FLAG_LOW_SPAN;
+	if (request->flags & NL80211_SCAN_FLAG_LOW_POWER)
+		scan_req->scan_flags |= SME_SCAN_FLAG_LOW_POWER;
+
+}
+#else
+static void hdd_update_scan_flags(tCsrScanRequest *scan_req,
+					struct cfg80211_scan_request *request)
+{
+}
+#endif
+/**
  * wlan_hdd_free_voui() - Deallocate csr scan req ie whitelist attrs
  * @scan_req: Pointer to csr scan req
  *
@@ -1863,6 +1954,43 @@ static void wlan_hdd_free_voui(tCsrScanRequest *scan_req)
 		qdf_mem_free(scan_req->voui);
 }
 
+static int
+wlan_hdd_enqueue_blocked_scan_request(struct net_device *dev,
+				      struct cfg80211_scan_request *request,
+				      uint8_t source, uint32_t scan_id)
+{
+	hdd_adapter_t *adapter = WLAN_HDD_GET_PRIV_PTR(dev);
+	struct hdd_scan_req *blocked_scan_req =
+		qdf_mem_malloc(sizeof(*blocked_scan_req));
+	int ret = 0;
+
+	if (!blocked_scan_req) {
+		hdd_err("Failed to allocate scan_req");
+		return -EINVAL;
+	}
+
+	blocked_scan_req->adapter = adapter;
+	blocked_scan_req->scan_request = request;
+	blocked_scan_req->source = source;
+	blocked_scan_req->scan_id = scan_id;
+
+	qdf_mutex_acquire(&adapter->blocked_scan_request_q_lock);
+	if (qdf_list_size(&adapter->blocked_scan_request_q) <
+		CFG_MAX_SCAN_COUNT_MAX)
+		qdf_list_insert_back(&adapter->blocked_scan_request_q,
+				     &blocked_scan_req->node);
+	else
+		ret = -EINVAL;
+	qdf_mutex_release(&adapter->blocked_scan_request_q_lock);
+
+	if (ret) {
+		hdd_err("Maximum number of block scan request reached!");
+		qdf_mem_free(blocked_scan_req);
+	}
+
+	return ret;
+}
+
 /* Define short name to use in cds_trigger_recovery */
 #define SCAN_FAILURE CDS_SCAN_ATTEMPT_FAILURES
 
@@ -1872,6 +2000,7 @@ static void wlan_hdd_free_voui(tCsrScanRequest *scan_req)
  * @dev: Pointer to net device
  * @request: Pointer to scan request
  * @source: scan request source(NL/Vendor scan)
+ * @scan_id: output pointer to hold scan_id
  *
  * This API responds to scan trigger and update cfg80211 scan database
  * later, scan dump command can be used to recieve scan results
@@ -1880,7 +2009,7 @@ static void wlan_hdd_free_voui(tCsrScanRequest *scan_req)
  */
 static int __wlan_hdd_cfg80211_scan(struct wiphy *wiphy,
 				    struct cfg80211_scan_request *request,
-				    uint8_t source)
+				    uint8_t source, uint32_t *scan_id)
 {
 	struct net_device *dev = request->wdev->netdev;
 	hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR(dev);
@@ -1920,22 +2049,24 @@ static int __wlan_hdd_cfg80211_scan(struct wiphy *wiphy,
 	if (0 != status)
 		return status;
 
-#ifdef FEATURE_SUPPORT_LGE
-/*LGE_CHNAGE_S, DRIVER scan_suppress command, 2017-07-12, moon-wifi@lge.com*/
-	if ((g_scansuppress_mode == 1) && (request->wdev->iftype != NL80211_IFTYPE_AP)) {
-		hdd_err("lge priv-command scansuppress is enabled, scan is not allowed");
-		return -EPERM;
+	if (cds_is_fw_down()) {
+		hdd_err("firmware is down, scan cmd cannot be processed");
+		return -EINVAL;
 	}
-/*LGE_CHNAGE_E, DRIVER scan_suppress command, 2017-07-12, moon-wifi@lge.com*/
-#endif
 
 	if ((eConnectionState_Associated ==
 			WLAN_HDD_GET_STATION_CTX_PTR(pAdapter)->
 						conn_info.connState) &&
 	    (!pHddCtx->config->enable_connected_scan)) {
 		hdd_info("enable_connected_scan is false, Aborting scan");
-		pAdapter->request = request;
-		pAdapter->scan_source = source;
+		sme_get_scan_id(&scan_req_id);
+		if (wlan_hdd_enqueue_blocked_scan_request(dev, request, source,
+							  scan_req_id))
+			return -EAGAIN;
+
+		if (scan_id)
+			*scan_id = scan_req_id;
+
 		schedule_work(&pAdapter->scan_block_work);
 		return 0;
 	}
@@ -1956,9 +2087,13 @@ static int __wlan_hdd_cfg80211_scan(struct wiphy *wiphy,
 	 * IBSS connection. If IBSS vdev need to support scan,
 	 * Firmware need to make the change to add self peer
 	 * per mac for IBSS vdev.
+	 * NDI does not need scan from userspace to establish connection
+	 * and it does not support scan request either.
 	 */
-	if (QDF_IBSS_MODE == pAdapter->device_mode) {
-		hdd_err("Scan not supported for IBSS");
+	if (QDF_IBSS_MODE == pAdapter->device_mode ||
+	    QDF_NDI_MODE == pAdapter->device_mode) {
+		hdd_err("Scan not supported for %s",
+			hdd_device_mode_to_string(pAdapter->device_mode));
 		return -EINVAL;
 	}
 
@@ -1973,7 +2108,8 @@ static int __wlan_hdd_cfg80211_scan(struct wiphy *wiphy,
 			con_dfs_ch =
 				con_sap_adapter->sessionCtx.ap.operatingChannel;
 
-		if (!wma_is_hw_dbs_capable() && CDS_IS_DFS_CH(con_dfs_ch)) {
+		if (!wma_is_hw_dbs_capable() && CDS_IS_DFS_CH(con_dfs_ch) &&
+			!cds_is_sta_sap_scc_allowed_on_dfs_channel()) {
 			/* Provide empty scan result during DFS operation since
 			 * scanning not supported during DFS. Reason is
 			 * following case:
@@ -1987,15 +2123,23 @@ static int __wlan_hdd_cfg80211_scan(struct wiphy *wiphy,
 			 * startup.
 			 */
 			hdd_err("##In DFS Master mode. Scan aborted");
-			pAdapter->request = request;
-			pAdapter->scan_source = source;
+			sme_get_scan_id(&scan_req_id);
+			if (wlan_hdd_enqueue_blocked_scan_request(dev, request,
+								  source,
+								  scan_req_id))
+				return -EAGAIN;
+
+			if (scan_id)
+				*scan_id = scan_req_id;
 
 			schedule_work(&pAdapter->scan_block_work);
 			return 0;
 		}
 	}
-	if (pHddCtx->config->dual_mac_feature_disable ==
-				DISABLE_DBS_CXN_AND_SCAN) {
+	if ((pHddCtx->config->dual_mac_feature_disable ==
+	     DISABLE_DBS_CXN_AND_SCAN) ||
+	    (pHddCtx->config->dual_mac_feature_disable ==
+	     ENABLE_DBS_CXN_AND_DISABLE_DBS_SCAN)) {
 		if (true == pScanInfo->mScanPending) {
 			scan_ebusy_cnt++;
 			if (MAX_PENDING_LOG >
@@ -2046,19 +2190,20 @@ static int __wlan_hdd_cfg80211_scan(struct wiphy *wiphy,
 		    !pHddCtx->last_scan_reject_timestamp) {
 			pHddCtx->last_scan_reject_session_id = curr_session_id;
 			pHddCtx->last_scan_reject_reason = curr_reason;
-			pHddCtx->last_scan_reject_timestamp =
-				jiffies_to_msecs(jiffies) +
-				SCAN_REJECT_THRESHOLD_TIME;
+			pHddCtx->last_scan_reject_timestamp = jiffies +
+				msecs_to_jiffies(SCAN_REJECT_THRESHOLD_TIME);
 			pHddCtx->scan_reject_cnt = 0;
 		} else {
 			pHddCtx->scan_reject_cnt++;
 			if ((pHddCtx->scan_reject_cnt >=
 			   SCAN_REJECT_THRESHOLD) &&
-			   qdf_system_time_after(jiffies_to_msecs(jiffies),
+			   qdf_system_time_after(jiffies,
 			   pHddCtx->last_scan_reject_timestamp)) {
-				hdd_err("scan reject threshold reached Session %d Reason %d count %d",
+				hdd_err("scan reject threshold reached Session %d Reason %d count %d reject timestamp %lu jiffies %lu",
 					curr_session_id, curr_reason,
-					pHddCtx->scan_reject_cnt);
+					pHddCtx->scan_reject_cnt,
+					pHddCtx->last_scan_reject_timestamp,
+					jiffies);
 				pHddCtx->last_scan_reject_timestamp = 0;
 				pHddCtx->scan_reject_cnt = 0;
 				if (pHddCtx->config->enable_fatal_event) {
@@ -2079,17 +2224,22 @@ static int __wlan_hdd_cfg80211_scan(struct wiphy *wiphy,
 		}
 		return -EBUSY;
 	}
-	pHddCtx->last_scan_reject_timestamp = 0;
-	pHddCtx->last_scan_reject_session_id = 0xFF;
-	pHddCtx->last_scan_reject_reason = 0;
-	pHddCtx->scan_reject_cnt = 0;
+
+	/* reinit the scan reject params */
+	hdd_init_scan_reject_params(pHddCtx);
 
 	/* Check whether SAP scan can be skipped or not */
 	if (pAdapter->device_mode == QDF_SAP_MODE &&
 	   wlan_hdd_sap_skip_scan_check(pHddCtx, request)) {
 		hdd_debug("sap scan skipped");
-		pAdapter->request = request;
-		pAdapter->scan_source = source;
+		sme_get_scan_id(&scan_req_id);
+		if (wlan_hdd_enqueue_blocked_scan_request(dev, request, source,
+							  scan_req_id))
+			return -EAGAIN;
+
+		if (scan_id)
+			*scan_id = scan_req_id;
+
 		schedule_work(&pAdapter->scan_block_work);
 		return 0;
 	}
@@ -2154,6 +2304,11 @@ static int __wlan_hdd_cfg80211_scan(struct wiphy *wiphy,
 	} else {
 		scan_req.minChnTime = cfg_param->nActiveMinChnTime;
 		scan_req.maxChnTime = cfg_param->nActiveMaxChnTime;
+		if (pHddCtx->bt_a2dp_active && !wma_is_hw_dbs_capable() &&
+		    cds_is_sta_connected_in_2g())
+			sme_cfg_set_int(pHddCtx->hHal,
+					WNI_CFG_PASSIVE_MAXIMUM_CHANNEL_TIME,
+					PASSIVE_DWELL_TIME_BT_A2DP_ENABLED);
 	}
 
 	wlan_hdd_copy_bssid_scan_request(&scan_req, request);
@@ -2225,6 +2380,12 @@ static int __wlan_hdd_cfg80211_scan(struct wiphy *wiphy,
 			pAdapter->sessionId);
 	}
 	if (request->ie_len) {
+		if (request->ie_len > SIR_MAC_MAX_ADD_IE_LENGTH) {
+			hdd_debug("Invalid ie_len: %zu", request->ie_len);
+			status = -EINVAL;
+			goto free_mem;
+		}
+
 		/* save this for future association (join requires this) */
 		memset(&pScanInfo->scanAddIE, 0, sizeof(pScanInfo->scanAddIE));
 		memcpy(pScanInfo->scanAddIE.addIEdata, request->ie,
@@ -2331,27 +2492,45 @@ static int __wlan_hdd_cfg80211_scan(struct wiphy *wiphy,
 		sme_scan_flush_result(WLAN_HDD_GET_HAL_CTX(pAdapter));
 	}
 #endif
-	wlan_hdd_update_scan_rand_attrs((void *)&scan_req, (void *)request,
-					WLAN_HDD_HOST_SCAN);
+
+	hdd_debug("enable_mac_spoofing:- %d. Scan flag value received from kernel:- 0x%x",
+		  cfg_param->enable_mac_spoofing, request->flags);
+
+	if (cfg_param->enable_mac_spoofing)
+		wlan_hdd_update_scan_rand_attrs((void *)&scan_req,
+				(void *)request, WLAN_HDD_HOST_SCAN);
 
 	status = wlan_hdd_populate_ie_whitelist(pAdapter, pHddCtx,
 						&scan_req, is_p2p_scan);
 	if (status)
 		goto free_mem;
 
+	hdd_update_scan_flags(&scan_req, request);
 	hdd_update_dbs_scan_ctrl_ext_flag(pHddCtx, &scan_req);
 	qdf_runtime_pm_prevent_suspend(&pHddCtx->runtime_context.scan);
-	wma_get_scan_id(&scan_req_id);
+	sme_get_scan_id(&scan_req_id);
 	scan_req.scan_id = scan_req_id;
-	wlan_hdd_scan_request_enqueue(pAdapter, request, source,
+	scan_req.scan_requestor_id = USER_SCAN_REQUESTOR_ID;
+	status = wlan_hdd_scan_request_enqueue(pAdapter, request, source,
 			scan_req.scan_id, scan_req.timestamp);
+	if (status) {
+		qdf_runtime_pm_allow_suspend(&pHddCtx->runtime_context.scan);
+		hdd_allow_suspend(WIFI_POWER_EVENT_WAKELOCK_SCAN);
+		goto free_mem;
+	}
+
+	if (scan_id)
+		*scan_id = scan_req_id;
+
 	pAdapter->scan_info.mScanPending = true;
 	status = sme_scan_request(WLAN_HDD_GET_HAL_CTX(pAdapter),
 				pAdapter->sessionId, &scan_req,
 				&hdd_cfg80211_scan_done_callback, dev);
 
 	if (QDF_STATUS_SUCCESS != status) {
-		hdd_err("sme_scan_request returned error %d", status);
+		hdd_err_ratelimited(HDD_SCAN_REJECT_RATE_LIMIT,
+				    "sme_scan_request returned error %d",
+				    status);
 		if (QDF_STATUS_E_RESOURCES == status) {
 			scan_ebusy_cnt++;
 			hdd_err("HO is in progress. Defer scan scan_ebusy_cnt: %d",
@@ -2385,6 +2564,7 @@ free_mem:
 	EXIT();
 	return status;
 }
+
 #undef SCAN_FAILURE
 
 /**
@@ -2405,7 +2585,7 @@ int wlan_hdd_cfg80211_scan(struct wiphy *wiphy,
 
 	cds_ssr_protect(__func__);
 	ret = __wlan_hdd_cfg80211_scan(wiphy,
-				request, NL_SCAN);
+				request, NL_SCAN, NULL);
 	cds_ssr_unprotect(__func__);
 	return ret;
 }
@@ -2430,7 +2610,7 @@ int wlan_hdd_cfg80211_tdls_scan(struct wiphy *wiphy,
 
 	cds_ssr_protect(__func__);
 	ret = __wlan_hdd_cfg80211_scan(wiphy,
-				request, source);
+				request, source, NULL);
 	cds_ssr_unprotect(__func__);
 	return ret;
 }
@@ -2472,15 +2652,16 @@ static uint32_t wlan_hdd_get_rates(struct wiphy *wiphy,
  * wlan_hdd_send_scan_start_event() -API to send the scan start event
  * @wiphy: Pointer to wiphy
  * @wdev: Pointer to net device
- * @cookie: scan identifier
+ * @scan_id: scan identifier
  *
  * Return: return 0 on success and negative error code on failure
  */
 static int wlan_hdd_send_scan_start_event(struct wiphy *wiphy,
-		struct wireless_dev *wdev, uint64_t cookie)
+		struct wireless_dev *wdev, uint32_t scan_id)
 {
 	struct sk_buff *skb;
 	int ret;
+	u64 cookie = scan_id;
 
 	skb = cfg80211_vendor_cmd_alloc_reply_skb(wiphy, sizeof(u64) +
 			NLA_HDRLEN + NLMSG_HDRLEN);
@@ -2573,6 +2754,16 @@ static int wlan_hdd_vendor_scan_random_attr(struct wiphy *wiphy,
 		return -EOPNOTSUPP;
 	}
 
+	if (!tb[QCA_WLAN_VENDOR_ATTR_SCAN_MAC] &&
+	    !tb[QCA_WLAN_VENDOR_ATTR_SCAN_MAC_MASK]) {
+		qdf_mem_zero(request->mac_addr, QDF_MAC_ADDR_SIZE);
+		qdf_mem_zero(request->mac_addr_mask, QDF_MAC_ADDR_SIZE);
+		request->mac_addr[0] = 0x2;
+		request->mac_addr_mask[0] = 0x3;
+
+		return 0;
+	}
+
 	if (!tb[QCA_WLAN_VENDOR_ATTR_SCAN_MAC] ||
 	    !tb[QCA_WLAN_VENDOR_ATTR_SCAN_MAC_MASK])
 		return -EINVAL;
@@ -2623,12 +2814,13 @@ static int __wlan_hdd_cfg80211_vendor_scan(struct wiphy *wiphy,
 	struct cfg80211_scan_request *request = NULL;
 	struct nlattr *attr;
 	enum nl80211_band band;
-	uint8_t n_channels = 0, n_ssid = 0, ie_len = 0;
+	uint32_t n_channels = 0, n_ssid = 0;
 	uint32_t tmp, count, j;
-	unsigned int len;
+	size_t len, ie_len = 0;
 	struct ieee80211_channel *chan;
 	hdd_context_t *hdd_ctx = wiphy_priv(wiphy);
 	int ret;
+	uint32_t scan_id = 0;
 
 	ENTER_DEV(wdev->netdev);
 
@@ -2636,8 +2828,8 @@ static int __wlan_hdd_cfg80211_vendor_scan(struct wiphy *wiphy,
 	if (0 != ret)
 		return ret;
 
-	if (nla_parse(tb, QCA_WLAN_VENDOR_ATTR_SCAN_MAX, data,
-		      data_len, scan_policy)) {
+	if (hdd_nla_parse(tb, QCA_WLAN_VENDOR_ATTR_SCAN_MAX, data, data_len,
+			  scan_policy)) {
 		hdd_err("Invalid ATTR");
 		return -EINVAL;
 	}
@@ -2647,7 +2839,7 @@ static int __wlan_hdd_cfg80211_vendor_scan(struct wiphy *wiphy,
 			tb[QCA_WLAN_VENDOR_ATTR_SCAN_FREQUENCIES], tmp)
 			n_channels++;
 	} else {
-		for (band = 0; band < NUM_NL80211_BANDS; band++)
+		for (band = 0; band < HDD_NUM_NL80211_BANDS; band++)
 			if (wiphy->bands[band])
 				n_channels += wiphy->bands[band]->n_channels;
 	}
@@ -2668,8 +2860,6 @@ static int __wlan_hdd_cfg80211_vendor_scan(struct wiphy *wiphy,
 
 	if (tb[QCA_WLAN_VENDOR_ATTR_SCAN_IE])
 		ie_len = nla_len(tb[QCA_WLAN_VENDOR_ATTR_SCAN_IE]);
-	else
-		ie_len = 0;
 
 	len = sizeof(*request) + (sizeof(*request->ssids) * n_ssid) +
 			(sizeof(*request->channels) * n_channels) + ie_len;
@@ -2687,6 +2877,7 @@ static int __wlan_hdd_cfg80211_vendor_scan(struct wiphy *wiphy,
 			request->ie = (void *)(request->channels + n_channels);
 	}
 
+	request->ie_len = ie_len;
 	count = 0;
 	if (tb[QCA_WLAN_VENDOR_ATTR_SCAN_FREQUENCIES]) {
 		nla_for_each_nested(attr,
@@ -2697,8 +2888,7 @@ static int __wlan_hdd_cfg80211_vendor_scan(struct wiphy *wiphy,
 					count);
 				goto error;
 			}
-			chan = __ieee80211_get_channel(wiphy,
-							nla_get_u32(attr));
+			chan = ieee80211_get_channel(wiphy, nla_get_u32(attr));
 			if (!chan)
 				goto error;
 			if (chan->flags & IEEE80211_CHAN_DISABLED)
@@ -2707,7 +2897,7 @@ static int __wlan_hdd_cfg80211_vendor_scan(struct wiphy *wiphy,
 			count++;
 		}
 	} else {
-		for (band = 0; band < NUM_NL80211_BANDS; band++) {
+		for (band = 0; band < HDD_NUM_NL80211_BANDS; band++) {
 			if (!wiphy->bands[band])
 				continue;
 			for (j = 0; j < wiphy->bands[band]->n_channels;
@@ -2727,29 +2917,29 @@ static int __wlan_hdd_cfg80211_vendor_scan(struct wiphy *wiphy,
 	request->n_channels = count;
 	count = 0;
 	if (tb[QCA_WLAN_VENDOR_ATTR_SCAN_SSIDS]) {
+		int ssid_length;
 		nla_for_each_nested(attr, tb[QCA_WLAN_VENDOR_ATTR_SCAN_SSIDS],
 				tmp) {
-			request->ssids[count].ssid_len = nla_len(attr);
-			if (request->ssids[count].ssid_len >
-				SIR_MAC_MAX_SSID_LENGTH) {
+			ssid_length = nla_len(attr);
+			if ((ssid_length > SIR_MAC_MAX_SSID_LENGTH) ||
+			    (ssid_length < 0)) {
 				hdd_err("SSID Len %d is not correct for network %d",
-					 request->ssids[count].ssid_len, count);
+					 ssid_length, count);
 				goto error;
 			}
+
+			request->ssids[count].ssid_len = ssid_length;
 			memcpy(request->ssids[count].ssid, nla_data(attr),
-					nla_len(attr));
+					ssid_length);
 			count++;
 		}
 	}
 
-	if (tb[QCA_WLAN_VENDOR_ATTR_SCAN_IE]) {
-		request->ie_len = nla_len(tb[QCA_WLAN_VENDOR_ATTR_SCAN_IE]);
-		memcpy((void *)request->ie,
-				nla_data(tb[QCA_WLAN_VENDOR_ATTR_SCAN_IE]),
-				request->ie_len);
-	}
+	if (ie_len)
+		nla_memcpy((void *)request->ie,
+			   tb[QCA_WLAN_VENDOR_ATTR_SCAN_IE], ie_len);
 
-	for (count = 0; count < NUM_NL80211_BANDS; count++)
+	for (count = 0; count < HDD_NUM_NL80211_BANDS; count++)
 		if (wiphy->bands[count])
 			request->rates[count] =
 				(1 << wiphy->bands[count]->n_bitrates) - 1;
@@ -2759,7 +2949,7 @@ static int __wlan_hdd_cfg80211_vendor_scan(struct wiphy *wiphy,
 				    tb[QCA_WLAN_VENDOR_ATTR_SCAN_SUPP_RATES],
 				    tmp) {
 			band = nla_type(attr);
-			if (band >= NUM_NL80211_BANDS)
+			if (band >= HDD_NUM_NL80211_BANDS)
 				continue;
 			if (!wiphy->bands[band])
 				continue;
@@ -2800,13 +2990,16 @@ static int __wlan_hdd_cfg80211_vendor_scan(struct wiphy *wiphy,
 	request->wiphy = wiphy;
 	request->scan_start = jiffies;
 
-	ret = __wlan_hdd_cfg80211_scan(wiphy, request, VENDOR_SCAN);
+	ret = __wlan_hdd_cfg80211_scan(wiphy, request, VENDOR_SCAN, &scan_id);
 	if (0 != ret) {
-		hdd_err("Scan Failed. Ret = %d", ret);
+		hdd_err_ratelimited(HDD_SCAN_REJECT_RATE_LIMIT,
+				    "Scan Failed. Ret = %d", ret);
 		qdf_mem_free(request);
 		return ret;
 	}
-	ret = wlan_hdd_send_scan_start_event(wiphy, wdev, (uintptr_t)request);
+	hdd_debug("vendor scan id: %x", scan_id);
+
+	ret = wlan_hdd_send_scan_start_event(wiphy, wdev, scan_id);
 
 	return ret;
 error:
@@ -2840,19 +3033,17 @@ int wlan_hdd_cfg80211_vendor_scan(struct wiphy *wiphy,
 	return ret;
 }
 /**
- * wlan_hdd_get_scanid() - API to get the scan id
- * from the scan cookie attribute.
+ * wlan_hdd_validate_scan_id() - API to validate scan id obtained from cookie
  * @hdd_ctx: Pointer to HDD context
- * @scan_id: Pointer to scan id
- * @cookie : Scan cookie attribute
+ * @scan_id: scan identifier
  *
- * API to get the scan id from the scan cookie attribute
- * sent from supplicant by matching scan request.
+ * API to validate scan id obtained from from cookie attribute
+ * sent from supplicant.
  *
  * Return: 0 for success, non zero for failure
  */
-static int wlan_hdd_get_scanid(hdd_context_t *hdd_ctx,
-			       uint32_t *scan_id, uint64_t cookie)
+static int
+wlan_hdd_validate_scan_id(hdd_context_t *hdd_ctx, uint32_t scan_id)
 {
 	struct hdd_scan_req *scan_req;
 	qdf_list_node_t *node = NULL;
@@ -2876,9 +3067,8 @@ static int wlan_hdd_get_scanid(hdd_context_t *hdd_ctx,
 		node = ptr_node;
 		scan_req = container_of(node, struct hdd_scan_req, node);
 
-		if (cookie ==
-		    (uintptr_t)(scan_req->scan_request)) {
-			*scan_id = scan_req->scan_id;
+		if (scan_id == scan_req->scan_id) {
+			hdd_debug("scan id: %x found", scan_id);
 			ret = 0;
 			break;
 		}
@@ -2903,13 +3093,13 @@ static int wlan_hdd_get_scanid(hdd_context_t *hdd_ctx,
  *
  * Return: zero for success and non zero for failure
  */
-static int __wlan_hdd_vendor_abort_scan(
-		struct wiphy *wiphy, const void *data,
-		int data_len)
+static int __wlan_hdd_vendor_abort_scan(struct wiphy *wiphy,
+					const void *data,
+					int data_len)
 {
 	hdd_context_t *hdd_ctx = wiphy_priv(wiphy);
 	struct nlattr *tb[QCA_WLAN_VENDOR_ATTR_SCAN_MAX + 1];
-	uint32_t scan_id = 0;
+	uint32_t scan_id;
 	uint64_t cookie;
 	int ret;
 
@@ -2919,31 +3109,29 @@ static int __wlan_hdd_vendor_abort_scan(
 	}
 
 	ret = wlan_hdd_validate_context(hdd_ctx);
-	if (0 != ret)
+	if (ret)
 		return ret;
 
-	ret = -EINVAL;
-	if (nla_parse(tb, QCA_WLAN_VENDOR_ATTR_SCAN_MAX, data,
-		      data_len, scan_policy)) {
+	ret = hdd_nla_parse(tb, QCA_WLAN_VENDOR_ATTR_SCAN_MAX, data,
+			    data_len, scan_policy);
+	if (ret) {
 		hdd_err("Invalid ATTR");
 		return ret;
 	}
 
-	if (tb[QCA_WLAN_VENDOR_ATTR_SCAN_COOKIE]) {
-		cookie = nla_get_u64(
-			    tb[QCA_WLAN_VENDOR_ATTR_SCAN_COOKIE]);
-		ret = wlan_hdd_get_scanid(hdd_ctx,
-					  &scan_id,
-					  cookie);
-		if (ret != 0)
-			return ret;
-		hdd_abort_mac_scan(hdd_ctx,
-				   HDD_SESSION_ID_INVALID,
-				   scan_id,
-				   eCSR_SCAN_ABORT_DEFAULT);
-	}
+	if (!tb[QCA_WLAN_VENDOR_ATTR_SCAN_COOKIE])
+		return -EINVAL;
 
-	return ret;
+	cookie = nla_get_u64(tb[QCA_WLAN_VENDOR_ATTR_SCAN_COOKIE]);
+	scan_id = (uint32_t)cookie;
+	ret = wlan_hdd_validate_scan_id(hdd_ctx, scan_id);
+	if (ret)
+		return ret;
+
+	hdd_abort_mac_scan(hdd_ctx, HDD_SESSION_ID_INVALID,
+			   scan_id, eCSR_SCAN_ABORT_DEFAULT);
+
+	return 0;
 }
 
 
@@ -3047,7 +3235,7 @@ hdd_sched_scan_callback(void *callbackContext,
 	hdd_prevent_suspend_timeout(HDD_WAKELOCK_TIMEOUT_CONNECT,
 				    WIFI_POWER_EVENT_WAKELOCK_SCAN);
 
-	cfg80211_sched_scan_results(pHddCtx->wiphy);
+	hdd_sched_scan_results(pHddCtx->wiphy, 0);
 	hdd_debug("cfg80211 scan result database updated");
 }
 
@@ -3201,11 +3389,22 @@ static int __wlan_hdd_cfg80211_sched_scan_start(struct wiphy *wiphy,
 		return -EINVAL;
 	}
 
+	if (QDF_NDI_MODE == pAdapter->device_mode) {
+		hdd_err("Command not allowed for NDI interface");
+		return -EINVAL;
+	}
+
 	pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
 	ret = wlan_hdd_validate_context(pHddCtx);
 
 	if (0 != ret)
 		return ret;
+
+	if (pAdapter->device_mode != QDF_STA_MODE) {
+		hdd_info("Sched scan not supported for device mode:%d",
+			 pAdapter->device_mode);
+		return -EINVAL;
+	}
 
 	if ((eConnectionState_Associated ==
 				WLAN_HDD_GET_STATION_CTX_PTR(pAdapter)->
@@ -3229,7 +3428,7 @@ static int __wlan_hdd_cfg80211_sched_scan_start(struct wiphy *wiphy,
 	if ((QDF_STA_MODE == pAdapter->device_mode) &&
 	    (eConnectionState_Connecting ==
 	     (WLAN_HDD_GET_STATION_CTX_PTR(pAdapter))->conn_info.connState)) {
-		hdd_err("%p(%d) Connection in progress: sched_scan_start denied (EBUSY)",
+		hdd_err("%pK(%d) Connection in progress: sched_scan_start denied (EBUSY)",
 		       WLAN_HDD_GET_STATION_CTX_PTR(pAdapter),
 		       pAdapter->sessionId);
 		return -EBUSY;
@@ -3414,6 +3613,21 @@ static int __wlan_hdd_cfg80211_sched_scan_start(struct wiphy *wiphy,
 	hdd_config_sched_scan_plan(pPnoRequest, request, pHddCtx);
 	pPnoRequest->scan_backoff_multiplier =
 		pHddCtx->config->scan_backoff_multiplier;
+	pPnoRequest->mawc_params.mawc_nlo_enabled =
+		pHddCtx->config->mawc_nlo_enabled &&
+		pHddCtx->config->MAWCEnabled;
+	pPnoRequest->mawc_params.exp_backoff_ratio =
+		pHddCtx->config->mawc_nlo_exp_backoff_ratio;
+	pPnoRequest->mawc_params.init_scan_interval =
+		pHddCtx->config->mawc_nlo_init_scan_interval;
+	pPnoRequest->mawc_params.max_scan_interval =
+		pHddCtx->config->mawc_nlo_max_scan_interval;
+	hdd_debug("MAWC NLO global:%d, en:%d, exp:%d, init:%d, max:%d",
+			pHddCtx->config->MAWCEnabled,
+			pHddCtx->config->mawc_nlo_enabled,
+			pPnoRequest->mawc_params.exp_backoff_ratio,
+			pPnoRequest->mawc_params.init_scan_interval,
+			pPnoRequest->mawc_params.max_scan_interval);
 	pPnoRequest->delay_start_time =
 		hdd_config_sched_scan_start_delay(request);
 	wlan_hdd_sched_scan_update_relative_rssi(pPnoRequest, request);
@@ -3427,8 +3641,11 @@ static int __wlan_hdd_cfg80211_sched_scan_start(struct wiphy *wiphy,
 	hdd_debug("SessionId %d, enable %d, modePNO %d",
 		pAdapter->sessionId, pPnoRequest->enable, pPnoRequest->modePNO);
 
-	wlan_hdd_update_scan_rand_attrs((void *)pPnoRequest, (void *)request,
-					WLAN_HDD_PNO_SCAN);
+	if (pHddCtx->config->enable_mac_spoofing)
+		wlan_hdd_update_scan_rand_attrs((void *)pPnoRequest,
+				(void *)request, WLAN_HDD_PNO_SCAN);
+	else
+		pPnoRequest->enable_pno_scan_randomization = false;
 
 	if (!hdd_conn_is_connected(station_ctx))
 		wlan_hdd_fill_whitelist_ie_attrs(&pPnoRequest->ie_whitelist,
@@ -3508,6 +3725,12 @@ int wlan_hdd_sched_scan_stop(struct net_device *dev)
 		hdd_err("HDD context is Null");
 		ret = -ENODEV;
 		goto exit;
+	}
+
+	if (adapter->device_mode != QDF_STA_MODE) {
+		hdd_info("Sched scan not supported for device mode:%d",
+			 adapter->device_mode);
+		return -EINVAL;
 	}
 
 	hHal = WLAN_HDD_GET_HAL_CTX(adapter);
@@ -3594,6 +3817,7 @@ static int __wlan_hdd_cfg80211_sched_scan_stop(struct net_device *dev)
 	return err;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 12, 0)
 int wlan_hdd_cfg80211_sched_scan_stop(struct wiphy *wiphy,
 				      struct net_device *dev)
 {
@@ -3605,6 +3829,20 @@ int wlan_hdd_cfg80211_sched_scan_stop(struct wiphy *wiphy,
 
 	return ret;
 }
+#else
+int wlan_hdd_cfg80211_sched_scan_stop(struct wiphy *wiphy,
+				      struct net_device *dev,
+				      uint64_t reqid)
+{
+	int ret;
+
+	cds_ssr_protect(__func__);
+	ret = __wlan_hdd_cfg80211_sched_scan_stop(dev);
+	cds_ssr_unprotect(__func__);
+
+	return ret;
+}
+#endif /* KERNEL_VERSION(4, 12, 0) */
 #endif /*FEATURE_WLAN_SCAN_PNO */
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 5, 0)) || \
@@ -3672,14 +3910,17 @@ void wlan_hdd_cfg80211_abort_scan(struct wiphy *wiphy,
  * Removes entries in scan queue and sends scan complete event to NL
  * Return: None
  */
-void hdd_cleanup_scan_queue(hdd_context_t *hdd_ctx)
+void hdd_cleanup_scan_queue(hdd_context_t *hdd_ctx, hdd_adapter_t *padapter)
 {
 	struct hdd_scan_req *hdd_scan_req;
-	qdf_list_node_t *node = NULL;
+	qdf_list_node_t *node = NULL, *next_node = NULL;
 	struct cfg80211_scan_request *req;
 	hdd_adapter_t *adapter;
 	uint8_t source;
 	bool aborted = true;
+	QDF_STATUS status;
+	hdd_adapter_list_node_t *adapter_node = NULL, *next_adapter_node = NULL;
+	uint32_t scan_id;
 
 	if (NULL == hdd_ctx) {
 		hdd_err("HDD context is Null");
@@ -3687,41 +3928,82 @@ void hdd_cleanup_scan_queue(hdd_context_t *hdd_ctx)
 	}
 
 	qdf_spin_lock(&hdd_ctx->hdd_scan_req_q_lock);
-	while (!qdf_list_empty(&hdd_ctx->hdd_scan_req_q)) {
-		if (QDF_STATUS_SUCCESS !=
-			qdf_list_remove_front(&hdd_ctx->hdd_scan_req_q,
-						&node)) {
-			qdf_spin_unlock(&hdd_ctx->hdd_scan_req_q_lock);
-			hdd_err("Failed to remove scan request");
-			return;
-		}
+
+	if (qdf_list_empty(&hdd_ctx->hdd_scan_req_q)) {
 		qdf_spin_unlock(&hdd_ctx->hdd_scan_req_q_lock);
-		hdd_scan_req = container_of(node, struct hdd_scan_req, node);
+		return;
+	}
+
+	status = qdf_list_peek_front(&hdd_ctx->hdd_scan_req_q, &node);
+	if (status != QDF_STATUS_SUCCESS) {
+		qdf_spin_unlock(&hdd_ctx->hdd_scan_req_q_lock);
+		hdd_err("Failed to peek the Scan Req from queue");
+		return;
+	}
+	while (node != NULL) {
+		qdf_list_peek_next(&hdd_ctx->hdd_scan_req_q, node,
+				   &next_node);
+
+		hdd_scan_req  = qdf_container_of(node,
+					struct hdd_scan_req, node);
 		req = hdd_scan_req->scan_request;
 		source = hdd_scan_req->source;
 		adapter = hdd_scan_req->adapter;
+		scan_id = hdd_scan_req->scan_id;
 
-		qdf_timer_stop(&hdd_scan_req->hdd_scan_inactivity_timer);
-		qdf_timer_free(&hdd_scan_req->hdd_scan_inactivity_timer);
-		hdd_debug("Stopping HDD Scan inactivity timer");
+		if (!padapter || (padapter == adapter)) {
 
-		if (WLAN_HDD_ADAPTER_MAGIC != adapter->magic) {
-			hdd_err("HDD adapter magic is invalid");
-		} else if (!req) {
-			hdd_debug("pending scan is wext triggered");
-		} else {
-			if (NL_SCAN == source)
-				hdd_cfg80211_scan_done(adapter, req, aborted);
-			else
-				hdd_vendor_scan_callback(adapter, req, aborted);
-			hdd_debug("removed Scan id: %d, req = %p",
-					hdd_scan_req->scan_id, req);
+			status = qdf_list_remove_node(&hdd_ctx->hdd_scan_req_q,
+						      node);
+			if (QDF_IS_STATUS_ERROR(status)) {
+				qdf_spin_unlock(&hdd_ctx->hdd_scan_req_q_lock);
+				hdd_err("Failed to remove scan request from queue");
+				return;
+			}
+
+			qdf_spin_unlock(&hdd_ctx->hdd_scan_req_q_lock);
+
+			qdf_timer_stop(
+				&hdd_scan_req->hdd_scan_inactivity_timer);
+			qdf_timer_free(
+				&hdd_scan_req->hdd_scan_inactivity_timer);
+
+			hdd_debug("Stopping HDD Scan inactivity timer");
+			if (WLAN_HDD_ADAPTER_MAGIC != adapter->magic) {
+				hdd_err("HDD adapter magic is invalid");
+			} else if (!req) {
+				hdd_debug("pending scan is wext triggered");
+			} else {
+				hdd_debug("Removing scan id: %d, req = %pK",
+					  scan_id, req);
+				if (NL_SCAN == source)
+					hdd_cfg80211_scan_done(adapter,
+								req, aborted);
+				else
+					hdd_vendor_scan_callback(adapter,
+								 req, aborted,
+								 scan_id);
+			}
+			qdf_mem_free(hdd_scan_req);
+			qdf_spin_lock(&hdd_ctx->hdd_scan_req_q_lock);
 		}
-		qdf_mem_free(hdd_scan_req);
-		qdf_spin_lock(&hdd_ctx->hdd_scan_req_q_lock);
+		node = next_node;
+		next_node = NULL;
 	}
 	qdf_spin_unlock(&hdd_ctx->hdd_scan_req_q_lock);
 
+	status = hdd_get_front_adapter(hdd_ctx, &adapter_node);
+	while (NULL != adapter_node && QDF_IS_STATUS_SUCCESS(status)) {
+		adapter = adapter_node->pAdapter;
+		if ((!padapter || (padapter == adapter)) &&
+		    (adapter->scan_info.mScanPending)) {
+			adapter->scan_info.mScanPending = false;
+			complete(&adapter->scan_info.abortscan_event_var);
+		}
+		status = hdd_get_next_adapter(hdd_ctx, adapter_node,
+					      &next_adapter_node);
+		adapter_node = next_adapter_node;
+	}
 }
 
 /**
@@ -3788,17 +4070,3 @@ void wlan_hdd_fill_whitelist_ie_attrs(bool *ie_whitelist,
 	for (i = 0; i < hdd_ctx->no_of_probe_req_ouis; i++)
 		voui[i] = hdd_ctx->probe_req_voui[i];
 }
-
-#ifdef FEATURE_SUPPORT_LGE
-/*LGE_CHNAGE_S, DRIVER scan_suppress command, 2017-07-12, moon-wifi@lge.com*/
-void wlan_hdd_set_scan_suppress(unsigned long on_off);
-void wlan_hdd_set_scan_suppress(unsigned long on_off) {
-	if (on_off == 1) {
-		g_scansuppress_mode = 1;
-	}
-	else {
-		g_scansuppress_mode = 0;
-	}
-}
-/*LGE_CHNAGE_E, DRIVER scan_suppress command, 2017-07-12, moon-wifi@lge.com*/
-#endif

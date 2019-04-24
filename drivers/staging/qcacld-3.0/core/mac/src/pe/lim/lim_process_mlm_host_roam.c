@@ -1,8 +1,6 @@
 /*
  * Copyright (c) 2017 The Linux Foundation. All rights reserved.
  *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
  * above copyright notice and this permission notice appear in all
@@ -273,7 +271,7 @@ void lim_process_mlm_reassoc_cnf(tpAniSirGlobal mac_ctx, uint32_t *msg_buf)
 	 * HT params.
 	 */
 	if (session->ftPEContext.pFTPreAuthReq) {
-		pe_debug("Freeing pFTPreAuthReq: %p",
+		pe_debug("Freeing pFTPreAuthReq: %pK",
 			session->ftPEContext.pFTPreAuthReq);
 		if (session->ftPEContext.pFTPreAuthReq->pbssDescription) {
 			qdf_mem_free(

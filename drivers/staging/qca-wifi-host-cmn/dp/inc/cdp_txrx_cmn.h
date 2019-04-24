@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2011-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2011-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -19,11 +16,6 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
- */
 /**
  * @file cdp_txrx_api_common.h
  * @brief Define the host data path converged API functions
@@ -128,12 +120,44 @@ enum wlan_op_mode {
 };
 
 /**
+ * connectivity_stats_pkt_status - data pkt type
+ * @PKT_TYPE_REQ: Request packet
+ * @PKT_TYPE_RSP: Response packet
+ * @PKT_TYPE_TX_DROPPED: TX packet dropped
+ * @PKT_TYPE_RX_DROPPED: RX packet dropped
+ * @PKT_TYPE_RX_DELIVERED: RX packet delivered
+ * @PKT_TYPE_RX_REFUSED: RX packet refused
+ * @PKT_TYPE_TX_HOST_FW_SENT: TX packet FW sent
+ * @PKT_TYPE_TX_ACK_CNT:TC packet acked
+ */
+enum connectivity_stats_pkt_status {
+	PKT_TYPE_REQ,
+	PKT_TYPE_RSP,
+	PKT_TYPE_TX_DROPPED,
+	PKT_TYPE_RX_DROPPED,
+	PKT_TYPE_RX_DELIVERED,
+	PKT_TYPE_RX_REFUSED,
+	PKT_TYPE_TX_HOST_FW_SENT,
+	PKT_TYPE_TX_ACK_CNT,
+};
+
+/**
  * ol_txrx_tx_fp - top-level transmit function
  * @data_vdev - handle to the virtual device object
  * @msdu_list - list of network buffers
+ * @notify_tx_comp - tx completion to be notified
  */
 typedef qdf_nbuf_t (*ol_txrx_tx_fp)(ol_txrx_vdev_handle data_vdev,
-				    qdf_nbuf_t msdu_list);
+				    qdf_nbuf_t msdu_list,
+				    bool notify_tx_comp);
+/**
+ * ol_txrx_completion_fp - top-level transmit function
+ * for tx completion
+ * @skb: skb data
+ * @osif_dev: the virtual device's OS shim object
+ */
+typedef void (*ol_txrx_completion_fp)(struct sk_buff *skb,
+					 void *osif_dev);
 /**
  * ol_txrx_tx_flow_control_fp - tx flow control notification
  * function from txrx to OS shim
@@ -142,6 +166,14 @@ typedef qdf_nbuf_t (*ol_txrx_tx_fp)(ol_txrx_vdev_handle data_vdev,
  */
 typedef void (*ol_txrx_tx_flow_control_fp)(void *osif_dev,
 					    bool tx_resume);
+/**
+ * ol_txrx_tx_flow_control_is_pause_fp - is tx paused by flow control
+ * function from txrx to OS shim
+ * @osif_dev - the virtual device's OS shim object
+ *
+ * Return: true if tx is paused by flow control
+ */
+typedef bool (*ol_txrx_tx_flow_control_is_pause_fp)(void *osif_dev);
 
 /**
  * ol_txrx_rx_fp - receive function to hand batches of data
@@ -150,6 +182,18 @@ typedef void (*ol_txrx_tx_flow_control_fp)(void *osif_dev,
  * @msdu_list - list of network buffers
  */
 typedef QDF_STATUS (*ol_txrx_rx_fp)(void *osif_dev, qdf_nbuf_t msdu_list);
+
+/**
+ * ol_txrx_stats_rx_fp - receive function to hand batches of data
+ * frames from txrx to OS shim
+ * @skb: skb data
+ * @osif_dev: the virtual device's OS shim object
+ * @action: data packet type
+ * @pkt_type: packet data type
+ */
+typedef void (*ol_txrx_stats_rx_fp)(struct sk_buff *skb,
+		void *osif_dev, enum connectivity_stats_pkt_status action,
+		uint8_t *pkt_type);
 
 /**
  * ol_txrx_rx_check_wai_fp - OSIF WAPI receive function
@@ -230,6 +274,7 @@ struct ol_txrx_ops {
 	/* tx function pointers - specified by txrx, stored by OS shim */
 	struct {
 		ol_txrx_tx_fp         tx;
+		ol_txrx_completion_fp tx_comp;
 	} tx;
 
 	/* rx function pointers - specified by OS shim, stored by txrx */
@@ -237,6 +282,7 @@ struct ol_txrx_ops {
 		ol_txrx_rx_fp           rx;
 		ol_txrx_rx_check_wai_fp wai_check;
 		ol_txrx_rx_mon_fp       mon;
+		ol_txrx_stats_rx_fp           stats_rx;
 	} rx;
 
 	/* proxy arp function pointer - specified by OS shim, stored by txrx */
@@ -336,6 +382,8 @@ void
 ol_txrx_vdev_register(ol_txrx_vdev_handle vdev,
 			 void *osif_vdev, struct ol_txrx_ops *txrx_ops);
 
+void ol_register_offld_flush_cb(void (gro_flush_cb)(void *),
+				void *(gro_init_cb)(void));
 int
 ol_txrx_mgmt_send(
 	ol_txrx_vdev_handle vdev,
@@ -388,6 +436,7 @@ enum data_stall_log_event_indicator {
  * @DATA_STALL_LOG_FW_RX_FCS_LEN_ERROR
  * @DATA_STALL_LOG_FW_WDOG_ERRORS
  * @DATA_STALL_LOG_BB_WDOG_ERROR
+ * @DATA_STALL_LOG_POST_TIM_NO_TXRX_ERROR
  * @DATA_STALL_LOG_HOST_STA_TX_TIMEOUT
  * @DATA_STALL_LOG_HOST_SOFTAP_TX_TIMEOUT
  * @DATA_STALL_LOG_NUD_FAILURE
@@ -403,7 +452,9 @@ enum data_stall_log_event_type {
 	DATA_STALL_LOG_FW_RX_FCS_LEN_ERROR,
 	DATA_STALL_LOG_FW_WDOG_ERRORS,
 	DATA_STALL_LOG_BB_WDOG_ERROR,
-	DATA_STALL_LOG_HOST_STA_TX_TIMEOUT,
+	DATA_STALL_LOG_POST_TIM_NO_TXRX_ERROR,
+	/* Stall events triggered by host/framework start from 0x100 onwards. */
+	DATA_STALL_LOG_HOST_STA_TX_TIMEOUT = 0x100,
 	DATA_STALL_LOG_HOST_SOFTAP_TX_TIMEOUT,
 	DATA_STALL_LOG_NUD_FAILURE,
 };

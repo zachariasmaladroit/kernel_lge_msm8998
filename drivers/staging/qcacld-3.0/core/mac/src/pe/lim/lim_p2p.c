@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 /*===========================================================================
@@ -83,6 +74,11 @@ static QDF_STATUS lim_send_hal_req_remain_on_chan_offload(tpAniSirGlobal pMac,
 	tSirMsgQ msg;
 	tSirRetStatus rc = eSIR_SUCCESS;
 
+	if (pMac->lim.scan_disabled) {
+		pe_err("Scan disabled, rejecting scan on ROC");
+		return QDF_STATUS_E_INVAL;
+	}
+
 	pScanOffloadReq = qdf_mem_malloc(sizeof(tSirScanOffloadReq));
 	if (NULL == pScanOffloadReq) {
 		pe_err("Memory allocation failed for pScanOffloadReq");
@@ -106,6 +102,8 @@ static QDF_STATUS lim_send_hal_req_remain_on_chan_offload(tpAniSirGlobal pMac,
 	pScanOffloadReq->channelList.channelNumber[0] = pRemOnChnReq->chnNum;
 	pScanOffloadReq->scan_id = pRemOnChnReq->scan_id;
 	pScanOffloadReq->scan_requestor_id = ROC_SCAN_REQUESTOR_ID;
+	pScanOffloadReq->scan_ctrl_flags_ext |=
+		WMI_SCAN_FLAG_EXT_FILTER_PUBLIC_ACTION_FRAME;
 
 	pe_debug("Req-rem-on-channel: duration: %u session: %hu chan: %hu",
 		pRemOnChnReq->duration, pRemOnChnReq->sessionId,
@@ -176,6 +174,7 @@ void lim_convert_active_channel_to_passive_channel(tpAniSirGlobal pMac)
 	uint64_t lastTime = 0;
 	uint64_t timeDiff;
 	uint8_t i;
+
 	currentTime = (uint64_t)qdf_mc_timer_get_system_time();
 	for (i = 1; i < SIR_MAX_24G_5G_CHANNEL_RANGE; i++) {
 		if ((pMac->lim.dfschannelList.timeStamp[i]) != 0) {
@@ -387,6 +386,13 @@ void lim_send_sme_mgmt_frame_ind(tpAniSirGlobal pMac, uint8_t frameType,
 		return;
 	}
 
+	if (qdf_is_macaddr_broadcast(
+		(struct qdf_mac_addr *) pSirSmeMgmtFrame->frameBuf + 4) &&
+		!sessionId) {
+		pe_debug("Broadcast action frame");
+		sessionId = SME_SESSION_ID_BROADCAST;
+	}
+
 	pSirSmeMgmtFrame->frame_len = frameLen;
 	pSirSmeMgmtFrame->sessionId = sessionId;
 	pSirSmeMgmtFrame->frameType = frameType;
@@ -470,7 +476,7 @@ static void lim_tx_action_frame(tpAniSirGlobal mac_ctx,
 			TXRX_FRM_802_11_MGMT,
 			ANI_TXDIR_TODS, 7, lim_tx_complete,
 			frame, tx_flag, sme_session_id,
-			channel_freq);
+			channel_freq, RATEID_DEFAULT);
 
 		if (!mb_msg->noack)
 			lim_p2p_action_cnf(mac_ctx,
@@ -485,7 +491,7 @@ static void lim_tx_action_frame(tpAniSirGlobal mac_ctx,
 				ANI_TXDIR_TODS, 7, lim_tx_complete,
 				frame, lim_p2p_action_cnf, tx_flag,
 				sme_session_id, false,
-				channel_freq);
+				channel_freq, RATEID_DEFAULT);
 
 		if (!QDF_IS_STATUS_SUCCESS(qdf_status)) {
 			pe_err("couldn't send action frame");
@@ -635,7 +641,7 @@ void lim_send_p2p_action_frame(tpAniSirGlobal mac_ctx,
 			if (NULL != p2p_ie) {
 				/* extract the presence of NoA attribute inside
 				 * P2P IE */
-				presence_noa_attr =  lim_get_ie_ptr_new(mac_ctx,
+				presence_noa_attr =  wlan_cfg_get_ie_ptr(
 					p2p_ie + SIR_P2P_IE_HEADER_LEN,
 					p2p_ie[1], SIR_P2P_NOA_ATTR, TWO_BYTE);
 			}
@@ -681,7 +687,7 @@ void lim_send_p2p_action_frame(tpAniSirGlobal mac_ctx,
 				p2p_ie[1] += noa_len;
 			}
 			msg_len += noa_len;
-			pe_debug("noa_len: %d orig_len: %d p2p_ie: %p msg_len: %d nBytesToCopy: %zu ",
+			pe_debug("noa_len: %d orig_len: %d p2p_ie: %pK msg_len: %d nBytesToCopy: %zu ",
 				noa_len, orig_len, p2p_ie, msg_len,
 				((p2p_ie + orig_len + 2) -
 				 (uint8_t *) mb_msg->data));

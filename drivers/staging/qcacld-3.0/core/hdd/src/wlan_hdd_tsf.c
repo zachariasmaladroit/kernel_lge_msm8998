@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2016-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2016-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 /**
@@ -274,18 +265,16 @@ static enum hdd_tsf_op_result hdd_indicate_tsf_internal(
 #ifdef WLAN_FEATURE_TSF_PLUS
 /* unit for target time: us;  host time: ns */
 #define HOST_TO_TARGET_TIME_RATIO NSEC_PER_USEC
-#define MAX_ALLOWED_DEVIATION_NS (20 * NSEC_PER_MSEC)
+#define MAX_ALLOWED_DEVIATION_NS (100 * NSEC_PER_USEC)
 #define MAX_CONTINUOUS_ERROR_CNT 3
 
 /* to distinguish 32-bit overflow case, this inverval should:
  * equal or less than (1/2 * OVERFLOW_INDICATOR32 us)
  */
-#define WLAN_HDD_CAPTURE_TSF_INTERVAL_SEC 500
+#define WLAN_HDD_CAPTURE_TSF_INTERVAL_SEC 10
 #define WLAN_HDD_CAPTURE_TSF_INIT_INTERVAL_MS 100
-#define NORMAL_INTERVAL_TARGET \
-	((int64_t)((int64_t)WLAN_HDD_CAPTURE_TSF_INTERVAL_SEC * \
-		NSEC_PER_SEC / HOST_TO_TARGET_TIME_RATIO))
 #define OVERFLOW_INDICATOR32 (((int64_t)0x1) << 32)
+#define CAP_TSF_TIMER_FIX_SEC 1
 
 /**
  * TS_STATUS - timestamp status
@@ -466,8 +455,21 @@ static void hdd_update_timestamp(hdd_adapter_t *adapter,
 		hdd_info("ts-pair updated: target: %llu; host: %llu",
 			 adapter->last_target_time,
 			 adapter->last_host_time);
-		interval = WLAN_HDD_CAPTURE_TSF_INTERVAL_SEC *
-			MSEC_PER_SEC;
+
+		/*
+		 * TSF-HOST need to be updated in at most
+		 * WLAN_HDD_CAPTURE_TSF_INTERVAL_SEC, it couldn't be achieved
+		 * if the timer interval is also
+		 * WLAN_HDD_CAPTURE_TSF_INTERVAL_SEC, due to processing or
+		 * schedule delay. So deduct several seconds from
+		 * WLAN_HDD_CAPTURE_TSF_INTERVAL_SEC.
+		 * Without this change, hdd_get_hosttime_from_targettime() will
+		 * get wrong host time when it's longer than
+		 * WLAN_HDD_CAPTURE_TSF_INTERVAL_SEC from last
+		 * TSF-HOST update.
+		 */
+		interval = (WLAN_HDD_CAPTURE_TSF_INTERVAL_SEC -
+			    CAP_TSF_TIMER_FIX_SEC) * MSEC_PER_SEC;
 		adapter->continuous_error_count = 0;
 		break;
 	case HDD_TS_STATUS_WAITING:
@@ -539,6 +541,7 @@ static inline int32_t hdd_get_hosttime_from_targettime(
 	int32_t ret = -EINVAL;
 	int64_t delta32_target;
 	bool in_cap_state;
+	int64_t normal_interval_target;
 
 	in_cap_state = hdd_tsf_is_in_cap(adapter);
 
@@ -553,11 +556,15 @@ static inline int32_t hdd_get_hosttime_from_targettime(
 	delta32_target = (int64_t)((target_time & U32_MAX) -
 			(adapter->last_target_time & U32_MAX));
 
+	normal_interval_target =
+		qdf_do_div(WLAN_HDD_CAPTURE_TSF_INTERVAL_SEC *
+			   NSEC_PER_SEC, HOST_TO_TARGET_TIME_RATIO);
+
 	if (delta32_target <
-			(NORMAL_INTERVAL_TARGET - OVERFLOW_INDICATOR32))
+			(normal_interval_target  - OVERFLOW_INDICATOR32))
 		delta32_target += OVERFLOW_INDICATOR32;
 	else if (delta32_target >
-			(OVERFLOW_INDICATOR32 - NORMAL_INTERVAL_TARGET))
+			(OVERFLOW_INDICATOR32 - normal_interval_target))
 		delta32_target -= OVERFLOW_INDICATOR32;
 
 	ret = hdd_64bit_plus(adapter->last_host_time,
@@ -586,13 +593,15 @@ static inline int32_t hdd_get_targettime_from_hosttime(
 
 	if (host_time < adapter->last_host_time)
 		ret = hdd_uint64_minus(adapter->last_target_time,
-				       (adapter->last_host_time - host_time) /
-					HOST_TO_TARGET_TIME_RATIO,
+				       qdf_do_div(adapter->last_host_time -
+						  host_time,
+						  HOST_TO_TARGET_TIME_RATIO),
 				       target_time);
 	else
 		ret = hdd_uint64_plus(adapter->last_target_time,
-				      (host_time - adapter->last_host_time) /
-					HOST_TO_TARGET_TIME_RATIO,
+				      qdf_do_div(host_time -
+						 adapter->last_host_time,
+						 HOST_TO_TARGET_TIME_RATIO),
 				      target_time);
 
 	if (in_cap_state)
@@ -601,12 +610,10 @@ static inline int32_t hdd_get_targettime_from_hosttime(
 	return ret;
 }
 
-static inline uint64_t hdd_get_monotonic_host_time(void)
+static inline uint64_t hdd_get_monotonic_host_time(hdd_context_t *hdd_ctx)
 {
-	struct timespec ts;
-
-	getrawmonotonic(&ts);
-	return timespec_to_ns(&ts);
+	return HDD_TSF_IS_RAW_SET(hdd_ctx) ?
+		ktime_get_ns() : ktime_get_real_ns();
 }
 
 static ssize_t __hdd_wlan_tsf_show(struct device *dev,
@@ -614,6 +621,7 @@ static ssize_t __hdd_wlan_tsf_show(struct device *dev,
 {
 	hdd_station_ctx_t *hdd_sta_ctx;
 	hdd_adapter_t *adapter;
+	hdd_context_t *hdd_ctx;
 	ssize_t size;
 	uint64_t host_time, target_time;
 
@@ -631,7 +639,11 @@ static ssize_t __hdd_wlan_tsf_show(struct device *dev,
 	if (eConnectionState_Associated != hdd_sta_ctx->conn_info.connState)
 		return scnprintf(buf, PAGE_SIZE, "NOT connected\n");
 
-	host_time = hdd_get_monotonic_host_time();
+	hdd_ctx = WLAN_HDD_GET_CTX(adapter);
+	if (!hdd_ctx)
+		return scnprintf(buf, PAGE_SIZE, "Invalid HDD context\n");
+
+	host_time = hdd_get_monotonic_host_time(hdd_ctx);
 	if (hdd_get_targettime_from_hosttime(adapter, host_time,
 					     &target_time))
 		size = scnprintf(buf, PAGE_SIZE, "Invalid timestamp\n");
@@ -678,9 +690,8 @@ static irqreturn_t hdd_tsf_captured_irq_handler(int irq, void *arg)
 	if (!arg)
 		return IRQ_NONE;
 
-	host_time = hdd_get_monotonic_host_time();
-
 	hdd_ctx = (hdd_context_t *)arg;
+	host_time = hdd_get_monotonic_host_time(hdd_ctx);
 
 	adapter = hdd_ctx->cap_tsf_context;
 	if (!adapter)
@@ -740,8 +751,8 @@ static enum hdd_tsf_op_result hdd_tsf_sync_init(hdd_adapter_t *adapter)
 	}
 
 	net_dev = adapter->dev;
-		if (net_dev)
-			device_create_file(&net_dev->dev, &dev_attr_tsf);
+	if (net_dev && HDD_TSF_IS_DBG_FS_SET(hddctx))
+		device_create_file(&net_dev->dev, &dev_attr_tsf);
 	hdd_set_th_sync_status(adapter, true);
 
 	return HDD_TSF_OP_SUCC;
@@ -766,13 +777,6 @@ static enum hdd_tsf_op_result hdd_tsf_sync_deinit(hdd_adapter_t *adapter)
 
 	hdd_set_th_sync_status(adapter, false);
 
-	net_dev = adapter->dev;
-	if (net_dev) {
-		struct device *dev = &net_dev->dev;
-
-		device_remove_file(dev, &dev_attr_tsf);
-	}
-
 	ret = qdf_mc_timer_destroy(&adapter->host_target_sync_timer);
 	if (ret != QDF_STATUS_SUCCESS)
 		hdd_err("Failed to destroy timer, ret: %d", ret);
@@ -792,6 +796,13 @@ static enum hdd_tsf_op_result hdd_tsf_sync_deinit(hdd_adapter_t *adapter)
 	}
 
 	hdd_reset_timestamps(adapter);
+
+	net_dev = adapter->dev;
+	if (net_dev && HDD_TSF_IS_DBG_FS_SET(hddctx)) {
+		struct device *dev = &net_dev->dev;
+
+		device_remove_file(dev, &dev_attr_tsf);
+	}
 	return HDD_TSF_OP_SUCC;
 }
 
@@ -951,6 +962,11 @@ enum hdd_tsf_op_result wlan_hdd_tsf_plus_init(hdd_context_t *hdd_ctx)
 {
 	int ret;
 
+	if (!HDD_TSF_IS_PTP_ENABLED(hdd_ctx)) {
+		hdd_info("To enable TSF_PLUS, set gtsf_ptp_options in ini");
+		return HDD_TSF_OP_FAIL;
+	}
+
 	ret = cnss_common_register_tsf_captured_handler(
 			hdd_ctx->parent_dev,
 			hdd_tsf_captured_irq_handler,
@@ -960,7 +976,8 @@ enum hdd_tsf_op_result wlan_hdd_tsf_plus_init(hdd_context_t *hdd_ctx)
 		return HDD_TSF_OP_FAIL;
 	}
 
-	ol_register_timestamp_callback(hdd_tx_timestamp);
+	if (HDD_TSF_IS_TX_SET(hdd_ctx))
+		ol_register_timestamp_callback(hdd_tx_timestamp);
 	return HDD_TSF_OP_SUCC;
 }
 
@@ -969,7 +986,12 @@ enum hdd_tsf_op_result wlan_hdd_tsf_plus_deinit(hdd_context_t *hdd_ctx)
 {
 	int ret;
 
-	ol_deregister_timestamp_callback();
+	if (!HDD_TSF_IS_PTP_ENABLED(hdd_ctx))
+		return HDD_TSF_OP_SUCC;
+
+	if (HDD_TSF_IS_TX_SET(hdd_ctx))
+		ol_deregister_timestamp_callback();
+
 	ret = cnss_common_unregister_tsf_captured_handler(
 				hdd_ctx->parent_dev,
 				(void *)hdd_ctx);
@@ -1128,8 +1150,8 @@ static int __wlan_hdd_cfg80211_handle_tsf_cmd(struct wiphy *wiphy,
 	if (0 != status)
 		return -EINVAL;
 
-	if (nla_parse(tb_vendor, QCA_WLAN_VENDOR_ATTR_TSF_MAX, data,
-		      data_len, tsf_policy)) {
+	if (hdd_nla_parse(tb_vendor, QCA_WLAN_VENDOR_ATTR_TSF_MAX, data,
+			  data_len, tsf_policy)) {
 		hdd_err("Invalid TSF cmd");
 		return -EINVAL;
 	}

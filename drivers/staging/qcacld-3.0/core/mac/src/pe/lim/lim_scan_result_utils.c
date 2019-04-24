@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2011-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2011-2019 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 /*
@@ -90,7 +81,6 @@ static inline void populate_qbss_load_status(tSirBssDescription *pBssDescr,
 		pBssDescr->QBSSLoad_present = true;
 		pBssDescr->QBSSLoad_avail = pBPR->QBSSLoad.avail;
 		pBssDescr->qbss_chan_load = pBPR->QBSSLoad.chautil;
-		pBssDescr->qbss_stacount = pBPR->QBSSLoad.stacount;
 	}
 }
 #else
@@ -168,6 +158,7 @@ lim_collect_bss_description(tpAniSirGlobal pMac,
 	uint8_t channelNum;
 	uint8_t rxChannel;
 	uint8_t rfBand = 0;
+	uint32_t *rssi_per_chain;
 
 	pHdr = WMA_GET_RX_MAC_HEADER(pRxPacketInfo);
 
@@ -215,10 +206,15 @@ lim_collect_bss_description(tpAniSirGlobal pMac,
 		if (pBPR->HTCaps.supportedChannelWidthSet)
 			pBssDescr->chan_width = eHT_CHANNEL_WIDTH_40MHZ;
 	}
+
 	/* VHT Parameters */
-	if (pBPR->VHTCaps.present) {
+	if (IS_BSS_VHT_CAPABLE(pBPR->VHTCaps) ||
+	    IS_BSS_VHT_CAPABLE(pBPR->vendor_vht_ie.VHTCaps)) {
 		pBssDescr->vht_caps_present = 1;
-		if (pBPR->VHTCaps.muBeamformerCap)
+		if ((IS_BSS_VHT_CAPABLE(pBPR->VHTCaps) &&
+		     pBPR->VHTCaps.suBeamFormerCap) ||
+		    (IS_BSS_VHT_CAPABLE(pBPR->vendor_vht_ie.VHTCaps) &&
+		     pBPR->vendor_vht_ie.VHTCaps.suBeamFormerCap))
 			pBssDescr->beacomforming_capable = 1;
 	}
 	if (pBPR->VHTOperation.present)
@@ -294,24 +290,23 @@ lim_collect_bss_description(tpAniSirGlobal pMac,
 	pBssDescr->rssi = (int8_t) WMA_GET_RX_RSSI_NORMALIZED(pRxPacketInfo);
 	pBssDescr->rssi_raw = (int8_t) WMA_GET_RX_RSSI_RAW(pRxPacketInfo);
 
+	/* Copy per chain rssi */
+
+	rssi_per_chain = WMA_GET_RX_RSSI_CTL_PTR(pRxPacketInfo);
+	qdf_mem_copy(pBssDescr->rssi_per_chain, rssi_per_chain,
+					sizeof(pBssDescr->rssi_per_chain));
+
 	/* SINR no longer reported by HW */
 	pBssDescr->sinr = 0;
-	pe_debug(MAC_ADDRESS_STR " rssi: normalized: %d, absolute: %d",
-		MAC_ADDR_ARRAY(pHdr->bssId), pBssDescr->rssi,
-		pBssDescr->rssi_raw);
-
 	pBssDescr->received_time = (uint64_t)qdf_mc_timer_get_system_time();
 	pBssDescr->tsf_delta = WMA_GET_RX_TSF_DELTA(pRxPacketInfo);
 	pBssDescr->seq_ctrl = pHdr->seqControl;
 
-	pe_debug("BSSID: "MAC_ADDRESS_STR " tsf_delta: %u ReceivedTime: %llu ssid: %s",
-		  MAC_ADDR_ARRAY(pHdr->bssId), pBssDescr->tsf_delta,
-		  pBssDescr->received_time,
-		  ((pBPR->ssidPresent) ? (char *)pBPR->ssId.ssId : ""));
-
-	pe_debug("Seq Ctrl: Frag Num: %d Seq Num: LO: %02x HI: %02x",
-		pBssDescr->seq_ctrl.fragNum, pBssDescr->seq_ctrl.seqNumLo,
-		pBssDescr->seq_ctrl.seqNumHi);
+	pe_debug("Received %s from BSSID: %pM tsf_delta = %u Seq Num: %x ssid:%.*s, rssi: %d",
+		 pBssDescr->fProbeRsp ? "Probe Rsp" : "Beacon", pHdr->bssId,
+		 pBssDescr->tsf_delta, ((pHdr->seqControl.seqNumHi <<
+		 HIGH_SEQ_NUM_OFFSET) | pHdr->seqControl.seqNumLo),
+		 pBPR->ssId.length, pBPR->ssId.ssId, pBssDescr->rssi_raw);
 
 	if (fScanning) {
 		rrm_get_start_tsf(pMac, pBssDescr->startTSF);
@@ -333,6 +328,11 @@ lim_collect_bss_description(tpAniSirGlobal pMac,
 	}
 
 	populate_qbss_load_status(pBssDescr, pBPR);
+
+	if (pBPR->oce_wan_present) {
+		pBssDescr->oce_wan_present = 1;
+		pBssDescr->oce_wan_down_cap = pBPR->oce_wan_downlink_av_cap;
+	}
 	lim_update_bss_with_fils_data(pBPR, pBssDescr);
 	/* Copy IE fields */
 	qdf_mem_copy((uint8_t *) &pBssDescr->ieFields,
@@ -341,8 +341,6 @@ lim_collect_bss_description(tpAniSirGlobal pMac,
 	/*set channel number in beacon in case it is not present */
 	pBPR->channelNumber = pBssDescr->channelId;
 
-	pe_debug("Collected BSS Description for Channel: %1d length: %u IE Fields: %u",
-		pBssDescr->channelId, pBssDescr->length, ieLen);
 	pMac->lim.beacon_probe_rsp_cnt_per_scan++;
 
 	return;
@@ -382,6 +380,12 @@ lim_check_and_add_bss_description(tpAniSirGlobal mac_ctx,
 
 	tSirMacAddr bssid_zero =  {0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
 	tpSirMacDataHdr3a hdr;
+
+	uint16_t  unsafe_chan[NUM_CHANNELS];
+	uint16_t  unsafe_chan_cnt = 0;
+	uint16_t  cnt = 0;
+	bool      is_unsafe_chan = false;
+	qdf_device_t qdf_ctx;
 
 	hdr = WMA_GET_RX_MPDUHEADER3A((uint8_t *) rx_packet_info);
 
@@ -425,8 +429,29 @@ lim_check_and_add_bss_description(tpAniSirGlobal mac_ctx,
 				if (freq_diff <= 10)
 					drop_bcn_prb_rsp = false;
 			}
+
+			qdf_ctx = cds_get_context(QDF_MODULE_ID_QDF_DEVICE);
+			if (!qdf_ctx) {
+				pe_err("qdf_ctx is NULL");
+				return;
+			}
+			pld_get_wlan_unsafe_channel(qdf_ctx->dev, unsafe_chan,
+						    &unsafe_chan_cnt,
+						    sizeof(unsafe_chan));
+			if (mac_ctx->roam.configParam.sta_roam_policy.
+				skip_unsafe_channels && unsafe_chan_cnt) {
+				for (cnt = 0; cnt < unsafe_chan_cnt; cnt++) {
+					if (unsafe_chan[cnt] ==
+					    rx_chan_in_beacon) {
+						is_unsafe_chan = true;
+						break;
+					}
+				}
+			}
+
 			/* Drop beacon, if CH do not match, Drop */
-			if (!fProbeRsp && drop_bcn_prb_rsp) {
+			if (!fProbeRsp &&
+			    (drop_bcn_prb_rsp || is_unsafe_chan)) {
 				pe_debug("Beacon Rsp dropped. Channel in BD: %d Channel in beacon: %d",
 					rx_chan_bd, rx_chan_in_beacon);
 				return;

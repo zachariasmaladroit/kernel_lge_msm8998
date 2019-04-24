@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2011, 2014-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2011, 2014-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 #ifndef _HTT_TYPES__H_
@@ -298,6 +289,7 @@ struct htt_pdev_t {
 
 		int fill_level; /* how many rx buffers to keep in the ring */
 		int fill_cnt;   /* # of rx buffers (full+empty) in the ring */
+		int pop_fail_cnt;   /* # of nebuf pop failures */
 
 		/*
 		 * target_idx -
@@ -367,6 +359,8 @@ struct htt_pdev_t {
 		qdf_spinlock_t rx_hash_lock;
 		struct htt_rx_hash_bucket **hash_table;
 		uint32_t listnode_offset;
+
+		bool smmu_map;
 	} rx_ring;
 #ifdef CONFIG_HL_SUPPORT
 	int rx_desc_size_hl;
@@ -397,6 +391,7 @@ struct htt_pdev_t {
 				       qdf_nbuf_t msdu, uint16_t msdu_id);
 
 	HTT_TX_MUTEX_TYPE htt_tx_mutex;
+	HTT_TX_MUTEX_TYPE credit_mutex;
 
 	struct {
 		int htc_err_cnt;

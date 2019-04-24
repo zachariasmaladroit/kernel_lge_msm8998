@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 /*===========================================================================
@@ -78,8 +69,6 @@
 #include "wma_types.h"
 #include "cds_regdomain.h"
 #include "cds_utils.h"
-
-#define NO_SESSION 0xff
 
 /* define NO_PAD_TDLS_MIN_8023_SIZE to NOT padding: See CR#447630
    There was IOT issue with cisco 1252 open mode, where it pads
@@ -241,9 +230,9 @@ static void populate_dot11f_tdls_offchannel_params(
 	}
 
 	if (IS_5G_CH(psessionEntry->currentOperChannel))
-		band = eCSR_BAND_5G;
+		band = SIR_BAND_5_GHZ;
 	else
-		band = eCSR_BAND_24;
+		band = SIR_BAND_2_4_GHZ;
 
 	nss_5g = QDF_MIN(pMac->vdev_type_nss_5g.tdls,
 			 pMac->user_configured_nss);
@@ -252,7 +241,7 @@ static void populate_dot11f_tdls_offchannel_params(
 
 	/* validating the channel list for DFS and 2G channels */
 	for (i = 0U; i < numChans; i++) {
-		if ((band == eCSR_BAND_5G) &&
+		if ((band == SIR_BAND_5_GHZ) &&
 		    (NSS_2x2_MODE == nss_5g) &&
 		    (NSS_1x1_MODE == nss_2g) &&
 		    (true == CDS_IS_DFS_CH(validChan[i]))) {
@@ -671,7 +660,7 @@ static tSirRetStatus lim_send_tdls_dis_req_frame(tpAniSirGlobal pMac,
 					lim_mgmt_tdls_tx_complete,
 					HAL_USE_BD_RATE2_FOR_MANAGEMENT_FRAME |
 					HAL_USE_PEER_STA_REQUESTED_MASK,
-					smeSessionId, false, 0);
+					smeSessionId, false, 0, RATEID_DEFAULT);
 	if (!QDF_IS_STATUS_SUCCESS(qdf_status)) {
 		pMac->lim.tdls_frm_session_id = NO_SESSION;
 		pe_err("could not send TDLS Discovery Request frame");
@@ -875,7 +864,7 @@ static tSirRetStatus lim_send_tdls_dis_rsp_frame(tpAniSirGlobal pMac,
 						       &tdlsDisRsp.SuppChannels,
 						       &tdlsDisRsp.
 						       SuppOperatingClasses);
-		if (pMac->roam.configParam.bandCapability != eCSR_BAND_24) {
+		if (pMac->roam.configParam.bandCapability != SIR_BAND_2_4_GHZ) {
 			tdlsDisRsp.ht2040_bss_coexistence.present = 1;
 			tdlsDisRsp.ht2040_bss_coexistence.info_request = 1;
 		}
@@ -931,6 +920,7 @@ static tSirRetStatus lim_send_tdls_dis_rsp_frame(tpAniSirGlobal pMac,
 
 	{
 		tpSirMacMgmtHdr pMacHdr;
+
 		pMacHdr = (tpSirMacMgmtHdr) pFrame;
 		pMacHdr->fc.toDS = ANI_TXDIR_IBSS;
 		pMacHdr->fc.powerMgmt = 0;
@@ -977,7 +967,8 @@ static tSirRetStatus lim_send_tdls_dis_rsp_frame(tpAniSirGlobal pMac,
 					      lim_tx_complete, pFrame,
 					      lim_mgmt_tdls_tx_complete,
 					      HAL_USE_SELF_STA_REQUESTED_MASK,
-					      smeSessionId, false, 0);
+					      smeSessionId, false, 0,
+					      RATEID_DEFAULT);
 	if (!QDF_IS_STATUS_SUCCESS(qdf_status)) {
 		pMac->lim.tdls_frm_session_id = NO_SESSION;
 		pe_err("could not send TDLS Discovery Response frame!");
@@ -1059,7 +1050,7 @@ wma_tx_frame_with_tx_complete_send(tpAniSirGlobal pMac, void *pPacket,
 					  lim_mgmt_tdls_tx_complete,
 					  HAL_USE_BD_RATE2_FOR_MANAGEMENT_FRAME
 					  | HAL_USE_PEER_STA_REQUESTED_MASK,
-					  smeSessionId, flag, 0);
+					  smeSessionId, flag, 0, RATEID_DEFAULT);
 }
 #else
 
@@ -1079,7 +1070,7 @@ wma_tx_frame_with_tx_complete_send(tpAniSirGlobal pMac, void *pPacket,
 					  lim_mgmt_tdls_tx_complete,
 					  HAL_USE_BD_RATE2_FOR_MANAGEMENT_FRAME
 					  | HAL_USE_PEER_STA_REQUESTED_MASK,
-					  smeSessionId, false, 0);
+					  smeSessionId, false, 0, RATEID_DEFAULT);
 }
 #endif
 
@@ -1236,7 +1227,7 @@ tSirRetStatus lim_send_tdls_link_setup_req_frame(tpAniSirGlobal pMac,
 						     &tdlsSetupReq.SuppChannels,
 						     &tdlsSetupReq.
 						     SuppOperatingClasses);
-		if (pMac->roam.configParam.bandCapability != eCSR_BAND_24) {
+		if (pMac->roam.configParam.bandCapability != SIR_BAND_2_4_GHZ) {
 			tdlsSetupReq.ht2040_bss_coexistence.present = 1;
 			tdlsSetupReq.ht2040_bss_coexistence.info_request = 1;
 		}
@@ -1682,7 +1673,7 @@ static tSirRetStatus lim_send_tdls_setup_rsp_frame(tpAniSirGlobal pMac,
 						    &tdlsSetupRsp.SuppChannels,
 						    &tdlsSetupRsp.
 						    SuppOperatingClasses);
-		if (pMac->roam.configParam.bandCapability != eCSR_BAND_24) {
+		if (pMac->roam.configParam.bandCapability != SIR_BAND_2_4_GHZ) {
 			tdlsSetupRsp.ht2040_bss_coexistence.present = 1;
 			tdlsSetupRsp.ht2040_bss_coexistence.info_request = 1;
 		}
@@ -2240,6 +2231,7 @@ lim_tdls_populate_matching_rate_set(tpAniSirGlobal mac_ctx, tpDphHashNode stads,
 	uint8_t a_rateindex = 0;
 	uint8_t b_rateindex = 0;
 	uint8_t nss;
+
 	is_a_rate = 0;
 	temp_rate_set2.numRates = 0;
 
@@ -2547,6 +2539,19 @@ static tSirRetStatus lim_tdls_setup_add_sta(tpAniSirGlobal pMac,
 
 	pStaDs = dph_lookup_hash_entry(pMac, pAddStaReq->peermac.bytes, &aid,
 				       &psessionEntry->dph.dphHashTable);
+
+	if (pStaDs && pAddStaReq->tdlsAddOper == TDLS_OPER_ADD) {
+		pe_err("TDLS entry for peer: "MAC_ADDRESS_STR " already exist, cannot add new entry",
+			MAC_ADDR_ARRAY(pAddStaReq->peermac.bytes));
+			return eSIR_FAILURE;
+	}
+
+	if (pStaDs && pStaDs->staType != STA_ENTRY_TDLS_PEER) {
+		pe_err("Non TDLS entry for peer: "MAC_ADDRESS_STR " already exist",
+			MAC_ADDR_ARRAY(pAddStaReq->peermac.bytes));
+			return eSIR_FAILURE;
+	}
+
 	if (NULL == pStaDs) {
 		aid = lim_assign_peer_idx(pMac, psessionEntry);
 
@@ -2640,6 +2645,7 @@ static QDF_STATUS lim_send_sme_tdls_add_sta_rsp(tpAniSirGlobal pMac,
 {
 	tSirMsgQ mmhMsg = { 0 };
 	tSirTdlsAddStaRsp *addStaRsp = NULL;
+
 	mmhMsg.type = eWNI_SME_TDLS_ADD_STA_RSP;
 
 	addStaRsp = qdf_mem_malloc(sizeof(tSirTdlsAddStaRsp));
@@ -2894,6 +2900,7 @@ static QDF_STATUS lim_send_sme_tdls_del_sta_rsp(tpAniSirGlobal pMac,
 {
 	tSirMsgQ mmhMsg = { 0 };
 	tSirTdlsDelStaRsp *pDelSta = NULL;
+
 	mmhMsg.type = eWNI_SME_TDLS_DEL_STA_RSP;
 
 	pDelSta = qdf_mem_malloc(sizeof(tSirTdlsDelStaRsp));
@@ -2967,7 +2974,6 @@ tSirRetStatus lim_process_sme_tdls_add_sta_req(tpAniSirGlobal pMac,
 		goto lim_tdls_add_sta_error;
 	}
 
-	pMac->lim.gLimAddStaTdls = true;
 
 	/* To start with, send add STA request to HAL */
 	if (eSIR_FAILURE == lim_tdls_setup_add_sta(pMac, pAddStaReq, psessionEntry)) {
@@ -3037,8 +3043,8 @@ tSirRetStatus lim_process_sme_tdls_del_sta_req(tpAniSirGlobal pMac,
 		goto lim_tdls_del_sta_error;
 	}
 
-	lim_tdls_del_sta(pMac, pDelStaReq->peermac, psessionEntry, true);
-	return eSIR_SUCCESS;
+	if (lim_tdls_del_sta(pMac, pDelStaReq->peermac, psessionEntry, true))
+		return eSIR_SUCCESS;
 
 lim_tdls_del_sta_error:
 	lim_send_sme_tdls_del_sta_rsp(pMac, psessionEntry->smeSessionId,
@@ -3057,6 +3063,7 @@ static void lim_tdls_get_intersection(uint8_t *input_array1,
 				      uint8_t *output_length)
 {
 	uint8_t i, j, k = 0, flag = 0;
+
 	for (i = 0; i < input1_length; i++) {
 		flag = 0;
 		for (j = 0; j < input2_length; j++) {
@@ -3293,7 +3300,7 @@ tSirRetStatus lim_delete_tdls_peers(tpAniSirGlobal mac_ctx,
 	if (lim_is_roam_synch_in_progress(session_entry))
 		return eSIR_SUCCESS;
 
-	if (mac_ctx->lim.sme_msg_callback) {
+	if (!session_entry->is_tdls_csa && mac_ctx->lim.sme_msg_callback) {
 		tdls_state_disable = qdf_mem_malloc(
 						sizeof(*tdls_state_disable));
 		if (NULL == tdls_state_disable) {
@@ -3306,6 +3313,10 @@ tSirRetStatus lim_delete_tdls_peers(tpAniSirGlobal mac_ctx,
 		msg.bodyval = 0;
 		mac_ctx->lim.sme_msg_callback(mac_ctx, &msg);
 	}
+
+	if (session_entry->is_tdls_csa)
+		/* reset the csa flag */
+		session_entry->is_tdls_csa = false;
 
 	lim_send_sme_tdls_delete_all_peer_ind(mac_ctx, session_entry);
 	pe_debug("Exit");
@@ -3345,18 +3356,20 @@ tSirRetStatus lim_process_sme_del_all_tdls_peers(tpAniSirGlobal mac_ctx,
 
 	lim_check_aid_and_delete_peer(mac_ctx, session_entry);
 
-	if (mac_ctx->lim.sme_msg_callback) {
-		tdls_state_disable = qdf_mem_malloc(
-						sizeof(*tdls_state_disable));
-		if (NULL == tdls_state_disable) {
-			pe_err("memory allocation failed");
-			return eSIR_FAILURE;
+	if (msg->disable_tdls_state) {
+		if (mac_ctx->lim.sme_msg_callback) {
+			tdls_state_disable = qdf_mem_malloc(
+					sizeof(*tdls_state_disable));
+			if (NULL == tdls_state_disable) {
+				pe_err("memory allocation failed");
+				return eSIR_FAILURE;
+			}
+			tdls_state_disable->session_id = session_entry->smeSessionId;
+			cds_msg.type = eWNI_SME_TDLS_NOTIFY_SET_STATE_DISABLE;
+			cds_msg.bodyptr = tdls_state_disable;
+			cds_msg.bodyval = 0;
+			mac_ctx->lim.sme_msg_callback(mac_ctx, &cds_msg);
 		}
-		tdls_state_disable->session_id = session_entry->smeSessionId;
-		cds_msg.type = eWNI_SME_TDLS_NOTIFY_SET_STATE_DISABLE;
-		cds_msg.bodyptr = tdls_state_disable;
-		cds_msg.bodyval = 0;
-		mac_ctx->lim.sme_msg_callback(mac_ctx, &cds_msg);
 	}
 
 	return eSIR_SUCCESS;

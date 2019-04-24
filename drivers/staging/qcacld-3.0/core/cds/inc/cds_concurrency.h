@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2012-2019 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -19,12 +16,6 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
- */
-
 #ifndef __CDS_CONCURRENCY_H
 #define __CDS_CONCURRENCY_H
 
@@ -38,9 +29,10 @@
 
 #include "wlan_hdd_main.h"
 
-#define MAX_NUMBER_OF_CONC_CONNECTIONS 3
-#define DBS_OPPORTUNISTIC_TIME    10
-#define CONNECTION_UPDATE_TIMEOUT 3000
+#define MAX_NUMBER_OF_CONC_CONNECTIONS    3
+#define DBS_OPPORTUNISTIC_TIME            10
+#define CONNECTION_UPDATE_TIMEOUT         3000
+#define CHANNEL_SWITCH_COMPLETE_TIMEOUT   2000
 
 /* Some max value greater than the max length of the channel list */
 #define MAX_WEIGHT_OF_PCL_CHANNELS 255
@@ -62,6 +54,10 @@
 
 #define WEIGHT_OF_NON_PCL_CHANNELS 1
 #define WEIGHT_OF_DISALLOWED_CHANNELS 0
+
+#define MAX_MAC 2
+
+struct hdd_adapter_s;
 
 /**
  * enum hw_mode_ss_config - Possible spatial stream configuration
@@ -615,6 +611,19 @@ struct cds_conc_connection_info {
 	bool          in_use;
 };
 
+/**
+ * struct connection_info - connection information
+ *
+ * @mac_id: The HW mac it is running
+ * @vdev_id: vdev id
+ * @channel: channel of the connection
+ */
+struct connection_info {
+	uint8_t mac_id;
+	uint8_t vdev_id;
+	uint8_t channel;
+};
+
 bool cds_is_connection_in_progress(uint8_t *session_id,
 				scan_reject_states *reason);
 void cds_dump_concurrency_info(void);
@@ -742,6 +751,40 @@ bool cds_is_any_nondfs_chnl_present(uint8_t *channel);
 bool cds_is_any_dfs_beaconing_session_present(uint8_t *channel);
 bool cds_allow_concurrency(enum cds_con_mode mode,
 				uint8_t channel, enum hw_mode_bandwidth bw);
+/**
+ * cds_is_concurrency_allowed() - Check for allowed
+ * concurrency combination
+ * @mode: new connection mode
+ * @channel: channel on which new connection is coming up
+ * @bw: Bandwidth requested by the connection (optional)
+ *
+ * When a new connection is about to come up check if current
+ * concurrency combination including the new connection is
+ * allowed or not based on the HW capability, but no need to
+ * invoke get_pcl
+ *
+ * Return: True/False
+ */
+bool cds_is_concurrency_allowed(enum cds_con_mode mode,
+				       uint8_t channel,
+				       enum hw_mode_bandwidth bw);
+
+/**
+ * cds_check_privacy_with_concurrency() - privacy/concurrency checker
+ *
+ * This function checks the new device mode of the current adapter against its
+ * privacy settings and concurrency settings to see if there are any conflicts.
+ *
+ * Return: true if all checkings are passed, false if any conflict detected
+ */
+#ifdef FEATURE_WLAN_WAPI
+bool cds_check_privacy_with_concurrency(void);
+#else
+static inline bool cds_check_privacy_with_concurrency(void)
+{
+	return true;
+}
+#endif
 enum cds_conc_priority_mode cds_get_first_connection_pcl_table_index(void);
 enum cds_one_connection_mode cds_get_second_connection_pcl_table_index(void);
 enum cds_two_connection_mode cds_get_third_connection_pcl_table_index(void);
@@ -805,6 +848,8 @@ QDF_STATUS cds_pdev_set_hw_mode(uint32_t session_id,
 		enum hw_mode_agile_dfs_capab dfs,
 		enum hw_mode_sbs_capab sbs,
 		enum sir_conn_update_reason reason);
+bool cds_is_dbs_req_for_channel(uint8_t channel_id);
+
 enum cds_conc_next_action cds_need_opportunistic_upgrade(void);
 QDF_STATUS cds_next_actions(uint32_t session_id,
 		enum cds_conc_next_action action,
@@ -833,6 +878,13 @@ QDF_STATUS qdf_wait_for_connection_update(void);
 QDF_STATUS qdf_reset_connection_update(void);
 QDF_STATUS qdf_set_connection_update(void);
 QDF_STATUS qdf_init_connection_update(void);
+
+/**
+ * cds_stop_opportunistic_timer() - Stops opportunistic timer
+ *
+ * Return: QDF_STATUS
+ */
+QDF_STATUS cds_stop_opportunistic_timer(void);
 QDF_STATUS cds_restart_opportunistic_timer(bool check_state);
 QDF_STATUS cds_modify_sap_pcl_based_on_mandatory_channel(uint8_t *pcl_list_org,
 		uint8_t *weight_list_org,
@@ -849,7 +901,8 @@ QDF_STATUS cds_set_sap_mandatory_channels(uint8_t *channels, uint32_t len);
 QDF_STATUS cds_reset_sap_mandatory_channels(void);
 #ifdef FEATURE_WLAN_MCC_TO_SCC_SWITCH
 QDF_STATUS cds_register_sap_restart_channel_switch_cb(
-		void (*sap_restart_chan_switch_cb)(void *, uint32_t, uint32_t));
+		void (*sap_restart_chan_switch_cb)(struct hdd_adapter_s *,
+						   uint32_t, uint32_t));
 QDF_STATUS cds_deregister_sap_restart_channel_switch_cb(void);
 #endif
 bool cds_is_any_mode_active_on_band_along_with_session(uint8_t session_id,
@@ -885,6 +938,9 @@ void cds_dump_connection_status_info(void);
 uint32_t cds_mode_specific_vdev_id(enum cds_con_mode mode);
 uint32_t cds_mode_specific_connection_count(enum cds_con_mode mode,
 						uint32_t *list);
+
+uint8_t cds_mode_specific_get_channel(enum cds_con_mode mode);
+
 /**
  * cds_check_conn_with_mode_and_vdev_id() - checks if any active
  * session with specific mode and vdev_id
@@ -964,15 +1020,19 @@ bool cds_is_safe_channel(uint8_t channel);
  */
 bool cds_disallow_mcc(uint8_t channel);
 /**
- * cds_get_alternate_channel_for_sap() - checks if any alternate channel can
+ * cds_get_diff_band_ch_for_sap() - checks if any alternate channel can
  * be obtained from PCL if current channel can't be allowed
  *
- * This function checks if any alternate channel can be obtained
- * from PCL or other means if current channel for SAP can't be allowed
+ * @channel: Present STA channel
+ *
+ * This API will get the PCl chanel list based upon the current connections
+ * and will return the different band channel to operate in DBS mode if enabled
+ * It may happen that STA+SAP SCC is not allowed, so we have to select a random
+ * preferred channel in different band than the STA channel.
  *
  * Return: New channel
  */
-uint8_t cds_get_alternate_channel_for_sap(void);
+uint8_t cds_get_diff_band_ch_for_sap(uint8_t channel);
 
 /**
  * cds_set_cur_conc_system_pref() - set the value of cur_conc_system_pref
@@ -992,4 +1052,109 @@ void cds_set_cur_conc_system_pref(uint8_t conc_system_pref);
  */
 uint8_t cds_get_cur_conc_system_pref(void);
 
+/**
+ * cds_remove_dfs_passive_channels_from_pcl() - set weight of dfs and passive
+ * channels to 0
+ * @pcl_channels: preferred channel list
+ * @len: length of preferred channel list
+ * @weight_list: preferred channel weight list
+ * @weight_len: length of weight list
+ * This function set the weight of dfs and passive channels to 0
+ *
+ * Return: None
+ */
+void cds_remove_dfs_passive_channels_from_pcl(uint8_t *pcl_channels,
+		uint32_t *len, uint8_t *weight_list, uint32_t weight_len);
+
+/**
+ * cds_is_valid_channel_for_channel_switch() - check for valid channel for
+ * channel switch
+ * @channel: channel to be validated
+ * This function validates whether the given channel is valid for channel
+ * switch.
+ *
+ * Return: true or false
+ */
+bool cds_is_valid_channel_for_channel_switch(uint8_t channel);
+
+/**
+ * cds_is_sta_connected_in_2g() - check if sta is connected in 2G
+ *
+ * This function loops through all sta adapters to check if any
+ * sta is connected in 2G
+ *
+ * Return: true for success and false for failure
+ */
+bool cds_is_sta_connected_in_2g(void);
+/**
+ * cds_get_connection_info() - Get info of all active connections
+ * @info: Pointer to connection info
+ *
+ * Return: Connection count
+ */
+uint32_t cds_get_connection_info(struct connection_info *info);
+
+/**
+ * cds_trim_acs_channel_list() - Trim the ACS channel list based
+ * on the number of active station connections
+ * @sap_cfg: SAP configuration info
+ *
+ * Return: None
+ */
+void cds_trim_acs_channel_list(tsap_Config_t *sap_cfg);
+
+/**
+ * cds_allow_multi_sap_go_concurrency() - check whether multiple SAP/GO
+ * interfaces are allowed
+ * @cds_con_mode: operating mode of the new interface
+ * @channel: operating channel of the new interface
+ * This function checks whether second SAP/GO interface is allowed on the same
+ * MAC.
+ *
+ * Return: true or false
+ */
+bool cds_allow_sap_go_concurrency(enum cds_con_mode mode, uint8_t channel);
+
+/**
+ * cds_is_sta_sap_scc() - check whether SAP is doing SCC with
+ * STA
+ * @sap_ch: operating channel of SAP interface
+ * This function checks whether SAP is doing SCC with STA
+ *
+ * Return: true or false
+ */
+bool cds_is_sta_sap_scc(uint8_t sap_ch);
+
+/**
+ * cds_flush_sta_ap_intf_work - Flush the restart sap work
+ * @hdd_ctx: HDD context pointer
+ *
+ * Flush the restart sap work and also free the memory
+ * if not already freed.
+ *
+ * Restart: None
+ */
+void cds_flush_sta_ap_intf_work(hdd_context_t *hdd_ctx);
+
+/**
+ * cds_set_pcl_for_existing_combo() - Set PCL for existing connection
+ * @mode: Connection mode of type 'cds_con_mode'
+ *
+ * Set the PCL for an existing connection
+ *
+ * Return: None
+ */
+void cds_set_pcl_for_existing_combo(enum cds_con_mode mode);
+
+/**
+ * cds_pdev_get_pcl() - Gets PCL
+ * @mode: adapter mode
+ * @pcl: the pointer to the pcl list
+ *
+ * Fetches the PCL
+ *
+ * Return: QDF_STATUS
+ */
+QDF_STATUS cds_pdev_get_pcl(enum tQDF_ADAPTER_MODE mode,
+			    struct sir_pcl_list *pcl);
 #endif /* __CDS_CONCURRENCY_H */

@@ -1,9 +1,6 @@
 /*
  * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
  *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
  * above copyright notice and this permission notice appear in all
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 /*
@@ -149,6 +140,7 @@ void lim_remove_pbc_sessions(tpAniSirGlobal mac, struct qdf_mac_addr remove_mac,
 			     tpPESession session_entry)
 {
 	tSirWPSPBCSession *pbc, *prev = NULL;
+
 	prev = pbc = session_entry->pAPWPSPBCSession;
 
 	while (pbc) {
@@ -473,6 +465,7 @@ lim_process_probe_req_frame(tpAniSirGlobal mac_ctx, uint8_t *rx_pkt_info,
 					QDF_P2P_GO_MODE) {
 				uint8_t direct_ssid[7] = "DIRECT-";
 				uint8_t direct_ssid_len = 7;
+
 				if (!qdf_mem_cmp((uint8_t *) &direct_ssid,
 					(uint8_t *) &(probe_req.ssId.ssId),
 					(uint8_t) (direct_ssid_len))) {
@@ -666,6 +659,13 @@ lim_send_sme_probe_req_ind(tpAniSirGlobal pMac,
 
 	MTRACE(mac_trace(pMac, TRACE_CODE_TX_SME_MSG,
 				psessionEntry->peSessionId, msgQ.type));
+
+	if (ProbeReqIELen > sizeof(pSirSmeProbeReqInd->WPSPBCProbeReq.
+	    probeReqIE)) {
+		ProbeReqIELen = sizeof(pSirSmeProbeReqInd->WPSPBCProbeReq.
+				       probeReqIE);
+	}
+
 	pSirSmeProbeReqInd->WPSPBCProbeReq.probeReqIELen =
 		(uint16_t) ProbeReqIELen;
 	qdf_mem_copy(pSirSmeProbeReqInd->WPSPBCProbeReq.probeReqIE, pProbeReqIE,

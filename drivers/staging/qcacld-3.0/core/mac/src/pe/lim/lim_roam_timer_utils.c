@@ -1,8 +1,6 @@
 /*
  * Copyright (c) 2016-2017 The Linux Foundation. All rights reserved.
  *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
  * above copyright notice and this permission notice appear in all
@@ -40,6 +38,7 @@
 uint32_t lim_create_timers_host_roam(tpAniSirGlobal mac_ctx)
 {
 	uint32_t cfg_value;
+
 	if (wlan_cfg_get_int(mac_ctx, WNI_CFG_REASSOCIATION_FAILURE_TIMEOUT,
 			     &cfg_value) != eSIR_SUCCESS)
 		pe_warn("could not retrieve ReassocFailureTimeout value");

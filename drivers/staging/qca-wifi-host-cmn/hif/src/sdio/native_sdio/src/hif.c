@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2013-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2013-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 #include <linux/mmc/card.h>
@@ -727,6 +718,7 @@ static int async_task(void *param)
 	struct hif_sdio_dev *device;
 	struct bus_request *request;
 	QDF_STATUS status;
+	bool claimed = false;
 
 	device = (struct hif_sdio_dev *) param;
 	set_current_state(TASK_INTERRUPTIBLE);
@@ -749,7 +741,6 @@ static int async_task(void *param)
 		 * if possible, but holding the host blocks
 		 * card interrupts
 		 */
-		sdio_claim_host(device->func);
 		qdf_spin_lock_irqsave(&device->asynclock);
 		/* pull the request to work on */
 		while (device->asyncreq != NULL) {
@@ -763,6 +754,10 @@ static int async_task(void *param)
 				("%s: async_task processing req: 0x%lX\n",
 				 __func__, (unsigned long)request));
 
+			if (!claimed) {
+				sdio_claim_host(device->func);
+				claimed = true;
+			}
 			if (request->scatter_req != NULL) {
 				A_ASSERT(device->scatter_enabled);
 				/* pass the request to scatter routine which
@@ -810,7 +805,10 @@ static int async_task(void *param)
 			qdf_spin_lock_irqsave(&device->asynclock);
 		}
 		qdf_spin_unlock_irqrestore(&device->asynclock);
-		sdio_release_host(device->func);
+		if (claimed) {
+			sdio_release_host(device->func);
+			claimed = false;
+		}
 	}
 
 	complete_and_exit(&device->async_completion, 0);
@@ -1407,7 +1405,7 @@ void hif_sdio_shutdown(struct hif_softc *hif_ctx)
  */
 static void hif_irq_handler(struct sdio_func *func)
 {
-	QDF_STATUS status;
+	QDF_STATUS status = QDF_STATUS_SUCCESS;
 	struct hif_sdio_dev *device;
 
 	AR_DEBUG_PRINTF(ATH_DEBUG_TRACE,
@@ -1419,7 +1417,8 @@ static void hif_irq_handler(struct sdio_func *func)
 	 * it when we process cmds
 	 */
 	sdio_release_host(device->func);
-	status = device->htc_callbacks.dsrHandler(device->htc_callbacks
+	if (device->htc_callbacks.dsrHandler)
+		status = device->htc_callbacks.dsrHandler(device->htc_callbacks
 						  .context);
 	sdio_claim_host(device->func);
 	atomic_set(&device->irq_handling, 0);
@@ -1737,7 +1736,7 @@ static int hif_device_inserted(struct sdio_func *func,
 					AR_DEBUG_PRINTF(ATH_DEBUG_ERR,
 						("%s: CMD52 to set bus width failed: %d\n",
 						 __func__, ret));
-					return ret;
+					goto del_hif_dev;
 				}
 				device->host->ios.bus_width =
 					MMC_BUS_WIDTH_1;
@@ -1758,7 +1757,7 @@ static int hif_device_inserted(struct sdio_func *func,
 					("%s: CMD52 to bus width failed: %d\n",
 					 __func__,
 						 ret));
-					return ret;
+					goto del_hif_dev;
 				}
 				device->host->ios.bus_width =
 					MMC_BUS_WIDTH_4;
@@ -1779,7 +1778,7 @@ static int hif_device_inserted(struct sdio_func *func,
 					("%s: CMD52 to bus width failed: %d\n",
 							 __func__,
 							 ret));
-					return ret;
+					goto del_hif_dev;
 				}
 				device->host->ios.bus_width =
 					MMC_BUS_WIDTH_8;
@@ -1791,7 +1790,8 @@ static int hif_device_inserted(struct sdio_func *func,
 				("%s: MMC bus width %d is not supported.\n",
 						 __func__,
 						 mmcbuswidth));
-				return ret = QDF_STATUS_E_FAILURE;
+				ret = QDF_STATUS_E_FAILURE;
+				goto del_hif_dev;
 			}
 			AR_DEBUG_PRINTF(ATH_DEBUG_ANY,
 				("%s: Set MMC bus width to %dBit.\n",
@@ -1827,8 +1827,23 @@ static int hif_device_inserted(struct sdio_func *func,
 
 	ret = hif_enable_func(device, func);
 
-	return (ret == QDF_STATUS_SUCCESS || ret == QDF_STATUS_E_PENDING)
-						? 0 : QDF_STATUS_E_FAILURE;
+	if ((ret == QDF_STATUS_SUCCESS || ret == QDF_STATUS_E_PENDING))
+		return 0;
+	ret = QDF_STATUS_E_FAILURE;
+del_hif_dev:
+	del_hif_device(device);
+	for (i = 0; i < MAX_HIF_DEVICES; ++i) {
+		if (hif_devices[i] == device) {
+			hif_devices[i] = NULL;
+			break;
+		}
+	}
+	if (i == MAX_HIF_DEVICES) {
+		AR_DEBUG_PRINTF(ATH_DEBUG_ERROR,
+			("%s: No hif_devices[] slot for %pK",
+			__func__, device));
+	}
+	return ret;
 }
 
 /**

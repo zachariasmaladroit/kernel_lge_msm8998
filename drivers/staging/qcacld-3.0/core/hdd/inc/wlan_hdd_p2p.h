@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 #ifndef __P2P_H
@@ -51,10 +42,10 @@
 					 MAC_ADDR_LEN)
 
 
-#define P2P_ROC_DURATION_MULTIPLIER_GO_PRESENT   2
-#define P2P_ROC_DURATION_MULTIPLIER_GO_ABSENT    3
+#define P2P_ROC_DURATION_MULTIPLIER_GO_PRESENT   6
+#define P2P_ROC_DURATION_MULTIPLIER_GO_ABSENT    10
 
-#define HDD_P2P_MAX_ROC_DURATION 1000
+#define HDD_P2P_MAX_ROC_DURATION 1500
 #define MAX_ROC_REQ_QUEUE_ENTRY 10
 
 #define P2P_POWER_SAVE_TYPE_OPPORTUNISTIC        (1 << 0)
@@ -129,7 +120,13 @@ int wlan_hdd_mgmt_tx(struct wiphy *wiphy, struct wireless_dev *wdev,
 		     bool dont_wait_for_ack, u64 *cookie);
 #endif
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 1, 0)) || defined(WITH_BACKPORTS)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 12, 0)
+struct wireless_dev *wlan_hdd_add_virtual_intf(struct wiphy *wiphy,
+					       const char *name,
+					       unsigned char name_assign_type,
+					       enum nl80211_iftype type,
+					       struct vif_params *params);
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 1, 0)) || defined(WITH_BACKPORTS)
 struct wireless_dev *wlan_hdd_add_virtual_intf(struct wiphy *wiphy,
 					       const char *name,
 					       unsigned char name_assign_type,

@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 #ifndef WLAN_QCT_WMA_H
@@ -78,6 +69,9 @@
 
 #define WMA_GET_RX_MPDU_DATA(pRxMeta) \
 	(((t_packetmeta *)pRxMeta)->mpdu_data_ptr)
+
+#define WMA_GET_RX_RSSI_CTL_PTR(pRxMeta) \
+		(((t_packetmeta *)pRxMeta)->rssi_per_chain)
 
 #define WMA_GET_RX_MPDU_HEADER_OFFSET(pRxMeta) 0
 
@@ -157,6 +151,7 @@
 #define WMA_DELETE_BSS_RSP             SIR_HAL_DELETE_BSS_RSP
 #define WMA_DELETE_BSS_HO_FAIL_RSP     SIR_HAL_DELETE_BSS_HO_FAIL_RSP
 #define WMA_SEND_BEACON_REQ            SIR_HAL_SEND_BEACON_REQ
+#define WMA_SEND_BCN_RSP               SIR_HAL_SEND_BCN_RSP
 #define WMA_SEND_PROBE_RSP_TMPL        SIR_HAL_SEND_PROBE_RSP_TMPL
 
 #define WMA_SET_BSSKEY_REQ             SIR_HAL_SET_BSSKEY_REQ
@@ -166,7 +161,6 @@
 #define WMA_UPDATE_EDCA_PROFILE_IND    SIR_HAL_UPDATE_EDCA_PROFILE_IND
 
 #define WMA_UPDATE_BEACON_IND          SIR_HAL_UPDATE_BEACON_IND
-#define WMA_UPDATE_CF_IND              SIR_HAL_UPDATE_CF_IND
 #define WMA_CHNL_SWITCH_REQ            SIR_HAL_CHNL_SWITCH_REQ
 #define WMA_ADD_TS_REQ                 SIR_HAL_ADD_TS_REQ
 #define WMA_DEL_TS_REQ                 SIR_HAL_DEL_TS_REQ
@@ -464,8 +458,6 @@
 #endif /* FEATURE_AP_MCC_CH_AVOIDANCE */
 #define WMA_SET_RSSI_MONITOR_REQ              SIR_HAL_SET_RSSI_MONITOR_REQ
 
-#define WMA_FW_MEM_DUMP_REQ                   SIR_HAL_FW_MEM_DUMP_REQ
-
 #define WMA_OCB_SET_CONFIG_CMD               SIR_HAL_OCB_SET_CONFIG_CMD
 #define WMA_OCB_SET_UTC_TIME_CMD             SIR_HAL_OCB_SET_UTC_TIME_CMD
 #define WMA_OCB_START_TIMING_ADVERT_CMD      SIR_HAL_OCB_START_TIMING_ADVERT_CMD
@@ -483,8 +475,8 @@
 #define WMA_REMOVE_BCN_FILTER_CMDID          SIR_HAL_REMOVE_BCN_FILTER_CMDID
 #define WMA_SET_ADAPT_DWELLTIME_CONF_PARAMS  SIR_HAL_SET_ADAPT_DWELLTIME_PARAMS
 
-#define WDA_BPF_GET_CAPABILITIES_REQ         SIR_HAL_BPF_GET_CAPABILITIES_REQ
-#define WDA_BPF_SET_INSTRUCTIONS_REQ         SIR_HAL_BPF_SET_INSTRUCTIONS_REQ
+#define WDA_APF_GET_CAPABILITIES_REQ         SIR_HAL_APF_GET_CAPABILITIES_REQ
+#define WDA_APF_SET_INSTRUCTIONS_REQ         SIR_HAL_APF_SET_INSTRUCTIONS_REQ
 
 #define WMA_SET_PDEV_IE_REQ                  SIR_HAL_SET_PDEV_IE_REQ
 #define WMA_UPDATE_WEP_DEFAULT_KEY           SIR_HAL_UPDATE_WEP_DEFAULT_KEY
@@ -506,12 +498,15 @@
 #define WDA_ACTION_FRAME_RANDOM_MAC          SIR_HAL_ACTION_FRAME_RANDOM_MAC
 
 #define WMA_SET_LIMIT_OFF_CHAN               SIR_HAL_SET_LIMIT_OFF_CHAN
+#define WMA_INVOKE_NEIGHBOR_REPORT           SIR_HAL_INVOKE_NEIGHBOR_REPORT
+
+#define WMA_GET_ROAM_SCAN_STATS              SIR_HAL_GET_ROAM_SCAN_STATS
 
 /* Bit 6 will be used to control BD rate for Management frames */
 #define HAL_USE_BD_RATE2_FOR_MANAGEMENT_FRAME 0x40
 
 #define wma_tx_frame(hHal, pFrmBuf, frmLen, frmType, txDir, tid, pCompFunc, \
-		   pData, txFlag, sessionid, channel_freq) \
+		   pData, txFlag, sessionid, channel_freq, rid) \
 	(QDF_STATUS)( wma_tx_packet( \
 		      cds_get_context(QDF_MODULE_ID_WMA), \
 		      (pFrmBuf), \
@@ -525,11 +520,12 @@
 		      (txFlag), \
 		      (sessionid), \
 		      (false), \
-		      (channel_freq)))
+		      (channel_freq), \
+		      (rid)))
 
 #define wma_tx_frameWithTxComplete(hHal, pFrmBuf, frmLen, frmType, txDir, tid, \
 	 pCompFunc, pData, pCBackFnTxComp, txFlag, sessionid, tdlsflag, \
-	 channel_freq) \
+	 channel_freq, rid) \
 	(QDF_STATUS)( wma_tx_packet( \
 		      cds_get_context(QDF_MODULE_ID_WMA), \
 		      (pFrmBuf), \
@@ -543,7 +539,8 @@
 		      (txFlag), \
 		      (sessionid), \
 		      (tdlsflag), \
-		      (channel_freq)))
+		      (channel_freq), \
+		      (rid)))
 
 
 #define WMA_SetEnableSSR(enable_ssr) ((void)enable_ssr)
@@ -702,12 +699,38 @@ enum wma_tdls_off_chan_mode {
 
 #endif /* FEATURE_WLAN_TDLS */
 
+enum rateid {
+	RATEID_1MBPS = 0,
+	RATEID_2MBPS,
+	RATEID_5_5MBPS,
+	RATEID_11MBPS,
+	RATEID_6MBPS,
+	RATEID_9MBPS,
+	RATEID_12MBPS,
+	RATEID_18MBPS,
+	RATEID_24MBPS,
+	RATEID_36MBPS,
+	RATEID_48MBPS = 10,
+	RATEID_54MBPS,
+	RATEID_DEFAULT
+};
+
 tSirRetStatus wma_post_ctrl_msg(tpAniSirGlobal pMac, tSirMsgQ *pMsg);
 
 tSirRetStatus u_mac_post_ctrl_msg(void *pSirGlobal, tSirMbMsg *pMb);
 
 QDF_STATUS wma_set_idle_ps_config(void *wma_ptr, uint32_t idle_ps);
 QDF_STATUS wma_get_snr(tAniGetSnrReq *psnr_req);
+
+/**
+ * wma_set_wlm_latency_level() - set latency level to FW
+ * @wma_ptr: wma handle
+ * @latency_params: latency params
+ *
+ * Return: QDF_STATUS
+ */
+QDF_STATUS wma_set_wlm_latency_level(void *wma_ptr,
+			struct wlm_latency_level_param *latency_params);
 
 QDF_STATUS
 wma_ds_peek_rx_packet_info
@@ -726,7 +749,7 @@ QDF_STATUS wma_tx_packet(void *pWMA,
 			 void *pData,
 			 pWMAAckFnTxComp pAckTxComp,
 			 uint8_t txFlag, uint8_t sessionId, bool tdlsflag,
-			 uint16_t channel_freq);
+			 uint16_t channel_freq, enum rateid rid);
 
 /**
  * wma_vdev_init() - initialize a wma vdev
@@ -764,7 +787,8 @@ QDF_STATUS wma_register_roaming_callbacks(void *cds_ctx,
 			enum sir_roam_op_code reason),
 		QDF_STATUS (*pe_roam_synch_cb)(tpAniSirGlobal mac,
 			roam_offload_synch_ind *roam_synch_data,
-			tpSirBssDescription  bss_desc_ptr));
+			tpSirBssDescription  bss_desc_ptr,
+			enum sir_roam_op_code reason));
 #else
 static inline QDF_STATUS wma_register_roaming_callbacks(void *cds_ctx,
 		QDF_STATUS (*csr_roam_synch_cb)(tpAniSirGlobal mac,
@@ -773,7 +797,8 @@ static inline QDF_STATUS wma_register_roaming_callbacks(void *cds_ctx,
 			enum sir_roam_op_code reason),
 		QDF_STATUS (*pe_roam_synch_cb)(tpAniSirGlobal mac,
 			roam_offload_synch_ind *roam_synch_data,
-			tpSirBssDescription  bss_desc_ptr))
+			tpSirBssDescription  bss_desc_ptr,
+			enum sir_roam_op_code reason))
 {
 	return QDF_STATUS_E_NOSUPPORT;
 }

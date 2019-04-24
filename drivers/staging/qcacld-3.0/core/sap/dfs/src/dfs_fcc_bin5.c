@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2002-2016 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2002-2017 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 /*===========================================================================
@@ -388,7 +379,7 @@ dfs_check_chirping_sowl(struct ath_dfs *dfs, void *buf,
 	/* DEBUG - Print relevant portions of the FFT data */
 	for (p = 0; p < num_fft_packets; p++) {
 
-		DFS_DPRINTK(dfs, ATH_DEBUG_DFS_BIN5_FFT, "fft_data_ptr=0x%p\t",
+		DFS_DPRINTK(dfs, ATH_DEBUG_DFS_BIN5_FFT, "fft_data_ptr=0x%pK\t",
 			    fft_data_ptr);
 		DFS_DPRINTK(dfs, ATH_DEBUG_DFS_BIN5_FFT, "[66]=%d [69]=%d\n",
 			    *(fft_data_ptr + FFT_LOWER_BIN_MAX_INDEX_BYTE) >> 2,

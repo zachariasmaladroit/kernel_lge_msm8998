@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 #include "cds_api.h"
@@ -107,6 +98,7 @@ ibss_peer_add(tpAniSirGlobal pMac, tLimIbssPeerNode *pPeerNode)
 		 * Delete last entry & add new entry at the beginning.
 		 */
 		tLimIbssPeerNode *pTemp, *pPrev;
+
 		pTemp = pPrev = pMac->lim.gLimIbssPeerList;
 		while (pTemp->next != NULL) {
 			pPrev = pTemp;
@@ -595,6 +587,7 @@ static void ibss_bss_add(tpAniSirGlobal pMac, tpPESession psessionEntry)
 static void ibss_bss_delete(tpAniSirGlobal pMac, tpPESession psessionEntry)
 {
 	tSirRetStatus status;
+
 	pe_debug("Initiating IBSS Delete BSS");
 	if (psessionEntry->limMlmState != eLIM_MLM_BSS_STARTED_STATE) {
 		pe_warn("Incorrect LIM MLM state for delBss: %d",
@@ -1284,7 +1277,7 @@ void lim_ibss_add_bss_rsp_when_coalescing(tpAniSirGlobal pMac, void *msg,
 					  infoLen, pSessionEntry->smeSessionId);
 	{
 		/* Configure beacon and send beacons to HAL */
-		lim_send_beacon_ind(pMac, pSessionEntry);
+		lim_send_beacon_ind(pMac, pSessionEntry, REASON_DEFAULT);
 	}
 
 end:

@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2011-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2011-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 /**
@@ -665,6 +656,15 @@ extern int
 		   uint32_t *msdu_count);
 
 /**
+ * @brief Return the maximum number of available msdus currently
+ *
+ * @param pdev - the HTT instance the rx data was received on
+ */
+extern int
+(*htt_rx_offload_msdu_cnt)(
+    htt_pdev_handle pdev);
+
+/**
  * @brief Return a linked list of buffers holding one MSDU
  *  In some systems the buffers are delivered along with offload delivery
  *  indication message itself, while in other systems the buffers are uploaded
@@ -806,6 +806,12 @@ void htt_rx_msdu_buff_replenish(htt_pdev_handle pdev);
  * Return: number of buffers actually replenished
  */
 int htt_rx_msdu_buff_in_order_replenish(htt_pdev_handle pdev, uint32_t num);
+#else
+static inline
+int htt_rx_msdu_buff_in_order_replenish(htt_pdev_handle pdev, uint32_t num)
+{
+	return 0;
+}
 #endif
 
 /**
@@ -845,7 +851,7 @@ htt_rx_restitch_mpdu_from_msdus(htt_pdev_handle pdev,
 void
 htt_rx_frag_ind_flush_seq_num_range(htt_pdev_handle pdev,
 				    qdf_nbuf_t rx_frag_ind_msg,
-				    int *seq_num_start, int *seq_num_end);
+				    uint16_t *seq_num_start, uint16_t *seq_num_end);
 
 /**
  * htt_rx_msdu_rx_desc_size_hl() - Return the HL rx desc size
@@ -889,4 +895,5 @@ htt_rx_offload_paddr_msdu_pop_ll(htt_pdev_handle pdev,
 
 uint32_t htt_rx_amsdu_rx_in_order_get_pktlog(qdf_nbuf_t rx_ind_msg);
 
+int htt_rx_hash_smmu_map_update(struct htt_pdev_t *pdev, bool map);
 #endif /* _OL_HTT_RX_API__H_ */

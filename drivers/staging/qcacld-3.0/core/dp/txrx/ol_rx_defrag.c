@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2011-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2011-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 /*-
@@ -61,7 +52,7 @@
 #include <ol_ctrl_txrx_api.h>
 #include <ol_txrx_peer_find.h>
 #include <qdf_nbuf.h>
-#include <ieee80211.h>
+#include <linux/ieee80211.h>
 #include <qdf_util.h>
 #include <athdefs.h>
 #include <qdf_mem.h>
@@ -316,6 +307,26 @@ void ol_rx_frag_send_pktlog_event(struct ol_txrx_pdev_t *pdev,
 
 #endif
 
+#ifndef CONFIG_HL_SUPPORT
+static int ol_rx_frag_get_inord_msdu_cnt(qdf_nbuf_t rx_ind_msg)
+{
+	uint32_t *msg_word;
+	uint8_t *rx_ind_data;
+	uint32_t msdu_cnt;
+
+	rx_ind_data = qdf_nbuf_data(rx_ind_msg);
+	msg_word = (uint32_t *)rx_ind_data;
+	msdu_cnt = HTT_RX_IN_ORD_PADDR_IND_MSDU_CNT_GET(*(msg_word + 1));
+
+	return msdu_cnt;
+}
+#else
+static int ol_rx_frag_get_inord_msdu_cnt(qdf_nbuf_t rx_ind_msg)
+{
+	return 0;
+}
+#endif
+
 /*
  * Process incoming fragments
  */
@@ -325,7 +336,7 @@ ol_rx_frag_indication_handler(ol_txrx_pdev_handle pdev,
 			      uint16_t peer_id, uint8_t tid)
 {
 	uint16_t seq_num;
-	int seq_num_start, seq_num_end;
+	uint16_t seq_num_start, seq_num_end;
 	struct ol_txrx_peer_t *peer;
 	htt_pdev_handle htt_pdev;
 	qdf_nbuf_t head_msdu, tail_msdu;
@@ -333,6 +344,11 @@ ol_rx_frag_indication_handler(ol_txrx_pdev_handle pdev,
 	uint8_t pktlog_bit;
 	uint32_t msdu_count = 0;
 	int ret;
+
+	if (tid >= OL_TXRX_NUM_EXT_TIDS) {
+		ol_txrx_err("%s:  invalid tid, %u\n", __FUNCTION__, tid);
+		return;
+	}
 
 	htt_pdev = pdev->htt_pdev;
 	peer = ol_txrx_peer_find_by_id(pdev, peer_id);
@@ -348,7 +364,10 @@ ol_rx_frag_indication_handler(ol_txrx_pdev_handle pdev,
 		 * separate from normal frames
 		 */
 		ol_rx_reorder_flush_frag(htt_pdev, peer, tid, seq_num_start);
+	} else {
+		msdu_count = ol_rx_frag_get_inord_msdu_cnt(rx_frag_ind_msg);
 	}
+
 	pktlog_bit =
 		(htt_rx_amsdu_rx_in_order_get_pktlog(rx_frag_ind_msg) == 0x01);
 	ret = htt_rx_frag_pop(htt_pdev, rx_frag_ind_msg, &head_msdu,
@@ -384,7 +403,11 @@ ol_rx_frag_indication_handler(ol_txrx_pdev_handle pdev,
 		htt_rx_desc_frame_free(htt_pdev, head_msdu);
 	}
 	/* request HTT to provide new rx MSDU buffers for the target to fill. */
-	htt_rx_msdu_buff_replenish(htt_pdev);
+	if (ol_cfg_is_full_reorder_offload(pdev->ctrl_pdev) &&
+	    !pdev->cfg.is_high_latency)
+		htt_rx_msdu_buff_in_order_replenish(htt_pdev, msdu_count);
+	else
+		htt_rx_msdu_buff_replenish(htt_pdev);
 }
 
 /*
@@ -393,7 +416,7 @@ ol_rx_frag_indication_handler(ol_txrx_pdev_handle pdev,
 void
 ol_rx_reorder_flush_frag(htt_pdev_handle htt_pdev,
 			 struct ol_txrx_peer_t *peer,
-			 unsigned int tid, int seq_num)
+			 unsigned int tid, uint16_t seq_num)
 {
 	struct ol_rx_reorder_array_elem_t *rx_reorder_array_elem;
 	int seq;
@@ -626,6 +649,11 @@ void ol_rx_defrag_waitlist_flush(struct ol_txrx_pdev_t *pdev)
 			break;
 
 		tid = rx_reorder->tid;
+		if (tid >= OL_TXRX_NUM_EXT_TIDS) {
+			ol_txrx_err("%s:  invalid tid, %u\n", __FUNCTION__, tid);
+			WARN_ON(1);
+			continue;
+		}
 		/* get index 0 of the rx_reorder array */
 		rx_reorder_base = rx_reorder - tid;
 		peer =

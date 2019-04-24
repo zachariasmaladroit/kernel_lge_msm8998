@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 /**
@@ -166,7 +157,6 @@ void hdd_ftm_mc_process_msg(void *message)
 	wlan_hdd_testmode_rx_event(data, (size_t) data_len);
 #endif
 #endif
-	return;
 }
 
 #if  defined(QCA_WIFI_FTM)
@@ -314,11 +304,10 @@ int wlan_hdd_qcmbr_unified_ioctl(hdd_adapter_t *adapter, struct ifreq *ifr)
 {
 	int ret = 0;
 
-	if (is_compat_task()) {
+	if (in_compat_syscall())
 		ret = wlan_hdd_qcmbr_compat_ioctl(adapter, ifr);
-	} else {
+	else
 		ret = wlan_hdd_qcmbr_ioctl(adapter, ifr);
-	}
 
 	return ret;
 }
@@ -335,6 +324,9 @@ static void wlanqcmbr_mc_process_msg(void *message)
 	uint32_t data_len;
 
 	data_len = *((uint32_t *) message) + sizeof(uint32_t);
+	if (data_len > MAX_UTF_LENGTH + 4)
+		return;
+
 	qcmbr_buf = qdf_mem_malloc(sizeof(qcmbr_queue_t));
 	if (qcmbr_buf != NULL) {
 		memcpy(qcmbr_buf->utf_buf, message, data_len);

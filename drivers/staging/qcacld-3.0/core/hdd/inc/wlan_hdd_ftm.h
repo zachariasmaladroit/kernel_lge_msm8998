@@ -1,9 +1,6 @@
 /*
  * Copyright (c) 2013-2017 The Linux Foundation. All rights reserved.
  *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
  * above copyright notice and this permission notice appear in all
@@ -19,12 +16,6 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
- */
-
 #ifndef WLAN_HDD_FTM_H
 #define WLAN_HDD_FTM_H
 
@@ -37,7 +28,6 @@
 #include "qdf_status.h"
 #include "cds_mq.h"
 #include "cds_api.h"
-#include "msg.h"
 #include "qdf_types.h"
 #include <wlan_ptt_sock_svc.h>
 

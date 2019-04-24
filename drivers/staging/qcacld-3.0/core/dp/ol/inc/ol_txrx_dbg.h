@@ -1,9 +1,6 @@
 /*
  * Copyright (c) 2011, 2014-2017 The Linux Foundation. All rights reserved.
  *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
  * above copyright notice and this permission notice appear in all
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 /**
@@ -73,8 +64,15 @@ void ol_txrx_peer_display(ol_txrx_peer_handle peer, int indent);
 
 /*--- txrx stats display debug functions ---*/
 
-
-void ol_txrx_stats_display(ol_txrx_pdev_handle pdev);
+/**
+ * ol_txrx_stats_display() - display tx rx stats
+ * @pdev: pdev handle
+ * @level: verbosity level for logs
+ *
+ * Return: none
+ */
+void ol_txrx_stats_display(ol_txrx_pdev_handle pdev,
+				enum qdf_stats_verb_lvl level);
 
 void ol_txrx_stats_clear(ol_txrx_pdev_handle pdev);
 

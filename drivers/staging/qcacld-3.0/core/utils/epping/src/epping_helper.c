@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2014-2016 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2014-2017 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 /*========================================================================
@@ -73,6 +64,7 @@ int epping_cookie_init(epping_context_t *pEpping_ctx)
 
 	for (i = 0; i < MAX_COOKIE_SLOTS_NUM; i++) {
 		struct epping_cookie *cookie_mem = pEpping_ctx->s_cookie_mem[i];
+
 		for (j = 0; j < MAX_COOKIE_SLOT_SIZE; j++) {
 			epping_free_cookie(pEpping_ctx, &cookie_mem[j]);
 		}
@@ -92,6 +84,7 @@ error:
 void epping_cookie_cleanup(epping_context_t *pEpping_ctx)
 {
 	int i;
+
 	qdf_spin_lock_bh(&pEpping_ctx->cookie_lock);
 	pEpping_ctx->cookie_list = NULL;
 	pEpping_ctx->cookie_count = 0;

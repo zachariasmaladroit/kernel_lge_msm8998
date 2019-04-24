@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2014-2016 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2014-2017 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -19,12 +16,6 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
- */
-
 /**
  * DOC: i_qdf_event.h
  * This file provides OS dependent event API's.
@@ -39,10 +30,12 @@
  * qdf_event_t - manages events
  * @complete: instance to completion
  * @cookie: unsigned int
+ * @force_set: indicate forceful completion
  */
 typedef struct qdf_evt {
 	struct completion complete;
 	uint32_t cookie;
+	bool force_set;
 } __qdf_event_t;
 
 /* Preprocessor definitions and constants */

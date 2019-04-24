@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2011, 2014-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2011, 2014-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 /**
@@ -971,6 +962,7 @@ htt_tx_send_batch(htt_pdev_handle pdev, qdf_nbuf_t head_msdu, int num_msdus)
 	msdu = head_msdu;
 	while (num_msdus--) {
 		qdf_nbuf_t next_msdu = qdf_nbuf_next(msdu);
+
 		msdu_id_storage = ol_tx_msdu_id_storage(msdu);
 		msdu_id = *msdu_id_storage;
 
@@ -1021,7 +1013,7 @@ void htt_tx_desc_display(void *tx_desc)
 	htt_tx_desc = (struct htt_tx_msdu_desc_t *)tx_desc;
 
 	/* only works for little-endian */
-	qdf_debug("HTT tx desc (@ %p):", htt_tx_desc);
+	qdf_debug("HTT tx desc (@ %pK):", htt_tx_desc);
 	qdf_debug("  msg type = %d", htt_tx_desc->msg_type);
 	qdf_debug("  pkt subtype = %d", htt_tx_desc->pkt_subtype);
 	qdf_debug("  pkt type = %d", htt_tx_desc->pkt_type);
@@ -1531,6 +1523,7 @@ htt_tx_desc_fill_tso_info(htt_pdev_handle pdev, void *desc,
 
 	if (tso_seg->seg.num_frags < FRAG_NUM_MAX)
 		*word = 0;
+	qdf_tso_seg_dbg_record(tso_seg, TSOSEG_LOC_FILLHTTSEG);
 }
 #endif /* FEATURE_TSO */
 
@@ -1731,8 +1724,9 @@ htt_tx_desc_init(htt_pdev_handle pdev,
 		(struct htt_host_tx_desc_t *)
 		(((char *)htt_tx_desc) - HTT_TX_DESC_VADDR_OFFSET);
 	bool desc_ext_required = (type != EXT_HEADER_NOT_PRESENT);
-	uint16_t channel_freq;
+	int channel_freq;
 	void *qdf_ctx = cds_get_context(QDF_MODULE_ID_QDF_DEVICE);
+	qdf_dma_dir_t dir;
 	QDF_STATUS status;
 
 	if (qdf_unlikely(!qdf_ctx)) {
@@ -1817,6 +1811,8 @@ htt_tx_desc_init(htt_pdev_handle pdev,
 		HTT_TX_DESC_FRM_LEN_SET(local_word1, qdf_nbuf_len(msdu));
 	}
 
+	QDF_BUG(HTT_TX_DESC_FRM_LEN_GET(local_word1) != 0);
+
 	HTT_TX_DESC_FRM_ID_SET(local_word1, msdu_id);
 	*word1 = local_word1;
 
@@ -1826,7 +1822,7 @@ htt_tx_desc_init(htt_pdev_handle pdev,
 	 */
 	local_word3 = HTT_INVALID_PEER;
 	channel_freq = htt_get_channel_freq(type, ext_header_data);
-	if (channel_freq != HTT_INVALID_CHANNEL)
+	if (channel_freq != HTT_INVALID_CHANNEL && channel_freq > 0)
 		HTT_TX_DESC_CHAN_FREQ_SET(local_word3, channel_freq);
 #if HTT_PADDR64
 	*word4 = local_word3;
@@ -1860,7 +1856,9 @@ htt_tx_desc_init(htt_pdev_handle pdev,
 					0);
 
 	if (QDF_NBUF_CB_PADDR(msdu) == 0) {
-		status = qdf_nbuf_map_single(qdf_ctx, msdu, QDF_DMA_TO_DEVICE);
+		dir = QDF_NBUF_CB_TX_DMA_BI_MAP(msdu) ?
+			QDF_DMA_BIDIRECTIONAL : QDF_DMA_TO_DEVICE;
+		status = qdf_nbuf_map_single(qdf_ctx, msdu, dir);
 		if (qdf_unlikely(status != QDF_STATUS_SUCCESS)) {
 			QDF_TRACE(QDF_MODULE_ID_TXRX, QDF_TRACE_LEVEL_ERROR,
 				"%s: nbuf map failed", __func__);

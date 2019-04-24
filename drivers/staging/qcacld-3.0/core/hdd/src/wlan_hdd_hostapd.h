@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2013-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2013-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -19,12 +16,6 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
- */
-
 #if !defined(WLAN_HDD_HOSTAPD_H)
 #define WLAN_HDD_HOSTAPD_H
 
@@ -38,6 +29,7 @@
 
 #include <linux/netdevice.h>
 #include <linux/skbuff.h>
+#include <linux/ieee80211.h>
 #include <qdf_list.h>
 #include <qdf_types.h>
 #include <wlan_hdd_main.h>
@@ -136,4 +128,29 @@ bool hdd_is_peer_associated(hdd_adapter_t *adapter,
 			    struct qdf_mac_addr *mac_addr);
 void hdd_sap_indicate_disconnect_for_sta(hdd_adapter_t *adapter);
 void hdd_sap_destroy_events(hdd_adapter_t *adapter);
+
+/**
+ * hdd_softap_set_peer_authorized() - set peer authorized
+ * @adapter: pointer to the hostapd adapter
+ * @peer_mac: MAC address of the peer
+ *
+ * This functions sends the PEER authorize command to the SME/WMI and also
+ * notifies the hostapd that the peer is authorized.
+ *
+ * Return: QDF_STATUS
+ */
+QDF_STATUS hdd_softap_set_peer_authorized(hdd_adapter_t *adapter,
+					  struct qdf_mac_addr *peer_mac);
+
+/**
+ * wlan_hdd_disable_channels() - Cache the channels
+ * and current state of the channels from the channel list
+ * received in the command and disable the channels on the
+ * wiphy and reg table.
+ * @hdd_ctx: Pointer to hdd context
+ *
+ * Return: 0 on success, Error code on failure
+ */
+int wlan_hdd_disable_channels(hdd_context_t *hdd_ctx);
+
 #endif /* end #if !defined(WLAN_HDD_HOSTAPD_H) */

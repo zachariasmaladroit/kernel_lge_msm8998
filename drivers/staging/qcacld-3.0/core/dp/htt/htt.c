@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2011, 2014-2017 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
+ * Copyright (c) 2011, 2014-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 /**
@@ -108,13 +99,16 @@ void htt_htc_pkt_pool_free(struct htt_pdev_t *pdev)
 {
 	struct htt_htc_pkt_union *pkt, *next;
 
+	HTT_TX_MUTEX_ACQUIRE(&pdev->htt_tx_mutex);
 	pkt = pdev->htt_htc_pkt_freelist;
+	pdev->htt_htc_pkt_freelist = NULL;
+	HTT_TX_MUTEX_RELEASE(&pdev->htt_tx_mutex);
+
 	while (pkt) {
 		next = pkt->u.next;
 		qdf_mem_free(pkt);
 		pkt = next;
 	}
-	pdev->htt_htc_pkt_freelist = NULL;
 }
 
 #ifdef ATH_11AC_TXCOMPACT
@@ -174,12 +168,16 @@ void htt_htc_misc_pkt_pool_free(struct htt_pdev_t *pdev)
 	struct htt_htc_pkt_union *pkt, *next;
 	qdf_nbuf_t netbuf;
 
+	HTT_TX_MUTEX_ACQUIRE(&pdev->htt_tx_mutex);
 	pkt = pdev->htt_htc_pkt_misclist;
+	pdev->htt_htc_pkt_misclist = NULL;
+	HTT_TX_MUTEX_RELEASE(&pdev->htt_tx_mutex);
 
 	while (pkt) {
 		next = pkt->u.next;
 		if (htc_packet_get_magic_cookie(&(pkt->u.pkt.htc_pkt)) !=
 				HTC_PACKET_MAGIC_COOKIE) {
+			QDF_ASSERT(0);
 			pkt = next;
 			continue;
 		}
@@ -190,7 +188,6 @@ void htt_htc_misc_pkt_pool_free(struct htt_pdev_t *pdev)
 		qdf_mem_free(pkt);
 		pkt = next;
 	}
-	pdev->htt_htc_pkt_misclist = NULL;
 }
 #endif
 
@@ -331,12 +328,20 @@ static int
 htt_htc_attach_all(struct htt_pdev_t *pdev)
 {
 	if (htt_htc_attach(pdev, HTT_DATA_MSG_SVC))
-		return -EIO;
+		goto flush_endpoint;
+
 	if (htt_htc_attach(pdev, HTT_DATA2_MSG_SVC))
-		return -EIO;
+		goto flush_endpoint;
+
 	if (htt_htc_attach(pdev, HTT_DATA3_MSG_SVC))
-		return -EIO;
+		goto flush_endpoint;
+
 	return 0;
+
+flush_endpoint:
+	htc_flush_endpoint(pdev->htc_pdev, ENDPOINT_0, HTC_TX_PACKET_TAG_ALL);
+
+	return -EIO;
 }
 #else
 /**
@@ -394,13 +399,13 @@ htt_pdev_alloc(ol_txrx_pdev_handle txrx_pdev,
 	pdev->cfg.is_full_reorder_offload =
 			ol_cfg_is_full_reorder_offload(pdev->ctrl_pdev);
 	QDF_TRACE(QDF_MODULE_ID_HTT, QDF_TRACE_LEVEL_INFO,
-		  "is_full_reorder_offloaded? %d",
+		  "full_reorder_offloaded %d",
 		  (int)pdev->cfg.is_full_reorder_offload);
 
 	pdev->cfg.ce_classify_enabled =
 		ol_cfg_is_ce_classify_enabled(ctrl_pdev);
 	QDF_TRACE(QDF_MODULE_ID_HTT, QDF_TRACE_LEVEL_INFO,
-		  "ce_classify_enabled? %d",
+		  "ce_classify %d",
 		  pdev->cfg.ce_classify_enabled);
 
 	if (pdev->cfg.is_high_latency) {
@@ -423,6 +428,9 @@ htt_pdev_alloc(ol_txrx_pdev_handle txrx_pdev,
 	 * since htt_rx_attach involves sending a rx ring configure
 	 * message to the target.
 	 */
+	HTT_TX_MUTEX_INIT(&pdev->htt_tx_mutex);
+	HTT_TX_NBUF_QUEUE_MUTEX_INIT(pdev);
+	HTT_TX_MUTEX_INIT(&pdev->credit_mutex);
 	if (htt_htc_attach_all(pdev))
 		goto htt_htc_attach_fail;
 	if (hif_ce_fastpath_cb_register(osc, htt_t2h_msg_handler_fast, pdev))
@@ -432,6 +440,9 @@ success:
 	return pdev;
 
 htt_htc_attach_fail:
+	HTT_TX_MUTEX_DESTROY(&pdev->credit_mutex);
+	HTT_TX_MUTEX_DESTROY(&pdev->htt_tx_mutex);
+	HTT_TX_NBUF_QUEUE_MUTEX_DESTROY(pdev);
 	qdf_mem_free(pdev);
 
 fail1:
@@ -463,9 +474,6 @@ htt_attach(struct htt_pdev_t *pdev, int desc_pool_size)
 	ret = htt_rx_attach(pdev);
 	if (ret)
 		goto fail2;
-
-	HTT_TX_MUTEX_INIT(&pdev->htt_tx_mutex);
-	HTT_TX_NBUF_QUEUE_MUTEX_INIT(pdev);
 
 	/* pre-allocate some HTC_PACKET objects */
 	for (i = 0; i < HTT_HTC_PKT_POOL_INIT_SIZE; i++) {
@@ -601,14 +609,23 @@ QDF_STATUS htt_attach_target(htt_pdev_handle pdev)
 	QDF_STATUS status;
 
 	status = htt_h2t_ver_req_msg(pdev);
-	if (status != QDF_STATUS_SUCCESS)
+	if (status != QDF_STATUS_SUCCESS) {
+		QDF_TRACE(QDF_MODULE_ID_HTT, QDF_TRACE_LEVEL_ERROR,
+			  "%s:%d: could not send h2t_ver_req msg",
+			  __func__, __LINE__);
 		return status;
-
+	}
 #if defined(HELIUMPLUS)
 	/*
 	 * Send the frag_desc info to target.
 	 */
-	htt_h2t_frag_desc_bank_cfg_msg(pdev);
+	status = htt_h2t_frag_desc_bank_cfg_msg(pdev);
+	if (status != QDF_STATUS_SUCCESS) {
+		QDF_TRACE(QDF_MODULE_ID_HTT, QDF_TRACE_LEVEL_ERROR,
+			  "%s:%d: could not send h2t_frag_desc_bank_cfg msg",
+			  __func__, __LINE__);
+		return status;
+	}
 #endif /* defined(HELIUMPLUS) */
 
 
@@ -622,8 +639,28 @@ QDF_STATUS htt_attach_target(htt_pdev_handle pdev)
 	 */
 
 	status = htt_h2t_rx_ring_rfs_cfg_msg(pdev);
+	if (status != QDF_STATUS_SUCCESS) {
+		QDF_TRACE(QDF_MODULE_ID_HTT, QDF_TRACE_LEVEL_ERROR,
+			  "%s:%d: could not send h2t_rx_ring_rfs_cfg msg",
+			  __func__, __LINE__);
+		return status;
+	}
+
 	status = htt_h2t_rx_ring_cfg_msg(pdev);
+	if (status != QDF_STATUS_SUCCESS) {
+		QDF_TRACE(QDF_MODULE_ID_HTT, QDF_TRACE_LEVEL_ERROR,
+			  "%s:%d: could not send h2t_rx_ring_cfg msg",
+			  __func__, __LINE__);
+		return status;
+	}
+
 	status = HTT_IPA_CONFIG(pdev, status);
+	if (status != QDF_STATUS_SUCCESS) {
+		QDF_TRACE(QDF_MODULE_ID_HTT, QDF_TRACE_LEVEL_ERROR,
+			  "%s:%d: could not send h2t_ipa_uc_rsc_cfg msg",
+			  __func__, __LINE__);
+		return status;
+	}
 
 	return status;
 }
@@ -636,9 +673,9 @@ void htt_detach(htt_pdev_handle pdev)
 #ifdef ATH_11AC_TXCOMPACT
 	htt_htc_misc_pkt_pool_free(pdev);
 #endif
+	HTT_TX_MUTEX_DESTROY(&pdev->credit_mutex);
 	HTT_TX_MUTEX_DESTROY(&pdev->htt_tx_mutex);
 	HTT_TX_NBUF_QUEUE_MUTEX_DESTROY(pdev);
-	htt_rx_dbg_rxbuf_deinit(pdev);
 }
 
 /**
@@ -751,6 +788,21 @@ int htt_htc_attach(struct htt_pdev_t *pdev, uint16_t service_id)
 	return 0;               /* success */
 }
 
+void htt_log_rx_ring_info(htt_pdev_handle pdev)
+{
+	if (!pdev) {
+		QDF_TRACE(QDF_MODULE_ID_HTT, QDF_TRACE_LEVEL_ERROR,
+			  "%s: htt pdev is NULL", __func__);
+		return;
+	}
+	QDF_TRACE(QDF_MODULE_ID_HTT, QDF_TRACE_LEVEL_DEBUG,
+		  "%s: Data Stall Detected with reason 4 (=FW_RX_REFILL_FAILED)."
+		  "src htt rx ring:  space for %d elements, filled with %d buffers, buffers in the ring %d, refill debt %d",
+		  __func__, pdev->rx_ring.size, pdev->rx_ring.fill_level,
+		  pdev->rx_ring.fill_cnt,
+		  qdf_atomic_read(&pdev->rx_ring.refill_debt));
+}
+
 #if HTT_DEBUG_LEVEL > 5
 void htt_display(htt_pdev_handle pdev, int indent)
 {
@@ -762,12 +814,12 @@ void htt_display(htt_pdev_handle pdev, int indent)
 	qdf_print("%*srx ring: space for %d elems, filled with %d buffers\n",
 		  indent + 4, " ",
 		  pdev->rx_ring.size, pdev->rx_ring.fill_level);
-	qdf_print("%*sat %p (%llx paddr)\n", indent + 8, " ",
+	qdf_print("%*sat %pK (%llx paddr)\n", indent + 8, " ",
 		  pdev->rx_ring.buf.paddrs_ring,
 		  (unsigned long long)pdev->rx_ring.base_paddr);
-	qdf_print("%*snetbuf ring @ %p\n", indent + 8, " ",
+	qdf_print("%*snetbuf ring @ %pK\n", indent + 8, " ",
 		  pdev->rx_ring.buf.netbufs_ring);
-	qdf_print("%*sFW_IDX shadow register: vaddr = %p, paddr = %llx\n",
+	qdf_print("%*sFW_IDX shadow register: vaddr = %pK, paddr = %llx\n",
 		  indent + 8, " ",
 		  pdev->rx_ring.alloc_idx.vaddr,
 		  (unsigned long long)pdev->rx_ring.alloc_idx.paddr);
@@ -789,6 +841,9 @@ void htt_display(htt_pdev_handle pdev, int indent)
 int htt_ipa_uc_attach(struct htt_pdev_t *pdev)
 {
 	int error;
+
+	QDF_TRACE(QDF_MODULE_ID_HTT, QDF_TRACE_LEVEL_DEBUG, "%s: enter",
+		  __func__);
 
 	/* TX resource attach */
 	error = htt_tx_ipa_uc_attach(
@@ -814,6 +869,8 @@ int htt_ipa_uc_attach(struct htt_pdev_t *pdev)
 		return error;
 	}
 
+	QDF_TRACE(QDF_MODULE_ID_HTT, QDF_TRACE_LEVEL_DEBUG, "%s: exit",
+		  __func__);
 	return 0;               /* success */
 }
 
@@ -825,11 +882,17 @@ int htt_ipa_uc_attach(struct htt_pdev_t *pdev)
  */
 void htt_ipa_uc_detach(struct htt_pdev_t *pdev)
 {
+	QDF_TRACE(QDF_MODULE_ID_HTT, QDF_TRACE_LEVEL_DEBUG, "%s: enter",
+		  __func__);
+
 	/* TX IPA micro controller detach */
 	htt_tx_ipa_uc_detach(pdev);
 
 	/* RX IPA micro controller detach */
 	htt_rx_ipa_uc_detach(pdev);
+
+	QDF_TRACE(QDF_MODULE_ID_HTT, QDF_TRACE_LEVEL_DEBUG, "%s: exit",
+		  __func__);
 }
 
 int

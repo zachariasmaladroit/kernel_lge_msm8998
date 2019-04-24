@@ -1,9 +1,6 @@
 /*
  * Copyright (c) 2011-2017 The Linux Foundation. All rights reserved.
  *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
  * above copyright notice and this permission notice appear in all
@@ -17,12 +14,6 @@
  * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
  */
 
 #ifndef __UTILSAPI_H
@@ -498,6 +489,7 @@ static inline void sir_copy_mac_addr(uint8_t to[], uint8_t from[])
 {
 #if defined(_X86_)
 	uint32_t align = (0x3 & ((uint32_t) to | (uint32_t) from));
+
 	if (align == 0) {
 		*((uint16_t *) &(to[4])) = *((uint16_t *) &(from[4]));
 		*((uint32_t *) to) = *((uint32_t *) from);
@@ -561,6 +553,7 @@ static inline uint8_t sir_compare_mac_addr(uint8_t addr1[], uint8_t addr2[])
 static inline uint8_t convert_cw(uint16_t cw)
 {
 	uint8_t val = 0;
+
 	while (cw > 0) {
 		val++;
 		cw >>= 1;
