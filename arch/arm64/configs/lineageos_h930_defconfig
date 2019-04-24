@@ -5650,6 +5650,10 @@ CONFIG_ARCH_HAS_SG_CHAIN=y
 CONFIG_QMI_ENCDEC=y
 # CONFIG_QMI_ENCDEC_DEBUG is not set
 
+# use thin archives instead of ld -r
+# needs (k)build infrastructure changes (scripts/ folder)
+CONFIG_THIN_ARCHIVES=y
+
 # external module support
 # CONFIG_MODULES is not set
 # CONFIG_MODULE_FORCE_LOAD is not set
