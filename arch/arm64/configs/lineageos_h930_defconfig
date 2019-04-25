@@ -5672,6 +5672,58 @@ CONFIG_ANDROID_SIMPLE_LMK_MINFREE=64
 CONFIG_ANDROID_SIMPLE_LMK_KSWAPD_TIMEOUT=100
 CONFIG_ANDROID_SIMPLE_LMK_OOM_TIMEOUT=50
 
+# i/o schedulers
+CONFIG_IOSCHED_NOOP=y
+# CONFIG_IOSCHED_TEST is not set
+CONFIG_IOSCHED_DEADLINE=y
+CONFIG_IOSCHED_CFQ=y
+CONFIG_IOSCHED_FIOPS=y
+CONFIG_IOSCHED_SIO=y
+CONFIG_IOSCHED_ZEN=y
+CONFIG_IOSCHED_BFQ=y
+CONFIG_IOSCHED_ANXIETY=y
+# CONFIG_DEFAULT_DEADLINE is not set
+# CONFIG_DEFAULT_CFQ is not set
+# CONFIG_DEFAULT_NOOP is not set
+# CONFIG_DEFAULT_SIO is not set
+# CONFIG_DEFAULT_FIOPS is not set
+# CONFIG_DEFAULT_ZEN is not set
+CONFIG_DEFAULT_ANXIETY=y
+CONFIG_DEFAULT_IOSCHED="anxiety"
+
+# disable for debug, security, attack surface
+# CONFIG_MSM_RDBG is not set # remote debugger driver (=m by default)
+# CONFIG_MAGIC_SYSRQ is not set
+# Jump labels:
+# the kernel will compile trace point locations with just a nop instruction.
+# When trace points are enabled, the nop will be converted to a jump
+# to the trace function. This technique lowers overhead and stress
+# on the branch prediction of the processor.
+#
+# assumedly leads to latency spikes, thus discouraged; performance (?)
+#
+CONFIG_JUMP_LABEL=y
+# ION
+CONFIG_ION=y
+# CONFIG_ION_TEST is not set
+# CONFIG_ION_DUMMY is not set
+CONFIG_ION_MSM=y
+# CONFIG_ALLOC_BUFFERS_IN_4K_CHUNKS is not set # default =y
+# later added performance enhancements and tweaks behind a config entry
+# RSEQ (selected via Makefile by default)
+CONFIG_HAVE_RSEQ=y
+CONFIG_RSEQ=y
+# AIO
+# CONFIG_AIO has legitimate use for the functionfs
+# driver, which is used with adb and mtp. It is now required to be enabled
+# for better performance with those services.
+CONFIG_AIO=y
+# add additional drivers that might be needed
+# CONFIG_RELAY is not set
+# dmesg/printk: raise size of kernel log
+CONFIG_LOG_BUF_SHIFT=22
+CONFIG_LOG_CPU_MAX_BUF_SHIFT=21
+
 # advanced congestion control
 CONFIG_TCP_CONG_ADVANCED=y
 CONFIG_TCP_CONG_BIC=y
@@ -5740,6 +5792,30 @@ CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE=0
 # CONFIG_SECURITY_TOMOYO is not set
 # CONFIG_SECURITY_APPARMOR is not set
 CONFIG_SECURITY_YAMA=y
+
+# Kernel (self)protection
+# Disallow allocating the first 32k of memory (cannot be 64k due to ARM loader). 32768 invalid for ARM loader
+# DEFAULT_MMAP_MIN_ADDR=4096 (?)
+CONFIG_DEBUG_RODATA=y
+CONFIG_DEBUG_ALIGN_RODATA=y # This prevents sections from being split into pages and avoids a potential TLB penalty.
+# DEBUG_SET_MODULE_RONX is not set # for Stock ROM "Set loadable kernel module data as NX and text as RO"
+CONFIG_SCHED_STACK_END_CHECK=y # The runtime overhead introduced is minimal.
+CONFIG_STRICT_DEVMEM=y # If this option is disabled,
+# you allow userspace (root) access to all of memory, including kernel and userspace memory. Accidental
+# access to this is obviously disastrous, but specific access can be used by people debugging the kernel.
+#
+# data integrity/DEBUG (in combination with the below, follow-up checks)
+# CONFIG_PANIC_ON_DATA_CORRUPTION=y # NOT needed in production/stable (?)
+# CONFIG_DEBUG_CREDENTIALS=y # (+ SELinux, checks to see that this number never exceeds the usage count of the cred struct)
+# CONFIG_DEBUG_NOTIFIERS is not set # modules, This is a relatively cheap check
+# CONFIG_DEBUG_LIST=y
+# CONFIG_DEBUG_SG=y # This can help find problems with drivers that do not properly initialize their sg tables.
+
+# performance tuning knobs:
+CONFIG_VM_MAX_READAHEAD=128
+CONFIG_VM_MIN_READAHEAD=16
+CONFIG_BLKDEV_MAX_RQ=16
+CONFIG_BLKDEV_MIN_RQ=4
 
 # F2FS, needs "porting" of full upstream backported patchset, for now limited patchset
 # CONFIG_F2FS_FS is not set
