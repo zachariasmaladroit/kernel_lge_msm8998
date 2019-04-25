@@ -52,6 +52,7 @@ struct hwmon_node {
 	unsigned int low_power_io_percent;
 	unsigned int low_power_delay;
 	unsigned int mbps_zones[NUM_MBPS_ZONES];
+	unsigned int boost_percent;
 
 	unsigned long prev_ab;
 	unsigned long *dev_ab;
@@ -363,6 +364,17 @@ static unsigned long get_bw_and_set_irq(struct hwmon_node *node,
 		io_percent = node->io_percent;
 	else
 		io_percent = node->low_power_io_percent;
+
+	/*
+	 * Apply the boost percentage by reducing the io percentage.
+	 * Additionally, the new io percentage is verified to be a
+	 * positive integer. If it is not a positive integer, the new
+	 * io percentage will be set to 1 (the lower bound).
+	 */
+	if ((int) (io_percent - node->boost_percent) > 0)
+		io_percent -= node->boost_percent;
+	else
+		io_percent = 1;
 
 	/*
 	 * The AB value that corresponds to the lowest mbps zone greater than
@@ -790,6 +802,7 @@ gov_attr(low_power_ceil_mbps, 0U, 2500U);
 gov_attr(low_power_io_percent, 1U, 100U);
 gov_attr(low_power_delay, 1U, 60U);
 gov_list_attr(mbps_zones, NUM_MBPS_ZONES, 0U, UINT_MAX);
+gov_attr(boost_percent, 0U, 99U);
 
 static struct attribute *dev_attr[] = {
 	&dev_attr_guard_band_mbps.attr,
@@ -810,6 +823,7 @@ static struct attribute *dev_attr[] = {
 	&dev_attr_low_power_delay.attr,
 	&dev_attr_mbps_zones.attr,
 	&dev_attr_throttle_adj.attr,
+	&dev_attr_boost_percent.attr,
 	NULL,
 };
 
@@ -954,6 +968,7 @@ int register_bw_hwmon(struct device *dev, struct bw_hwmon *hwmon)
 	node->hyst_length = 0;
 	node->idle_mbps = 400;
 	node->mbps_zones[0] = 0;
+	node->boost_percent = 0;
 	node->hw = hwmon;
 
 	mutex_lock(&list_lock);
