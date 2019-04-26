@@ -5727,7 +5727,8 @@ CONFIG_DEFAULT_IOSCHED="anxiety"
 # to the trace function. This technique lowers overhead and stress
 # on the branch prediction of the processor.
 #
-# assumedly leads to latency spikes, thus discouraged; performance (?)
+# jump_label assumedly leads to latency spikes, thus discouraged; performance (?)
+# needed for certain configurations (and optimization) though, thus keeping it enabled
 #
 CONFIG_JUMP_LABEL=y
 # ION
@@ -5983,10 +5984,15 @@ CONFIG_WLAN_FEATURE_FILS=y # needed for successful compilation
 # CONFIG_GOLDFISH is not set
 # CONFIG_CHROME_PLATFORMS is not set
 
+# iommu debug
 # CONFIG_IOMMU_IO_PGTABLE_FAST_SELFTEST is not set
 # CONFIG_IOMMU_DEBUG is not set
 # CONFIG_IOMMU_DEBUG_TRACKING is not set
 # CONFIG_IOMMU_TESTS is not set
+
+# debug stuff (disabling recommended)
+# CONFIG_PROFILING is not set
+# CONFIG_MMC_PERF_PROFILING is not set
 
 # qcacld-3.0 debug stuff
 # CONFIG_FEATURE_TSO_DEBUG is not set
