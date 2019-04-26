@@ -5661,6 +5661,7 @@ CONFIG_FB_MSM_MDSS_KCAL_CTRL=y
 # CONFIG_MANDATORY_FILE_LOCKING is not set # needs commit first
 # CONFIG_SLUB_CPU_PARTIAL is not set # more indeterminism in the latency of the free , taking of locks that may cause latency spikes
 # CONFIG_VM_EVENT_COUNTERS is not set
+# CONFIG_SCHED_AUTOGROUP is not set
 
 # swap, hswap, zram, etc.
 CONFIG_KSWAPD_CPU_AFFINITY_MASK="f"
