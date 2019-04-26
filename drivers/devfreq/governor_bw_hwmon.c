@@ -968,7 +968,7 @@ int register_bw_hwmon(struct device *dev, struct bw_hwmon *hwmon)
 	node->hyst_length = 0;
 	node->idle_mbps = 400;
 	node->mbps_zones[0] = 0;
-	node->boost_percent = 0;
+	node->boost_percent = CONFIG_DEVFREQ_GOV_QCOM_BW_HWMON_BOOST_PERCENT;
 	node->hw = hwmon;
 
 	mutex_lock(&list_lock);
