@@ -556,14 +556,9 @@ struct sk_buff {
 				struct skb_mstamp skb_mstamp;
 			};
 		};
-		struct rb_node		rbnode; /* used in netem, ip4 defrag, and tcp stack */
+		struct rb_node	rbnode; /* used in netem & tcp stack */
 	};
-
-	union {
-		struct sock		*sk;
-		int			ip_defrag_offset;
-	};
-
+	struct sock		*sk;
 	struct net_device	*dev;
 
 	/*
@@ -2278,7 +2273,7 @@ static inline void __skb_queue_purge(struct sk_buff_head *list)
 		kfree_skb(skb);
 }
 
-unsigned int skb_rbtree_purge(struct rb_root *root);
+void skb_rbtree_purge(struct rb_root *root);
 
 void *netdev_alloc_frag(unsigned int fragsz);
 
@@ -2796,7 +2791,6 @@ static inline unsigned char *skb_push_rcsum(struct sk_buff *skb,
 	return skb->data;
 }
 
-int pskb_trim_rcsum_slow(struct sk_buff *skb, unsigned int len);
 /**
  *	pskb_trim_rcsum - trim received skb and update checksum
  *	@skb: buffer to trim
@@ -2804,14 +2798,15 @@ int pskb_trim_rcsum_slow(struct sk_buff *skb, unsigned int len);
  *
  *	This is exactly the same as pskb_trim except that it ensures the
  *	checksum of received packets are still valid after the operation.
- *	It can change skb pointers.
  */
 
 static inline int pskb_trim_rcsum(struct sk_buff *skb, unsigned int len)
 {
 	if (likely(len >= skb->len))
 		return 0;
-	return pskb_trim_rcsum_slow(skb, len);
+	if (skb->ip_summed == CHECKSUM_COMPLETE)
+		skb->ip_summed = CHECKSUM_NONE;
+	return __pskb_trim(skb, len);
 }
 
 #define rb_to_skb(rb) rb_entry_safe(rb, struct sk_buff, rbnode)

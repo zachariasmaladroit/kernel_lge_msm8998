@@ -3460,7 +3460,7 @@ static noinline_for_stack int scrub_chunk(struct scrub_ctx *sctx,
 		return ret;
 	}
 
-	map = em->map_lookup;
+	map = (struct map_lookup *)em->bdev;
 	if (em->start != chunk_offset)
 		goto out;
 

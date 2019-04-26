@@ -875,10 +875,8 @@ static struct alien_cache *__alloc_alien_cache(int node, int entries,
 	struct alien_cache *alc = NULL;
 
 	alc = kmalloc_node(memsize, gfp, node);
-	if (alc) {
-		init_arraycache(&alc->ac, entries, batch);
-		spin_lock_init(&alc->lock);
-	}
+	init_arraycache(&alc->ac, entries, batch);
+	spin_lock_init(&alc->lock);
 	return alc;
 }
 

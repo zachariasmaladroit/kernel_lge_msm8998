@@ -143,14 +143,14 @@ smb2_wait_mtu_credits(struct TCP_Server_Info *server, unsigned int size,
 
 			scredits = server->credits;
 			/* can deadlock with reopen */
-			if (scredits <= 8) {
+			if (scredits == 1) {
 				*num = SMB2_MAX_BUFFER_SIZE;
 				*credits = 0;
 				break;
 			}
 
-			/* leave some credits for reopen and other ops */
-			scredits -= 8;
+			/* leave one credit for a possible reopen */
+			scredits--;
 			*num = min_t(unsigned int, size,
 				     scredits * SMB2_MAX_BUFFER_SIZE);
 

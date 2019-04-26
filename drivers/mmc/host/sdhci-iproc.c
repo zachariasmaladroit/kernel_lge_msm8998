@@ -217,10 +217,7 @@ static int sdhci_iproc_probe(struct platform_device *pdev)
 
 	iproc_host->data = iproc_data;
 
-	ret = mmc_of_parse(host->mmc);
-	if (ret)
-		goto err;
-
+	mmc_of_parse(host->mmc);
 	sdhci_get_of_property(pdev);
 
 	/* Enable EMMC 1/8V DDR capable */
