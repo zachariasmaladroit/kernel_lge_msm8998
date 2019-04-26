@@ -159,6 +159,22 @@ config DEVFREQ_GOV_QCOM_BW_HWMON
 	  can conflict with existing profiling tools.  This governor is unlikely
 	  to be useful for non-QCOM devices.
 
+if DEVFREQ_GOV_QCOM_BW_HWMON
+
+config DEVFREQ_GOV_QCOM_BW_HWMON_BOOST_PERCENT
+	int "Boost percentage to apply"
+	default 0
+	range 0 99
+	help
+	  This attribute is subtracted from the 'io_percent' variable during
+	  the frequency calculation algorithm for bw_hwmon. In doing so, the
+	  resulting frequency produced will be bumped.
+
+	  This value must fit the bounds of [0, 99], and it must be greater
+	  than the 'io_percent' attribute.
+
+endif
+
 config DEVFREQ_GOV_QCOM_CACHE_HWMON
 	tristate "HW monitor based governor for cache frequency"
 	help
