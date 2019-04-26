@@ -5682,7 +5682,7 @@ CONFIG_GCMA_DEFAULT=y
 # CONFIG_GCMA_STATS is not set
 
 # OOM/LMK
-CONFIG_PROCESS_RECLAIM=y
+# CONFIG_PROCESS_RECLAIM is not set
 # CONFIG_HSWAP is not set # LGs hybrid swap, LMK + zram + swap
 # CONFIG_BOOST_DYING_TASK is not set
 # CONFIG_MEMCG is not set
