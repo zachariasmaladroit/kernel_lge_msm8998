@@ -6035,7 +6035,9 @@ CONFIG_WLAN_FEATURE_FILS=y # needed for successful compilation
 # CONFIG_WLAN_NAPI_DEBUG is not set
 
 # hardware offload, etc.
-CONFIG_INET_LRO=y
+# (Android requirement ?)
+#
+# CONFIG_INET_LRO is not set
 
 # ASOC codecs (incomplete)
 CONFIG_WCD9XXX_CODEC_UTIL=y
