@@ -6092,3 +6092,12 @@ CONFIG_ADRENO_IDLER=y
 
 # state notifier, needed for cpufreq governors, adreno-idler, etc.
 CONFIG_STATE_NOTIFIER=y
+
+# PowerEfficient Workqueues
+CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y
+
+# wakelocks, etc.
+# CONFIG_FW_CACHE is not set
+
+# PM_WAKELOCKS
+CONFIG_PM_WAKELOCKS_GC=y
