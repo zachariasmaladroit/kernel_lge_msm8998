@@ -402,7 +402,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Wno-format-security \
 		   -fdiagnostics-color=always \
 		   -march=armv8-a+crypto+crc \
-		   -mcpu=cortex-a53+crypto+crc \
+		   -mcpu=cortex-a73+crypto+crc \
 		   -std=gnu89 $(call cc-option,-fno-PIE) \
 		   -fmodulo-sched -fmodulo-sched-allow-regmoves
 
