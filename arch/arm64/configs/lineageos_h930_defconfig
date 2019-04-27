@@ -5943,6 +5943,7 @@ CONFIG_MODULE_SIG_HASH="sha512"
 # CONFIG_MSM_RDBG is not set # remote debug
 # CONFIG_USB_GSPCA is not set
 CONFIG_BRIDGE_NETFILTER=y
+
 # DVB, disable or needed for some weird streaming usage-case ?
 # CONFIG_DVB_MPQ is not set # =m
 # CONFIG_DVB_MPQ_DEMUX is not set # =m
@@ -5951,7 +5952,10 @@ CONFIG_DVB_MPQ_NUM_DMX_DEVICES=4
 # CONFIG_DVB_MPQ_SW is not set
 # CONFIG_DVB_MPQ_MEDIA_BOX_DEMUX is not set
 # CONFIG_TSPP is not set # =m
+
 # media tuners (DVB, etc.)
+# CONFIG_MEDIA_USB_SUPPORT is not set
+#
 # CONFIG_MEDIA_DIGITAL_TV_SUPPORT is not set
 # CONFIG_DVB_CORE is not set
 # CONFIG_DVB_NET is not set
@@ -5971,8 +5975,10 @@ CONFIG_MEDIA_SUBDRV_AUTOSELECT=y
 # CONFIG_MEDIA_TUNER_XC5000 is not set
 # CONFIG_MEDIA_TUNER_XC4000 is not set
 # CONFIG_MEDIA_TUNER_MC44S803 is not set
+
 # build drivers INto the kernel
 # CONFIG_USB_GSPCA is not set # most likely NOT needed , disable it
+
 # DVB & TV functionality (ko only)
 # CONFIG_DVB_MPQ is not set
 CONFIG_DVB_MPQ_DEMUX=m
