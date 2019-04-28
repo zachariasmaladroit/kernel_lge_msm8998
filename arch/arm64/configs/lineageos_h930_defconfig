@@ -6043,6 +6043,7 @@ CONFIG_WLAN_FEATURE_FILS=y # needed for successful compilation
 # debug stuff (disabling recommended)
 # CONFIG_PROFILING is not set
 # CONFIG_MMC_PERF_PROFILING is not set
+CONFIG_DEBUG_INFO_REDUCED=y
 
 # qcacld-3.0 debug stuff
 # CONFIG_FEATURE_TSO_DEBUG is not set
