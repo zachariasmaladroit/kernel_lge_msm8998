@@ -5748,6 +5748,7 @@ CONFIG_DEFAULT_IOSCHED="anxiety"
 # disable for debug, security, attack surface
 # CONFIG_MSM_RDBG is not set # remote debugger driver (=m by default)
 # CONFIG_MAGIC_SYSRQ is not set
+#
 # Jump labels:
 # the kernel will compile trace point locations with just a nop instruction.
 # When trace points are enabled, the nop will be converted to a jump
@@ -5758,6 +5759,10 @@ CONFIG_DEFAULT_IOSCHED="anxiety"
 # needed for certain configurations (and optimization) though, thus keeping it enabled
 #
 CONFIG_JUMP_LABEL=y
+
+# tracing
+#
+# CONFIG_TRACEPOINTS is not set
 
 # ION
 CONFIG_ION=y
@@ -6233,3 +6238,4 @@ CONFIG_XZ_DEC_SPARC=y
 CONFIG_HZ_500=y
 # CONFIG_HZ_1000 is not set
 CONFIG_HZ=500
+
