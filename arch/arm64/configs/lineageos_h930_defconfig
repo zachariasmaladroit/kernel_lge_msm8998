@@ -5662,6 +5662,7 @@ CONFIG_FB_MSM_MDSS_KCAL_CTRL=y
 # CONFIG_SLUB_CPU_PARTIAL is not set # more indeterminism in the latency of the free , taking of locks that may cause latency spikes
 # CONFIG_VM_EVENT_COUNTERS is not set
 # CONFIG_SCHED_AUTOGROUP is not set
+# CONFIG_SCHEDSTATS is not set
 
 #
 # RCU Subsystem
