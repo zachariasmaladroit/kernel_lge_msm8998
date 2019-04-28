@@ -5945,6 +5945,7 @@ CONFIG_MODULE_SIG_HASH="sha512"
 # CONFIG_MODULES_TREE_LOOKUP is not set
 
 # no modules load
+# CONFIG_INPUT_MOUSE is not set
 # CONFIG_IOSCHED_TEST is not set
 # CONFIG_SCSI_UFS_TEST is not set
 # CONFIG_MSM_RDBG is not set # remote debug
