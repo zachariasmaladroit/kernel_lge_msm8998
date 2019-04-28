@@ -5774,7 +5774,9 @@ CONFIG_RSEQ=y
 # CONFIG_AIO has legitimate use for the functionfs
 # driver, which is used with adb and mtp. It is now required to be enabled
 # for better performance with those services.
-CONFIG_AIO=y
+#
+# disabled in orion [eval]
+# CONFIG_AIO is not set
 
 # add additional drivers that might be needed
 # CONFIG_RELAY is not set
