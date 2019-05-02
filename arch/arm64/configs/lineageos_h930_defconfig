@@ -5747,7 +5747,8 @@ CONFIG_DEFAULT_IOSCHED="anxiety"
 
 # disable for debug, security, attack surface
 # CONFIG_MSM_RDBG is not set # remote debugger driver (=m by default)
-# CONFIG_MAGIC_SYSRQ is not set
+CONFIG_MAGIC_SYSRQ=y
+CONFIG_MAGIC_SYSRQ_DEFAULT_ENABLE=0x1
 #
 # Jump labels:
 # the kernel will compile trace point locations with just a nop instruction.
