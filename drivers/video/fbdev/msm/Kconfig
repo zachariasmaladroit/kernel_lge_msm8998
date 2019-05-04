@@ -381,7 +381,7 @@ config LGE_DISPLAY_DISPLAYPORT_EXTERNAL_BLOCK
 config KLAPSE
     bool CONFIG_KLAPSE
     depends on FB_MSM_MDSS
-    default n
+    default y
     help
         A simple rgb dynamic lapsing module similar to LineageOS' livedisplay
 
