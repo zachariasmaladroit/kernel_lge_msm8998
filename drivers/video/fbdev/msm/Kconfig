@@ -385,5 +385,3 @@ config KLAPSE
     default y
     help
         A simple rgb dynamic lapsing module similar to LineageOS' livedisplay
-
-endif
