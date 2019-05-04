@@ -77,14 +77,12 @@ static void klapse_pulse(unsigned long data);
 static void restart_timer(void)
 {
   mod_timer(&pulse_timer, jiffies + msecs_to_jiffies(pulse_freq));
-  printk(KERN_INFO "KLapse pulse timer restarted!!!.\n");
 }
 
 static void flush_timer(void)
 {
   if (timer_pending(&pulse_timer))
     mod_timer_pending(&pulse_timer, jiffies);
-  printk(KERN_INFO "KLapse pulse timer flushed!!!.\n");
 }
 
 static void calc_active_minutes(void)
@@ -1000,100 +998,100 @@ EXPORT_SYMBOL_GPL(klapse_kobj);
 static int __init klapse_init(void)
 {
     int rc;
-    printk(KERN_INFO "KLapse init entered!!!.\n");
+//    printk(KERN_INFO "KLapse init entered!!!.\n");
     
     values_setup();
 
     klapse_kobj = kobject_create_and_add("klapse", NULL) ;
     if (klapse_kobj == NULL) {
-      pr_warn("%s: klapse_kobj create_and_add failed\n", __func__);
+      pr_debug("%s: klapse_kobj create_and_add failed\n", __func__);
     }
 
     rc = sysfs_create_file(klapse_kobj, &dev_attr_info.attr);
     if (rc) {
-      pr_warn("%s: sysfs_create_file failed for info\n", __func__);
+      pr_debug("%s: sysfs_create_file failed for info\n", __func__);
     }
     rc = sysfs_create_file(klapse_kobj, &dev_attr_enable_klapse.attr);
     if (rc) {
-      pr_warn("%s: sysfs_create_file failed for enable_klapse\n", __func__);
+      pr_debug("%s: sysfs_create_file failed for enable_klapse\n", __func__);
     }
     rc = sysfs_create_file(klapse_kobj, &dev_attr_daytime_r.attr);
     if (rc) {
-      pr_warn("%s: sysfs_create_file failed for daytime_r\n", __func__);
+      pr_debug("%s: sysfs_create_file failed for daytime_r\n", __func__);
     }
     rc = sysfs_create_file(klapse_kobj, &dev_attr_daytime_g.attr);
     if (rc) {
-      pr_warn("%s: sysfs_create_file failed for daytime_g\n", __func__);
+      pr_debug("%s: sysfs_create_file failed for daytime_g\n", __func__);
     }
     rc = sysfs_create_file(klapse_kobj, &dev_attr_daytime_b.attr);
     if (rc) {
-      pr_warn("%s: sysfs_create_file failed for daytime_b\n", __func__);
+      pr_debug("%s: sysfs_create_file failed for daytime_b\n", __func__);
     }
     rc = sysfs_create_file(klapse_kobj, &dev_attr_target_r.attr);
     if (rc) {
-      pr_warn("%s: sysfs_create_file failed for target_r\n", __func__);
+      pr_debug("%s: sysfs_create_file failed for target_r\n", __func__);
     }
     rc = sysfs_create_file(klapse_kobj, &dev_attr_target_g.attr);
     if (rc) {
-      pr_warn("%s: sysfs_create_file failed for target_g\n", __func__);
+      pr_debug("%s: sysfs_create_file failed for target_g\n", __func__);
     }
     rc = sysfs_create_file(klapse_kobj, &dev_attr_target_b.attr);
     if (rc) {
-      pr_warn("%s: sysfs_create_file failed for target_b\n", __func__);
+      pr_debug("%s: sysfs_create_file failed for target_b\n", __func__);
     }
     rc = sysfs_create_file(klapse_kobj, &dev_attr_klapse_start_hour.attr);
     if (rc) {
-      pr_warn("%s: sysfs_create_file failed for klapse_start_hour\n", __func__);
+      pr_debug("%s: sysfs_create_file failed for klapse_start_hour\n", __func__);
     }
     rc = sysfs_create_file(klapse_kobj, &dev_attr_klapse_stop_hour.attr);
     if (rc) {
-      pr_warn("%s: sysfs_create_file failed for klapse_stop_hour\n", __func__);
+      pr_debug("%s: sysfs_create_file failed for klapse_stop_hour\n", __func__);
     }
     rc = sysfs_create_file(klapse_kobj, &dev_attr_klapse_scaling_rate.attr);
     if (rc) {
-      pr_warn("%s: sysfs_create_file failed for klapse_scaling_rate\n", __func__);
+      pr_debug("%s: sysfs_create_file failed for klapse_scaling_rate\n", __func__);
     }
     rc = sysfs_create_file(klapse_kobj, &dev_attr_brightness_factor.attr);
     if (rc) {
-      pr_warn("%s: sysfs_create_file failed for brightness_factor\n", __func__);
+      pr_debug("%s: sysfs_create_file failed for brightness_factor\n", __func__);
     }
     rc = sysfs_create_file(klapse_kobj, &dev_attr_brightness_factor_auto.attr);
     if (rc) {
-      pr_warn("%s: sysfs_create_file failed for brightness_factor_auto\n", __func__);
+      pr_debug("%s: sysfs_create_file failed for brightness_factor_auto\n", __func__);
     }
     rc = sysfs_create_file(klapse_kobj, &dev_attr_brightness_factor_auto_start_hour.attr);
     if (rc) {
-      pr_warn("%s: sysfs_create_file failed for brightness_factor_auto_start_hour\n", __func__);
+      pr_debug("%s: sysfs_create_file failed for brightness_factor_auto_start_hour\n", __func__);
     }
     rc = sysfs_create_file(klapse_kobj, &dev_attr_brightness_factor_auto_stop_hour.attr);
     if (rc) {
-      pr_warn("%s: sysfs_create_file failed for brightness_factor_auto_stop_hour\n", __func__);
+      pr_debug("%s: sysfs_create_file failed for brightness_factor_auto_stop_hour\n", __func__);
     }
     rc = sysfs_create_file(klapse_kobj, &dev_attr_backlight_range.attr);
     if (rc) {
-      pr_warn("%s: sysfs_create_file failed for backlight_range\n", __func__);
+      pr_debug("%s: sysfs_create_file failed for backlight_range\n", __func__);
     }
     rc = sysfs_create_file(klapse_kobj, &dev_attr_pulse_freq.attr);
     if (rc) {
-      pr_warn("%s: sysfs_create_file failed for pulse_freq\n", __func__);
+      pr_debug("%s: sysfs_create_file failed for pulse_freq\n", __func__);
     }
     rc = sysfs_create_file(klapse_kobj, &dev_attr_fadeback_minutes.attr);
     if (rc) {
-      pr_warn("%s: sysfs_create_file failed for fadeback_minutes\n", __func__);
+      pr_debug("%s: sysfs_create_file failed for fadeback_minutes\n", __func__);
     }
     
     setup_timer(&pulse_timer, klapse_pulse, 0);
     
-    printk(KERN_INFO "KLapse init returning!!!.\n");
+//    printk(KERN_INFO "KLapse init returning!!!.\n");
 
     return 0;
 }
 
 static void __exit klapse_exit(void){
-    printk(KERN_INFO "KLapse exit entered!!!.\n");
+//    printk(KERN_INFO "KLapse exit entered!!!.\n");
     kobject_del(klapse_kobj);
     del_timer(&pulse_timer);
-    printk(KERN_INFO "KLapse exit finished!!!.\n");
+//    printk(KERN_INFO "KLapse exit finished!!!.\n");
 }
 
 module_init(klapse_init);
