@@ -389,6 +389,6 @@ config CPU_INPUT_BOOST_MDSS_TIMEOUT
 config KLAPSE
     bool CONFIG_KLAPSE
     depends on FB_MSM_MDSS
-    default n
+    default y
     help
         A simple rgb dynamic lapsing module similar to LineageOS' livedisplay
