@@ -19,6 +19,7 @@
 #include <linux/irqreturn.h>
 #include <linux/pinctrl/consumer.h>
 #include <linux/gpio.h>
+#include <linux/pm_qos.h>
 
 #include "mdss_panel.h"
 #include "mdss_dsi_cmd.h"
@@ -663,6 +664,8 @@ struct mdss_dsi_ctrl_pdata {
 	struct dsi_panel_cmds bist_on_cmds;
 	struct dsi_panel_cmds bist_off_cmds;
 #endif
+
+	struct pm_qos_request pm_qos_req;
 };
 
 struct dsi_status_data {
