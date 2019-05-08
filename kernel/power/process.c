@@ -154,10 +154,9 @@ int freeze_processes(void)
 	/*
 	 * Now that the whole userspace is frozen we need to disbale
 	 * the OOM killer to disallow any further interference with
-	 * killable tasks. There is no guarantee oom victims will
-	 * ever reach a point they go away we have to wait with a timeout.
+	 * killable tasks.
 	 */
-	if (!error && !oom_killer_disable(msecs_to_jiffies(freeze_timeout_msecs)))
+	if (!error && !oom_killer_disable())
 		error = -EBUSY;
 
 	/*
