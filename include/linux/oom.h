@@ -23,9 +23,6 @@ struct oom_control {
 	/* Used to determine mempolicy */
 	nodemask_t *nodemask;
 
-	/* Memory cgroup in which oom is invoked, or NULL for global oom */
-	struct mem_cgroup *memcg;
-
 	/* Used to determine cpuset and node locality requirement */
 	const gfp_t gfp_mask;
 
@@ -91,10 +88,11 @@ extern int oom_kills_count(void);
 extern void note_oom_kill(void);
 extern void oom_kill_process(struct oom_control *oc, struct task_struct *p,
 			     unsigned int points, unsigned long totalpages,
-			     const char *message);
+			     struct mem_cgroup *memcg, const char *message);
 
 extern void check_panic_on_oom(struct oom_control *oc,
-			       enum oom_constraint constraint);
+			       enum oom_constraint constraint,
+			       struct mem_cgroup *memcg);
 
 extern enum oom_scan_t oom_scan_process_thread(struct oom_control *oc,
 		struct task_struct *task, unsigned long totalpages);
