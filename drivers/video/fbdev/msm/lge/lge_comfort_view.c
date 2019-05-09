@@ -90,12 +90,12 @@ static ssize_t comfort_view_set(struct device *dev,
 
 	lge_ctrl_pdata->comfort_view = input % 100;
 
-	pr_info("comfort_view [%d]\n", lge_ctrl_pdata->comfort_view);
+	pr_debug("comfort_view [%d]\n", lge_ctrl_pdata->comfort_view);
 
 	mutex_lock(&mfd_primary_base->mdss_sysfs_lock);
 	if (lge_ctrl_pdata->comfort_view == 0) { /* disable */
 		if (pdata_base->panel_info.panel_power_state == 0) {
-			pr_info("Panel off state. keep color_manager_status set cmd. This will be sent panel on event.\n");
+			pr_debug("Panel off state. keep color_manager_status set cmd. This will be sent panel on event.\n");
 			lge_set_screen_mode(ctrl, false);
 		} else {
 			lge_set_screen_mode(ctrl, true);
@@ -163,7 +163,7 @@ int lge_mdss_comfort_view_init(struct mdss_dsi_ctrl_pdata *ctrl_pdata)
 		return -EINVAL;
 	}
 
-	pr_info("[Comfort View] init start\n");
+	pr_debug("[Comfort View] init start\n");
 	lge_ctrl_pdata->comfort_view = 0;
 	lge_ctrl_pdata->dg_preset_cmds = kzalloc(sizeof(struct dsi_panel_cmds) *
 					DIGITAL_GAMMA_PRESET_NUMS, GFP_KERNEL);
@@ -196,7 +196,7 @@ int lge_mdss_comfort_view_cmd_send(struct mdss_panel_data *pdata, int step)
 		return -EINVAL;
 	}
 
-	pr_info("[Comfort View] comfort view step = (%d)\n", step);
+	pr_debug("[Comfort View] comfort view step = (%d)\n", step);
 
 	mdss_dsi_panel_cmds_send(ctrl, &lge_ctrl_pdata->dg_preset_cmds[step-1], CMD_REQ_COMMIT);
 

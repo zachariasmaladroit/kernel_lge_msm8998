@@ -92,10 +92,10 @@ void lge_mdss_dsi_parse_dcs_cmds_by_name_array(struct device_node *np,
 						sizeof(cmds_list[i].name));
 		strlcpy(cmd_state, name, sizeof(cmd_state));
 		strcat(cmd_state, "-state");
-		pr_info("name : %s, cmd state : %s\n", name, cmd_state);
+		pr_debug("name : %s, cmd state : %s\n", name, cmd_state);
 		rc = mdss_dsi_parse_dcs_cmds(np,	&cmds_list[i].lge_dsi_cmds, name, cmd_state);
 		if (!rc)
-			pr_info("lge_dsi_cmds_list[%d].lge_dsi_cmds : 0x%02x\n", i, cmds_list[i].lge_dsi_cmds.cmds[0].payload[0]);
+			pr_debug("lge_dsi_cmds_list[%d].lge_dsi_cmds : 0x%02x\n", i, cmds_list[i].lge_dsi_cmds.cmds[0].payload[0]);
 	}
 }
 
@@ -154,7 +154,7 @@ int lge_mdss_dsi_bist_ctrl(struct mdss_dsi_ctrl_pdata *ctrl, bool enable)
 			ctrl->bist_on = 0;
 		}
 	}
-	pr_info("count(%d)\n", ctrl->bist_on);
+	pr_debug("count(%d)\n", ctrl->bist_on);
 	return 0;
 }
 
@@ -166,7 +166,7 @@ void lge_mdss_dsi_bist_release(struct mdss_dsi_ctrl_pdata *ctrl)
 			pr_warn("fail to bist control\n");
 		}
 	}
-	pr_info("%d\n", ctrl->bist_on);
+	pr_debug("%d\n", ctrl->bist_on);
 }
 #endif
 
@@ -224,7 +224,7 @@ int lge_mdss_dsi_panel_cmd_read(char cmd0, int cnt, char* ret_buf)
 	if (checksum == 0) {
 		pr_err("[Reg:0x%x] All data is zero\n", cmd0);
 	} else {
-		pr_info("[Reg:0x%x] checksum (%d)\n", cmd0, checksum);
+		pr_debug("[Reg:0x%x] checksum (%d)\n", cmd0, checksum);
 		for (i = 0; i < cnt; i++) {
 			pr_debug("Reg[0x%x], buf[%d]=0x%x\n", cmd0, i, rx_buf[i]);
 		}
@@ -261,7 +261,7 @@ void lge_mdss_panel_parse_dt_blmaps(struct device_node *np,
 		if (!of_find_property(np, lge_blmap_name[i], NULL))
 			continue;
 
-		pr_info("found %s\n", lge_blmap_name[i]);
+		pr_debug("found %s\n", lge_blmap_name[i]);
 
 		rc = of_property_read_u32_array(np, lge_blmap_name[i], array,
 						pinfo->blmap_size);

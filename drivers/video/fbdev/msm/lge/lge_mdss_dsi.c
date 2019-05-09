@@ -29,7 +29,7 @@ static int lge_mdss_dsi_parse_gpio_params(struct platform_device *ctrl_pdev,
 					"lge,extra-gpio-names");
 	if (rc > 0) {
 		lge_ctrl_pdata->num_gpios = rc;
-		pr_info("%s: num_gpios=%d\n", __func__,
+		pr_debug("%s: num_gpios=%d\n", __func__,
 				lge_ctrl_pdata->num_gpios);
 		lge_ctrl_pdata->gpio_array = kmalloc(sizeof(struct lge_gpio_entry) *
 				lge_ctrl_pdata->num_gpios, GFP_KERNEL);
@@ -52,7 +52,7 @@ static int lge_mdss_dsi_parse_gpio_params(struct platform_device *ctrl_pdev,
 		}
 	} else {
 		lge_ctrl_pdata->num_gpios = 0;
-		pr_info("%s: no lge specified gpio\n", __func__);
+		pr_debug("%s: no lge specified gpio\n", __func__);
 	}
 	return 0;
 }

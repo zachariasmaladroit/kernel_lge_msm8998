@@ -61,7 +61,7 @@ int lge_panel_power_off(struct mdss_panel_data *pdata)
 	}
 
 	if (mdss_dsi_pinctrl_set_state(ctrl_pdata, false))
-		pr_debug("reset disable: pinctrl not enabled\n");
+		pr_debug(("reset disable: pinctrl not enabled\n");
 
 	ret = msm_dss_enable_vreg(
 		ctrl_pdata->panel_power_data.vreg_config,
@@ -140,7 +140,7 @@ int lge_panel_power_on(struct mdss_panel_data *pdata)
 	if (pdata->panel_info.cont_splash_enabled ||
 		!pdata->panel_info.mipi.lp11_init) {
 		if (mdss_dsi_pinctrl_set_state(ctrl_pdata, true))
-			pr_debug("reset enable: pinctrl not enabled\n");
+			pr_debug(("reset enable: pinctrl not enabled\n");
 		/* 3rd : reset */
 		ret = mdss_dsi_panel_reset(pdata, 1);
 		if (ret)
@@ -201,7 +201,7 @@ int mdss_dsi_panel_power_on(struct mdss_panel_data *pdata)
 	if (pdata->panel_info.cont_splash_enabled ||
 		!pdata->panel_info.mipi.lp11_init) {
 		if (mdss_dsi_pinctrl_set_state(ctrl_pdata, true))
-			pr_debug("reset enable: pinctrl not enabled\n");
+			pr_debug(("reset enable: pinctrl not enabled\n");
 		/* 3rd : reset */
 		ret = mdss_dsi_panel_reset(pdata, 1);
 		if (ret)
@@ -241,7 +241,7 @@ int mdss_dsi_panel_power_off(struct mdss_panel_data *pdata)
 	}
 
 	if (mdss_dsi_pinctrl_set_state(ctrl_pdata, false))
-		pr_debug("reset disable: pinctrl not enabled\n");
+		pr_debug(("reset disable: pinctrl not enabled\n");
 
 	ret = msm_dss_enable_vreg(
 		ctrl_pdata->panel_power_data.vreg_config,
