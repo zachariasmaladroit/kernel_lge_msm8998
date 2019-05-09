@@ -6247,3 +6247,17 @@ CONFIG_HZ_500=y
 # CONFIG_HZ_1000 is not set
 CONFIG_HZ=500
 
+# tshoot security features
+#
+# SEEMP
+# CONFIG_SEEMP_CORE is not set
+#
+# TTBR0 PAN emulation
+# CONFIG_ARM64_SW_TTBR0_PAN is not set
+# CONFIG_PROC_KALLSYMS is not set
+
+# eval / security vs. performance [vdso32 ?]
+# resource hog: 50% improved syscall performance by disabling
+CONFIG_HAVE_ARCH_SECCOMP_FILTER=y
+# CONFIG_SECCOMP_FILTER is not set
+# CONFIG_SECCOMP is not set
