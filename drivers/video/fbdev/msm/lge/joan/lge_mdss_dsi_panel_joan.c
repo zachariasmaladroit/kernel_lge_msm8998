@@ -130,7 +130,7 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 		return rc;
 	}
 
-	pr_info("enable = %d\n", enable);
+	pr_debug("enable = %d\n", enable);
 
 	if (enable) {
 		rc = mdss_dsi_request_gpios(ctrl_pdata);
@@ -250,7 +250,7 @@ int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 	lge_ctrl_pdata = ctrl->lge_ctrl_pdata;
 #endif
 
-	pr_info("ndx=%d\n", ctrl->ndx);
+	pr_debug("ndx=%d\n", ctrl->ndx);
 
 	if (pinfo->dcs_cmd_by_left) {
 		if (ctrl->ndx != DSI_CTRL_LEFT)
@@ -300,7 +300,7 @@ int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 	lge_bc_dim_set(ctrl, BC_DIM_ON, BC_DIM_FRAMES_NORMAL);
 #endif /* CONFIG_LGE_DISPLAY_BRIGHTNESS_DIMMING */
 end:
-	pr_info("-\n");
+	pr_debug("-\n");
 	return ret;
 
 }
@@ -321,7 +321,7 @@ int mdss_dsi_panel_off(struct mdss_panel_data *pdata)
 	ctrl = container_of(pdata, struct mdss_dsi_ctrl_pdata,
 				panel_data);
 
-	pr_info("ctrl=%pK ndx=%d\n", ctrl, ctrl->ndx);
+	pr_debug("ctrl=%pK ndx=%d\n", ctrl, ctrl->ndx);
 
 	if (pinfo->dcs_cmd_by_left) {
 		if (ctrl->ndx != DSI_CTRL_LEFT)
@@ -337,7 +337,7 @@ int mdss_dsi_panel_off(struct mdss_panel_data *pdata)
 	}
 
 end:
-	pr_info("-\n");
+	pr_debug("-\n");
 	return 0;
 
 }
@@ -373,7 +373,7 @@ void lge_mdss_panel_parse_dt_blmaps_joan(struct device_node *np,
 		if (!of_find_property(np, blmap_rev, NULL))
 			continue;
 
-		pr_info("found %s\n", blmap_rev);
+		pr_debug("found %s\n", blmap_rev);
 
 		rc = of_property_read_u32_array(np, blmap_rev, array,
 						pinfo->blmap_size);
