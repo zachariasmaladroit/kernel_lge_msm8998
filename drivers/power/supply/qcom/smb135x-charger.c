@@ -2570,7 +2570,7 @@ static int otg_oc_handler(struct smb135x_chg *chip, u8 rt_stat)
 	}
 
 	pr_debug("rt_stat = 0x%02x\n", rt_stat);
-	queue_delayed_work(system_power_efficient_wq, &chip->reset_otg_oc_count_work,
+	schedule_delayed_work(&chip->reset_otg_oc_count_work,
 			msecs_to_jiffies(RESET_OTG_OC_COUNT_MS));
 	mutex_unlock(&chip->otg_oc_count_lock);
 	return 0;
@@ -2598,7 +2598,7 @@ static int handle_dc_insertion(struct smb135x_chg *chip)
 	union power_supply_propval prop;
 
 	if (chip->dc_psy_type == POWER_SUPPLY_TYPE_WIRELESS)
-		queue_delayed_work(system_power_efficient_wq, &chip->wireless_insertion_work,
+		schedule_delayed_work(&chip->wireless_insertion_work,
 			msecs_to_jiffies(DCIN_UNSUSPEND_DELAY_MS));
 	if (chip->dc_psy_type != -EINVAL) {
 		prop.intval = chip->dc_present;
@@ -2796,7 +2796,7 @@ static int handle_usb_insertion(struct smb135x_chg *chip)
 	if (usb_supply_type == POWER_SUPPLY_TYPE_USB_DCP) {
 		pr_debug("schedule hvdcp detection worker\n");
 		pm_stay_awake(chip->dev);
-		queue_delayed_work(system_power_efficient_wq, &chip->hvdcp_det_work,
+		schedule_delayed_work(&chip->hvdcp_det_work,
 					msecs_to_jiffies(HVDCP_NOTIFY_MS));
 	}
 
