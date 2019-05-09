@@ -133,7 +133,7 @@ config VM_MIN_READAHEAD
 
 config BLKDEV_MAX_RQ
 	int "Maximum Block requests"
-	default 128
+	default 32
 	---help---
 	Adjust the default Block max requests.
 
