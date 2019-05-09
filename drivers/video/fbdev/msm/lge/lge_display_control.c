@@ -140,7 +140,7 @@ static ssize_t dgc_status_set(struct device *dev,
 	lge_ctrl_pdata->dgc_status = input & 0x01;
 	lge_display_control_store(ctrl, true);
 
-	pr_info("dgc_status %d \n", lge_ctrl_pdata->dgc_status);
+	pr_debug("dgc_status %d \n", lge_ctrl_pdata->dgc_status);
 	return ret;
 }
 static DEVICE_ATTR(dgc_status, S_IWUSR|S_IRUGO, dgc_status_get, dgc_status_set);
@@ -198,7 +198,7 @@ static ssize_t sharpness_status_set(struct device *dev,
 	lge_ctrl_pdata->sharpness_status = input & 0x01;
 	lge_display_control_store(ctrl, true);
 
-	pr_info("sharpness_status %d \n", lge_ctrl_pdata->sharpness_status);
+	pr_debug("sharpness_status %d \n", lge_ctrl_pdata->sharpness_status);
 	return ret;
 }
 static DEVICE_ATTR(sharpness_status, S_IWUSR|S_IRUGO,
@@ -257,7 +257,7 @@ static ssize_t boost_status_set(struct device *dev,
 	lge_ctrl_pdata->boost_status = input & 0x01;
 	lge_display_control_store(ctrl, true);
 
-	pr_info("boost status %d \n", lge_ctrl_pdata->boost_status);
+	pr_debug("boost status %d \n", lge_ctrl_pdata->boost_status);
 	return ret;
 }
 static DEVICE_ATTR(boost_status, S_IRUGO | S_IWUSR | S_IWGRP,
@@ -316,7 +316,7 @@ static ssize_t contrast_status_set(struct device *dev,
 	lge_ctrl_pdata->contrast_status = input & 0x01;
 	lge_display_control_store(ctrl, true);
 
-	pr_info("contrast_status %d \n", lge_ctrl_pdata->contrast_status);
+	pr_debug("contrast_status %d \n", lge_ctrl_pdata->contrast_status);
 	return ret;
 }
 static DEVICE_ATTR(contrast_status, S_IWUSR|S_IRUGO,
@@ -367,7 +367,7 @@ void mdss_dsi_panel_apply_settings(struct mdss_dsi_ctrl_pdata *ctrl,
 	}
 
 	vr_enable = (pcmds->cmds[0].payload[1] & 0x08);
-	pr_info("vr persist %s\n", (vr_enable ? "enabled" : "disabled"));
+	pr_debug("vr persist %s\n", (vr_enable ? "enabled" : "disabled"));
 
 	if (vr_enable) {
 		lge_ctrl_pdata->vr_status = 0x01;
@@ -447,7 +447,7 @@ static ssize_t hdr_hbm_lut_set(struct device *dev,
 	lge_ctrl_pdata->hdr_hbm_lut = input & 0x03;
 	lge_display_control_store(ctrl, true);
 
-	pr_info("hdr_hbm_lut status %d \n", lge_ctrl_pdata->hdr_hbm_lut);
+	pr_debug("hdr_hbm_lut status %d \n", lge_ctrl_pdata->hdr_hbm_lut);
 	return ret;
 }
 static DEVICE_ATTR(hdr_hbm_lut, S_IWUSR|S_IRUGO,
@@ -508,7 +508,7 @@ static ssize_t hdr_mode_set(struct device *dev,
 	lge_ctrl_pdata->hdr_mode = input & 0x03;
 	lge_display_control_store(ctrl, true);
 
-	pr_info("hdr_mode status %d \n", lge_ctrl_pdata->hdr_mode);
+	pr_debug("hdr_mode status %d \n", lge_ctrl_pdata->hdr_mode);
 	return ret;
 }
 static DEVICE_ATTR(hdr_mode, S_IWUSR|S_IRUGO, hdr_mode_get, hdr_mode_set);
@@ -568,7 +568,7 @@ static ssize_t acl_mode_set(struct device *dev,
 	lge_ctrl_pdata->acl_mode = input & 0x03;
 	lge_display_control_store(ctrl, true);
 
-	pr_info("acl_mode status %d \n", lge_ctrl_pdata->acl_mode);
+	pr_debug("acl_mode status %d \n", lge_ctrl_pdata->acl_mode);
 	return ret;
 }
 static DEVICE_ATTR(acl_mode, S_IWUSR|S_IRUGO, acl_mode_get, acl_mode_set);
@@ -631,7 +631,7 @@ static ssize_t white_point_set(struct device *dev,
 	mdss_dsi_panel_cmds_send(ctrl, &lge_ctrl_pdata->white_d65_cmds, CMD_REQ_COMMIT);
 	lge_display_control_store(ctrl, true);
 
-	pr_info("white_target %s \n", lge_ctrl_pdata->white_target ? "D65" : "7500K");
+	pr_debug("white_target %s \n", lge_ctrl_pdata->white_target ? "D65" : "7500K");
 	return ret;
 }
 static DEVICE_ATTR(white_target, S_IWUSR|S_IRUGO,
@@ -686,7 +686,7 @@ void lge_bc_dim_set(struct mdss_dsi_ctrl_pdata *ctrl,
 	}
 
 	if (!mdss_panel_is_power_on_interactive(pdata_base->panel_info.panel_power_state)) {
-		pr_info("skip brightness dimming control\n");
+		pr_debug("skip brightness dimming control\n");
 		return;
 	}
 
@@ -706,7 +706,7 @@ void lge_bc_dim_set(struct mdss_dsi_ctrl_pdata *ctrl,
 		mdelay(15);
 	}
 
-	pr_info("DIM : %s, FRAME : %d \n", (dim_en == BC_DIM_ON) ? "ON" : "OFF",
+	pr_debug("DIM : %s, FRAME : %d \n", (dim_en == BC_DIM_ON) ? "ON" : "OFF",
 			lge_ctrl_pdata->bc_default_cmds.cmds[0].payload[22]);
 	return;
 }
@@ -738,11 +738,11 @@ void lge_mdss_dsi_bc_dim_work(struct work_struct *work)
 	}
 
 	if (!mdss_panel_is_power_on_interactive(pdata->panel_info.panel_power_state)) {
-		pr_info("skip brightness dimming control\n");
+		pr_debug("skip brightness dimming control\n");
 		return;
 	} else {
 		lge_bc_dim_set(ctrl_pdata, BC_DIM_ON, BC_DIM_FRAMES_NORMAL);
-		pr_info("Set Normal Dim Mode\n");
+		pr_debug("Set Normal Dim Mode\n");
 	}
 	return;
 }
@@ -809,7 +809,7 @@ static ssize_t therm_dim_set(struct device *dev,
 
 	mutex_unlock(&mfd_primary_base->mdss_sysfs_lock);
 
-	pr_info("Thermal BC DIM: %d, FRAME : %d\n", bc_dim_en, bc_dim_f_cnt);
+	pr_debug("Thermal BC DIM: %d, FRAME : %d\n", bc_dim_en, bc_dim_f_cnt);
 	return ret;
 }
 static DEVICE_ATTR(therm_dim, S_IWUSR, NULL, therm_dim_set);
@@ -843,7 +843,7 @@ static ssize_t brightness_dim_get(struct device *dev,
 	bc_dim_en = lge_ctrl_pdata->bc_dim_cmds.cmds[0].payload[1];
 	bc_dim_f_cnt = lge_ctrl_pdata->bc_default_cmds.cmds[0].payload[22];
 
-	pr_info("BC DIM EN : %d , FRAMES : %d \n", bc_dim_en, bc_dim_f_cnt);
+	pr_debug("BC DIM EN : %d , FRAMES : %d \n", bc_dim_en, bc_dim_f_cnt);
 	return sprintf(buf, "%d\n", bc_dim_f_cnt);
 }
 
@@ -863,7 +863,7 @@ static ssize_t brightness_dim_set(struct device *dev,
 	}
 
 	if (!mdss_panel_is_power_on_interactive(pdata_base->panel_info.panel_power_state)) {
-		pr_info("skip brightness dimming control\n");
+		pr_debug("skip brightness dimming control\n");
 		return -EINVAL;
 	}
 
@@ -895,7 +895,7 @@ static ssize_t brightness_dim_set(struct device *dev,
 
 	lge_bc_dim_set(ctrl, bc_dim_en, bc_dim_f_cnt);
 
-	pr_info("BC DIM : %d\n", bc_dim_f_cnt);
+	pr_debug("BC DIM : %d\n", bc_dim_f_cnt);
 	return ret;
 }
 
@@ -974,7 +974,7 @@ static ssize_t video_enhancement_set(struct device *dev,
 
 	lge_ctrl_pdata->hdr_mode = input & 0x03;
 	lge_display_control_store(ctrl, true);
-	pr_info("send cmds to %s the video enhancer \n",
+	pr_debug("send cmds to %s the video enhancer \n",
 	        (input == true) ? "enable" : "disable");
 
 #if defined(CONFIG_LGE_DISPLAY_BRIGHTNESS_DIMMING)
@@ -984,7 +984,7 @@ static ssize_t video_enhancement_set(struct device *dev,
 	queue_delayed_work(system_power_efficient_wq,
 			&lge_ctrl_pdata->bc_dim_work, BC_DIM_TIME);
 
-	pr_info("VE Mode bl_lvl : %d, BC DIM: 0x%x, BC : 0x%x\n",
+	pr_debug("VE Mode bl_lvl : %d, BC DIM: 0x%x, BC : 0x%x\n",
 			backlight_led.brightness,
 			lge_ctrl_pdata->bc_dim_cmds.cmds[0].payload[1],
 			lge_ctrl_pdata->bc_default_cmds.cmds[0].payload[22]);

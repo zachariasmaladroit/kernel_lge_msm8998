@@ -282,7 +282,7 @@ void lge_set_screen_mode(struct mdss_dsi_ctrl_pdata *ctrl, bool send_cmd)
 		lge_ctrl_pdata->color_manager_status = lge_ctrl_pdata->color_manager_table[lge_ctrl_pdata->screen_mode].color_manager_status;
 		lge_ctrl_pdata->dgc_status = 0x00;
 	} else if (lge_ctrl_pdata->screen_mode == 10) {
-		pr_info("preset : %d, red = %d, green = %d, blue = %d\n",
+		pr_debug("preset : %d, red = %d, green = %d, blue = %d\n",
 				lge_ctrl_pdata->cm_preset_step, lge_ctrl_pdata->cm_red_step,
 				lge_ctrl_pdata->cm_green_step, lge_ctrl_pdata->cm_blue_step);
 		lge_ctrl_pdata->color_manager_mode = lge_ctrl_pdata->color_manager_table[0].color_manager_mode;
@@ -308,7 +308,7 @@ void lge_set_screen_mode(struct mdss_dsi_ctrl_pdata *ctrl, bool send_cmd)
 		lge_mdss_dsi_send_dcs_cmds_by_cmd_name(ctrl, lge_ctrl_pdata->color_modes_cmds, CM_MAX,
 						color_management_command_set[lge_ctrl_pdata->color_manager_mode]);
 
-	pr_info("color_manager_status %d color_manager_mode %d\n",
+	pr_debug("color_manager_status %d color_manager_mode %d\n",
 			lge_ctrl_pdata->color_manager_status, lge_ctrl_pdata->color_manager_mode);
 	return;
 }
@@ -343,7 +343,7 @@ static ssize_t screen_mode_set(struct device *dev,
 	lge_ctrl_pdata->screen_mode = input;
 
 
-	pr_info("ctrl->screen_mode (%d)\n", lge_ctrl_pdata->screen_mode);
+	pr_debug("ctrl->screen_mode (%d)\n", lge_ctrl_pdata->screen_mode);
 
 	lge_set_screen_mode(ctrl, true);
 
@@ -411,7 +411,7 @@ static ssize_t rgb_tune_set(struct device *dev,
 	lge_ctrl_pdata->cm_green_step  = abs(input_param[2]);
 	lge_ctrl_pdata->cm_blue_step   = abs(input_param[3]);
 
-	pr_info("preset : %d , red = %d , green = %d , blue = %d \n",
+	pr_debug("preset : %d , red = %d , green = %d , blue = %d \n",
 			lge_ctrl_pdata->cm_preset_step, lge_ctrl_pdata->cm_red_step,
 			lge_ctrl_pdata->cm_green_step, lge_ctrl_pdata->cm_blue_step);
 
@@ -482,7 +482,7 @@ static ssize_t color_manager_status_set(struct device *dev,
 	}
 
 	if (!lge_ctrl_pdata->color_manager_default_status) {
-		pr_info("Color manager is disabled as default. Ignore color manager status control.\n");
+		pr_debug("Color manager is disabled as default. Ignore color manager status control.\n");
 		return ret;
 	}
 
@@ -495,7 +495,7 @@ static ssize_t color_manager_status_set(struct device *dev,
 		lge_mdss_dsi_send_dcs_cmds_by_cmd_name(ctrl, lge_ctrl_pdata->color_modes_cmds, CM_MAX,
 						color_management_command_set[lge_ctrl_pdata->color_manager_mode]);
 
-	pr_info("color_manager_status %d \n", lge_ctrl_pdata->color_manager_status);
+	pr_debug("color_manager_status %d \n", lge_ctrl_pdata->color_manager_status);
 	return ret;
 }
 static DEVICE_ATTR(color_manager_status, S_IWUSR|S_IRUGO,
@@ -557,7 +557,7 @@ static ssize_t color_manager_mode_set(struct device *dev,
 	lge_ctrl_pdata->color_manager_status = 0x01;
 	lge_display_control_store(ctrl, true);
 
-	pr_info("color_manager_mode %d \n",	lge_ctrl_pdata->color_manager_mode);
+	pr_debug("color_manager_mode %d \n",	lge_ctrl_pdata->color_manager_mode);
 	return ret;
 }
 static DEVICE_ATTR(color_manager_mode, S_IWUSR|S_IRUGO,
@@ -600,7 +600,7 @@ static int mdss_dsi_parse_color_manager_modes(struct device_node *np,
 			for (i = 0, j = 0; i < num/2; i++, j++) {
 				color_manager_table[i].color_manager_mode = tmp[j];
 				color_manager_table[i].color_manager_status = tmp[++j];
-				pr_info("index = %d, color_manager_mode = %d, color_manager_status = %d\n", i, color_manager_table[i].color_manager_mode, color_manager_table[i].color_manager_status);
+				pr_debug("index = %d, color_manager_mode = %d, color_manager_status = %d\n", i, color_manager_table[i].color_manager_mode, color_manager_table[i].color_manager_status);
 			}
 			*color_manager_modes_num = num/2;
 		}
