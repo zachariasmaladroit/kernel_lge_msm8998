@@ -21,7 +21,7 @@
 static struct workqueue_struct *dsboost_wq;
 
 static struct work_struct input_boost_work;
-static struct work_struct cooldown_boost_work;
+static struct delayed_work cooldown_boost_work;
 static struct delayed_work input_boost_rem;
 static struct delayed_work cooldown_boost_rem;
 
@@ -48,9 +48,6 @@ static u64 last_input_time;
 
 static void do_input_boost_rem(struct work_struct *work)
 {
-	if (cooldown_stune_boost)
-		queue_work(dsboost_wq, &cooldown_boost_work);
-
 	if (input_stune_boost_active)
 		input_stune_boost_active = reset_stune_boost("top-app",
 				input_stune_slot);
@@ -101,6 +98,11 @@ static void dsboost_input_event(struct input_handle *handle,
 
 	if (input_stune_boost)
 		queue_work(dsboost_wq, &input_boost_work);
+
+	if (cooldown_stune_boost)
+		queue_delayed_work(dsboost_wq, &cooldown_boost_work,
+					msecs_to_jiffies(input_boost_duration));
+
 	last_input_time = ktime_to_us(ktime_get());
 }
 
@@ -192,7 +194,7 @@ static int dsboost_init(void)
 	}
 
 	INIT_WORK(&input_boost_work, do_input_boost);
-	INIT_WORK(&cooldown_boost_work, do_cooldown_boost);
+	INIT_DELAYED_WORK(&cooldown_boost_work, do_cooldown_boost);
 	INIT_DELAYED_WORK(&input_boost_rem, do_input_boost_rem);
 	INIT_DELAYED_WORK(&cooldown_boost_rem, do_cooldown_boost_rem);
 
