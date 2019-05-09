@@ -59,7 +59,7 @@ static int lge_interval_add_idle_data(void)
 
 	mutex_lock(&imon.interval_lock);
 	if (!CHECK_BIT(imon.status_bits, GO_ON_BIT)) {
-		pr_debug(("%s: interval monitor is locked:%x\n", __func__,
+		pr_debug("%s: interval monitor is locked:%x\n", __func__,
 			 imon.status_bits);
 		mutex_unlock(&imon.interval_lock);
 		return -EPERM;
@@ -94,7 +94,7 @@ static int __lge_interval_thread(void *data)
 			break;
 
 		if (!ret) {
-			pr_debug(("%s: no frame update\n", __func__);
+			pr_debug("%s: no frame update\n", __func__);
 			lge_interval_add_idle_data();
 			timeout = usecs_to_jiffies(MAX_INTERVAL);
 		} else {
@@ -117,7 +117,7 @@ static int lge_interval_start_thread(void)
 {
 	int ret = 0;
 
-	pr_debug(("%pS: start lge_interval thread\n",
+	pr_debug("%pS: start lge_interval thread\n",
 		 __builtin_return_address(0));
 	lge_interval_thread = kthread_run(__lge_interval_thread,
 					  NULL, "lge_interval");
@@ -138,7 +138,7 @@ int lge_interval_notify(ktime_t cur_us)
 
 	mutex_lock(&imon.interval_lock);
 	if (!CHECK_BIT(imon.status_bits, GO_ON_BIT)) {
-		pr_debug(("%s: interval monitor is locked:%x\n", __func__,
+		pr_debug("%s: interval monitor is locked:%x\n", __func__,
 			 imon.status_bits);
 		mutex_unlock(&imon.interval_lock);
 		return -EPERM;
@@ -171,7 +171,7 @@ int lge_interval_input_notify(void)
 		return -EPERM;
 
 	if (!CHECK_BIT(imon.status_bits, GO_ON_NOPANEL_BIT)) {
-		pr_debug(("%s: interval monitor is locked:%x\n", __func__,
+		pr_debug("%s: interval monitor is locked:%x\n", __func__,
 			 imon.status_bits);
 		return -EPERM;
 	}
@@ -196,14 +196,14 @@ int lge_interval_panel_power_notify(int on)
 	mutex_lock(&imon.interval_lock);
 	panel_on = CHECK_BIT(imon.status_bits, BIT(PANEL));
 	if (on != panel_on) {
-		pr_debug(("%s: panel power state: %d->%d\n", __func__,
+		pr_debug("%s: panel power state: %d->%d\n", __func__,
 			 panel_on, on);
 		if (on)
 			SET_BIT(imon.status_bits, PANEL);
 		else
 			CLR_BIT(imon.status_bits, PANEL);
 	} else {
-		pr_debug(("%s: panel power state is already updated: %d\n",
+		pr_debug("%s: panel power state is already updated: %d\n",
 			 __func__, on);
 		mutex_unlock(&imon.interval_lock);
 		return -EPERM;
@@ -218,7 +218,7 @@ int lge_interval_panel_power_notify(int on)
 	}
 
 	if (!CHECK_BIT(imon.status_bits, GO_ON_NOPANEL_BIT)) {
-		pr_debug(("%s: interval monitor is locked:%x\n", __func__,
+		pr_debug("%s: interval monitor is locked:%x\n", __func__,
 			 imon.status_bits);
 		mutex_unlock(&imon.interval_lock);
 		return -EPERM;
@@ -341,7 +341,7 @@ int lge_interval_init(void)
 	int ret;
 
 	if (CHECK_BIT(imon.status_bits, BIT(INIT))) {
-		pr_debug(("%s: interval monitor is already initialized.",
+		pr_debug("%s: interval monitor is already initialized.",
 			 __func__);
 		return 0;
 	}
