@@ -242,7 +242,7 @@ int lge_br_to_bl (struct msm_fb_data_type *mfd, int br_lvl)
 	/* modify brightness level */
 	if (lge_get_bootreason_with_lcd_dimming() && !is_blank_called()) {
 		br_lvl = 1;
-		pr_info("lcd dimming mode. set value = %d\n", br_lvl);
+		pr_debug("lcd dimming mode. set value = %d\n", br_lvl);
 #ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_BATTERY_ID_CHECKER
 	} else if (is_factory_cable()
 #if !defined(CONFIG_LGE_PM_EMBEDDED_BATTERY)
@@ -255,7 +255,7 @@ int lge_br_to_bl (struct msm_fb_data_type *mfd, int br_lvl)
 #endif
 			&& !is_blank_called()) {
 		br_lvl = 1;
-		pr_info("Detect factory cable. set value = %d\n", br_lvl);
+		pr_debug("Detect factory cable. set value = %d\n", br_lvl);
 	}
 
 	/* map brightness level to device backlight level */
@@ -279,7 +279,7 @@ int lge_br_to_bl (struct msm_fb_data_type *mfd, int br_lvl)
 #endif
 	if (pinfo->blmap[blmaptype])
 		bl_lvl = pinfo->blmap[blmaptype][br_lvl];
-	pr_info("br_lvl(%d) -> bl_lvl(%d) [%s]\n", br_lvl, bl_lvl,
+	pr_debug("br_lvl(%d) -> bl_lvl(%d) [%s]\n", br_lvl, bl_lvl,
 				lge_get_blmapname(blmaptype));
 	return bl_lvl;
 }
@@ -298,7 +298,7 @@ int lge_is_bl_update_blocked(int bl_lvl)
 	lge_is_bl_ready = true;
 	if(lge_block_bl_update) {
 		lge_bl_lvl_unset = bl_lvl;
-		pr_info("do not control backlight (bl: %d)\n", lge_bl_lvl_unset);
+		pr_debug("do not control backlight (bl: %d)\n", lge_bl_lvl_unset);
 		return true;
 	}
 	return false;
@@ -341,7 +341,7 @@ static ssize_t mdss_fb_set_bl_off_and_block(struct device *dev,
 
 	enable = simple_strtoul(buf, NULL, 10);
     if (enable && !lge_block_bl_update) {
-        pr_info("status : %d, set Brightness to 0 \n", lge_block_bl_update);
+        pr_debug("status : %d, set Brightness to 0 \n", lge_block_bl_update);
         mutex_lock(&mfd->bl_lock);
         lge_block_bl_update = false;
         lge_bl_lvl_unset = mfd->bl_level;
@@ -349,14 +349,14 @@ static ssize_t mdss_fb_set_bl_off_and_block(struct device *dev,
         lge_block_bl_update = true;
         mutex_unlock(&mfd->bl_lock);
     } else if (!enable && lge_block_bl_update) {
-        pr_info("status : %d, brightness : %d \n",
+        pr_debug("status : %d, brightness : %d \n",
                 lge_block_bl_update, lge_bl_lvl_unset);
         mutex_lock(&mfd->bl_lock);
         lge_block_bl_update = false;
         mdss_fb_set_backlight(mfd, lge_bl_lvl_unset);
         mutex_unlock(&mfd->bl_lock);
     } else {
-        pr_info("en : %d, status : %d, brightness : %d \n",
+        pr_debug("en : %d, status : %d, brightness : %d \n",
                 enable, lge_block_bl_update, lge_bl_lvl_unset);
     }
     return count;
@@ -407,9 +407,9 @@ static ssize_t hl_mode_store(struct device *dev,
 	pinfo->hl_mode_on = simple_strtoul(buf, NULL, 10);
 
 	if(pinfo->hl_mode_on == 1)
-		pr_info("[hl_mode] hl_mode on\n");
+		pr_debug("[hl_mode] hl_mode on\n");
 	else
-		pr_info("[hl_mode] hl_mode off\n");
+		pr_debug("[hl_mode] hl_mode off\n");
 
 	return len;
 }
@@ -481,7 +481,7 @@ static ssize_t mdss_set_mfts_auto_touch(struct device *dev,
 	if (pdata->next)
 		pdata->next->panel_info.power_ctrl = !value;
 
-	pr_info("[MFTS] power_ctrl = %d\n", pdata->panel_info.power_ctrl);
+	pr_debug("[MFTS] power_ctrl = %d\n", pdata->panel_info.power_ctrl);
 	return len;
 }
 #endif
@@ -519,7 +519,7 @@ int lge_br_to_bl_ex(struct msm_fb_data_type *mfd, int br_lvl)
 	/* modify brightness level */
 	if (lge_get_bootreason_with_lcd_dimming() && !is_blank_called()) {
 		br_lvl = 1;
-		pr_info("lcd dimming mode. set value = %d\n", br_lvl);
+		pr_debug("lcd dimming mode. set value = %d\n", br_lvl);
 #ifdef CONFIG_LGE_PM_LGE_POWER_CLASS_BATTERY_ID_CHECKER
 	} else if (is_factory_cable()
 #if !defined(CONFIG_LGE_PM_EMBEDDED_BATTERY)
@@ -532,7 +532,7 @@ int lge_br_to_bl_ex(struct msm_fb_data_type *mfd, int br_lvl)
 #endif
 			&& !is_blank_called()) {
 		br_lvl = 1;
-		pr_info("Detect factory cable. set value = %d\n", br_lvl);
+		pr_debug("Detect factory cable. set value = %d\n", br_lvl);
 	}
 
 	/* map brightness level to device backlight level */
@@ -540,7 +540,7 @@ int lge_br_to_bl_ex(struct msm_fb_data_type *mfd, int br_lvl)
 
 	if (pinfo->blmap[blmaptype])
 		bl_lvl = pinfo->blmap[blmaptype][br_lvl];
-	pr_info("br_lvl(%d) -> bl_lvl(%d) [%s]\n", br_lvl, bl_lvl,
+	pr_debug("br_lvl(%d) -> bl_lvl(%d) [%s]\n", br_lvl, bl_lvl,
 				lge_get_blmapname(blmaptype));
 	return bl_lvl;
 }
@@ -610,7 +610,7 @@ void mdss_fb_set_backlight_ex(struct msm_fb_data_type *mfd, u32 bkl_lvl)
 	if ((pdata) && (pdata->set_backlight)) {
 		if (mfd->bl_level != bkl_lvl) {
 			bl_notify_needed = true;
-			pr_info("backlight sent to panel :%d\n", temp);
+			pr_debug("backlight sent to panel :%d\n", temp);
 			pdata->set_backlight(pdata, temp);
 			mfd->bl_level = bkl_lvl;
 			mfd->bl_level_scaled = (temp * mfd->bl_scale) / 1024;
@@ -670,10 +670,10 @@ void mdss_fb_update_backlight_ex(struct msm_fb_data_type *mfd)
 			mfd->bl_level = mfd->unset_bl_level_ex;
 			temp = mfd->bl_level;
 			if (mdss_fb_is_power_on_lp(mfd)) {
-                            pr_info("backlight sent to panel :%d\n", temp);
+                            pr_debug("backlight sent to panel :%d\n", temp);
                             pdata->set_backlight(pdata, temp);
 			} else {
-				pr_info("ignore unset_bl_level_ex value\n");
+				pr_debug("ignore unset_bl_level_ex value\n");
                         }
 			mfd->allow_bl_update_ex = true;
 		}
@@ -758,18 +758,18 @@ static ssize_t freeze_set(struct device *dev,
 	sscanf(buf, "%d", &input);
 
 	if (input > 0) {
-		pr_info("freezing in userspace\n");
+		pr_debug("freezing in userspace\n");
 		ctrl->requested_resolution_switch = true;
 #if defined(CONFIG_LGE_DISPLAY_BIST_MODE)
 		ctrl->keep_bist_on = false;
 #endif
 	} else {
-		pr_info("unfreeze due to timeout\n");
+		pr_debug("unfreeze due to timeout\n");
 		ctrl->requested_resolution_switch = false;
 		ctrl->keep_bist_on = false;
 		mutex_lock(&ctrl->bist_lock);
 		if (ctrl->bist_on > 0) {
-			pr_info("request timeout! -> bist release\n");
+			pr_debug("request timeout! -> bist release\n");
 			lge_mdss_dsi_bist_release(ctrl);
 		}
 		mutex_unlock(&ctrl->bist_lock);
@@ -808,7 +808,7 @@ static ssize_t freeze_state_hal_store(struct device *dev,
 	}
 	sscanf(buf, "%d", &enable);
 
-	pr_info("freeze set from hal: %d\n", enable);
+	pr_debug("freeze set from hal: %d\n", enable);
 	if (enable == 1) {
 		cur_freeze_state = enable;
 		kobject_uevent_env(&mfd->fbi->dev->kobj,
@@ -818,7 +818,7 @@ static ssize_t freeze_state_hal_store(struct device *dev,
 		kobject_uevent_env(&mfd->fbi->dev->kobj,
 			KOBJ_CHANGE, envp0);
 	} else {
-		pr_info("invalid parameter\n");
+		pr_debug("invalid parameter\n");
 	}
 
 	return ret;
@@ -868,7 +868,7 @@ void mdss_fb_drs_notify(struct kobject *kobj, int state)
 		kobject_uevent_env(kobj, KOBJ_CHANGE, envp);
 	}
 
-	pr_info("sending uevent for switching info\n");
+	pr_debug("sending uevent for switching info\n");
 }
 #endif
 

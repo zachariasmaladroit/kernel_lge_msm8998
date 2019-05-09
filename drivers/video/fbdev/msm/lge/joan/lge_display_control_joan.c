@@ -78,7 +78,7 @@ static void lge_display_control_store_joan(struct mdss_dsi_ctrl_pdata *ctrl_pdat
 	lge_dsi_cmds_list[1].lge_dsi_cmds.cmds[0].payload[1] = ((lge_ctrl_pdata->hdr_hbm_lut << 6) & 0xC0) | \
 			((lge_ctrl_pdata->hdr_mode << 4) & 0x30) | ((lge_ctrl_pdata->hbm_mode << 2) & 0x0C) | (lge_ctrl_pdata->acl_mode & 0x03);
 
-	pr_info("%s:0x%02x, %s:0x%02x\n",
+	pr_debug("%s:0x%02x, %s:0x%02x\n",
 			disp_ctrl_cmd_names[0],
 			lge_dsi_cmds_list[0].lge_dsi_cmds.cmds[0].payload[1],
 			disp_ctrl_cmd_names[1],
