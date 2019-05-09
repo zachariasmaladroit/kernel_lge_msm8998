@@ -56,7 +56,7 @@ void lge_dsi_irq_control(struct mdss_dsi_ctrl_pdata *ctrl_pdata, bool enable)
 	if (enable) {
 		if (desc) {
 			if (desc->istate & IRQS_PENDING) {
-				pr_info("Remove pending irq(%d)\n", irq);
+				pr_debug("Remove pending irq(%d)\n", irq);
 				desc->istate &= ~(IRQS_PENDING);
 			}
 		}
@@ -67,7 +67,7 @@ void lge_dsi_irq_control(struct mdss_dsi_ctrl_pdata *ctrl_pdata, bool enable)
 		disable_irq(irq);
 	}
 	ctrl_pdata->err_irq_enabled = enable;
-	pr_info("enable = %d\n", enable);
+	pr_debug("enable = %d\n", enable);
 }
 
 void lge_dsi_err_detect_parse_dt(struct device_node *np, struct mdss_dsi_ctrl_pdata *ctrl_pdata)
@@ -103,7 +103,7 @@ static ssize_t set_err_mask(struct device *dev,
 
 	lge_mdss_dsi_panel_err_cmds_send(ctrl, DSI_HS_MODE);
 
-	pr_info("send CMD %d\n", ctrl->err_mask);
+	pr_debug("send CMD %d\n", ctrl->err_mask);
 	return ret;
 }
 
@@ -120,7 +120,7 @@ static ssize_t get_err_mask(struct device *dev,
 	ctrl =  container_of(pdata_base, struct mdss_dsi_ctrl_pdata,
 			panel_data);
 
-	pr_info("%d\n", ctrl->err_mask);
+	pr_debug("%d\n", ctrl->err_mask);
 	return sprintf(buf, "%d\n", ctrl->err_mask);
 }
 
@@ -142,7 +142,7 @@ static ssize_t set_err_crash(struct device *dev,
 	sscanf(buf, "%d", &param);
 
 	ctrl->err_crash = param;
-	pr_info("set crash %d\n", ctrl->err_crash);
+	pr_debug("set crash %d\n", ctrl->err_crash);
 	return ret;
 }
 
@@ -159,7 +159,7 @@ static ssize_t get_err_crash(struct device *dev,
 	ctrl =  container_of(pdata_base, struct mdss_dsi_ctrl_pdata,
 			panel_data);
 
-	pr_info("%d\n", ctrl->err_crash);
+	pr_debug("%d\n", ctrl->err_crash);
 	return sprintf(buf, "%d\n", ctrl->err_crash);
 }
 
@@ -176,7 +176,7 @@ static ssize_t get_mem_test(struct device *dev,
 	ctrl =  container_of(pdata_base, struct mdss_dsi_ctrl_pdata,
 			panel_data);
 
-	pr_info("0x%x\n", ctrl->err_result);
+	pr_debug("0x%x\n", ctrl->err_result);
 	return sprintf(buf, "%d\n", ctrl->err_result);
 }
 
