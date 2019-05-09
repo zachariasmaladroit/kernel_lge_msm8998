@@ -117,16 +117,16 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 	if ((mdss_dsi_is_right_ctrl(ctrl_pdata) &&
 		mdss_dsi_is_hw_config_split(ctrl_pdata->shared_data)) ||
 			pinfo->is_dba_panel) {
-		pr_debug("%d, right ctrl gpio configuration not needed\n", __LINE__);
+		pr_debug(("%d, right ctrl gpio configuration not needed\n", __LINE__);
 		return rc;
 	}
 
 	if (!gpio_is_valid(ctrl_pdata->disp_en_gpio)) {
-		pr_debug("%d, reset line not configured\n", __LINE__);
+		pr_debug(("%d, reset line not configured\n", __LINE__);
 	}
 
 	if (!gpio_is_valid(ctrl_pdata->rst_gpio)) {
-		pr_debug("%d, reset line not configured\n", __LINE__);
+		pr_debug(("%d, reset line not configured\n", __LINE__);
 		return rc;
 	}
 
@@ -193,9 +193,9 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 		}
 
 		if (ctrl_pdata->ctrl_state & CTRL_STATE_PANEL_INIT) {
-			pr_debug("Panel Not properly turned OFF\n");
+			pr_debug(("Panel Not properly turned OFF\n");
 			ctrl_pdata->ctrl_state &= ~CTRL_STATE_PANEL_INIT;
-			pr_debug("Reset panel done\n");
+			pr_debug(("Reset panel done\n");
 		}
 	} else {
 #if defined(CONFIG_LGE_DISPLAY_ERROR_DETECT)
@@ -263,7 +263,7 @@ int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 			(pinfo->mipi.boot_mode != pinfo->mipi.mode))
 		on_cmds = &ctrl->post_dms_on_cmds;
 
-	pr_debug("ndx=%d cmd_cnt=%d\n",
+	pr_debug(("ndx=%d cmd_cnt=%d\n",
 				ctrl->ndx, on_cmds->cmd_cnt);
 
 	if (on_cmds->cmd_cnt)
