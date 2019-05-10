@@ -5667,14 +5667,295 @@ CONFIG_APSS_CORE_EA=y # needed for thermal (!?)
 CONFIG_MSM_PERFORMANCE=y
 CONFIG_MSM_PERFORMANCE_CPUFREQ_LIMITS_VOTING_ONLY=y # ours or ocean/HTC ?
 
-# external module support
+# use thin archives instead of ld -r
+# needs (k)build infrastructure changes (scripts/ folder)
+CONFIG_THIN_ARCHIVES=y
+
+# kcal/color correction and other nice eye-candy
+CONFIG_FB_MSM_MDSS_KCAL_CTRL=y
+
+# performance & latency cutdown tweaking
+# CONFIG_ZEN_INTERACTIVE is not set
+# CONFIG_SCSI_MQ_DEFAULT is not set # broken on 4.4 Android ?
+# CONFIG_MANDATORY_FILE_LOCKING is not set # needs commit first
+# CONFIG_SLUB_CPU_PARTIAL is not set # more indeterminism in the latency of the free , taking of locks that may cause latency spikes
+# CONFIG_VM_EVENT_COUNTERS is not set
+
+#
+# RCU Subsystem
+#
+CONFIG_PREEMPT_RCU=y
+CONFIG_RCU_EXPERT=y
+CONFIG_SRCU=y
+# CONFIG_TASKS_RCU is not set
+CONFIG_RCU_STALL_COMMON=y
+CONFIG_RCU_FANOUT=64
+CONFIG_RCU_FANOUT_LEAF=16
+CONFIG_RCU_FAST_NO_HZ=y
+# CONFIG_TREE_RCU_TRACE is not set
+CONFIG_RCU_BOOST=y
+CONFIG_RCU_BOOST_DELAY=331
+CONFIG_RCU_KTHREAD_PRIO=51
+CONFIG_RCU_NOCB_CPU=y
+# CONFIG_RCU_NOCB_CPU_NONE is not set
+# CONFIG_RCU_NOCB_CPU_ZERO is not set
+CONFIG_RCU_NOCB_CPU_ALL=y
+CONFIG_RCU_EXPEDITE_BOOT=y
+
+# swap, hswap, zram, etc.
+CONFIG_SWAP=y
+CONFIG_KSWAPD_CPU_AFFINITY_MASK="f"
+CONFIG_BALANCE_ANON_FILE_RECLAIM=y # eval
+CONFIG_ZRAM=y
+# CONFIG_ZSMALLOC is not set
+# CONFIG_PGTABLE_MAPPING is not set
+# CONFIG_ZSMALLOC_STAT is not set
+# CONFIG_ZPOOL is not set
+# CONFIG_ZBUD is not set # needed for zswap if not z3fold
+CONFIG_Z3FOLD=y
+CONFIG_ZRAM_DEFAULT_Z3FOLD=y
+# CONFIG_CLEANCACHE is not set
+# CONFIG_FRONTSWAP is not set
+# CONFIG_ZSWAP is not set
+# CONFIG_CMA_DEBUGFS is not set
+# CONFIG_CMA_PINPAGE_MIGRATION is not set
+# CONFIG_GCMA is not set
+CONFIG_GCMA_DEFAULT=y
+# CONFIG_GCMA_STATS is not set
+
+# OOM/LMK
+# CONFIG_PROCESS_RECLAIM is not set
+# CONFIG_HSWAP is not set # LGs hybrid swap, LMK + zram + swap
+# CONFIG_BOOST_DYING_TASK is not set
+# CONFIG_MEMCG is not set
+# CONFIG_MEMCG_SWAP is not set
+# LMK: default =y
+# CONFIG_ANDROID_LOW_MEMORY_KILLER is not set
+CONFIG_ANDROID_LOW_MEMORY_KILLER_AUTODETECT_OOM_ADJ_VALUES=y
+CONFIG_ANDROID_LMK_ADJ_RBTREE=y
+#
+# simple_lmk is testing/eval
+CONFIG_ANDROID_SIMPLE_LMK=y
+
+# i/o schedulers
+#
+# disable blk-group scheduling
+# CONFIG_BLK_CGROUP is not set
+# CONFIG_DEBUG_BLK_CGROUP is not set
+CONFIG_IOSCHED_NOOP=y
+# CONFIG_IOSCHED_TEST is not set
+CONFIG_IOSCHED_DEADLINE=y
+CONFIG_IOSCHED_CFQ=y
+CONFIG_IOSCHED_FIOPS=y
+CONFIG_IOSCHED_SIO=y
+CONFIG_IOSCHED_ZEN=y
+CONFIG_IOSCHED_BFQ=y
+# CONFIG_BFQ_GROUP_IOSCHED is not set
+CONFIG_IOSCHED_ANXIETY=y
+# CONFIG_DEFAULT_DEADLINE is not set
+# CONFIG_DEFAULT_CFQ is not set
+# CONFIG_DEFAULT_NOOP is not set
+# CONFIG_DEFAULT_SIO is not set
+# CONFIG_DEFAULT_FIOPS is not set
+# CONFIG_DEFAULT_ZEN is not set
+CONFIG_DEFAULT_ANXIETY=y
+CONFIG_DEFAULT_IOSCHED="anxiety"
+
+# disable for debug, security, attack surface
+# CONFIG_MSM_RDBG is not set # remote debugger driver (=m by default)
+CONFIG_MAGIC_SYSRQ=y
+CONFIG_MAGIC_SYSRQ_DEFAULT_ENABLE=0x1
+#
+# Jump labels:
+# the kernel will compile trace point locations with just a nop instruction.
+# When trace points are enabled, the nop will be converted to a jump
+# to the trace function. This technique lowers overhead and stress
+# on the branch prediction of the processor.
+#
+# jump_label assumedly leads to latency spikes, thus discouraged; performance (?)
+# needed for certain configurations (and optimization) though, thus keeping it enabled
+#
+CONFIG_JUMP_LABEL=y
+
+# tracing
+#
+# CONFIG_TRACEPOINTS is not set
+
+# ION
+CONFIG_ION=y
+
+# CONFIG_ION_TEST is not set
+# CONFIG_ION_DUMMY is not set
+CONFIG_ION_MSM=y
+# CONFIG_ALLOC_BUFFERS_IN_4K_CHUNKS is not set # default =y
+# later added performance enhancements and tweaks behind a config entry
+
+# RSEQ (selected via Makefile by default)
+CONFIG_HAVE_RSEQ=y
+CONFIG_RSEQ=y
+
+# AIO
+# CONFIG_AIO has legitimate use for the functionfs
+# driver, which is used with adb and mtp. It is now required to be enabled
+# for better performance with those services.
+#
+# disabled in orion [eval]
+# CONFIG_AIO is not set
+
+# add additional drivers that might be needed
+# CONFIG_RELAY is not set
+# dmesg/printk: raise size of kernel log
+CONFIG_LOG_BUF_SHIFT=22
+CONFIG_LOG_CPU_MAX_BUF_SHIFT=21
+
+# advanced congestion control
+CONFIG_TCP_CONG_ADVANCED=y
+CONFIG_TCP_CONG_BIC=y
+CONFIG_TCP_CONG_CUBIC=y
+CONFIG_TCP_CONG_WESTWOOD=y
+CONFIG_TCP_CONG_HTCP=y
+# CONFIG_TCP_CONG_HSTCP is not set
+CONFIG_TCP_CONG_HYBLA=y
+CONFIG_TCP_CONG_VEGAS=y
+CONFIG_TCP_CONG_SCALABLE=y
+CONFIG_TCP_CONG_LP=y
+CONFIG_TCP_CONG_VENO=y
+# CONFIG_TCP_CONG_YEAH is not set
+# CONFIG_TCP_CONG_ILLINOIS is not set
+# CONFIG_TCP_CONG_DCTCP is not set
+# CONFIG_TCP_CONG_CDG is not set
+CONFIG_TCP_CONG_LIA=y
+CONFIG_TCP_CONG_OLIA=y
+# CONFIG_TCP_CONG_WVEGAS is not set
+CONFIG_TCP_CONG_BALIA=y
+# CONFIG_DEFAULT_BIC is not set # =y
+# CONFIG_DEFAULT_CUBIC is not set
+# CONFIG_DEFAULT_WESTWOOD is not set
+# CONFIG_DEFAULT_LIA is not set
+# CONFIG_DEFAULT_OLIA is not set # MPTCP default
+# CONFIG_DEFAULT_WVEGAS is not set
+# CONFIG_DEFAULT_RENO is not set
+CONFIG_DEFAULT_VENO=y
+CONFIG_DEFAULT_TCP_CONG="veno"
+# CONFIG_TCP_MD5SIG is not set
+
+# MPTCP: CONFIG_LGP_DATA_TCPIP_MPTCP , CONFIG_MPTCP
+# CONFIG_MPTCP is not set
+CONFIG_MPTCP_PM_ADVANCED=y
+CONFIG_MPTCP_FULLMESH=y
+CONFIG_MPTCP_NDIFFPORTS=y
+CONFIG_MPTCP_BINDER=y
+CONFIG_DEFAULT_FULLMESH=y
+# CONFIG_DEFAULT_NDIFFPORTS is not set
+# CONFIG_DEFAULT_BINDER is not set
+# CONFIG_DEFAULT_DUMMY is not set
+CONFIG_DEFAULT_MPTCP_PM="fullmesh"
+CONFIG_MPTCP_SCHED_ADVANCED=y
+CONFIG_MPTCP_ROUNDROBIN=y # bad performance, research
+CONFIG_MPTCP_REDUNDANT=y # less latency, less jitter, lower throughput
+CONFIG_DEFAULT_SCHEDULER=y
+# CONFIG_DEFAULT_ROUNDROBIN is not set # semi-redundant ?
+# CONFIG_DEFAULT_REDUNDANT is not set # eval later ?
+CONFIG_DEFAULT_MPTCP_SCHED="default" # closer to "default" tcp behavior, best "compromise" ?
+# CONFIG_LGP_DATA_TCPIP_MPTCP_CHECKSUM_ENABLE is not set
+CONFIG_LGP_DATA_TCPIP_MPTCP_SYN_RETRY_1=y
+CONFIG_LGP_DATA_TCPIP_MPTCP=y
+
+# WiGig
+# CONFIG_WIL6210 is not set
+CONFIG_WIL6210_ISR_COR=y
+CONFIG_WIL6210_TRACING=y
+CONFIG_WIL6210_WRITE_IOCTL=y
+CONFIG_WIL6210_PLATFORM_MSM=y
+# CONFIG_MSM_11AD is not set # dep
+
+# security frameworks & related
+# CONFIG_AUDIT is not set
+CONFIG_SECURITY_SELINUX=y
+# CONFIG_SECURITY_SELINUX_BOOTPARAM is not set
+# CONFIG_SECURITY_SELINUX_DISABLE is not set
+CONFIG_SECURITY_SELINUX_DEVELOP=y
+# CONFIG_SECURITY_SELINUX_AVC_STATS is not set
+CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE=0
+# CONFIG_SECURITY_SELINUX_POLICYDB_VERSION_MAX is not set
+# CONFIG_SECURITY_SMACK is not set
+# CONFIG_SECURITY_SMACK_BRINGUP is not set
+# CONFIG_SECURITY_SMACK_NETFILTER is not set
+# CONFIG_SECURITY_TOMOYO is not set
+# CONFIG_SECURITY_APPARMOR is not set
+CONFIG_SECURITY_YAMA=y
+
+# Kernel (self)protection
+# Disallow allocating the first 32k of memory (cannot be 64k due to ARM loader). 32768 invalid for ARM loader
+# DEFAULT_MMAP_MIN_ADDR=4096 (?)
+CONFIG_DEBUG_RODATA=y
+CONFIG_DEBUG_ALIGN_RODATA=y # This prevents sections from being split into pages and avoids a potential TLB penalty.
+# DEBUG_SET_MODULE_RONX is not set # for Stock ROM "Set loadable kernel module data as NX and text as RO"
+CONFIG_SCHED_STACK_END_CHECK=y # The runtime overhead introduced is minimal.
+CONFIG_STRICT_DEVMEM=y # If this option is disabled,
+# you allow userspace (root) access to all of memory, including kernel and userspace memory. Accidental
+# access to this is obviously disastrous, but specific access can be used by people debugging the kernel.
+#
+# data integrity/DEBUG (in combination with the below, follow-up checks)
+# advised for stability/integrity of data with the advent of phones becoming sole business aggregators, etc.
+CONFIG_PANIC_ON_DATA_CORRUPTION=y
+CONFIG_BUG_ON_DATA_CORRUPTION=y
+# CONFIG_DEBUG_CREDENTIALS=y # (+ SELinux, checks to see that this number never exceeds the usage count of the cred struct)
+# CONFIG_DEBUG_NOTIFIERS is not set # modules, This is a relatively cheap check
+# CONFIG_DEBUG_LIST=y
+# CONFIG_DEBUG_SG=y # This can help find problems with drivers that do not properly initialize their sg tables.
+
+# performance tuning knobs:
+CONFIG_VM_MAX_READAHEAD=128
+CONFIG_VM_MIN_READAHEAD=16
+CONFIG_BLKDEV_MAX_RQ=16
+CONFIG_BLKDEV_MIN_RQ=4
+
+# F2FS, needs "porting" of full upstream backported patchset, for now limited patchset
+# CONFIG_F2FS_FS is not set
+CONFIG_F2FS_STAT_FS=y
+CONFIG_F2FS_FS_XATTR=y
+CONFIG_F2FS_FS_POSIX_ACL=y
+CONFIG_F2FS_FS_SECURITY=y
+# CONFIG_F2FS_CHECK_FS is not set
+CONFIG_F2FS_FS_ENCRYPTION=y
+# CONFIG_F2FS_IO_TRACE is not set
+
+# exfat opensource'd Samsung exfat leaked driver
+# CONFIG_EXFAT_FS is not set
+CONFIG_EXFAT_DEFAULT_CODEPAGE=437
+CONFIG_EXFAT_DEFAULT_IOCHARSET="iso8859-1"
+# CONFIG_EXFAT_VIRTUAL_XATTR is not set
+CONFIG_EXFAT_DISCARD=y
+CONFIG_EXFAT_COMPAT_TUXERA=y
+# CONFIG_EXFAT_DEBUG is not set
+
+# sdFAT opensource driver
+CONFIG_SDFAT_FS=y
+CONFIG_SDFAT_DELAYED_META_DIRTY=y
+CONFIG_SDFAT_SUPPORT_DIR_SYNC=y
+CONFIG_SDFAT_DEFAULT_CODEPAGE=437
+CONFIG_SDFAT_DEFAULT_IOCHARSET="utf8"
+CONFIG_SDFAT_CHECK_RO_ATTR=y
+CONFIG_SDFAT_ALIGNED_MPAGE_WRITE=y
+CONFIG_SDFAT_VIRTUAL_XATTR=y
+CONFIG_SDFAT_STATISTICS=y
+CONFIG_SDFAT_DELAY_ALLOC=y
+CONFIG_SDFAT_SMART_ALLOC=y
+CONFIG_SDFAT_EXFAT_WRAPPER=y
+CONFIG_SDFAT_TEXFAT_WRAPPER=y
+# CONFIG_SDFAT_DEBUG is not set
+# CONFIG_SDFAT_DBG_MSG is not set
+# CONFIG_SDFAT_STATISTICS is not set
+
+# monolithic kernel, external modules
 # CONFIG_MODULES is not set
-# CONFIG_MODULE_FORCE_LOAD is not set
+CONFIG_MODULE_FORCE_LOAD=y # change
 CONFIG_MODULE_UNLOAD=y
 CONFIG_MODULE_FORCE_UNLOAD=y
 CONFIG_MODVERSIONS=y
 # CONFIG_MODULE_SRCVERSION_ALL is not set
-CONFIG_MODULE_SIG=y
+# CONFIG_MODULE_SIG is not set # change
 CONFIG_MODULE_SIG_FORCE=y
 CONFIG_MODULE_SIG_ALL=y
 # CONFIG_MODULE_SIG_SHA1 is not set
@@ -5693,6 +5974,41 @@ CONFIG_MODULE_SIG_HASH="sha512"
 # CONFIG_USB_GSPCA is not set
 CONFIG_BRIDGE_NETFILTER=y
 
+# DVB, disable or needed for some weird streaming usage-case ?
+# CONFIG_DVB_MPQ is not set # =m
+# CONFIG_DVB_MPQ_DEMUX is not set # =m
+CONFIG_DVB_MPQ_NUM_DMX_DEVICES=4
+# CONFIG_DVB_MPQ_TSPP1 is not set # =y
+# CONFIG_DVB_MPQ_SW is not set
+# CONFIG_DVB_MPQ_MEDIA_BOX_DEMUX is not set
+# CONFIG_TSPP is not set # =m
+
+# media tuners (DVB, etc.)
+# CONFIG_MEDIA_USB_SUPPORT is not set
+#
+# CONFIG_MEDIA_DIGITAL_TV_SUPPORT is not set
+# CONFIG_DVB_CORE is not set
+# CONFIG_DVB_NET is not set
+# CONFIG_TTPCI_EEPROM is not set
+CONFIG_DVB_MAX_ADAPTERS=8
+# CONFIG_DVB_DYNAMIC_MINORS is not set
+# CONFIG_LGE_BROADCAST_ISDBT_JAPAN is not set
+CONFIG_MEDIA_SUBDRV_AUTOSELECT=y
+# CONFIG_MEDIA_TUNER is not set
+# CONFIG_MEDIA_TUNER_SIMPLE is not set
+# CONFIG_MEDIA_TUNER_TDA8290 is not set
+# CONFIG_MEDIA_TUNER_TDA827X is not set
+# CONFIG_MEDIA_TUNER_TDA18271 is not set
+# CONFIG_MEDIA_TUNER_TDA9887 is not set
+# CONFIG_MEDIA_TUNER_MT20XX is not set
+# CONFIG_MEDIA_TUNER_XC2028 is not set
+# CONFIG_MEDIA_TUNER_XC5000 is not set
+# CONFIG_MEDIA_TUNER_XC4000 is not set
+# CONFIG_MEDIA_TUNER_MC44S803 is not set
+
+# build drivers INto the kernel
+# CONFIG_USB_GSPCA is not set # most likely NOT needed , disable it
+
 # DVB & TV functionality (ko only)
 # CONFIG_DVB_MPQ is not set
 CONFIG_DVB_MPQ_DEMUX=m
@@ -5701,6 +6017,21 @@ CONFIG_DVB_MPQ_TSPP1=y
 # CONFIG_DVB_MPQ_SW is not set
 # CONFIG_DVB_MPQ_MEDIA_BOX_DEMUX is not set
 # CONFIG_TSPP is not set # dep
+
+# iommu debug
+# CONFIG_IOMMU_IO_PGTABLE_FAST_SELFTEST is not set
+# CONFIG_IOMMU_DEBUG is not set
+# CONFIG_IOMMU_DEBUG_TRACKING is not set
+# CONFIG_IOMMU_TESTS is not set
+
+# debug stuff (disabling recommended)
+# CONFIG_PROFILING is not set
+# CONFIG_MMC_PERF_PROFILING is not set
+CONFIG_DEBUG_INFO_REDUCED=y
+
+# qcacld-3.0 debug stuff
+# CONFIG_FEATURE_TSO_DEBUG is not set
+# CONFIG_WLAN_NAPI_DEBUG is not set
 
 # advanced congestion control
 CONFIG_TCP_CONG_ADVANCED=y
@@ -5730,10 +6061,72 @@ CONFIG_DEFAULT_BIC=y
 # CONFIG_DEFAULT_RENO is not set
 CONFIG_DEFAULT_TCP_CONG="bic"
 
-# WiGig
-# CONFIG_WIL6210 is not set
-CONFIG_WIL6210_ISR_COR=y
-CONFIG_WIL6210_TRACING=y
-CONFIG_WIL6210_WRITE_IOCTL=y
-CONFIG_WIL6210_PLATFORM_MSM=y
-# CONFIG_MSM_11AD is not set # dep
+# sys/fs/pstore
+CONFIG_PSTORE=y
+CONFIG_PSTORE_CONSOLE=y
+# CONFIG_PSTORE_PMSG is not set
+# CONFIG_PSTORE_FTRACE is not set
+CONFIG_PSTORE_RAM=y
+
+# thermal, msm_thermal_simple
+#
+# CONFIG_SENSORS_ACPI_POWER is not set
+CONFIG_THERMAL=y
+CONFIG_THERMAL_HWMON=y
+CONFIG_THERMAL_OF=y
+CONFIG_THERMAL_WRITABLE_TRIPS=y
+CONFIG_THERMAL_DEFAULT_GOV_STEP_WISE=y
+# CONFIG_THERMAL_DEFAULT_GOV_FAIR_SHARE is not set
+# CONFIG_THERMAL_DEFAULT_GOV_USER_SPACE is not set
+# CONFIG_THERMAL_DEFAULT_GOV_POWER_ALLOCATOR is not set
+# CONFIG_THERMAL_GOV_FAIR_SHARE is not set
+CONFIG_THERMAL_GOV_STEP_WISE=y
+# CONFIG_THERMAL_GOV_BANG_BANG is not set
+# CONFIG_THERMAL_GOV_USER_SPACE is not set
+# CONFIG_THERMAL_GOV_POWER_ALLOCATOR is not set
+# CONFIG_CPU_THERMAL is not set
+# CONFIG_DEVFREQ_THERMAL is not set
+# CONFIG_THERMAL_EMULATION is not set
+CONFIG_LIMITS_MONITOR=y
+CONFIG_LIMITS_LITE_HW=y
+# CONFIG_LIMITS_LITE_HW_POLLING is not set
+# CONFIG_THERMAL_MONITOR is not set
+CONFIG_THERMAL_TSENS8974=y
+# CONFIG_IMX_THERMAL is not set
+CONFIG_MSM_THERMAL_SIMPLE=y
+CONFIG_THERMAL_QPNP=y
+CONFIG_THERMAL_QPNP_ADC_TM=y
+CONFIG_QCOM_THERMAL_LIMITS_DCVS=y
+# CONFIG_QCOM_SPMI_TEMP_ALARM is not set
+#
+# LGE_PM_THERMAL stuff
+#
+# CONFIG_LGE_PM_THERMAL_LOG is not set
+# CONFIG_LGE_PM_THERMAL_VTS is not set
+# CONFIG_LGE_PM_THERMAL_SEPARATE_BOOT_FREQ_MITIGATION is not set
+
+# sovc
+# CONFIG_TOUCHSCREEN_SCROFF_VOLCTR is not set
+
+# "Simple user configurable GPU controlling algorithm"
+CONFIG_SIMPLE_GPU_ALGORITHM=y # not used right now, NA source
+
+# AdrenoIdler for msm_adreno_tz, needs STATE_NOTIFIER (in some implementations)
+CONFIG_ADRENO_IDLER=y
+
+# state notifier, needed for cpufreq governors, adreno-idler, etc.
+CONFIG_STATE_NOTIFIER=y
+
+# PowerEfficient Workqueues
+CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y
+
+# wakelocks, etc.
+# CONFIG_FW_CACHE is not set
+
+# PM_WAKELOCKS
+CONFIG_PM_WAKELOCKS_GC=y
+
+# CPUidle stuff
+#
+# CONFIG_CPU_IDLE_GOV_LADDER is not set
+# CONFIG_CPU_IDLE_GOV_MENU is not set
