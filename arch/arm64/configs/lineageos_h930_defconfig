@@ -5673,6 +5673,7 @@ CONFIG_THIN_ARCHIVES=y
 
 # kcal/color correction and other nice eye-candy
 CONFIG_FB_MSM_MDSS_KCAL_CTRL=y
+CONFIG_KLAPSE=y
 
 # performance & latency cutdown tweaking
 # CONFIG_ZEN_INTERACTIVE is not set
