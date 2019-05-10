@@ -64,7 +64,7 @@ struct qca_napi_data *hdd_napi_get_all(void)
 	else
 		rp = hif_napi_get_all(hif);
 
-	NAPI_DEBUG("<-- [addr=%p]", rp);
+	NAPI_DEBUG("<-- [addr=%pK]", rp);
 	return rp;
 }
 
@@ -237,7 +237,7 @@ int hdd_napi_event(enum qca_napi_event event, void *data)
 	int rc = -EFAULT;  /* assume err */
 	struct hif_opaque_softc *hif;
 
-	NAPI_DEBUG("-->(event=%d, aux=%p)", event, data);
+	NAPI_DEBUG("-->(event=%d, aux=%pK)", event, data);
 
 	hif = cds_get_context(QDF_MODULE_ID_HIF);
 	if (unlikely(NULL == hif))
@@ -379,12 +379,11 @@ int hdd_napi_apply_throughput_policy(struct hdd_context_s *hddctx,
 	else
 		req_state = QCA_NAPI_TPUT_LO;
 
-	if (req_state != napid->napi_mode) {
+	if (req_state != napid->napi_mode)
 		/* [re]set the floor frequency of high cluster */
 		rc = hdd_napi_perfd_cpufreq(req_state);
 		/* blacklist/boost_mode on/off */
 		rc = hdd_napi_event(NAPI_EVT_TPUT_STATE, (void *)req_state);
-	}
 	return rc;
 }
 
