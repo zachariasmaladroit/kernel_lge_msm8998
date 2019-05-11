@@ -5702,6 +5702,52 @@ CONFIG_DVB_MPQ_TSPP1=y
 # CONFIG_DVB_MPQ_MEDIA_BOX_DEMUX is not set
 # CONFIG_TSPP is not set # dep
 
+# disable for debug, security, attack surface
+# CONFIG_MSM_RDBG is not set # remote debugger driver (=m by default)
+CONFIG_MAGIC_SYSRQ=y
+#
+# Jump labels:
+# the kernel will compile trace point locations with just a nop instruction.
+# When trace points are enabled, the nop will be converted to a jump
+# to the trace function. This technique lowers overhead and stress
+# on the branch prediction of the processor.
+#
+# jump_label assumedly leads to latency spikes, thus discouraged; performance (?)
+# needed for certain configurations (and optimization) though, thus keeping it enabled
+#
+CONFIG_JUMP_LABEL=y
+
+# tracing
+#
+# add CONFIG_TRACEPOINTS=n is not set
+
+# ION
+CONFIG_ION=y
+
+# CONFIG_ION_TEST is not set
+# CONFIG_ION_DUMMY is not set
+CONFIG_ION_MSM=y
+# CONFIG_ALLOC_BUFFERS_IN_4K_CHUNKS is not set # default =y
+# later added performance enhancements and tweaks behind a config entry
+
+# RSEQ (selected via Makefile by default)
+CONFIG_HAVE_RSEQ=y
+CONFIG_RSEQ=y
+
+# AIO
+# CONFIG_AIO has legitimate use for the functionfs
+# driver, which is used with adb and mtp. It is now required to be enabled
+# for better performance with those services.
+#
+# disabled in orion [eval]
+# CONFIG_AIO is not set
+
+# add additional drivers that might be needed
+# CONFIG_RELAY is not set
+# dmesg/printk: raise size of kernel log
+CONFIG_LOG_BUF_SHIFT=22
+CONFIG_LOG_CPU_MAX_BUF_SHIFT=21
+
 # advanced congestion control
 CONFIG_TCP_CONG_ADVANCED=y
 CONFIG_TCP_CONG_BIC=y
@@ -5709,26 +5755,51 @@ CONFIG_TCP_CONG_CUBIC=y
 CONFIG_TCP_CONG_WESTWOOD=y
 CONFIG_TCP_CONG_HTCP=y
 # CONFIG_TCP_CONG_HSTCP is not set
-# CONFIG_TCP_CONG_HYBLA is not set
-# CONFIG_TCP_CONG_VEGAS is not set
-# CONFIG_TCP_CONG_SCALABLE is not set
-# CONFIG_TCP_CONG_LP is not set
-# CONFIG_TCP_CONG_VENO is not set
+CONFIG_TCP_CONG_HYBLA=y
+CONFIG_TCP_CONG_VEGAS=y
+CONFIG_TCP_CONG_SCALABLE=y
+CONFIG_TCP_CONG_LP=y
+CONFIG_TCP_CONG_VENO=y
 # CONFIG_TCP_CONG_YEAH is not set
 # CONFIG_TCP_CONG_ILLINOIS is not set
 # CONFIG_TCP_CONG_DCTCP is not set
 # CONFIG_TCP_CONG_CDG is not set
 CONFIG_TCP_CONG_LIA=y
 CONFIG_TCP_CONG_OLIA=y
-CONFIG_TCP_CONG_WVEGAS=y
-# CONFIG_TCP_CONG_BALIA is not set
-CONFIG_DEFAULT_BIC=y
+# CONFIG_TCP_CONG_WVEGAS is not set
+CONFIG_TCP_CONG_BALIA=y
+# CONFIG_DEFAULT_BIC is not set # =y
 # CONFIG_DEFAULT_CUBIC is not set
+# CONFIG_DEFAULT_WESTWOOD is not set
 # CONFIG_DEFAULT_LIA is not set
-# CONFIG_DEFAULT_OLIA is not set
+# CONFIG_DEFAULT_OLIA is not set # MPTCP default
 # CONFIG_DEFAULT_WVEGAS is not set
 # CONFIG_DEFAULT_RENO is not set
-CONFIG_DEFAULT_TCP_CONG="bic"
+CONFIG_DEFAULT_VENO=y
+CONFIG_DEFAULT_TCP_CONG="veno"
+# CONFIG_TCP_MD5SIG is not set
+
+# MPTCP: CONFIG_LGP_DATA_TCPIP_MPTCP , CONFIG_MPTCP
+# CONFIG_MPTCP is not set
+CONFIG_MPTCP_PM_ADVANCED=y
+CONFIG_MPTCP_FULLMESH=y
+CONFIG_MPTCP_NDIFFPORTS=y
+CONFIG_MPTCP_BINDER=y
+CONFIG_DEFAULT_FULLMESH=y
+# CONFIG_DEFAULT_NDIFFPORTS is not set
+# CONFIG_DEFAULT_BINDER is not set
+# CONFIG_DEFAULT_DUMMY is not set
+CONFIG_DEFAULT_MPTCP_PM="fullmesh"
+CONFIG_MPTCP_SCHED_ADVANCED=y
+CONFIG_MPTCP_ROUNDROBIN=y # bad performance, research
+CONFIG_MPTCP_REDUNDANT=y # less latency, less jitter, lower throughput
+CONFIG_DEFAULT_SCHEDULER=y
+# CONFIG_DEFAULT_ROUNDROBIN is not set # semi-redundant ?
+# CONFIG_DEFAULT_REDUNDANT is not set # eval later ?
+CONFIG_DEFAULT_MPTCP_SCHED="default" # closer to "default" tcp behavior, best "compromise" ?
+# CONFIG_LGP_DATA_TCPIP_MPTCP_CHECKSUM_ENABLE is not set
+CONFIG_LGP_DATA_TCPIP_MPTCP_SYN_RETRY_1=y
+CONFIG_LGP_DATA_TCPIP_MPTCP=y
 
 # WiGig
 # CONFIG_WIL6210 is not set
@@ -5737,3 +5808,113 @@ CONFIG_WIL6210_TRACING=y
 CONFIG_WIL6210_WRITE_IOCTL=y
 CONFIG_WIL6210_PLATFORM_MSM=y
 # CONFIG_MSM_11AD is not set # dep
+
+# i/o schedulers
+#
+# disable blk-group scheduling
+# CONFIG_BLK_CGROUP is not set
+# CONFIG_DEBUG_BLK_CGROUP is not set
+CONFIG_IOSCHED_NOOP=y
+# CONFIG_IOSCHED_TEST is not set
+CONFIG_IOSCHED_DEADLINE=y
+CONFIG_IOSCHED_CFQ=y
+CONFIG_IOSCHED_FIOPS=y
+CONFIG_IOSCHED_SIO=y
+CONFIG_IOSCHED_ZEN=y
+CONFIG_IOSCHED_BFQ=y
+# CONFIG_BFQ_GROUP_IOSCHED is not set
+CONFIG_IOSCHED_ANXIETY=y
+# CONFIG_DEFAULT_DEADLINE is not set
+CONFIG_DEFAULT_CFQ=y
+# CONFIG_DEFAULT_NOOP is not set
+# CONFIG_DEFAULT_SIO is not set
+# CONFIG_DEFAULT_FIOPS is not set
+# CONFIG_DEFAULT_ZEN is not set
+# CONFIG_DEFAULT_ANXIETY is not set
+CONFIG_DEFAULT_IOSCHED="cfq"
+
+# swap, hswap, zram, etc.
+CONFIG_SWAP=y
+CONFIG_KSWAPD_CPU_AFFINITY_MASK="f"
+CONFIG_BALANCE_ANON_FILE_RECLAIM=y # eval
+CONFIG_ZRAM=y
+# CONFIG_ZSMALLOC is not set
+# CONFIG_PGTABLE_MAPPING is not set
+# CONFIG_ZSMALLOC_STAT is not set
+# CONFIG_ZPOOL is not set
+# CONFIG_ZBUD is not set # needed for zswap if not z3fold
+CONFIG_Z3FOLD=y
+CONFIG_ZRAM_DEFAULT_Z3FOLD=y
+# CONFIG_CLEANCACHE is not set
+# CONFIG_FRONTSWAP is not set
+# CONFIG_ZSWAP is not set
+# CONFIG_CMA_DEBUGFS is not set
+# CONFIG_CMA_PINPAGE_MIGRATION is not set
+# CONFIG_GCMA is not set
+CONFIG_GCMA_DEFAULT=y
+# CONFIG_GCMA_STATS is not set
+
+# OOM/LMK
+# CONFIG_PROCESS_RECLAIM is not set
+# CONFIG_HSWAP is not set # LGs hybrid swap, LMK + zram + swap
+# CONFIG_BOOST_DYING_TASK is not set
+# CONFIG_MEMCG is not set
+# CONFIG_MEMCG_SWAP is not set
+
+# thermal, msm_thermal_simple
+#
+# CONFIG_SENSORS_ACPI_POWER is not set
+CONFIG_THERMAL=y
+CONFIG_THERMAL_HWMON=y
+CONFIG_THERMAL_OF=y
+CONFIG_THERMAL_WRITABLE_TRIPS=y
+CONFIG_THERMAL_DEFAULT_GOV_STEP_WISE=y
+# CONFIG_THERMAL_DEFAULT_GOV_FAIR_SHARE is not set
+# CONFIG_THERMAL_DEFAULT_GOV_USER_SPACE is not set
+# CONFIG_THERMAL_DEFAULT_GOV_POWER_ALLOCATOR is not set
+# CONFIG_THERMAL_GOV_FAIR_SHARE is not set
+CONFIG_THERMAL_GOV_STEP_WISE=y
+# CONFIG_THERMAL_GOV_BANG_BANG is not set
+# CONFIG_THERMAL_GOV_USER_SPACE is not set
+# CONFIG_THERMAL_GOV_POWER_ALLOCATOR is not set
+# CONFIG_CPU_THERMAL is not set
+# CONFIG_DEVFREQ_THERMAL is not set
+# CONFIG_THERMAL_EMULATION is not set
+CONFIG_LIMITS_MONITOR=y
+CONFIG_LIMITS_LITE_HW=y
+# CONFIG_LIMITS_LITE_HW_POLLING is not set
+# CONFIG_THERMAL_MONITOR is not set
+CONFIG_THERMAL_TSENS8974=y
+# CONFIG_IMX_THERMAL is not set
+CONFIG_MSM_THERMAL_SIMPLE=y
+CONFIG_THERMAL_QPNP=y
+CONFIG_THERMAL_QPNP_ADC_TM=y
+CONFIG_QCOM_THERMAL_LIMITS_DCVS=y
+# CONFIG_QCOM_SPMI_TEMP_ALARM is not set
+#
+# LGE_PM_THERMAL stuff
+#
+# CONFIG_LGE_PM_THERMAL_LOG is not set
+# CONFIG_LGE_PM_THERMAL_VTS is not set
+# CONFIG_LGE_PM_THERMAL_SEPARATE_BOOT_FREQ_MITIGATION is not set
+
+# sovc
+# CONFIG_TOUCHSCREEN_SCROFF_VOLCTR is not set
+
+# "Simple user configurable GPU controlling algorithm"
+CONFIG_SIMPLE_GPU_ALGORITHM=y # not used right now, NA source
+
+# AdrenoIdler for msm_adreno_tz, needs STATE_NOTIFIER (in some implementations)
+CONFIG_ADRENO_IDLER=y
+
+# state notifier, needed for cpufreq governors, adreno-idler, etc.
+CONFIG_STATE_NOTIFIER=y
+
+# PowerEfficient Workqueues
+CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y
+
+# wakelocks, etc.
+# CONFIG_FW_CACHE is not set
+
+# PM_WAKELOCKS
+CONFIG_PM_WAKELOCKS_GC=y
