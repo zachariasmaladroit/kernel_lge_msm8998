@@ -79,6 +79,11 @@
 #include <linux/sysctl.h>
 #include <linux/cpu_boost.h>
 #include <linux/sched.h>
+//#include <linux/kcov.h>
+//#include <linux/cpufreq.h>
+//#include <linux/cpu_input_boost.h>
+//#include <linux/devfreq_boost.h>
+#include <linux/simple_lmk.h>
 
 #include <asm/pgtable.h>
 #include <asm/pgalloc.h>
@@ -766,6 +771,7 @@ static inline void __mmput(struct mm_struct *mm)
 	}
 	if (mm->binfmt)
 		module_put(mm->binfmt->module);
+	simple_lmk_mm_freed(mm);
 	mmdrop(mm);
 }
 
