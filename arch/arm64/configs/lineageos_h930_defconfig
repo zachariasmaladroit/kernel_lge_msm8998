@@ -5954,7 +5954,7 @@ CONFIG_BLK_DEV_BSG=y
 
 # disable for debug, security, attack surface
 # CONFIG_MSM_RDBG is not set # remote debugger driver (=m by default)
-# CONFIG_MAGIC_SYSRQ is not set
+CONFIG_MAGIC_SYSRQ=y
 
 # Jump labels:
 # the kernel will compile trace point locations with just a nop instruction.
