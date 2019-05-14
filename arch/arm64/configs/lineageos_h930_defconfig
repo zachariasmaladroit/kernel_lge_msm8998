@@ -5842,6 +5842,12 @@ CONFIG_STATE_NOTIFIER=y
 # CONFIG_SLUB_CPU_PARTIAL is not set # more indeterminism in the latency of the free , taking of locks that may cause latency spikes
 # CONFIG_VM_EVENT_COUNTERS is not set
 
+# zstd and alternative compression algorithms
+# CONFIG_XXHASH=y
+# CONFIG_ZSTD_COMPRESS=y
+# CONFIG_ZSTD_DECOMPRESS=y
+# CONFIG_CRYPTO_ZSTD=y
+
 # swap, hswap, zram, etc.
 CONFIG_KSWAPD_CPU_AFFINITY_MASK="f"
 CONFIG_BALANCE_ANON_FILE_RECLAIM=y # eval
@@ -6073,3 +6079,7 @@ CONFIG_AINUR_DTS_HW=y
 
 # video processing
 CONFIG_FB_MSM_MDSS_KCAL_CTRL=y
+
+# XZ/LZMA(2) data compression
+CONFIG_XZ_DEC=y
+CONFIG_XZ_DEC_BCJ=y # branch/call/jump filters
