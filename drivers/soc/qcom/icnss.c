@@ -73,8 +73,6 @@ module_param(qmi_timeout, ulong, 0600);
 #define ICNSS_THRESHOLD_LOW		3450000
 #define ICNSS_THRESHOLD_GUARD		20000
 
-#define ICNSS_MAX_PROBE_CNT		2
-
 #define icnss_ipc_log_string(_x...) do {				\
 	if (icnss_ipc_log_context)					\
 		ipc_log_string(icnss_ipc_log_context, _x);		\
@@ -2119,8 +2117,7 @@ static int icnss_driver_event_server_exit(void *data)
 
 static int icnss_call_driver_probe(struct icnss_priv *priv)
 {
-	int ret = 0;
-	int probe_cnt = 0;
+	int ret;
 
 	if (!priv->ops || !priv->ops->probe)
 		return 0;
@@ -2132,15 +2129,10 @@ static int icnss_call_driver_probe(struct icnss_priv *priv)
 
 	icnss_hw_power_on(priv);
 
-	while (probe_cnt < ICNSS_MAX_PROBE_CNT) {
-		ret = priv->ops->probe(&priv->pdev->dev);
-		probe_cnt++;
-		if (ret != -EPROBE_DEFER)
-			break;
-	}
+	ret = priv->ops->probe(&priv->pdev->dev);
 	if (ret < 0) {
-		icnss_pr_err("Driver probe failed: %d, state: 0x%lx, probe_cnt: %d\n",
-			     ret, priv->state, probe_cnt);
+		icnss_pr_err("Driver probe failed: %d, state: 0x%lx\n",
+			     ret, priv->state);
 		goto out;
 	}
 
@@ -2246,7 +2238,6 @@ out:
 static int icnss_driver_event_register_driver(void *data)
 {
 	int ret = 0;
-	int probe_cnt = 0;
 
 	if (penv->ops)
 		return -EEXIST;
@@ -2266,15 +2257,11 @@ static int icnss_driver_event_register_driver(void *data)
 	if (ret)
 		goto out;
 
-	while (probe_cnt < ICNSS_MAX_PROBE_CNT) {
-		ret = penv->ops->probe(&penv->pdev->dev);
-		probe_cnt++;
-		if (ret != -EPROBE_DEFER)
-			break;
-	}
+	ret = penv->ops->probe(&penv->pdev->dev);
+
 	if (ret) {
-		icnss_pr_err("Driver probe failed: %d, state: 0x%lx, probe_cnt: %d\n",
-			     ret, penv->state, probe_cnt);
+		icnss_pr_err("Driver probe failed: %d, state: 0x%lx\n",
+			     ret, penv->state);
 		goto power_off;
 	}
 
