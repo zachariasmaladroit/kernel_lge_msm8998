@@ -5947,12 +5947,19 @@ CONFIG_WLAN_FEATURE_FILS=y # needed for successful compilation
 # CONFIG_IOMMU_DEBUG_TRACKING is not set
 # CONFIG_IOMMU_TESTS is not set
 
+# debug stuff (disabling recommended)
+# CONFIG_PROFILING is not set
+# CONFIG_MMC_PERF_PROFILING is not set
+CONFIG_DEBUG_INFO_REDUCED=y
+
 # qcacld-3.0 debug stuff
 # CONFIG_FEATURE_TSO_DEBUG is not set
 # CONFIG_WLAN_NAPI_DEBUG is not set
 
 # hardware offload, etc.
-CONFIG_INET_LRO=y
+# (Android requirement ?)
+#
+# CONFIG_INET_LRO is not set
 
 CONFIG_IKCONFIG_PROC=y
 CONFIG_BLK_DEV_BSG=y
@@ -5996,12 +6003,12 @@ CONFIG_AIO=y
 CONFIG_LOG_BUF_SHIFT=22
 CONFIG_LOG_CPU_MAX_BUF_SHIFT=21
 
-# pstore functionality
+# sys/fs/pstore
 CONFIG_PSTORE=y
 CONFIG_PSTORE_CONSOLE=y
-CONFIG_PSTORE_PMSG=y
+# CONFIG_PSTORE_PMSG is not set
+# CONFIG_PSTORE_FTRACE is not set
 CONFIG_PSTORE_RAM=y
-# PSTORE_FTRACE is not set
 
 # LGE_USB_SUPPORT_LIST_NETWORK
 # needed by LGE_USB_SUPPORT_LIST_NETWORK (USB_NET_DRIVERS && USB_NET_CDC_SUBSET) 
@@ -6093,3 +6100,18 @@ CONFIG_XZ_DEC_BCJ=y # branch/call/jump filters
 #
 CONFIG_KERNEL_MODE_NEON=y
 CONFIG_XOR_BLOCKS=y
+
+# timer tickrate
+#
+CONFIG_HZ_100=y
+# CONFIG_HZ_250 is not set
+# CONFIG_HZ_300 is not set
+# CONFIG_HZ_500 is not set
+# CONFIG_HZ_1000 is not set
+CONFIG_HZ=100
+
+# dynticks
+#
+CONFIG_TICK_CPU_ACCOUNTING=y
+# CONFIG_VIRT_CPU_ACCOUNTING_GEN is not set
+# CONFIG_IRQ_TIME_ACCOUNTING is not set
