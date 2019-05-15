@@ -6,14 +6,14 @@
 #
 # Script to build a zImage from a kernel tree
 
-#USE_CCACHE=1
-#CACHE_DIR=~/.ccache
+#~/android/toolchains/gcc-linaro-7.4.1-2019.02-x86_64_aarch64-linux-gnu/bin:
+#CROSS_COMPILE=aarch64-linux-gnu- \
+
+USE_CCACHE=1
+CACHE_DIR=~/.ccache
 
 KBUILD_BUILD_USER=zacharias.maladroit
 KBUILD_BUILD_HOST=BuildHost
-
-#~/android/toolchains/gcc-linaro-7.4.1-2019.02-x86_64_aarch64-linux-gnu/bin:
-#CROSS_COMPILE=aarch64-linux-gnu- \
 
 export PATH="/home/matthias/android/toolchains/dtc9_celtare21/bin/:/home/matthias/android/toolchains/gcc-linaro-7.4.1-2019.02-x86_64_aarch64-linux-gnu/bin/:$PATH"
 export LD_LIBRARY_PATH="/home/matthias/android/toolchains/dtc9_celtare21/lib64/:$LD_LIBRARY_PATH"
