@@ -787,8 +787,7 @@ QDF_STATUS wlan_hdd_remain_on_channel_callback(tHalHandle hHal, void *pCtx,
 	 * Always schedule below work queue only after completing the
 	 * cancel_rem_on_chan_var event.
 	 */
-	queue_delayed_work(system_freezable_wq,
-			&hdd_ctx->roc_req_work, 0);
+	schedule_delayed_work(&hdd_ctx->roc_req_work, 0);
 
 	return QDF_STATUS_SUCCESS;
 }
@@ -1422,8 +1421,7 @@ static int wlan_hdd_request_remain_on_channel(struct wiphy *wiphy,
 						HDD_P2P_MAX_ROC_DURATION;
 
 			wlan_hdd_roc_request_enqueue(pAdapter, pRemainChanCtx);
-			queue_delayed_work(system_freezable_wq,
-				&pHddCtx->roc_req_work,
+			schedule_delayed_work(&pHddCtx->roc_req_work,
 			msecs_to_jiffies(
 				pHddCtx->config->p2p_listen_defer_interval));
 			hdd_debug("Defer interval is %hu, pAdapter %pK",
@@ -1465,8 +1463,7 @@ static int wlan_hdd_request_remain_on_channel(struct wiphy *wiphy,
 	 */
 	if (isBusy == false && pAdapter->is_roc_inprogress == false) {
 		hdd_debug("scheduling delayed work: no connection/roc active");
-		queue_delayed_work(system_freezable_wq,
-			&pHddCtx->roc_req_work, 0);
+		schedule_delayed_work(&pHddCtx->roc_req_work, 0);
 	}
 	return 0;
 }
@@ -2828,6 +2825,9 @@ stop_modules:
 		hdd_debug("Closing all modules from the add_virt_iface");
 		qdf_mc_timer_start(&pHddCtx->iface_change_timer,
 				   pHddCtx->config->iface_change_wait_time);
+		hdd_prevent_suspend_timeout(
+			pHddCtx->config->iface_change_wait_time,
+			WIFI_POWER_EVENT_WAKELOCK_IFACE_CHANGE_TIMER);
 	} else
 		hdd_debug("Other interfaces are still up dont close modules!");
 

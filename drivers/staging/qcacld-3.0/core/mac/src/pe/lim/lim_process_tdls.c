@@ -79,8 +79,6 @@
 #include "cds_regdomain.h"
 #include "cds_utils.h"
 
-#define NO_SESSION 0xff
-
 /* define NO_PAD_TDLS_MIN_8023_SIZE to NOT padding: See CR#447630
    There was IOT issue with cisco 1252 open mode, where it pads
    discovery req/teardown frame with some junk value up to min size.
@@ -1632,7 +1630,7 @@ static tSirRetStatus lim_send_tdls_setup_rsp_frame(tpAniSirGlobal pMac,
 		if (wlan_cfg_get_int(pMac, WNI_CFG_MAX_SP_LENGTH, &val) !=
 		    eSIR_SUCCESS)
 			pe_warn("could not retrieve Max SP Length");
-		tdlsSetupRsp.WMMInfoStation.max_sp_length = (uint8_t) val;
+			tdlsSetupRsp.WMMInfoStation.max_sp_length = (uint8_t) val;
 		tdlsSetupRsp.WMMInfoStation.present = 1;
 	} else {
 		/*
@@ -3294,7 +3292,7 @@ tSirRetStatus lim_delete_tdls_peers(tpAniSirGlobal mac_ctx,
 	if (lim_is_roam_synch_in_progress(session_entry))
 		return eSIR_SUCCESS;
 
-	if (mac_ctx->lim.sme_msg_callback) {
+	if (!session_entry->is_tdls_csa && mac_ctx->lim.sme_msg_callback) {
 		tdls_state_disable = qdf_mem_malloc(
 						sizeof(*tdls_state_disable));
 		if (NULL == tdls_state_disable) {
@@ -3307,6 +3305,10 @@ tSirRetStatus lim_delete_tdls_peers(tpAniSirGlobal mac_ctx,
 		msg.bodyval = 0;
 		mac_ctx->lim.sme_msg_callback(mac_ctx, &msg);
 	}
+
+	if (session_entry->is_tdls_csa)
+		/* reset the csa flag */
+		session_entry->is_tdls_csa = false;
 
 	lim_send_sme_tdls_delete_all_peer_ind(mac_ctx, session_entry);
 	pe_debug("Exit");

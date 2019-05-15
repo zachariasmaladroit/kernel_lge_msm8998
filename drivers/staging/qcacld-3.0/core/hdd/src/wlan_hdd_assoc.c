@@ -161,8 +161,7 @@ hdd_conn_set_authenticated(hdd_adapter_t *pAdapter, uint8_t authState)
 	pHddStaCtx->conn_info.uIsAuthenticated = authState;
 
 	/* Check is pending ROC request or not when auth state changed */
-	queue_delayed_work(system_freezable_wq,
-			&pHddCtx->roc_req_work, 0);
+	schedule_delayed_work(&pHddCtx->roc_req_work, 0);
 }
 
 /**
@@ -191,8 +190,7 @@ void hdd_conn_set_connection_state(hdd_adapter_t *adapter,
 	hdd_sta_ctx->conn_info.connState = conn_state;
 
 	if (conn_state != eConnectionState_NdiConnected)
-		queue_delayed_work(system_freezable_wq,
-			&hdd_ctx->roc_req_work, 0);
+		schedule_delayed_work(&hdd_ctx->roc_req_work, 0);
 }
 
 /**
@@ -850,6 +848,9 @@ static void hdd_save_bss_info(hdd_adapter_t *adapter,
 	} else {
 		hdd_sta_ctx->conn_info.conn_flag.vht_op_present = false;
 	}
+	/* Cache last connection info */
+	qdf_mem_copy(&hdd_sta_ctx->cache_conn_info, &hdd_sta_ctx->conn_info,
+		     sizeof(connection_info_t));
 }
 
 /**
@@ -5204,8 +5205,7 @@ hdd_sme_roam_callback(void *pContext, tCsrRoamInfo *pRoamInfo, uint32_t roamId,
 		pAdapter->roam_ho_fail = false;
 		pHddStaCtx->ft_carrier_on = false;
 		complete(&pAdapter->roaming_comp_var);
-		queue_delayed_work(system_freezable_wq,
-			&pHddCtx->roc_req_work, 0);
+		schedule_delayed_work(&pHddCtx->roc_req_work, 0);
 		break;
 
 	default:
