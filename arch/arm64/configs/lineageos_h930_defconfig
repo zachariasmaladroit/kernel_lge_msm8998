@@ -5654,6 +5654,11 @@ CONFIG_APSS_CORE_EA=y # needed for thermal (!?)
 CONFIG_MSM_PERFORMANCE=y
 CONFIG_MSM_PERFORMANCE_CPUFREQ_LIMITS_VOTING_ONLY=y # ours or ocean/HTC ?
 
+# CPUidle stuff
+#
+# CONFIG_CPU_IDLE_GOV_LADDER is not set
+# CONFIG_CPU_IDLE_GOV_MENU is not set
+
 # code optimizations
 # CONFIG_CC_OPTIMIZE_FOR_SIZE is not set
 # CONFIG_PROFILE_ALL_BRANCHES is not set
