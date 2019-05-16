@@ -28,7 +28,13 @@
 static char ime_str[3][8] = {"OFF", "ON", "SWYPE"};
 static char incoming_call_str[3][8] = {"IDLE", "RINGING", "OFFHOOK"};
 static char mfts_str[4][8] = {"NONE", "FOLDER", "FLAT", "CURVED"};
+
+#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
+int lpwg_status = 0;
+EXPORT_SYMBOL_GPL(lpwg_status);
+#else
 static int lpwg_status = 0;
+#endif
 
 static ssize_t show_platform_data(struct device *dev, char *buf)
 {
