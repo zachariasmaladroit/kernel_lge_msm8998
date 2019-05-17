@@ -410,6 +410,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Wno-missing-field-initializers \
 		   -Wno-strict-prototypes \
 		   -Wno-misleading-indentation \
+		   -Wno-uninitialized \
 		   -fno-delete-null-pointer-checks \
 		   -march=armv8-a+crc+crypto \
 		   -mcpu=cortex-a73+crypto+crc \
