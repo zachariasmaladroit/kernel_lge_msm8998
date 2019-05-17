@@ -403,7 +403,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Wno-strict-prototypes \
 		   -fno-delete-null-pointer-checks \
 		   -march=armv8-a+crc+crypto \
-		   -mcpu=cortex-a53+crypto+crc \
+		   -mcpu=cortex-a73+crypto+crc \
 		   -std=gnu89 $(call cc-option,-fno-PIE)
 
 ifeq ($(TARGET_BOARD_TYPE),auto)
