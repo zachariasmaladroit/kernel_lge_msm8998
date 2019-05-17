@@ -49,5 +49,5 @@ obj-$(CONFIG_QCA_CLD_WLAN)	+= qcacld-3.0/
 obj-$(CONFIG_MOST)		+= most/
 
 # TODO: remove me
-subdir-ccflags-y += \
-	-Wno-enum-conversion
+#subdir-ccflags-y += \
+#	-Wno-enum-conversion
