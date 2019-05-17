@@ -3843,15 +3843,7 @@ static void cds_pdev_set_pcl(enum tQDF_ADAPTER_MODE mode)
 }
 #endif
 
-/**
- * cds_set_pcl_for_existing_combo() - Set PCL for existing connection
- * @mode: Connection mode of type 'cds_con_mode'
- *
- * Set the PCL for an existing connection
- *
- * Return: None
- */
-static void cds_set_pcl_for_existing_combo(enum cds_con_mode mode)
+void cds_set_pcl_for_existing_combo(enum cds_con_mode mode)
 {
 	struct cds_conc_connection_info
 				info[MAX_NUMBER_OF_CONC_CONNECTIONS] = { {0} };
@@ -3949,18 +3941,7 @@ void cds_incr_active_session(enum tQDF_ADAPTER_MODE mode,
 
 	cds_debug("No.# of active sessions for mode %d = %d",
 		mode, hdd_ctx->no_of_active_sessions[mode]);
-	/*
-	 * Get PCL logic makes use of the connection info structure.
-	 * Let us set the PCL to the FW before updating the connection
-	 * info structure about the new connection.
-	 */
-	if (mode == QDF_STA_MODE) {
-		qdf_mutex_release(&cds_ctx->qdf_conc_list_lock);
-		/* Set PCL of STA to the FW */
-		cds_pdev_set_pcl(mode);
-		qdf_mutex_acquire(&cds_ctx->qdf_conc_list_lock);
-		cds_debug("Set PCL of STA to FW");
-	}
+
 	cds_incr_connection_count(session_id);
 	if ((cds_mode_specific_connection_count(CDS_STA_MODE, NULL) > 0) &&
 		(mode != QDF_STA_MODE)) {
@@ -5492,6 +5473,8 @@ static QDF_STATUS cds_modify_pcl_based_on_enabled_channels(
 {
 	cds_context_type *cds_ctx;
 	uint32_t i, pcl_len = 0;
+	uint8_t pcl_list[QDF_MAX_NUM_CHAN];
+	uint8_t weight_list[QDF_MAX_NUM_CHAN];
 
 	cds_ctx = cds_get_context(QDF_MODULE_ID_QDF);
 	if (!cds_ctx) {
@@ -5501,10 +5484,15 @@ static QDF_STATUS cds_modify_pcl_based_on_enabled_channels(
 
 	for (i = 0; i < *pcl_len_org; i++) {
 		if (!CDS_IS_PASSIVE_OR_DISABLE_CH(pcl_list_org[i])) {
-			pcl_list_org[pcl_len] = pcl_list_org[i];
-			weight_list_org[pcl_len++] = weight_list_org[i];
+			pcl_list[pcl_len] = pcl_list_org[i];
+			weight_list[pcl_len++] = weight_list_org[i];
 		}
 	}
+
+	qdf_mem_zero(pcl_list_org, QDF_ARRAY_SIZE(pcl_list_org));
+	qdf_mem_zero(weight_list_org, QDF_ARRAY_SIZE(weight_list_org));
+	qdf_mem_copy(pcl_list_org, pcl_list, pcl_len);
+	qdf_mem_copy(weight_list_org, weight_list, pcl_len);
 	*pcl_len_org = pcl_len;
 
 	return QDF_STATUS_SUCCESS;
@@ -5900,13 +5888,30 @@ bool cds_allow_sap_go_concurrency(enum cds_con_mode mode, uint8_t channel)
 
 	if ((mode == CDS_SAP_MODE || mode == CDS_P2P_GO_MODE) && (sap_cnt ||
 				go_cnt)) {
-		if (!wma_is_dbs_enable()) {
-			/* Don't allow second SAP/GO interface if DBS is not
-			 * supported */
-			cds_debug("DBS is not supported, don't allow second SAP interface");
+		if (wma_dual_beacon_on_single_mac_mcc_capable())
+			return true;
+		if (wma_dual_beacon_on_single_mac_scc_capable()) {
+			for (id = 0; id < MAX_NUMBER_OF_CONC_CONNECTIONS;
+				id++) {
+				if (conc_connection_list[id].in_use) {
+					con_mode =
+						conc_connection_list[id].mode;
+					con_chan =
+						conc_connection_list[id].chan;
+					if (((con_mode == CDS_SAP_MODE) ||
+					    (con_mode == CDS_P2P_GO_MODE)) &&
+						(channel != con_chan)) {
+						cds_debug("Scc is supported, but first SAP and second SAP are not in same channel, So don't allow second SAP interface");
+						return false;
+					}
+				}
+			}
+			return true;
+		}
+		if (!wma_is_hw_dbs_capable()) {
+			cds_debug("DBS is not supported, mcc and scc are not supported too, don't allow second SAP interface");
 			return false;
 		}
-
 		/* If DBS is supported then allow second SAP/GO session only if
 		 * the freq band of the second SAP/GO interface is different
 		 * than the first SAP/GO interface.
@@ -9855,6 +9860,8 @@ QDF_STATUS cds_modify_sap_pcl_based_on_mandatory_channel(uint8_t *pcl_list_org,
 {
 	cds_context_type *cds_ctx;
 	uint32_t i, j, pcl_len = 0;
+	uint8_t pcl_list[QDF_MAX_NUM_CHAN];
+	uint8_t weight_list[QDF_MAX_NUM_CHAN];
 	bool found;
 
 	cds_ctx = cds_get_context(QDF_MODULE_ID_QDF);
@@ -9885,10 +9892,15 @@ QDF_STATUS cds_modify_sap_pcl_based_on_mandatory_channel(uint8_t *pcl_list_org,
 			}
 		}
 		if (found) {
-			pcl_list_org[pcl_len] = pcl_list_org[i];
-			weight_list_org[pcl_len++] = weight_list_org[i];
+			pcl_list[pcl_len] = pcl_list_org[i];
+			weight_list[pcl_len++] = weight_list_org[i];
 		}
 	}
+
+	qdf_mem_zero(pcl_list_org, QDF_ARRAY_SIZE(pcl_list_org));
+	qdf_mem_zero(weight_list_org, QDF_ARRAY_SIZE(weight_list_org));
+	qdf_mem_copy(pcl_list_org, pcl_list, pcl_len);
+	qdf_mem_copy(weight_list_org, weight_list, pcl_len);
 	*pcl_len_org = pcl_len;
 
 	return QDF_STATUS_SUCCESS;
