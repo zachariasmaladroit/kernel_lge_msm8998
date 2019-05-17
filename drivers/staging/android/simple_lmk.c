@@ -46,7 +46,6 @@ static DECLARE_DELAYED_WORK(reclaim_work, simple_lmk_reclaim_work);
 static DEFINE_MUTEX(reclaim_lock);
 static struct workqueue_struct *simple_lmk_wq;
 static unsigned long last_reclaim_jiffies;
-static atomic_t simple_lmk_ready = ATOMIC_INIT(0);
 
 static unsigned long scan_and_kill(int min_adj, int max_adj,
 	unsigned long pages_needed)
@@ -147,9 +146,6 @@ void simple_lmk_force_reclaim(void)
 {
 	unsigned long mib_freed = 0;
 
-	if (!atomic_read(&simple_lmk_ready))
-		return;
-
 	/* Only one memory reclaim event can occur at a time */
 	if (!mutex_trylock(&reclaim_lock))
 		return;
@@ -164,40 +160,27 @@ void simple_lmk_force_reclaim(void)
 
 void simple_lmk_start_reclaim(void)
 {
-	if (!atomic_read(&simple_lmk_ready))
-		return;
-
 	queue_delayed_work(simple_lmk_wq, &reclaim_work, LMK_KSWAPD_TIMEOUT);
 }
 
 void simple_lmk_stop_reclaim(void)
 {
-	if (!atomic_read(&simple_lmk_ready))
-		return;
-
 	cancel_delayed_work_sync(&reclaim_work);
 }
 
-/* Initialize Simple LMK when LMKD in Android writes to the minfree parameter */
-static int simple_lmk_init_set(const char *val, const struct kernel_param *kp)
+static int __init simple_lmk_init(void)
 {
-	if (atomic_read(&simple_lmk_ready))
-		return 0;
-
 	simple_lmk_wq = alloc_workqueue("simple_lmk",
 					WQ_HIGHPRI | WQ_FREEZABLE |
 					WQ_MEM_RECLAIM | WQ_UNBOUND, 0);
 	BUG_ON(!simple_lmk_wq);
 
-	atomic_set(&simple_lmk_ready, 1);
 	return 0;
 }
-
-static const struct kernel_param_ops simple_lmk_init_ops = {
-	.set = simple_lmk_init_set
-};
+core_initcall(simple_lmk_init);
 
 /* Needed to prevent Android from thinking there's no LMK and thus rebooting */
 #undef MODULE_PARAM_PREFIX
 #define MODULE_PARAM_PREFIX "lowmemorykiller."
-module_param_cb(minfree, &simple_lmk_init_ops, NULL, 0200);
+static int minfree_unused;
+module_param_named(minfree, minfree_unused, int, 0200);
