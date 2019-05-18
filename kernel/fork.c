@@ -78,6 +78,7 @@
 #include <linux/compiler.h>
 #include <linux/sysctl.h>
 #include <linux/cpu_boost.h>
+#include <linux/cpu_input_boost.h>
 #include <linux/sched.h>
 //#include <linux/kcov.h>
 //#include <linux/cpufreq.h>
@@ -1846,6 +1847,12 @@ long _do_fork(unsigned long clone_flags,
 	if (is_zygote_pid(current->pid))
 		do_input_boost_max();
 #endif CONFIG_CPU_BOOST
+
+#ifdef CONFIG_CPU_INPUT_BOOST
+	/* Boost CPU to the max for 1250 ms when userspace launches an app */
+	if (is_zygote_pid(current->pid))
+		cpu_input_boost_kick_max(1250);
+#endif CONFIG_CPU_INPUT_BOOST
 
 	/*
 	 * Determine whether and which event to report to ptracer.  When
