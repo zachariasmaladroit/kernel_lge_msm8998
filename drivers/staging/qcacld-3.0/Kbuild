@@ -213,11 +213,11 @@ endif
 
 endif
 
-//#enable spectral scan feature
-//CONFIG_WLAN_SPECTRAL_SCAN := y
+#enable spectral scan feature
+#CONFIG_WLAN_SPECTRAL_SCAN := y
 
-//# Flag to enable Android Packet Filtering
-//CONFIG_WLAN_FEATURE_APF := y
+# Flag to enable Android Packet Filtering
+#CONFIG_WLAN_FEATURE_APF := y
 
 #Enable WLAN/Power debugfs feature only if debug_fs is enabled
 ifeq ($(CONFIG_DEBUG_FS), y)
