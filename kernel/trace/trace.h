@@ -155,9 +155,6 @@ struct trace_array_cpu {
 	char			comm[TASK_COMM_LEN];
 
 	bool			ignore_pid;
-#ifdef CONFIG_FUNCTION_TRACER
-	bool			ftrace_ignore_pid;
-#endif
 };
 
 struct tracer;
@@ -250,7 +247,6 @@ struct trace_array {
 	int			ref;
 #ifdef CONFIG_FUNCTION_TRACER
 	struct ftrace_ops	*ops;
-	struct trace_pid_list	__rcu *function_pids;
 	/* function tracing enabled */
 	int			function_enabled;
 #endif
@@ -826,9 +822,12 @@ extern struct list_head ftrace_pids;
 
 #ifdef CONFIG_FUNCTION_TRACER
 extern bool ftrace_filter_param __initdata;
-static inline int ftrace_trace_task(struct trace_array *tr)
+static inline int ftrace_trace_task(struct task_struct *task)
 {
-	return !this_cpu_read(tr->trace_buffer.data->ftrace_ignore_pid);
+	if (list_empty(&ftrace_pids))
+		return 1;
+
+	return test_tsk_trace_trace(task);
 }
 extern int ftrace_is_dead(void);
 int ftrace_create_function_files(struct trace_array *tr,
@@ -838,9 +837,8 @@ void ftrace_init_global_array_ops(struct trace_array *tr);
 void ftrace_init_array_ops(struct trace_array *tr, ftrace_func_t func);
 void ftrace_reset_array_ops(struct trace_array *tr);
 int using_ftrace_ops_list_func(void);
-void ftrace_init_tracefs(struct trace_array *tr, struct dentry *d_tracer);
 #else
-static inline int ftrace_trace_task(struct trace_array *tr)
+static inline int ftrace_trace_task(struct task_struct *task)
 {
 	return 1;
 }
@@ -855,7 +853,6 @@ static inline void ftrace_destroy_function_files(struct trace_array *tr) { }
 static inline __init void
 ftrace_init_global_array_ops(struct trace_array *tr) { }
 static inline void ftrace_reset_array_ops(struct trace_array *tr) { }
-static inline void ftrace_init_tracefs(struct trace_array *tr, struct dentry *d) { }
 /* ftace_func_t type is not defined, use macro instead of static inline */
 #define ftrace_init_array_ops(tr, func) do { } while (0)
 #endif /* CONFIG_FUNCTION_TRACER */

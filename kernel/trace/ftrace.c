@@ -91,16 +91,16 @@ struct ftrace_ops *function_trace_op __read_mostly = &ftrace_list_end;
 /* What to set function_trace_op to */
 static struct ftrace_ops *set_function_trace_op;
 
-static bool ftrace_pids_enabled(struct ftrace_ops *ops)
+/* List for set_ftrace_pid's pids. */
+LIST_HEAD(ftrace_pids);
+struct ftrace_pid {
+	struct list_head list;
+	struct pid *pid;
+};
+
+static bool ftrace_pids_enabled(void)
 {
-	struct trace_array *tr;
-
-	if (!(ops->flags & FTRACE_OPS_FL_PID) || !ops->private)
-		return false;
-
-	tr = ops->private;
-
-	return tr->function_pids != NULL;
+	return !list_empty(&ftrace_pids);
 }
 
 static void ftrace_update_trampoline(struct ftrace_ops *ops);
@@ -186,9 +186,7 @@ int ftrace_nr_registered_ops(void)
 static void ftrace_pid_func(unsigned long ip, unsigned long parent_ip,
 			    struct ftrace_ops *op, struct pt_regs *regs)
 {
-	struct trace_array *tr = op->private;
-
-	if (tr && this_cpu_read(tr->trace_buffer.data->ftrace_ignore_pid))
+	if (!test_tsk_trace_trace(current))
 		return;
 
 	op->saved_func(ip, parent_ip, op, regs);
@@ -444,7 +442,7 @@ static int __register_ftrace_function(struct ftrace_ops *ops)
 	/* Always save the function, and reset at unregistering */
 	ops->saved_func = ops->func;
 
-	if (ftrace_pids_enabled(ops))
+	if (ops->flags & FTRACE_OPS_FL_PID && ftrace_pids_enabled())
 		ops->func = ftrace_pid_func;
 
 	ftrace_update_trampoline(ops);
@@ -481,6 +479,7 @@ static int __unregister_ftrace_function(struct ftrace_ops *ops)
 
 static void ftrace_update_pid_func(void)
 {
+	bool enabled = ftrace_pids_enabled();
 	struct ftrace_ops *op;
 
 	/* Only do something if we are tracing something */
@@ -489,8 +488,8 @@ static void ftrace_update_pid_func(void)
 
 	do_for_each_ftrace_op(op, ftrace_ops_list) {
 		if (op->flags & FTRACE_OPS_FL_PID) {
-			op->func = ftrace_pids_enabled(op) ?
-				ftrace_pid_func : op->saved_func;
+			op->func = enabled ? ftrace_pid_func :
+				op->saved_func;
 			ftrace_update_trampoline(op);
 		}
 	} while_for_each_ftrace_op(op);
@@ -5265,46 +5264,134 @@ ftrace_func_t ftrace_ops_get_func(struct ftrace_ops *ops)
 	return ops->func;
 }
 
-static void
-ftrace_filter_pid_sched_switch_probe(void *data, bool preempt,
-		    struct task_struct *prev, struct task_struct *next)
+static void clear_ftrace_swapper(void)
 {
-	struct trace_array *tr = data;
-	struct trace_pid_list *pid_list;
-
-	pid_list = rcu_dereference_sched(tr->function_pids);
-
-	this_cpu_write(tr->trace_buffer.data->ftrace_ignore_pid,
-		       trace_ignore_this_task(pid_list, next));
-}
-
-static void clear_ftrace_pids(struct trace_array *tr)
-{
-	struct trace_pid_list *pid_list;
+	struct task_struct *p;
 	int cpu;
 
-	pid_list = rcu_dereference_protected(tr->function_pids,
-					     lockdep_is_held(&ftrace_lock));
-	if (!pid_list)
-		return;
-
-	unregister_trace_sched_switch(ftrace_filter_pid_sched_switch_probe, tr);
-
-	for_each_possible_cpu(cpu)
-		per_cpu_ptr(tr->trace_buffer.data, cpu)->ftrace_ignore_pid = false;
-
-	rcu_assign_pointer(tr->function_pids, NULL);
-
-	/* Wait till all users are no longer using pid filtering */
-	synchronize_sched();
-
-	trace_free_pid_list(pid_list);
+	get_online_cpus();
+	for_each_online_cpu(cpu) {
+		p = idle_task(cpu);
+		clear_tsk_trace_trace(p);
+	}
+	put_online_cpus();
 }
 
-static void ftrace_pid_reset(struct trace_array *tr)
+static void set_ftrace_swapper(void)
 {
+	struct task_struct *p;
+	int cpu;
+
+	get_online_cpus();
+	for_each_online_cpu(cpu) {
+		p = idle_task(cpu);
+		set_tsk_trace_trace(p);
+	}
+	put_online_cpus();
+}
+
+static void clear_ftrace_pid(struct pid *pid)
+{
+	struct task_struct *p;
+
+	rcu_read_lock();
+	do_each_pid_task(pid, PIDTYPE_PID, p) {
+		clear_tsk_trace_trace(p);
+	} while_each_pid_task(pid, PIDTYPE_PID, p);
+	rcu_read_unlock();
+
+	put_pid(pid);
+}
+
+static void set_ftrace_pid(struct pid *pid)
+{
+	struct task_struct *p;
+
+	rcu_read_lock();
+	do_each_pid_task(pid, PIDTYPE_PID, p) {
+		set_tsk_trace_trace(p);
+	} while_each_pid_task(pid, PIDTYPE_PID, p);
+	rcu_read_unlock();
+}
+
+static void clear_ftrace_pid_task(struct pid *pid)
+{
+	if (pid == ftrace_swapper_pid)
+		clear_ftrace_swapper();
+	else
+		clear_ftrace_pid(pid);
+}
+
+static void set_ftrace_pid_task(struct pid *pid)
+{
+	if (pid == ftrace_swapper_pid)
+		set_ftrace_swapper();
+	else
+		set_ftrace_pid(pid);
+}
+
+static int ftrace_pid_add(int p)
+{
+	struct pid *pid;
+	struct ftrace_pid *fpid;
+	int ret = -EINVAL;
+
 	mutex_lock(&ftrace_lock);
-	clear_ftrace_pids(tr);
+
+	if (!p)
+		pid = ftrace_swapper_pid;
+	else
+		pid = find_get_pid(p);
+
+	if (!pid)
+		goto out;
+
+	ret = 0;
+
+	list_for_each_entry(fpid, &ftrace_pids, list)
+		if (fpid->pid == pid)
+			goto out_put;
+
+	ret = -ENOMEM;
+
+	fpid = kmalloc(sizeof(*fpid), GFP_KERNEL);
+	if (!fpid)
+		goto out_put;
+
+	list_add(&fpid->list, &ftrace_pids);
+	fpid->pid = pid;
+
+	set_ftrace_pid_task(pid);
+
+	ftrace_update_pid_func();
+
+	ftrace_startup_all(0);
+
+	mutex_unlock(&ftrace_lock);
+	return 0;
+
+out_put:
+	if (pid != ftrace_swapper_pid)
+		put_pid(pid);
+
+out:
+	mutex_unlock(&ftrace_lock);
+	return ret;
+}
+
+static void ftrace_pid_reset(void)
+{
+	struct ftrace_pid *fpid, *safe;
+
+	mutex_lock(&ftrace_lock);
+	list_for_each_entry_safe(fpid, safe, &ftrace_pids, list) {
+		struct pid *pid = fpid->pid;
+
+		clear_ftrace_pid_task(pid);
+
+		list_del(&fpid->list);
+		kfree(fpid);
+	}
 
 	ftrace_update_pid_func();
 	ftrace_startup_all(0);
@@ -5312,52 +5399,44 @@ static void ftrace_pid_reset(struct trace_array *tr)
 	mutex_unlock(&ftrace_lock);
 }
 
-/* Greater than any max PID */
-#define FTRACE_NO_PIDS		(void *)(PID_MAX_LIMIT + 1)
-
 static void *fpid_start(struct seq_file *m, loff_t *pos)
-	__acquires(RCU)
 {
-	struct trace_pid_list *pid_list;
-	struct trace_array *tr = m->private;
-
 	mutex_lock(&ftrace_lock);
-	rcu_read_lock_sched();
 
-	pid_list = rcu_dereference_sched(tr->function_pids);
+	if (!ftrace_pids_enabled() && (!*pos))
+		return (void *) 1;
 
-	if (!pid_list)
-		return !(*pos) ? FTRACE_NO_PIDS : NULL;
-
-	return trace_pid_start(pid_list, pos);
+	return seq_list_start(&ftrace_pids, *pos);
 }
 
 static void *fpid_next(struct seq_file *m, void *v, loff_t *pos)
 {
-	struct trace_array *tr = m->private;
-	struct trace_pid_list *pid_list = rcu_dereference_sched(tr->function_pids);
-
-	if (v == FTRACE_NO_PIDS)
+	if (v == (void *)1)
 		return NULL;
 
-	return trace_pid_next(pid_list, v, pos);
+	return seq_list_next(v, &ftrace_pids, pos);
 }
 
 static void fpid_stop(struct seq_file *m, void *p)
-	__releases(RCU)
 {
-	rcu_read_unlock_sched();
 	mutex_unlock(&ftrace_lock);
 }
 
 static int fpid_show(struct seq_file *m, void *v)
 {
-	if (v == FTRACE_NO_PIDS) {
+	const struct ftrace_pid *fpid = list_entry(v, struct ftrace_pid, list);
+
+	if (v == (void *)1) {
 		seq_puts(m, "no pid\n");
 		return 0;
 	}
 
-	return trace_pid_show(m, v);
+	if (fpid->pid == ftrace_swapper_pid)
+		seq_puts(m, "swapper tasks\n");
+	else
+		seq_printf(m, "%u\n", pid_vnr(fpid->pid));
+
+	return 0;
 }
 
 static const struct seq_operations ftrace_pid_sops = {
@@ -5370,103 +5449,58 @@ static const struct seq_operations ftrace_pid_sops = {
 static int
 ftrace_pid_open(struct inode *inode, struct file *file)
 {
-	struct trace_array *tr = inode->i_private;
-	struct seq_file *m;
 	int ret = 0;
-
-	if (trace_array_get(tr) < 0)
-		return -ENODEV;
 
 	if ((file->f_mode & FMODE_WRITE) &&
 	    (file->f_flags & O_TRUNC))
-		ftrace_pid_reset(tr);
+		ftrace_pid_reset();
 
-	ret = seq_open(file, &ftrace_pid_sops);
-	if (ret < 0) {
-		trace_array_put(tr);
-	} else {
-		m = file->private_data;
-		/* copy tr over to seq ops */
-		m->private = tr;
-	}
+	if (file->f_mode & FMODE_READ)
+		ret = seq_open(file, &ftrace_pid_sops);
 
 	return ret;
-}
-
-static void ignore_task_cpu(void *data)
-{
-	struct trace_array *tr = data;
-	struct trace_pid_list *pid_list;
-
-	/*
-	 * This function is called by on_each_cpu() while the
-	 * event_mutex is held.
-	 */
-	pid_list = rcu_dereference_protected(tr->function_pids,
-					     mutex_is_locked(&ftrace_lock));
-
-	this_cpu_write(tr->trace_buffer.data->ftrace_ignore_pid,
-		       trace_ignore_this_task(pid_list, current));
 }
 
 static ssize_t
 ftrace_pid_write(struct file *filp, const char __user *ubuf,
 		   size_t cnt, loff_t *ppos)
 {
-	struct seq_file *m = filp->private_data;
-	struct trace_array *tr = m->private;
-	struct trace_pid_list *filtered_pids = NULL;
-	struct trace_pid_list *pid_list;
-	ssize_t ret;
+	char buf[64], *tmp;
+	long val;
+	int ret;
 
-	if (!cnt)
-		return 0;
+	if (cnt >= sizeof(buf))
+		return -EINVAL;
 
-	mutex_lock(&ftrace_lock);
+	if (copy_from_user(&buf, ubuf, cnt))
+		return -EFAULT;
 
-	filtered_pids = rcu_dereference_protected(tr->function_pids,
-					     lockdep_is_held(&ftrace_lock));
-
-	ret = trace_pid_write(filtered_pids, &pid_list, ubuf, cnt);
-	if (ret < 0)
-		goto out;
-
-	rcu_assign_pointer(tr->function_pids, pid_list);
-
-	if (filtered_pids) {
-		synchronize_sched();
-		trace_free_pid_list(filtered_pids);
-	} else if (pid_list) {
-		/* Register a probe to set whether to ignore the tracing of a task */
-		register_trace_sched_switch(ftrace_filter_pid_sched_switch_probe, tr);
-	}
+	buf[cnt] = 0;
 
 	/*
-	 * Ignoring of pids is done at task switch. But we have to
-	 * check for those tasks that are currently running.
-	 * Always do this in case a pid was appended or removed.
+	 * Allow "echo > set_ftrace_pid" or "echo -n '' > set_ftrace_pid"
+	 * to clean the filter quietly.
 	 */
-	on_each_cpu(ignore_task_cpu, tr, 1);
+	tmp = strstrip(buf);
+	if (strlen(tmp) == 0)
+		return 1;
 
-	ftrace_update_pid_func();
-	ftrace_startup_all(0);
- out:
-	mutex_unlock(&ftrace_lock);
+	ret = kstrtol(tmp, 10, &val);
+	if (ret < 0)
+		return ret;
 
-	if (ret > 0)
-		*ppos += ret;
+	ret = ftrace_pid_add(val);
 
-	return ret;
+	return ret ? ret : cnt;
 }
 
 static int
 ftrace_pid_release(struct inode *inode, struct file *file)
 {
-	struct trace_array *tr = inode->i_private;
+	if (file->f_mode & FMODE_READ)
+		seq_release(inode, file);
 
-	trace_array_put(tr);
-
-	return seq_release(inode, file);
+	return 0;
 }
 
 static const struct file_operations ftrace_pid_fops = {
@@ -5477,17 +5511,24 @@ static const struct file_operations ftrace_pid_fops = {
 	.release	= ftrace_pid_release,
 };
 
-void ftrace_init_tracefs(struct trace_array *tr, struct dentry *d_tracer)
+static __init int ftrace_init_tracefs(void)
 {
-	/* Only the top level directory has the dyn_tracefs and profile */
-	if (tr->flags & TRACE_ARRAY_FL_GLOBAL) {
-		ftrace_init_dyn_tracefs(d_tracer);
-		ftrace_profile_tracefs(d_tracer);
-	}
+	struct dentry *d_tracer;
+
+	d_tracer = tracing_init_dentry();
+	if (IS_ERR(d_tracer))
+		return 0;
+
+	ftrace_init_dyn_tracefs(d_tracer);
 
 	trace_create_file("set_ftrace_pid", 0644, d_tracer,
-			    tr, &ftrace_pid_fops);
+			    NULL, &ftrace_pid_fops);
+
+	ftrace_profile_tracefs(d_tracer);
+
+	return 0;
 }
+fs_initcall(ftrace_init_tracefs);
 
 /**
  * ftrace_kill - kill ftrace
