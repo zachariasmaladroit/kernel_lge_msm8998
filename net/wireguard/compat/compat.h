@@ -303,7 +303,7 @@ static inline void rng_initialized_callback(struct random_ready_callback *cb)
 {
 	complete(&container_of(cb, struct rng_initializer, cb)->done);
 }
-/*static inline int wait_for_random_bytes(void)
+static inline int wait_for_random_bytes(void)
 {
 	static bool rng_is_initialized = false;
 	int ret;
@@ -324,15 +324,15 @@ static inline void rng_initialized_callback(struct random_ready_callback *cb)
 		rng_is_initialized = true;
 	}
 	return 0;
-}*/
+}
 #elif LINUX_VERSION_CODE < KERNEL_VERSION(4, 2, 0)
 /* This is a disaster. Without this API, we really have no way of
  * knowing if it's initialized. We just return that it has and hope
  * for the best... */
-/*static inline int wait_for_random_bytes(void)
+static inline int wait_for_random_bytes(void)
 {
 	return 0;
-}*/
+}
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) && LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0) && !defined(ISRHEL8)
@@ -348,7 +348,7 @@ static inline void rng_is_initialized_callback(struct random_ready_callback *cb)
 	atomic_set(rdy->rng_state, 2);
 	kfree(rdy);
 }
-/*static inline bool rng_is_initialized(void)
+static inline bool rng_is_initialized(void)
 {
 	static atomic_t rng_state = ATOMIC_INIT(0);
 
@@ -376,15 +376,15 @@ static inline void rng_is_initialized_callback(struct random_ready_callback *cb)
 		return false;
 	}
 	return false;
-}*/
+}
 #elif LINUX_VERSION_CODE < KERNEL_VERSION(4, 2, 0)
 /* This is a disaster. Without this API, we really have no way of
  * knowing if it's initialized. We just return that it has and hope
  * for the best... */
-/*static inline bool rng_is_initialized(void)
+static inline bool rng_is_initialized(void)
 {
 	return true;
-}*/
+}
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 13, 0) && !defined(ISOPENSUSE15)
@@ -870,7 +870,7 @@ static inline void skb_mark_not_on_list(struct sk_buff *skb)
 })
 #endif
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 5) && LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)) || LINUX_VERSION_CODE < KERNEL_VERSION(5, 3, 18)
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 5) && LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)) || (LINUX_VERSION_CODE < KERNEL_VERSION(5, 3, 18) && !defined(ISRHEL82))
 #define ipv6_dst_lookup_flow(a, b, c, d) ipv6_dst_lookup(a, b, &dst, c) + (void *)0 ?: dst
 #endif
 
@@ -932,6 +932,108 @@ static inline void skb_mark_not_on_list(struct sk_buff *skb)
 #define chacha20_neon zinc_chacha20_neon
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 19, 0) && !defined(ISRHEL7)
+#include <linux/skbuff.h>
+static inline int skb_ensure_writable(struct sk_buff *skb, int write_len)
+{
+	if (!pskb_may_pull(skb, write_len))
+		return -ENOMEM;
+
+	if (!skb_cloned(skb) || skb_clone_writable(skb, write_len))
+		return 0;
+
+	return pskb_expand_head(skb, 0, 0, GFP_ATOMIC);
+}
+#endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 6, 0)
+#if IS_ENABLED(CONFIG_NF_NAT)
+#include <linux/ip.h>
+#include <linux/icmpv6.h>
+#include <net/ipv6.h>
+#include <net/icmp.h>
+#include <net/netfilter/nf_conntrack.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 1, 0)
+#include <net/netfilter/nf_nat_core.h>
+#endif
+static inline void icmp_ndo_send(struct sk_buff *skb_in, int type, int code, __be32 info)
+{
+	struct sk_buff *cloned_skb = NULL;
+	enum ip_conntrack_info ctinfo;
+	struct nf_conn *ct;
+	__be32 orig_ip;
+
+	ct = nf_ct_get(skb_in, &ctinfo);
+	if (!ct || !(ct->status & IPS_SRC_NAT)) {
+		icmp_send(skb_in, type, code, info);
+		return;
+	}
+
+	if (skb_shared(skb_in))
+		skb_in = cloned_skb = skb_clone(skb_in, GFP_ATOMIC);
+
+	if (unlikely(!skb_in || skb_network_header(skb_in) < skb_in->head ||
+	    (skb_network_header(skb_in) + sizeof(struct iphdr)) >
+	    skb_tail_pointer(skb_in) || skb_ensure_writable(skb_in,
+	    skb_network_offset(skb_in) + sizeof(struct iphdr))))
+		goto out;
+
+	orig_ip = ip_hdr(skb_in)->saddr;
+	ip_hdr(skb_in)->saddr = ct->tuplehash[0].tuple.src.u3.ip;
+	icmp_send(skb_in, type, code, info);
+	ip_hdr(skb_in)->saddr = orig_ip;
+out:
+	consume_skb(cloned_skb);
+}
+static inline void icmpv6_ndo_send(struct sk_buff *skb_in, u8 type, u8 code, __u32 info)
+{
+	struct sk_buff *cloned_skb = NULL;
+	enum ip_conntrack_info ctinfo;
+	struct in6_addr orig_ip;
+	struct nf_conn *ct;
+
+	ct = nf_ct_get(skb_in, &ctinfo);
+	if (!ct || !(ct->status & IPS_SRC_NAT)) {
+		icmpv6_send(skb_in, type, code, info);
+		return;
+	}
+
+	if (skb_shared(skb_in))
+		skb_in = cloned_skb = skb_clone(skb_in, GFP_ATOMIC);
+
+	if (unlikely(!skb_in || skb_network_header(skb_in) < skb_in->head ||
+	    (skb_network_header(skb_in) + sizeof(struct ipv6hdr)) >
+	    skb_tail_pointer(skb_in) || skb_ensure_writable(skb_in,
+	    skb_network_offset(skb_in) + sizeof(struct ipv6hdr))))
+		goto out;
+
+	orig_ip = ipv6_hdr(skb_in)->saddr;
+	ipv6_hdr(skb_in)->saddr = ct->tuplehash[0].tuple.src.u3.in6;
+	icmpv6_send(skb_in, type, code, info);
+	ipv6_hdr(skb_in)->saddr = orig_ip;
+out:
+	consume_skb(cloned_skb);
+}
+#else
+#define icmp_ndo_send icmp_send
+#define icmpv6_ndo_send icmpv6_send
+#endif
+#endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0)
+#define COMPAT_CANNOT_USE_MAX_MTU
+#endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 6, 0)
+#include <linux/skbuff.h>
+static inline void skb_reset_redirect(struct sk_buff *skb)
+{
+#ifdef CONFIG_NET_SCHED
+	skb_reset_tc(skb);
+#endif
+}
+#endif
+
 #if defined(ISUBUNTU1604)
 #include <linux/siphash.h>
 #ifndef _WG_LINUX_SIPHASH_H
@@ -954,40 +1056,6 @@ static inline void skb_mark_not_on_list(struct sk_buff *skb)
 #include <linux/bug.h>
 #undef BUILD_BUG_ON
 #define BUILD_BUG_ON(x)
-#endif
-
-/* https://lkml.kernel.org/r/20170624021727.17835-1-Jason@zx2c4.com */
-#if IS_ENABLED(CONFIG_NF_CONNTRACK)
-#include <linux/ip.h>
-#include <linux/icmpv6.h>
-#include <net/ipv6.h>
-#include <net/icmp.h>
-#include <net/netfilter/nf_conntrack.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 1, 0)
-#include <net/netfilter/nf_nat_core.h>
-#endif
-static inline void new_icmp_send(struct sk_buff *skb_in, int type, int code, __be32 info)
-{
-	enum ip_conntrack_info ctinfo;
-	struct nf_conn *ct = nf_ct_get(skb_in, &ctinfo);
-	if (skb_network_header(skb_in) < skb_in->head || (skb_network_header(skb_in) + sizeof(struct iphdr)) > skb_tail_pointer(skb_in))
-		return;
-	if (ct)
-		ip_hdr(skb_in)->saddr = ct->tuplehash[0].tuple.src.u3.ip;
-	icmp_send(skb_in, type, code, info);
-}
-static inline void new_icmpv6_send(struct sk_buff *skb, u8 type, u8 code, __u32 info)
-{
-	enum ip_conntrack_info ctinfo;
-	struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
-	if (skb_network_header(skb) < skb->head || (skb_network_header(skb) + sizeof(struct ipv6hdr)) > skb_tail_pointer(skb))
-		return;
-	if (ct)
-		ipv6_hdr(skb)->saddr = ct->tuplehash[0].tuple.src.u3.in6;
-	icmpv6_send(skb, type, code, info);
-}
-#define icmp_send(a,b,c,d) new_icmp_send(a,b,c,d)
-#define icmpv6_send(a,b,c,d) new_icmpv6_send(a,b,c,d)
 #endif
 
 /* PaX compatibility */
