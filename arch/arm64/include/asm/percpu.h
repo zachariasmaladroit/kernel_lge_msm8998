@@ -196,19 +196,19 @@ static inline unsigned long __percpu_xchg(void *ptr, unsigned long val,
 #define _percpu_read(pcp)						\
 ({									\
 	typeof(pcp) __retval;						\
-	preempt_disable_notrace();					\
+	preempt_disable();						\
 	__retval = (typeof(pcp))__percpu_read(raw_cpu_ptr(&(pcp)), 	\
 					      sizeof(pcp));		\
-	preempt_enable_notrace();					\
+	preempt_enable();						\
 	__retval;							\
 })
 
 #define _percpu_write(pcp, val)						\
 do {									\
-	preempt_disable_notrace();					\
+	preempt_disable();						\
 	__percpu_write(raw_cpu_ptr(&(pcp)), (unsigned long)(val), 	\
 				sizeof(pcp));				\
-	preempt_enable_notrace();					\
+	preempt_enable();						\
 } while(0)								\
 
 #define _pcp_protect(operation, pcp, val)			\
