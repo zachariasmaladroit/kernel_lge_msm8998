@@ -6154,3 +6154,9 @@ CONFIG_XZ_DEC_BCJ=y # branch/call/jump filters
 CONFIG_HZ_500=y
 # CONFIG_HZ_1000 is not set
 CONFIG_HZ=500
+
+# dynticks
+#
+CONFIG_TICK_CPU_ACCOUNTING=y
+# CONFIG_VIRT_CPU_ACCOUNTING_GEN is not set
+# CONFIG_IRQ_TIME_ACCOUNTING is not set
