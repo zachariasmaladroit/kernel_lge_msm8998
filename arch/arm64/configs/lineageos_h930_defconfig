@@ -6145,3 +6145,12 @@ CONFIG_KLAPSE=y
 # XZ/LZMA(2) data compression
 CONFIG_XZ_DEC=y
 CONFIG_XZ_DEC_BCJ=y # branch/call/jump filters
+
+# timer tickrate
+#
+# CONFIG_HZ_100 is not set
+# CONFIG_HZ_250 is not set
+# CONFIG_HZ_300 is not set
+CONFIG_HZ_500=y
+# CONFIG_HZ_1000 is not set
+CONFIG_HZ=500
