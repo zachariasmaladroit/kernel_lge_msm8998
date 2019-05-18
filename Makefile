@@ -428,6 +428,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -ftree-loop-distribution \
 		   -ftree-loop-distribute-patterns \
 		   -fsplit-paths \
+		   -flive-range-shrinkage \
 		   -march=armv8-a+crypto+crc \
 		   -mcpu=cortex-a73+crypto+crc \
 		   -std=gnu89 $(call cc-option,-fno-PIE)
