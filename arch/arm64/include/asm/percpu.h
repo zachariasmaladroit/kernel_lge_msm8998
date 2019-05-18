@@ -39,7 +39,7 @@ static inline unsigned long __my_cpu_offset(void)
 #define __my_cpu_offset __my_cpu_offset()
 
 #define PERCPU_OP(op, asm_op)						\
-static inline unsigned long __percpu_##op(void *ptr,			\
+static __always_inline unsigned long __percpu_##op(void *ptr,			\
 			unsigned long val, int size)			\
 {									\
 	unsigned long loop, ret;					\
