@@ -5681,7 +5681,7 @@ CONFIG_MAX_BOOST_STUNE_LEVEL=50 # (foreground app max boost, default 50, suggest
 CONFIG_DISPLAY_BOOST_STUNE_LEVEL=1
 
 # external module support
-CONFIG_MODULES=y
+# CONFIG_MODULES is not set
 CONFIG_MODULE_FORCE_LOAD=y # should facilitate loading texfat.ko
 CONFIG_MODULE_UNLOAD=y
 CONFIG_MODULE_FORCE_UNLOAD=y
@@ -5697,7 +5697,7 @@ CONFIG_MODULE_SIG_ALL=y
 CONFIG_MODULE_SIG_SHA512=y
 CONFIG_MODULE_SIG_HASH="sha512"
 # CONFIG_MODULE_COMPRESS is not set
-CONFIG_MODULES_TREE_LOOKUP=y # not needed for 1 module but ... why not
+# CONFIG_MODULES_TREE_LOOKUP is not set
 
 # no modules load
 # CONFIG_IOSCHED_TEST is not set
