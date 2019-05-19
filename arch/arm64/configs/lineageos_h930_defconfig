@@ -6223,3 +6223,7 @@ CONFIG_LGE_PM_CANCUN=y
 # use thin archives instead of ld -r
 # needs (k)build infrastructure changes (scripts/ folder)
 CONFIG_THIN_ARCHIVES=y
+
+# kcal/color correction and other nice eye-candy
+CONFIG_FB_MSM_MDSS_KCAL_CTRL=y
+CONFIG_KLAPSE=y
