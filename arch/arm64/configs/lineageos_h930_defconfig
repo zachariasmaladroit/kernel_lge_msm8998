@@ -6219,3 +6219,7 @@ CONFIG_SETEND_EMULATION=y
 # Triton: "Cpu Freq Helper Driver"
 CONFIG_LGE_PM_TRITON=y
 CONFIG_LGE_PM_CANCUN=y
+
+# use thin archives instead of ld -r
+# needs (k)build infrastructure changes (scripts/ folder)
+CONFIG_THIN_ARCHIVES=y
