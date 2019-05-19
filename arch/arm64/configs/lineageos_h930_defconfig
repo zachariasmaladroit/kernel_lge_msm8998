@@ -6005,7 +6005,15 @@ CONFIG_WLAN_FEATURE_FILS=y # needed for successful compilation
 # CONFIG_WLAN_NAPI_DEBUG is not set
 
 # hardware offload, etc.
-CONFIG_INET_LRO=y
+# Android "way" = off
+#
+# CONFIG_INET_LRO is not set
+
+# other net stuff
+#
+CONFIG_INET_DIAG=y
+CONFIG_INET_TCP_DIAG=y
+CONFIG_INET_UDP_DIAG=y
 
 CONFIG_IKCONFIG_PROC=y
 CONFIG_BLK_DEV_BSG=y
