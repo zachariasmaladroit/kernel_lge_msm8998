@@ -106,8 +106,3 @@ config SDFAT_STATISTICS
 	bool "Enable statistics for bigdata"
 	depends on SDFAT_FS
 	default y
-
-config SDFAT_TEXFAT_WRAPPER
-	bool "enable wrapper for texfat"
-	depends on SDFAT_FS
-	default n
