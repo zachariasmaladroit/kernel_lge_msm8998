@@ -6229,4 +6229,4 @@ CONFIG_TICK_CPU_ACCOUNTING=y
 # intermediary buffers, caching, readahead
 #
 # CONFIG_BOUNCE is not set
-# CONFIG_READAHEAD is not set
+CONFIG_READAHEAD=y
