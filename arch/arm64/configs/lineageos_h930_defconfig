@@ -5890,7 +5890,7 @@ CONFIG_DEFAULT_NET_SCH="pfifo_fast"
 
 # net acceleration
 #
-CONFIG_AF_KCM=y
+# CONFIG_AF_KCM is not set
 CONFIG_TLS=y
 
 # Wireguard VPN
