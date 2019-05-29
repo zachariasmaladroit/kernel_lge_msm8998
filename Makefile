@@ -412,6 +412,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fipa-icf -fipa-ra \
 		   -flra-remat \
 		   -fcode-hoisting -fhoist-adjacent-loads \
+		   -fira-hoist-pressure \
 		   -fipa-cp -fipa-bit-cp \
 		   -fipa-vrp \
 		   -fsplit-loops \
