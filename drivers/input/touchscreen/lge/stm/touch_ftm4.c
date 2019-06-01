@@ -3517,7 +3517,7 @@ static int ftm4_fb_notifier_callback(struct notifier_block *self,
 
 	TOUCH_TRACE();
 
-	if (ev && ev->data && event == FB_EVENT_BLANK) {
+	if (ev && ev->data) {
 		int *blank = (int *)ev->data;
 
 		d->fb_blank.prev = d->fb_blank.curr;
@@ -3525,11 +3525,10 @@ static int ftm4_fb_notifier_callback(struct notifier_block *self,
 		TOUCH_I("%s: fb_blank - prev[%d] curr[%d]\n",
 				__func__, d->fb_blank.prev, d->fb_blank.curr);
 
-		if (d->fb_blank.curr == FB_BLANK_UNBLANK) {
+		if (event == FB_EVENT_BLANK && d->fb_blank.curr == FB_BLANK_UNBLANK) {
 			touch_resume(ts->dev);
-		} else {
-			if (d->fb_blank.prev == FB_BLANK_UNBLANK)
-				touch_suspend(ts->dev);
+		} else if (event == FB_EARLY_EVENT_BLANK && d->fb_blank.prev == FB_BLANK_UNBLANK) {
+			touch_suspend(ts->dev);
 		}
 	}
 
