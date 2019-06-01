@@ -502,13 +502,13 @@ static int touch_fb_notifier_callback(struct notifier_block *self,
 		container_of(self, struct touch_core_data, fb_notif);
 	struct fb_event *ev = (struct fb_event *)data;
 
-	if (ev && ev->data && event == FB_EVENT_BLANK) {
+	if (ev && ev->data) {
 		int *blank = (int *)ev->data;
-
-		if (*blank == FB_BLANK_UNBLANK)
-			touch_resume(ts->dev);
-		else
+		if (event == FB_EARLY_EVENT_BLANK && *blank != FB_BLANK_UNBLANK) {
 			touch_suspend(ts->dev);
+		} else if (event == FB_EVENT_BLANK && *blank == FB_BLANK_UNBLANK) {
+			touch_resume(ts->dev);
+		}
 	}
 
 	return 0;
