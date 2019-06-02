@@ -245,22 +245,11 @@ static void cpu_input_boost_input_event(struct input_handle *handle,
 	queue_work(b->wq, &b->input_boost);
 }
 
-static int input_dev_filter(struct input_dev *dev)
-{
-	if (strstr(dev->name, "touch_dev"))
-		return 0;
-	else
-		return 1;
-}
-
 static int cpu_input_boost_input_connect(struct input_handler *handler,
 	struct input_dev *dev, const struct input_device_id *id)
 {
 	struct input_handle *handle;
 	int ret;
-
-	if (input_dev_filter(dev))
-		return -ENODEV;
 
 	handle = kzalloc(sizeof(*handle), GFP_KERNEL);
 	if (!handle)
