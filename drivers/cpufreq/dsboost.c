@@ -53,6 +53,7 @@ static void do_input_boost_rem(struct work_struct *work)
 				input_stune_slot);
 
 		do_prefer_idle("top-app", 0);
+		do_prefer_idle("foreground", 0);
 	}
 }
 
@@ -64,6 +65,7 @@ static void do_input_boost(struct work_struct *work)
 					input_stune_boost, &input_stune_slot);
 
 			do_prefer_idle("top-app", 1);
+			do_prefer_idle("foreground", 1);
 		}
 	}
 
