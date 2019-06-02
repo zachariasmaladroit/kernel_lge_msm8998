@@ -510,7 +510,8 @@ struct touch_core_data {
 	u32 tx_pa;
 	u32 rx_pa;
 
-	struct pm_qos_request pm_qos_req;
+	struct pm_qos_request pm_i2c_req;
+	struct pm_qos_request pm_touch_req;
 };
 
 #define PROPERTY_GPIO(np, string, target)				\

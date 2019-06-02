@@ -24,6 +24,7 @@
 #include <linux/async.h>
 #include <linux/delay.h>
 #include <linux/irq.h>
+#include <linux/i2c/i2c-msm-v2.h>
 #include <linux/input/lge_touch_notify.h>
 
 /*
@@ -194,7 +195,8 @@ irqreturn_t touch_irq_thread(int irq, void *dev_id)
 
 	TOUCH_TRACE();
 	/* prevent CPU from entering deep sleep */
-	pm_qos_update_request(&ts->pm_qos_req, 100);
+	pm_qos_update_request(&ts->pm_touch_req, 100);
+	pm_qos_update_request(&ts->pm_i2c_req, 100);
 	mutex_lock(&ts->lock);
 
 	ts->intr_status = 0;
@@ -241,7 +243,8 @@ irqreturn_t touch_irq_thread(int irq, void *dev_id)
 	}
 
 	mutex_unlock(&ts->lock);
-	pm_qos_update_request(&ts->pm_qos_req, PM_QOS_DEFAULT_VALUE);
+	pm_qos_update_request(&ts->pm_i2c_req, PM_QOS_DEFAULT_VALUE);
+	pm_qos_update_request(&ts->pm_touch_req, PM_QOS_DEFAULT_VALUE);
 
 	return IRQ_HANDLED;
 }
@@ -754,6 +757,7 @@ static int touch_init_works(struct touch_core_data *ts)
 static int touch_core_probe_normal(struct platform_device *pdev)
 {
 	struct touch_core_data *ts;
+	struct i2c_msm_ctrl *ctrl;
 	int ret;
 
 	TOUCH_TRACE();
@@ -793,7 +797,20 @@ static int touch_core_probe_normal(struct platform_device *pdev)
 		goto error_init_input;
 	}
 
-	pm_qos_add_request(&ts->pm_qos_req, PM_QOS_CPU_DMA_LATENCY,
+//	pm_qos_add_request(&ts->pm_qos_req, PM_QOS_CPU_DMA_LATENCY,
+//			   PM_QOS_DEFAULT_VALUE);
+
+	ctrl = client->dev.parent->driver_data;
+	irq_set_perf_affinity(ctrl->rsrcs.irq);
+
+	ts->pm_i2c_req.type = PM_QOS_REQ_AFFINE_IRQ;
+	ts->pm_i2c_req.irq = ctrl->rsrcs.irq;
+	pm_qos_add_request(&ts->pm_i2c_req, PM_QOS_CPU_DMA_LATENCY,
+			   PM_QOS_DEFAULT_VALUE);
+
+	ts->pm_touch_req.type = PM_QOS_REQ_AFFINE_IRQ;
+	ts->pm_touch_req.irq = ts->irq;
+	pm_qos_add_request(&ts->pm_touch_req, PM_QOS_CPU_DMA_LATENCY,
 			   PM_QOS_DEFAULT_VALUE);
 
 	ts->irqflags |= IRQF_ONESHOT | IRQF_PERF_CRITICAL;
@@ -822,7 +839,7 @@ static int touch_core_probe_normal(struct platform_device *pdev)
 
 error_request_irq:
 	free_irq(ts->irq, ts);
-	pm_qos_remove_request(&ts->pm_qos_req);
+//	pm_qos_remove_request(&ts->pm_qos_req);
 error_init_input:
 	if (ts->input) {
 		input_mt_destroy_slots(ts->input);
