@@ -20,6 +20,7 @@
 #include <linux/module.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
+#include <linux/i2c/i2c-msm-v2.h>
 #include <linux/firmware.h>
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
 #include <linux/hrtimer.h>
@@ -2599,6 +2600,7 @@ static int ftm4_probe(struct device *dev)
 {
 	struct touch_core_data *ts = to_touch_core(dev);
 	struct ftm4_data *d = NULL;
+	struct i2c_msm_ctrl *ctrl;
 
 	TOUCH_TRACE();
 
@@ -2646,8 +2648,21 @@ static int ftm4_probe(struct device *dev)
 	ftm4_get_lpwg_abs_info(dev);
 	ftm4_get_voice_button_info(dev);
 
-	pm_qos_add_request(&d->pm_qos_req, PM_QOS_CPU_DMA_LATENCY,
-				PM_QOS_DEFAULT_VALUE);
+//	pm_qos_add_request(&d->pm_qos_req, PM_QOS_CPU_DMA_LATENCY,
+//				PM_QOS_DEFAULT_VALUE);
+
+	ctrl = client->dev.parent->driver_data;
+	irq_set_perf_affinity(ctrl->rsrcs.irq);
+
+	d->pm_i2c_req.type = PM_QOS_REQ_AFFINE_IRQ;
+	d->pm_i2c_req.irq = ctrl->rsrcs.irq;
+	pm_qos_add_request(&d->pm_i2c_req, PM_QOS_CPU_DMA_LATENCY,
+			   PM_QOS_DEFAULT_VALUE);
+
+	d->pm_touch_req.type = PM_QOS_REQ_AFFINE_IRQ;
+	d->pm_touch_req.irq = d->irq;
+	pm_qos_add_request(&d->pm_touch_req, PM_QOS_CPU_DMA_LATENCY,
+			   PM_QOS_DEFAULT_VALUE);
 
 	return 0;
 }
@@ -2658,7 +2673,7 @@ static int ftm4_remove(struct device *dev)
 
 	TOUCH_TRACE();
 
-	pm_qos_remove_request(&d->pm_qos_req);
+//	pm_qos_remove_request(&d->pm_qos_req);
 
 #ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
 	remove_sovc(d);
@@ -4336,7 +4351,8 @@ static int ftm4_irq_handler(struct device *dev)
 
 	TOUCH_TRACE();
 
-	pm_qos_update_request(&d->pm_qos_req, 10);
+	pm_qos_update_request(&d->pm_touch_req, 100);
+	pm_qos_update_request(&d->pm_i2c_req, 100);
 
 	if (atomic_read(&d->power) == POWER_OFF) {
 		TOUCH_I("%s: d.power is POWER_OFF\n", __func__);
@@ -4370,7 +4386,8 @@ static int ftm4_irq_handler(struct device *dev)
 	}
 
 exit:
-	pm_qos_update_request(&d->pm_qos_req, PM_QOS_DEFAULT_VALUE);
+	pm_qos_update_request(&d->pm_i2c_req, PM_QOS_DEFAULT_VALUE);
+	pm_qos_update_request(&d->pm_touch_req, PM_QOS_DEFAULT_VALUE);
 
 	return ret;
 }

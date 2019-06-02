@@ -552,7 +552,8 @@ struct ftm4_data {
 	struct device *dev;
 	struct kobject kobj;
 	struct mutex io_lock;
-	struct pm_qos_request pm_qos_req;
+	struct pm_qos_request pm_i2c_req;
+	struct pm_qos_request pm_touch_req;
 	struct delayed_work lpwg_debug_work;
 	atomic_t power;
 	atomic_t init;
