@@ -1408,7 +1408,7 @@ static int ftm4_swipe_enable(struct device *dev, bool enable)
 	struct swipe_info *down = &d->swipe.info[SWIPE_D];
 	struct swipe_info *right = &d->swipe.info[SWIPE_R];
 	struct swipe_info *left = &d->swipe.info[SWIPE_L];
-	u8 swipe_enable = 0;
+	u8 swipe_enable = 1;
 	int ret = 0;
 
 	TOUCH_TRACE();
@@ -4220,7 +4220,7 @@ static ssize_t store_swipe_enable(struct device *dev,
 {
 	struct ftm4_data *d = to_ftm4_data(dev);
 	int value = 0;
-	u32 mask = SWIPE_UP_BIT;
+	u32 mask = SWIPE_UP_BIT | SWIPE_DOWN_BIT | SWIPE_LEFT_BIT | SWIPE_RIGHT_BIT;
 
 	TOUCH_TRACE();
 
