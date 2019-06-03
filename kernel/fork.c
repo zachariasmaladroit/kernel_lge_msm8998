@@ -83,11 +83,8 @@
 //#include <linux/cpufreq.h>
 #include <linux/cpu_input_boost.h>
 #include <linux/devfreq_boost.h>
-<<<<<<< HEAD
 #include <linux/simple_lmk.h>
-=======
 #include <linux/state_notifier.h>
->>>>>>> ee7482a5ba9e... [eval] kernel: don't boost CPUs on app launch when suspended
 
 #include <asm/pgtable.h>
 #include <asm/pgalloc.h>
