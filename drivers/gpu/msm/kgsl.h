@@ -28,7 +28,6 @@
 #include <linux/uaccess.h>
 #include <linux/kthread.h>
 #include <asm/cacheflush.h>
-#include <linux/kthread.h>
 
 /*
  * --- kgsl drawobj flags ---
