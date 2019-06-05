@@ -119,7 +119,7 @@ static int lge_interval_start_thread(void)
 
 	pr_debug("%pS: start lge_interval thread\n",
 		 __builtin_return_address(0));
-	lge_interval_thread = kthread_run_perf_critical(__lge_interval_thread,
+	lge_interval_thread = kthread_run(__lge_interval_thread,
 					  NULL, "lge_interval");
 
 	if (IS_ERR(lge_interval_thread)) {

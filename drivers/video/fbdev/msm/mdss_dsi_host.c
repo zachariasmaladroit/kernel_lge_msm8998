@@ -136,7 +136,7 @@ void mdss_dsi_ctrl_init(struct device *ctrl_dev,
 	ctrl->err_cont.max_err_index = MAX_ERR_INDEX;
 
 	if (dsi_event.inited == 0) {
-		kthread_run_perf_critical(dsi_event_thread, (void *)&dsi_event,
+		kthread_run(dsi_event_thread, (void *)&dsi_event,
 						"mdss_dsi_event");
 		mutex_init(&dsi_mtx);
 		dsi_event.inited  = 1;
