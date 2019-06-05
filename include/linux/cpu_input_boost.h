@@ -10,12 +10,16 @@ extern unsigned long last_input_time;
 
 void cpu_input_boost_kick(void);
 void cpu_input_boost_kick_max(unsigned int duration_ms);
+void cpu_input_boost_kick_gen(unsigned int duration_ms);
 bool is_vidc_open(void);
 #else
 static inline void cpu_input_boost_kick(void)
 {
 }
 static inline void cpu_input_boost_kick_max(unsigned int duration_ms)
+{
+}
+static inline void cpu_input_boost_kick_gen(unsigned int duration_ms)
 {
 }
 bool is_vidc_open(void);
