@@ -16,12 +16,16 @@ unsigned int input_boost_freq_lp = CONFIG_INPUT_BOOST_FREQ_LP;
 unsigned int input_boost_freq_hp = CONFIG_INPUT_BOOST_FREQ_PERF;
 unsigned int max_boost_freq_lp = CONFIG_MAX_BOOST_FREQ_LP;
 unsigned int max_boost_freq_hp = CONFIG_MAX_BOOST_FREQ_PERF;
+unsigned int gen_boost_freq_lp = CONFIG_GEN_BOOST_FREQ_LP;
+unsigned int gen_boost_freq_hp = CONFIG_GEN_BOOST_FREQ_PERF;
 unsigned short input_boost_duration = CONFIG_INPUT_BOOST_DURATION_MS;
 
 module_param(input_boost_freq_lp, uint, 0644);
 module_param(input_boost_freq_hp, uint, 0644);
 module_param(max_boost_freq_lp, uint, 0644);
 module_param(max_boost_freq_hp, uint, 0644);
+module_param(gen_boost_freq_lp, uint, 0644);
+module_param(gen_boost_freq_hp, uint, 0644);
 module_param(input_boost_duration, short, 0644);
 
 unsigned long last_input_time;
@@ -29,27 +33,33 @@ unsigned long last_input_time;
 enum {
 	SCREEN_OFF,
 	INPUT_BOOST,
-	MAX_BOOST
+	MAX_BOOST,
+	GEN_BOOST
 };
 
 struct boost_drv {
 	struct delayed_work input_unboost;
 	struct delayed_work max_unboost;
+	struct delayed_work gen_unboost;
 	struct notifier_block cpu_notif;
 	struct notifier_block fb_notif;
 	wait_queue_head_t boost_waitq;
 	atomic_long_t max_boost_expires;
+	atomic_long_t gen_boost_expires;
 	unsigned long state;
 };
 
 static void input_unboost_worker(struct work_struct *work);
 static void max_unboost_worker(struct work_struct *work);
+static void gen_unboost_worker(struct work_struct *work);
 
 static struct boost_drv boost_drv_g __read_mostly = {
 	.input_unboost = __DELAYED_WORK_INITIALIZER(boost_drv_g.input_unboost,
 						    input_unboost_worker, 0),
 	.max_unboost = __DELAYED_WORK_INITIALIZER(boost_drv_g.max_unboost,
 						  max_unboost_worker, 0),
+	.gen_unboost = __DELAYED_WORK_INITIALIZER(boost_drv_g.gen_unboost,
+						  gen_unboost_worker, 0),
 	.boost_waitq = __WAIT_QUEUE_HEAD_INITIALIZER(boost_drv_g.boost_waitq)
 };
 
@@ -73,6 +83,18 @@ static unsigned int get_max_boost_freq(struct cpufreq_policy *policy)
 		freq = max_boost_freq_lp;
 	else
 		freq = max_boost_freq_hp;
+
+	return min(freq, policy->max);
+}
+
+static unsigned int get_gen_boost_freq(struct cpufreq_policy *policy)
+{
+	unsigned int freq;
+
+	if (cpumask_test_cpu(policy->cpu, cpu_lp_mask))
+		freq = gen_boost_freq_lp;
+	else
+		freq = gen_boost_freq_hp;
 
 	return min(freq, policy->max);
 }
@@ -140,6 +162,38 @@ void cpu_input_boost_kick_max(unsigned int duration_ms)
 	__cpu_input_boost_kick_max(b, duration_ms);
 }
 
+static void __cpu_input_boost_kick_gen(struct boost_drv *b,
+				       unsigned int duration_ms)
+{
+	unsigned long boost_jiffies = msecs_to_jiffies(duration_ms);
+	unsigned long curr_expires, new_expires;
+
+	if (test_bit(SCREEN_OFF, &b->state))
+		return;
+
+	do {
+		curr_expires = atomic_long_read(&b->gen_boost_expires);
+		new_expires = jiffies + boost_jiffies;
+
+		/* Skip this boost if there's a longer boost in effect */
+		if (time_after(curr_expires, new_expires))
+			return;
+	} while (atomic_long_cmpxchg(&b->gen_boost_expires, curr_expires,
+				     new_expires) != curr_expires);
+
+	set_bit(GEN_BOOST, &b->state);
+	if (!mod_delayed_work(system_unbound_wq, &b->gen_unboost,
+			      boost_jiffies))
+		wake_up(&b->boost_waitq);
+}
+
+void cpu_input_boost_kick_gen(unsigned int duration_ms)
+{
+	struct boost_drv *b = &boost_drv_g;
+
+	__cpu_input_boost_kick_gen(b, duration_ms);
+}
+
 static void input_unboost_worker(struct work_struct *work)
 {
 	struct boost_drv *b = container_of(to_delayed_work(work),
@@ -155,6 +209,15 @@ static void max_unboost_worker(struct work_struct *work)
 					   typeof(*b), max_unboost);
 
 	clear_bit(MAX_BOOST, &b->state);
+	wake_up(&b->boost_waitq);
+}
+
+static void gen_unboost_worker(struct work_struct *work)
+{
+	struct boost_drv *b = container_of(to_delayed_work(work),
+					   typeof(*b), gen_unboost);
+
+	clear_bit(GEN_BOOST, &b->state);
 	wake_up(&b->boost_waitq);
 }
 
@@ -204,6 +267,12 @@ static int cpu_notifier_cb(struct notifier_block *nb, unsigned long action,
 	/* Boost CPU to max frequency for max boost */
 	if (test_bit(MAX_BOOST, &b->state)) {
 		policy->min = get_max_boost_freq(policy);
+		return NOTIFY_OK;
+	}
+
+	/* Boost CPU to gen-boost frequency for general boost */
+	if (test_bit(GEN_BOOST, &b->state)) {
+		policy->min = get_gen_boost_freq(policy);
 		return NOTIFY_OK;
 	}
 
