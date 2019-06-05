@@ -414,11 +414,12 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fcode-hoisting -fhoist-adjacent-loads \
 		   -fira-hoist-pressure \
 		   -fipa-cp -fipa-bit-cp \
+		   -fdevirtualize -fdevirtualize-speculatively \
 		   -fipa-vrp \
 		   -fsplit-loops \
 		   -fshrink-wrap -fshrink-wrap-separate \
 		   -floop-interchange -floop-unroll-and-jam \
-		   -ftree-loop-distribution \
+		   -ftree-loop-distribution -ftree-loop-distribute-patterns \
 		   -fsplit-paths \
 		   -flive-range-shrinkage \
 		   -foptimize-strlen \
