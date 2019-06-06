@@ -5382,7 +5382,7 @@ int mdss_fb_do_ioctl(struct fb_info *info, unsigned int cmd,
 #ifdef CONFIG_CPU_INPUT_BOOST
 	if (!is_vidc_open()) {
 		if (time_before(jiffies, last_input_time + msecs_to_jiffies(5000))) {
-			cpu_input_boost_kick_general(100);
+			cpu_input_boost_kick_general(3250);
 			devfreq_boost_kick(DEVFREQ_MSM_CPUBW);
 		}
 	}
