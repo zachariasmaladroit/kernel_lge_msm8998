@@ -6263,3 +6263,8 @@ CONFIG_READAHEAD=y
 # mm stats
 #
 CONFIG_VM_STAT_INTERVAL=20
+
+#
+# Firmware Drivers
+#
+# CONFIG_ACPI is not set
