@@ -404,7 +404,7 @@ seccomp_prepare_user_filter(const char __user *user_filter)
 	struct seccomp_filter *filter = ERR_PTR(-EFAULT);
 
 #ifdef CONFIG_COMPAT
-	if (in_compat_syscall()) {
+	if (is_compat_task()) {
 		struct compat_sock_fprog fprog32;
 		if (copy_from_user(&fprog32, user_filter, sizeof(fprog32)))
 			goto out;
@@ -540,7 +540,7 @@ static void __secure_computing_strict(int this_syscall)
 {
 	const int *syscall_whitelist = mode1_syscalls;
 #ifdef CONFIG_COMPAT
-	if (in_compat_syscall())
+	if (is_compat_task())
 		syscall_whitelist = get_compat_mode1_syscalls();
 #endif
 	do {
