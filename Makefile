@@ -418,7 +418,6 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fshrink-wrap -fshrink-wrap-separate \
 		   -floop-interchange -floop-unroll-and-jam \
 		   -ftree-loop-distribution \
-		   -fgraphite-identity \
 		   -fsplit-paths \
 		   -flive-range-shrinkage \
 		   -foptimize-strlen \
