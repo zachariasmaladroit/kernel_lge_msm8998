@@ -716,14 +716,14 @@ endif
 # kernel when there is a CONFIG and compiler mismatch.
 #
 ifdef CONFIG_CC_STACKPROTECTOR_REGULAR
-  stackp-flag := -fstack-protector --param ssp-buffer-size=4
+  stackp-flag := -fstack-protector --param ssp-buffer-size=4 -fstack-clash-protection
   ifeq ($(call cc-option, $(stackp-flag)),)
     $(warning Cannot use CONFIG_CC_STACKPROTECTOR_REGULAR: \
              -fstack-protector not supported by compiler)
   endif
 else
 ifdef CONFIG_CC_STACKPROTECTOR_STRONG
-  stackp-flag := -fstack-protector-strong --param ssp-buffer-size=4
+  stackp-flag := -fstack-protector-strong --param ssp-buffer-size=4 -fstack-clash-protection
   ifeq ($(call cc-option, $(stackp-flag)),)
     $(warning Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: \
 	      -fstack-protector-strong not supported by compiler)
