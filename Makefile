@@ -425,7 +425,6 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -foptimize-strlen \
 		   -fschedule-insns -fschedule-insns2 -fsched-pressure -fsched-spec-load \
 		   -fsched2-use-superblocks \
-		   -ftree-loop-im -funswitch-loops \
 		   -march=armv8-a+crypto+crc \
 		   -mcpu=cortex-a73+crypto+crc \
 		   -std=gnu89 $(call cc-option,-fno-PIE)
