@@ -23,7 +23,6 @@
 #include <linux/irqdomain.h>
 #include <linux/mdss_io_util.h>
 #include <linux/mdss_smmu_ext.h>
-#include <linux/pm_qos.h>
 
 #include <linux/msm-bus.h>
 #include <linux/file.h>
@@ -566,10 +565,6 @@ struct mdss_data_type {
 	bool skip_first;
 	unsigned int interval_min_fps;
 #endif
-
-	struct pm_qos_request pm_irq_req;
-	struct work_struct pm_unset_work;
-	bool pm_irq_set;
 };
 
 extern struct mdss_data_type *mdss_res;
