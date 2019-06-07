@@ -13,8 +13,6 @@ void cpu_input_boost_kick_max(unsigned int duration_ms);
 void cpu_input_boost_kick_wake(void);
 void cpu_input_boost_kick_general(unsigned int duration_ms);
 bool is_vidc_open(void);
-void cpu_input_boost_kick_gpu(void);
-void unboost_kick_gpu(void);
 #else
 static inline void cpu_input_boost_kick(void)
 {
@@ -27,14 +25,6 @@ static inline void cpu_input_boost_kick_general(unsigned int duration_ms)
 {
 }
 bool is_vidc_open(void);
-{
-}
-void cpu_input_boost_kick_gpu(void)
-{
-}
-void unboost_kick_gpu(void)
-{
-}
 #endif
 
 #endif /* _CPU_INPUT_BOOST_H_ */
