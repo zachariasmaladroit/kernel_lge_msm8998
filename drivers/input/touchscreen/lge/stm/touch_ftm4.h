@@ -579,12 +579,6 @@ struct ftm4_data {
 	struct voice_button_ctrl voice_button;
 
 	struct fts_flash_corruption_info flash_corruption_info;
-
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-	struct delayed_work touch_off_work;
-	struct workqueue_struct *touch_off_workqueue;
-	struct notifier_block sovc_notif;
-#endif
 };
 
 static inline struct ftm4_data *to_ftm4_data(struct device *dev)
