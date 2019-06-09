@@ -20,6 +20,7 @@
 #include    <linux/delay.h>
 #include    <linux/pm.h>
 #include    <linux/platform_device.h>
+#include	<linux/ratelimit.h>
 #include    <linux/wakelock.h>
 #include    <sound/core.h>
 #include    <sound/pcm.h>
@@ -537,12 +538,12 @@ static ssize_t es9218_registers_store(struct device *dev,
     char name[45];
 
     if (count >= 45) {
-        pr_err("%s:input too long\n", __func__);
+        pr_err_ratelimited("%s:input too long\n", __func__);
         return -1;
     }
 
     if (sscanf(buf, "%40s %x", name, &value) != 2) {
-        pr_err("%s:unable to parse input\n", __func__);
+        pr_err_ratelimited("%s:unable to parse input\n", __func__);
         return -1;
     }
 
@@ -554,12 +555,12 @@ static ssize_t es9218_registers_store(struct device *dev,
                 error = es9218_write_reg(g_es9218_priv->i2c_client,
                                             es9218_regs[i].reg, value);
                 if (error) {
-                    pr_err("%s:Failed to write %s\n", __func__, name);
+                    pr_err_ratelimited("%s:Failed to write %s\n", __func__, name);
                     return -1;
                 }
             }
             else {
-                pr_err("%s:Register %s is not writeable\n", __func__, name);
+                pr_err_ratelimited("%s:Register %s is not writeable\n", __func__, name);
                 return -1;
             }
 
@@ -567,7 +568,7 @@ static ssize_t es9218_registers_store(struct device *dev,
         }
     }
 
-    pr_err("%s:no such register %s\n", __func__, name);
+    pr_err_ratelimited("%s:no such register %s\n", __func__, name);
     return -1;
 }
 
@@ -666,7 +667,7 @@ static int es9218_master_trim(struct i2c_client *client, int vol)
     u32 value;
 
     if (vol >= sizeof(master_trim_tbl)/sizeof(master_trim_tbl[0])) {
-        pr_err("%s() : Invalid vol = %d return \n", __func__, vol);
+        pr_err_ratelimited("%s() : Invalid vol = %d return \n", __func__, vol);
         return 0;
     }
 
@@ -676,7 +677,7 @@ static int es9218_master_trim(struct i2c_client *client, int vol)
 #endif
 
     if  (es9218_power_state == ESS_PS_IDLE) {
-        pr_err("%s() : Invalid vol = %d return \n", __func__, vol);
+        pr_err_ratelimited("%s() : Invalid vol = %d return \n", __func__, vol);
         return 0;
     }
 
@@ -700,7 +701,7 @@ static int es9218_set_avc_volume(struct i2c_client *client, int vol)
     u8  value;
 
     if (vol >= sizeof(avc_vol_tbl)/sizeof(avc_vol_tbl[0])) {
-        pr_err("%s() : Invalid vol = %d return \n", __func__, vol);
+        pr_err_ratelimited("%s() : Invalid vol = %d return \n", __func__, vol);
         return 0;
     }
 
@@ -774,7 +775,7 @@ static int es9218_set_thd(struct i2c_client *client, int headset)
             break;
 
         default :
-            pr_err("%s() : Invalid headset = %d \n", __func__, headset);
+            pr_err_ratelimited("%s() : Invalid headset = %d \n", __func__, headset);
             break;
     }
 #ifdef SHOW_LOGS
@@ -825,7 +826,7 @@ static int es9218p_sabre_amp_start(struct i2c_client *client, int headset)
             break;
 
         default :
-            pr_err("%s() : Unknown headset = %d \n", __func__, headset);
+            pr_err_ratelimited("%s() : Unknown headset = %d \n", __func__, headset);
             ret = 1;
             break;
     }
@@ -874,7 +875,7 @@ static int es9218p_sabre_amp_stop(struct i2c_client *client, int headset)
             break;
 
         default :
-            pr_err("%s() : Invalid headset = %d \n", __func__, g_headset_type);
+            pr_err_ratelimited("%s() : Invalid headset = %d \n", __func__, g_headset_type);
             ret = 1;
             break;
     }
@@ -919,12 +920,12 @@ static ssize_t set_forced_avc_volume(struct device *dev,
     sscanf(buf, "%d", &input_vol);
 
     if ( es9218_power_state < ESS_PS_HIFI ) {
-        pr_err("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
+        pr_err_ratelimited("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
         return 0;
     }
 
     if (input_vol >= sizeof(avc_vol_tbl)/sizeof(avc_vol_tbl[0])) {
-        pr_err("%s() : Invalid vol = %d return \n", __func__, input_vol);
+        pr_err_ratelimited("%s() : Invalid vol = %d return \n", __func__, input_vol);
         return 0;
     }
 
@@ -951,12 +952,12 @@ static ssize_t set_forced_ess_filter(struct device *dev,
     sscanf(buf, "%d", &input_filter);
 
     if ( es9218_power_state < ESS_PS_HIFI ) {
-        pr_err("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
+        pr_err_ratelimited("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
         return 0;
     }
 
     if (input_filter > 11) {
-        pr_err("%s() : Invalid filter = %d return \n", __func__, input_filter);
+        pr_err_ratelimited("%s() : Invalid filter = %d return \n", __func__, input_filter);
         return 0;
     }
 
@@ -1065,7 +1066,7 @@ static int es9218_sabre_cfg_custom_filter(struct sabre_custom_filter *sabre_filt
     rv = (sabre_filter->symmetry << 2) | 0x02;        // set the write enable bit
     rc = es9218_write_reg(g_es9218_priv->i2c_client, ES9218P_REG_44, rv);
     if (rc < 0) {
-        pr_err("%s: rc = %d return ",__func__, rc);
+        pr_err_ratelimited("%s: rc = %d return ",__func__, rc);
         return rc;
     }
 
@@ -1096,14 +1097,14 @@ static int es9218_sabre_cfg_custom_filter(struct sabre_custom_filter *sabre_filt
     rv |= 0x80;
     rc = es9218_write_reg(g_es9218_priv->i2c_client, ES9218P_REG_07, rv);
     if (rc < 0) {
-        pr_err("%s: rc = %d return ",__func__, rc);
+        pr_err_ratelimited("%s: rc = %d return ",__func__, rc);
         return rc;
     }
     rv = (sabre_filter->symmetry << 2); // disable the write enable bit
     rv |= 0x1; // Use the custom oversampling filter.
     rc = es9218_write_reg(g_es9218_priv->i2c_client, ES9218P_REG_44, rv);
     if (rc < 0) {
-        pr_err("%s: rc = %d return ",__func__, rc);
+        pr_err_ratelimited("%s: rc = %d return ",__func__, rc);
         return rc;
     }
     return 0;
@@ -1551,7 +1552,7 @@ static int es9218p_sabre_bypass2hifi(void)
 #endif
 
     if ( es9218_power_state != ESS_PS_BYPASS ) {
-        pr_err("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
+        pr_err_ratelimited("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
         return 0;
     }
 
@@ -1652,7 +1653,7 @@ static int es9218p_sabre_bypass2hifi(void)
 static int es9218p_sabre_hifi2lpb(void)
 {
     if ( es9218_power_state < ESS_PS_HIFI ) {
-        pr_err("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
+        pr_err_ratelimited("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
         return 0;
     }
 #ifdef SHOW_LOGS
@@ -1672,7 +1673,7 @@ static int es9218p_sabre_hifi2lpb(void)
 static int es9218_sabre_audio_idle(void)
 {
     if ( es9218_power_state != ESS_PS_HIFI ) {
-        pr_err("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
+        pr_err_ratelimited("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
         return 0;
     }
 #ifdef SHOW_LOGS
@@ -1688,7 +1689,7 @@ static int es9218_sabre_audio_idle(void)
 static int es9218_sabre_audio_active(void)
 {
     if ( es9218_power_state != ESS_PS_IDLE ) {
-        pr_err("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
+        pr_err_ratelimited("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
         return 0;
     }
 #ifdef SHOW_LOGS
@@ -1746,7 +1747,7 @@ static int __es9218_sabre_headphone_on(void)
 #endif
         return 1;
     } else {
-        pr_err("%s() : state = %s , skip enabling EDO.\n",  __func__, power_state[es9218_power_state]);
+        pr_err_ratelimited("%s() : state = %s , skip enabling EDO.\n",  __func__, power_state[es9218_power_state]);
         return 0;
     }
 
@@ -1763,7 +1764,7 @@ static int __es9218_sabre_headphone_on(void)
 static int __es9218_sabre_headphone_off(void)
 {
     if ( es9218_power_state == ESS_PS_CLOSE) {
-        pr_err("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
+        pr_err_ratelimited("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
         return 0;
     }
 
@@ -2148,7 +2149,7 @@ static int es9218_headset_type_put(struct snd_kcontrol *kcontrol,
          * advanced : <ctl name="Es9018 HEADSET TYPE" value="2" />
          * aux      : <ctl name="Es9018 HEADSET TYPE" value="3" />
         */
-        pr_err("%s() : invalid headset type = %d, state = %s\n", __func__, value, power_state[es9218_power_state]);
+        pr_err_ratelimited("%s() : invalid headset type = %d, state = %s\n", __func__, value, power_state[es9218_power_state]);
         return 0;
 	}
 
@@ -2184,7 +2185,7 @@ static int es9218_auto_mute_put(struct snd_kcontrol *kcontrol,
     pr_debug("%s(): g_auto_mute_flag = %d \n", __func__, g_auto_mute_flag);
 
     if (es9218_power_state < ESS_PS_HIFI) {
-        pr_err("%s() : return = %s\n", __func__, power_state[es9218_power_state]);
+        pr_err_ratelimited("%s() : return = %s\n", __func__, power_state[es9218_power_state]);
         return 0;
     }
 
@@ -2317,7 +2318,7 @@ static int lge_ess_fade_inout_put(struct snd_kcontrol *kcontrol, struct snd_ctl_
 {
 
     if (es9218_power_state < ESS_PS_HIFI) {
-        pr_err("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
+        pr_err_ratelimited("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
         return 0;
     }
     if(lge_ess_fade_inout_init != true) {
@@ -2328,7 +2329,7 @@ static int lge_ess_fade_inout_put(struct snd_kcontrol *kcontrol, struct snd_ctl_
         mute_work = devm_kzalloc(&g_es9218_priv->i2c_client->dev, sizeof(struct delayed_work), GFP_KERNEL);
         if(!mute_work) {
             lge_ess_fade_inout_init = false;
-            pr_err("%s() : devm_kzalloc failed!!\n", __func__);
+            pr_err_ratelimited("%s() : devm_kzalloc failed!!\n", __func__);
             return 0;
         }
 
@@ -2380,7 +2381,7 @@ static int es9218_avc_volume_put(struct snd_kcontrol *kcontrol,
     vol = (int)ucontrol->value.integer.value[0];
 
     if (vol >= sizeof(avc_vol_tbl)/sizeof(avc_vol_tbl[0])) {
-        pr_err("%s() : Invalid vol = %d return \n", __func__, vol);
+        pr_err_ratelimited("%s() : Invalid vol = %d return \n", __func__, vol);
         return 0;
     }
 
@@ -2416,7 +2417,7 @@ static int es9218_master_volume_put(struct snd_kcontrol *kcontrol,
 
 
     if (es9218_power_state < ESS_PS_HIFI) {
-        pr_err("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
+        pr_err_ratelimited("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
         return 0;
     }
 
@@ -2442,7 +2443,7 @@ static int es9218_left_volume_put(struct snd_kcontrol *kcontrol,
     pr_debug("%s(): Left Volume= -%d db\n", __func__, g_left_volume/2);
 
     if (es9218_power_state < ESS_PS_HIFI) {
-        pr_err("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
+        pr_err_ratelimited("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
         return 0;
     }
 
@@ -2468,7 +2469,7 @@ static int es9218_right_volume_put(struct snd_kcontrol *kcontrol,
     pr_debug("%s(): Right Volume= -%d db\n", __func__, g_right_volume/2);
 
     if (es9218_power_state < ESS_PS_HIFI) {
-        pr_err("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
+        pr_err_ratelimited("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
         return 0;
     }
 
@@ -2529,7 +2530,7 @@ static int es9218_dop_put(struct snd_kcontrol *kcontrol,
     g_dop_flag = (int)ucontrol->value.integer.value[0];
     pr_debug("%s() dop_enable:%d, state:%d\n", __func__, g_dop_flag, es9218_power_state);
     if( !(g_dop_flag == 0 || g_dop_flag == 64 || g_dop_flag == 128 ) ) {
-        pr_err("%s() dop_enable error:%d. invalid arg.\n", __func__, g_dop_flag);
+        pr_err_ratelimited("%s() dop_enable error:%d. invalid arg.\n", __func__, g_dop_flag);
     }
 
     if( prev_dop_flag != g_dop_flag )
@@ -2577,7 +2578,7 @@ static int es9218_chip_state_get(struct snd_kcontrol *kcontrol,
 
     ret = es9218_read_reg(g_es9218_priv->i2c_client, ES9218P_REG_00);
     if(ret<0){
-        pr_err("%s : i2_read fail : %d\n",__func__ ,ret);
+        pr_err_ratelimited("%s : i2_read fail : %d\n",__func__ ,ret);
         ucontrol->value.enumerated.item[0] = 0; // fail
     } else {
         pr_notice("%s : i2_read success : %d\n",__func__ ,ret);
@@ -2676,7 +2677,7 @@ static int es9218_clk_divider_get(struct snd_kcontrol *kcontrol,
     u8 reg_val;
 
     if (es9218_power_state < ESS_PS_HIFI) {
-        pr_err("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
+        pr_err_ratelimited("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
         return 0;
     }
 
@@ -2703,7 +2704,7 @@ static int es9218_clk_divider_put(struct snd_kcontrol *kcontrol,
     u8 reg_val;
 
     if (es9218_power_state < ESS_PS_HIFI) {
-        pr_err("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
+        pr_err_ratelimited("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
         return 0;
     }
 
@@ -2823,7 +2824,7 @@ static int es9218_read_reg(struct i2c_client *client, int reg)
 
     ret = i2c_smbus_read_byte_data(client, reg);
     if (ret < 0) {
-        pr_err("%s: err %d\n", __func__, ret);
+        pr_err_ratelimited("%s: err %d\n", __func__, ret);
     }
 
     return ret;
@@ -2837,7 +2838,7 @@ static int es9218_write_reg(struct i2c_client *client, int reg, u8 value)
     for (i = 0; i < 3; i++) {
         ret = i2c_smbus_write_byte_data(client, reg, value);
         if (ret < 0) {
-            pr_err("%s: err %d,and try again\n", __func__, ret);
+            pr_err_ratelimited("%s: err %d,and try again\n", __func__, ret);
             mdelay(50);
         }
         else {
@@ -2846,7 +2847,7 @@ static int es9218_write_reg(struct i2c_client *client, int reg, u8 value)
     }
 
     if (ret < 0) {
-        pr_err("%s: err %d\n", __func__, ret);
+        pr_err_ratelimited("%s: err %d\n", __func__, ret);
     }
 
     return ret;
@@ -2863,7 +2864,7 @@ static int es9218_populate_get_pdata(struct device *dev,
             "dac,reset-gpio", 0);
 
     if (pdata->reset_gpio < 0) {
-        pr_err("Looking up %s property in node %s failed %d\n", "dac,reset-gpio", dev->of_node->full_name, pdata->reset_gpio);
+        pr_err_ratelimited("Looking up %s property in node %s failed %d\n", "dac,reset-gpio", dev->of_node->full_name, pdata->reset_gpio);
         goto err;
     }
 
@@ -2874,7 +2875,7 @@ static int es9218_populate_get_pdata(struct device *dev,
     pdata->hph_switch = of_get_named_gpio(dev->of_node,
             "dac,hph-sw", 0);
     if (pdata->hph_switch < 0) {
-        pr_err("Looking up %s property in node %s failed %d\n", "dac,hph-sw", dev->of_node->full_name, pdata->hph_switch);
+        pr_err_ratelimited("Looking up %s property in node %s failed %d\n", "dac,hph-sw", dev->of_node->full_name, pdata->hph_switch);
         goto err;
     }
 
@@ -2886,7 +2887,7 @@ static int es9218_populate_get_pdata(struct device *dev,
     pdata->i2c_scl_gpio= of_get_named_gpio(dev->of_node,
             "dac,i2c-scl-gpio", 0);
     if (pdata->i2c_scl_gpio < 0) {
-        pr_err("Looking up %s property in node %s failed %d\n", "dac,i2c-scl-gpio", dev->of_node->full_name, pdata->i2c_scl_gpio);
+        pr_err_ratelimited("Looking up %s property in node %s failed %d\n", "dac,i2c-scl-gpio", dev->of_node->full_name, pdata->i2c_scl_gpio);
         goto err;
     }
     dev_dbg(dev, "%s: i2c_scl_gpio %d", __func__, pdata->i2c_scl_gpio);
@@ -2894,7 +2895,7 @@ static int es9218_populate_get_pdata(struct device *dev,
     pdata->i2c_sda_gpio= of_get_named_gpio(dev->of_node,
             "dac,i2c-sda-gpio", 0);
     if (pdata->i2c_sda_gpio < 0) {
-        pr_err("Looking up %s property in node %s failed %d\n", "dac,i2c-sda-gpio", dev->of_node->full_name, pdata->i2c_sda_gpio);
+        pr_err_ratelimited("Looking up %s property in node %s failed %d\n", "dac,i2c-sda-gpio", dev->of_node->full_name, pdata->i2c_sda_gpio);
         goto err;
     }
     pr_debug("%s: i2c_sda_gpio %d", __func__, pdata->i2c_sda_gpio);
@@ -2903,7 +2904,7 @@ static int es9218_populate_get_pdata(struct device *dev,
     pdata->power_gpio= of_get_named_gpio(dev->of_node,
             "dac,power-gpio", 0);
     if (pdata->power_gpio < 0) {
-        pr_err("Looking up %s property in node %s failed %d\n", "dac,power-gpio", dev->of_node->full_name, pdata->power_gpio);
+        pr_err_ratelimited("Looking up %s property in node %s failed %d\n", "dac,power-gpio", dev->of_node->full_name, pdata->power_gpio);
         goto err;
     }
 
@@ -2915,7 +2916,7 @@ static int es9218_populate_get_pdata(struct device *dev,
     pdata->ear_dbg = of_get_named_gpio(dev->of_node,
             "dac,ear-dbg", 0);
     if (pdata->ear_dbg < 0) {
-        pr_err("Looking up %s property in node %s failed %d\n", "dac,ear-dbg", dev->of_node->full_name, pdata->ear_dbg);
+        pr_err_ratelimited("Looking up %s property in node %s failed %d\n", "dac,ear-dbg", dev->of_node->full_name, pdata->ear_dbg);
         goto err;
     }
     pr_debug("%s: ear_dbg gpio %d\n", __func__, pdata->ear_dbg);
@@ -2930,7 +2931,7 @@ static int es9218_populate_get_pdata(struct device *dev,
 		 * later point of time.
 		 */
 		if (PTR_ERR(pdata->vreg_dvdd) == -EPROBE_DEFER) {
-			pr_err("In %s, vreg_dvdd probe defer\n", __func__);
+			pr_err_ratelimited("In %s, vreg_dvdd probe defer\n", __func__);
 			devm_kfree(dev, pdata);
             return PTR_ERR(pdata->vreg_dvdd);
 		}
@@ -2942,7 +2943,7 @@ static int es9218_populate_get_pdata(struct device *dev,
 
     ret = of_property_read_u32_array(dev->of_node, "dac,va-supply-voltage", vol_suply, 2);
     if (ret < 0) {
-        pr_err("%s Invalid property name\n",__func__);
+        pr_err_ratelimited("%s Invalid property name\n",__func__);
         regulator_put(pdata->vreg_dvdd);
         devm_kfree(dev, pdata);
         return -EINVAL;
@@ -3299,7 +3300,7 @@ static  int es9218_codec_probe(struct snd_soc_codec *codec)
     if (priv)
         priv->codec = codec;
     else
-        pr_err("%s(): fail !!!!!!!!!!\n", __func__);
+        pr_err_ratelimited("%s(): fail !!!!!!!!!!\n", __func__);
 
     codec->control_data = snd_soc_codec_get_drvdata(codec);
 
@@ -3337,7 +3338,7 @@ static int es9218_probe(struct i2c_client *client,const struct i2c_device_id *id
 
     if (!i2c_check_functionality(client->adapter,
                 I2C_FUNC_SMBUS_BYTE_DATA)) {
-        pr_err("%s: no support for i2c read/write byte data\n", __func__);
+        pr_err_ratelimited("%s: no support for i2c read/write byte data\n", __func__);
         return -EIO;
     }
 
@@ -3345,13 +3346,13 @@ static int es9218_probe(struct i2c_client *client,const struct i2c_device_id *id
         pdata = devm_kzalloc(&client->dev,
                 sizeof(struct es9218_data), GFP_KERNEL);
         if (!pdata) {
-            pr_err("Failed to allocate memory\n");
+            pr_err_ratelimited("Failed to allocate memory\n");
             return -ENOMEM;
         }
 
         ret = es9218_populate_get_pdata(&client->dev, pdata);
         if (ret) {
-            pr_err("Parsing DT failed(%d)", ret);
+            pr_err_ratelimited("Parsing DT failed(%d)", ret);
             return ret;
         }
     } else {
@@ -3359,7 +3360,7 @@ static int es9218_probe(struct i2c_client *client,const struct i2c_device_id *id
     }
 
     if (!pdata) {
-        pr_err("%s: no platform data\n", __func__);
+        pr_err_ratelimited("%s: no platform data\n", __func__);
         return -EINVAL;
     }
 
@@ -3381,7 +3382,7 @@ static int es9218_probe(struct i2c_client *client,const struct i2c_device_id *id
 #if 0
     ret = gpio_request_one(pdata->ear_dbg, GPIOF_IN,"gpio_earjack_debugger");
     if (ret < 0) {
-        pr_err("%s(): debugger gpio request failed\n", __func__);
+        pr_err_ratelimited("%s(): debugger gpio request failed\n", __func__);
         goto ear_dbg_gpio_request_error;
     }
     pr_debug("%s: ear dbg. gpio num : %d, value : %d!\n",
@@ -3390,36 +3391,36 @@ static int es9218_probe(struct i2c_client *client,const struct i2c_device_id *id
 
     ret = gpio_request(pdata->power_gpio, "ess_power");
     if (ret < 0) {
-        pr_err("%s(): ess power request failed\n", __func__);
+        pr_err_ratelimited("%s(): ess power request failed\n", __func__);
         goto power_gpio_request_error;
     }
     ret = gpio_direction_output(pdata->power_gpio, 1);
     if (ret < 0) {
-        pr_err("%s: ess power set failed\n", __func__);
+        pr_err_ratelimited("%s: ess power set failed\n", __func__);
         goto power_gpio_request_error;
     }
     gpio_set_value(pdata->power_gpio, 0);
 
     ret = gpio_request(pdata->hph_switch, "ess_switch");
     if (ret < 0) {
-        pr_err("%s(): ess switch request failed\n", __func__);
+        pr_err_ratelimited("%s(): ess switch request failed\n", __func__);
         goto switch_gpio_request_error;
     }
     ret = gpio_direction_output(pdata->hph_switch, 1);
     if (ret < 0) {
-        pr_err("%s: ess switch set failed\n", __func__);
+        pr_err_ratelimited("%s: ess switch set failed\n", __func__);
         goto switch_gpio_request_error;
     }
     gpio_set_value(pdata->hph_switch, 0);
 
     ret = gpio_request(pdata->reset_gpio, "ess_reset");
     if (ret < 0) {
-        pr_err("%s(): ess reset request failed\n", __func__);
+        pr_err_ratelimited("%s(): ess reset request failed\n", __func__);
         goto reset_gpio_request_error;
     }
     ret = gpio_direction_output(pdata->reset_gpio, 1);
     if (ret < 0) {
-        pr_err("%s: ess reset set failed\n", __func__);
+        pr_err_ratelimited("%s: ess reset set failed\n", __func__);
         goto reset_gpio_request_error;
     }
     gpio_set_value(pdata->reset_gpio, 0);
