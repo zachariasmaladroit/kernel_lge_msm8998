@@ -6213,7 +6213,7 @@ CONFIG_THIN_ARCHIVES=y
 # DTS/sound processing variants
 CONFIG_SND_LGE_DTS=y
 CONFIG_AINUR_DTS_HW=y
-CONFIG_AINUR_DTS_SW=y
+# CONFIG_AINUR_DTS_SW is not set
 
 # screenoff gestures / volume control
 CONFIG_TOUCHSCREEN_SCROFF_VOLCTR=y
