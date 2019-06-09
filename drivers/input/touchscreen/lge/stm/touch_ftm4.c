@@ -1067,7 +1067,7 @@ static void ftm4_get_swipe_info(struct device *dev)
 	d->swipe.info[SWIPE_U].area.x2 = 1359;
 	d->swipe.info[SWIPE_U].area.y2 = 2879;
 	d->swipe.info[SWIPE_U].start_area.x1 = 439;
-	d->swipe.info[SWIPE_U].start_area.y1 = 2557;
+	d->swipe.info[SWIPE_U].start_area.y1 = 2100;
 	d->swipe.info[SWIPE_U].start_area.x2 = 1000;
 	d->swipe.info[SWIPE_U].start_area.y2 = 2879;
 	d->swipe.info[SWIPE_U].border_area.x1 = 0;
@@ -1092,7 +1092,7 @@ static void ftm4_get_swipe_info(struct device *dev)
 	d->swipe.info[SWIPE_D].start_area.x1 = 80;
 	d->swipe.info[SWIPE_D].start_area.y1 = 0;
 	d->swipe.info[SWIPE_D].start_area.x2 = 1359;
-	d->swipe.info[SWIPE_D].start_area.y2 = 300;
+	d->swipe.info[SWIPE_D].start_area.y2 = 700;
 	d->swipe.info[SWIPE_D].border_area.x1 = 30;
 	d->swipe.info[SWIPE_D].border_area.y1 = 30;
 	d->swipe.info[SWIPE_D].border_area.x2 = 30;
