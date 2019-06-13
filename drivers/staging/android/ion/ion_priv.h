@@ -190,6 +190,8 @@ struct ion_handle {
 };
 
 static struct ion_device *ion_dev;
+static struct kmem_cache *ion_page_pool;
+static struct kmem_cache *ion_sg_table_pool;
 
 /**
  * struct ion_heap_ops - ops to operate on a given heap
