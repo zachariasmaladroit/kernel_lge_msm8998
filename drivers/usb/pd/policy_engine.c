@@ -1028,7 +1028,7 @@ static void usbpd_set_state(struct usbpd *pd, enum usbpd_state next_state)
 
 			phy_params.data_role = pd->current_dr;
 			phy_params.power_role = pd->current_pr;
-#ifdef CONFIG_LGE_USB
+#ifdef CONFIG_LGE_USB_COMPLIANCE_TEST
 			phy_params.frame_filter_val |= FRAME_FILTER_EN_SOPI;
 #endif
 

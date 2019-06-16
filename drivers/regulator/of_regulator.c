@@ -18,6 +18,9 @@
 #include <linux/regulator/of_regulator.h>
 
 #include "internal.h"
+#ifdef CONFIG_LGE_PM
+#include <soc/qcom/lge/board_lge.h>
+#endif
 
 static const char *const regulator_states[PM_SUSPEND_MAX + 1] = {
 	[PM_SUSPEND_MEM]	= "regulator-state-mem",
@@ -37,7 +40,19 @@ static void of_get_regulation_constraints(struct device_node *np,
 
 	constraints->name = of_get_property(np, "regulator-name", NULL);
 
+#ifdef CONFIG_LGE_PM
+	/* SW W/A CX min voltage level set to MIN_SVS when chargerlogo boot */
+	if (!strcmp(constraints->name, "pm8998_s1_level") &&
+	    lge_get_boot_mode() == LGE_BOOT_MODE_CHARGERLOGO) {
+		min_uV = of_get_property(np,
+		                         "regulator-chargerlogo-min-microvolt", NULL);
+		pr_err("chargerlogo: CX min voltage level set to MIN_SVS\n");
+	}
+	else
+		min_uV = of_get_property(np, "regulator-min-microvolt", NULL);
+#else
 	min_uV = of_get_property(np, "regulator-min-microvolt", NULL);
+#endif
 	if (min_uV)
 		constraints->min_uV = be32_to_cpu(*min_uV);
 	max_uV = of_get_property(np, "regulator-max-microvolt", NULL);

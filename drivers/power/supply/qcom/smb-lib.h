@@ -66,6 +66,8 @@ enum print_reason {
 #define NO_BATTERY_VOTER	"NO_BATTERY_VOTER"
 #define HW_ICL_VOTER		"HW_ICL_VOTER"
 #define AICL_FAIL_WA_VOTER		"AICL_FAIL_WA_VOTER"
+#define FORCE9V_HVDCP_VOTER	"FORCE9V_HVDCP_VOTER"
+#define DISABLE_HVDCP_VOTER	"DISABLE_HVDCP_VOTER"
 #endif
 #define PD_INACTIVE_VOTER		"PD_INACTIVE_VOTER"
 #define BOOST_BACK_VOTER		"BOOST_BACK_VOTER"
@@ -461,7 +463,6 @@ struct smb_charger {
 	bool			checking_pd_active;
 	bool			is_abnormal_gendor;
 	bool			is_hvdcp_timeout;
-	bool			disable_inov_for_hvdcp;
 	enum retry_legacy_index		retry_legacy_detection;
 	enum power_supply_type		pseudo_usb_type;
 	struct delayed_work 	recovery_boost_back_work;
@@ -541,6 +542,7 @@ struct smb_charger {
 	int			inov_off_temp[INOV_TEMP_MAX];
 #endif
 #ifdef CONFIG_LGE_PM_CC_PROTECT
+	bool			is_cc_first_irq;
 	int			cc_protect_irq;
 #endif
 	/* battery profile */
@@ -796,4 +798,12 @@ int smblib_set_prop_pr_swap_in_progress(struct smb_charger *chg,
 
 int smblib_init(struct smb_charger *chg);
 int smblib_deinit(struct smb_charger *chg);
+
+#ifdef CONFIG_LGE_PM
+void workaround_force_incompatible_hvdcp_clear(struct smb_charger* chg);
+void workaround_force_incompatible_hvdcp_trigger(struct smb_charger* chg);
+void workaround_force_incompatible_hvdcp_require(void);
+bool workaround_force_incompatible_hvdcp_enabled(void);
+#endif
+
 #endif /* __SMB2_CHARGER_H */

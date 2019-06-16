@@ -267,9 +267,14 @@ void lge_monitor_batt_temp(struct charging_info req, struct charging_rsp *res)
 	} else
 			res->disable_chg = false;
 
-	res->chg_current =
-		charging_state ==
-		CHG_BATT_DECCUR_STATE ? req.chg_current_ma / DECCUR_CHG_CURRENT_DIVIDER : DC_CURRENT_DEF;
+	if (charging_state == CHG_BATT_DECCUR_STATE) {
+		if (!IS_TEMP_UNDER_WARM(battemp_state))
+			res->chg_current = req.chg_current_ma * WARM_DECCUR_CHG_CURRENT / 10;
+		else
+			res->chg_current = req.batt_volt < DECCUR_FLOAT_VOLTAGE ? req.chg_current_ma * COOL_DECCUR_CHG_CURRENT / 10: 500;
+	} else {
+		res->chg_current = DC_CURRENT_DEF;
+	}
 
 	res->btm_state = BTM_HEALTH_GOOD;
 

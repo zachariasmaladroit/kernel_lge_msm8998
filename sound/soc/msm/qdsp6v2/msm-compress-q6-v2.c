@@ -99,6 +99,12 @@ int lgesoundmabl_lrbalancecontrol;
 int lgesoundmabl_allparam;
 #endif
 #include "lge_dsp_mqa.h"
+
+#if defined(CONFIG_SND_LGE_DTS)
+#include "lge_dsp_sound_dts.h"
+int lge_dts_param[LGE_DTS_PARAM_MAX];
+#endif
+
 /* Default values used if user space does not set */
 #define COMPR_PLAYBACK_MIN_FRAGMENT_SIZE (8 * 1024)
 #define COMPR_PLAYBACK_MAX_FRAGMENT_SIZE (128 * 1024)
@@ -4274,8 +4280,172 @@ static const struct snd_kcontrol_new msm_compr_lge_effect_controls[] = {
 			0, 1, 0,
 			lge_dsp_sound_mabl_allparam_get,
 			lge_dsp_sound_mabl_allparam_put),
-#endif
 };
+#endif
+
+#if defined(CONFIG_SND_LGE_DTS)
+static int lge_dsp_sound_dts_param_put(struct snd_kcontrol *kcontrol,
+                                 struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *comp = snd_kcontrol_chip(kcontrol);
+	struct msm_compr_pdata *pdata = (struct msm_compr_pdata *)
+										snd_soc_component_get_drvdata(comp);
+	struct snd_compr_stream *cstream = pdata->cstream[lgesound_current_be_id];
+	struct msm_compr_audio *prtd = NULL;
+	int rc;
+	int param_id = (int)ucontrol->value.integer.value[0];
+	int val = (int)ucontrol->value.integer.value[1];
+
+	lge_dts_param[(int)ucontrol->value.integer.value[0]] = (int)ucontrol->value.integer.value[1];
+
+	if (!cstream || cstream->runtime == NULL) {
+		pr_err("%s: [DTS] compress stream is not open status, so ignore this cmd  %d, %d \n", __func__, param_id, val );
+		return -EINVAL;
+	}
+	else {
+		prtd = cstream->runtime->private_data;
+	}
+
+	pr_info("+++++++++++++++++++++++++++++++++++++\n");
+	pr_info("%s: [DTS] param_id %d value %d\n", __func__, (int)ucontrol->value.integer.value[0], (int)ucontrol->value.integer.value[1]);
+	pr_info("+++++++++++++++++++++++++++++++++++++\n");
+
+	if (prtd && prtd->audio_client) {
+		rc = q6asm_set_lge_dts_param(prtd->audio_client, param_id, val);
+		if (rc < 0) {
+			pr_err("%s: apr command failed rc=%d\n",
+					__func__, rc);
+		}
+	}
+
+	return 0;
+}
+
+static int lge_dsp_sound_dts_param_get(struct snd_kcontrol *kcontrol,
+                                 struct snd_ctl_elem_value *ucontrol)
+{
+        return 0;
+}
+
+static const struct snd_kcontrol_new msm_compr_lge_dts_controls[] = {
+        SOC_SINGLE_MULTI_EXT("dts_virt_on",
+                        MSM_FRONTEND_DAI_MULTIMEDIA4,
+                        0, 1, 0, 2,
+                        lge_dsp_sound_dts_param_get,
+                        lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_virt_mode",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 2, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_geq_on",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 1, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_geq_band1",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 20, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_geq_band2",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 20, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_geq_band3",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 20, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_geq_band4",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 20, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_geq_band5",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 20, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_geq_band6",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 20, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_geq_band7",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 20, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_geq_band8",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 20, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_geq_band9",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 20, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_geq_band10",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 20, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_bassboost_on",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 1, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_vocalboost_on",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 1, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_loudnesslvl_on",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 1, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_geq_preset",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 12, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_bassboost_level",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 100, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_vocalboost_level",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 100, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_volume_level",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0,8092, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_turn_on",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 1, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_speaker_enable",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 1, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_fade_enable",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 1, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+
+};
+#endif
 
 static int msm_compr_audio_effects_config_put(struct snd_kcontrol *kcontrol,
 					   struct snd_ctl_elem_value *ucontrol)
@@ -5167,7 +5337,10 @@ static int msm_compr_probe(struct snd_soc_platform *platform)
 	snd_soc_add_platform_controls(platform,msm_compr_lge_effect_controls,
 				      ARRAY_SIZE(msm_compr_lge_effect_controls));	
 #endif
-
+#if defined(CONFIG_SND_LGE_DTS)
+        snd_soc_add_platform_controls(platform,msm_compr_lge_dts_controls,
+                                      ARRAY_SIZE(msm_compr_lge_dts_controls));
+#endif
 
 	rc =  of_property_read_string(platform->dev->of_node,
 		"qcom,adsp-version", &qdsp_version);

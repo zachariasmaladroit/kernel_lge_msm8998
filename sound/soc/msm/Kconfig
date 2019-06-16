@@ -253,6 +253,12 @@ config SND_LGE_MABL
 	help
 	 To support LGE DSP MABL
 
+config SND_LGE_DTS
+	bool "LGE DSP DTS"
+	default n
+	help
+	 To support LGE DSP DTS
+
 config SND_LGE_DSDP_DUAL_AUDIO
 	bool "LGE DSDP DUAL AUDIO"
 	default n

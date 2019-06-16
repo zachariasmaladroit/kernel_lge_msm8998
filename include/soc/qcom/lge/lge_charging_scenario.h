@@ -29,7 +29,8 @@
 #define HIGH_VBAT_THREHSOLD	3980000 // 4000 mV - float voltage margin 20 mV
 
 #define DECCUR_FLOAT_VOLTAGE	4000000 // Warm & Cool float voltage 4000 mV
-#define DECCUR_CHG_CURRENT_DIVIDER	2 // Warm & Cool chg current 0.5C
+#define WARM_DECCUR_CHG_CURRENT 	5 // Warm chg current 0.5C
+#define COOL_DECCUR_CHG_CURRENT 	3 // Cool chg current 0.3C
 
 /* Battery temperature states */
 

@@ -51,6 +51,36 @@
 #include "lge_dsp_sound_mabl.h"
 #endif
 #include "lge_dsp_mqa.h"
+#ifdef CONFIG_SND_LGE_DTS
+#include "lge_dsp_sound_dts.h"
+#define APPI_LGE_SOUND_DTS_MODULE_ID            0x1000F010
+static int32_t lge_dts_param_id[LGE_DTS_PARAM_MAX] = {
+	0x1000F011,
+	0x1000F012,
+	0x1000F013,
+	0x1000F014,
+	0x1000F015,
+	0x1000F016,
+	0x1000F017,
+	0x1000F018,
+	0x1000F019,
+	0x1000F01A,
+	0x1000F01B,
+	0x1000F01C,
+	0x1000F01D,
+	0x1000F01E,
+	0x1000F01F,
+	0x1000F020,
+	0x1000F021,
+	0x1000F024,
+	0x1000F025,
+	0x1000F026,
+	0x1000F022,
+	0x1000F023,
+	0x1000F027
+};
+#endif
+
 
 #define TRUE        0x01
 #define FALSE       0x00
@@ -1449,6 +1479,12 @@ int q6asm_audio_client_buf_alloc_contiguous(unsigned int dir,
 		pr_err("%s: buffer already allocated\n", __func__);
 		return 0;
 	}
+
+	if (bufcnt == 0) {
+		pr_err("%s: invalid buffer count\n", __func__);
+		return -EINVAL;
+	}
+
 	mutex_lock(&ac->cmd_lock);
 	buf = kzalloc(((sizeof(struct audio_buffer))*bufcnt),
 			GFP_KERNEL);
@@ -2515,7 +2551,7 @@ static int __q6asm_open_read(struct audio_client *ac,
 		open.mode_flags |= ASM_LEGACY_STREAM_SESSION <<
 			ASM_SHIFT_STREAM_PERF_MODE_FLAG_IN_OPEN_READ;
 	}
-#if defined(CONFIG_SND_LGE_EFFECT) || defined(CONFIG_SND_LGE_NORMALIZER) || defined(CONFIG_SND_LGE_MABL)
+#if defined(CONFIG_SND_LGE_EFFECT) || defined(CONFIG_SND_LGE_NORMALIZER) || defined(CONFIG_SND_LGE_MABL) || defined(CONFIG_SND_LGE_DTS)
         if (open.preprocopo_id == ASM_STREAM_POSTPROC_TOPO_ID_DEFAULT_LGE ||
                 open.preprocopo_id == ASM_STREAM_POSTPROC_TOPO_ID_OFFLOAD_LGE ||
                 open.preprocopo_id == ASM_STREAM_POSTPROC_TOPO_ID_OFFLOAD_LGE_TEST)
@@ -9260,6 +9296,76 @@ fail_cmd:
 	return rc;
 }
 #endif //CONFIG_SND_LGE_MABL
+
+#ifdef CONFIG_SND_LGE_DTS
+int q6asm_set_lge_dts_param(struct audio_client *ac, int param_id, int val)
+{
+	struct asm_lge_dts_param lge_dts_param;
+	int sz = 0;
+	int rc	= 0;
+
+	pr_debug("+++++++++++++++++++++++++++++++++++++++++++++\n");
+	pr_debug("%s: dts param: id = %d value = %d \n", __func__, param_id, val);
+	pr_debug("+++++++++++++++++++++++++++++++++++++++++++++\n");
+
+	if (!ac || ac->apr == NULL) {
+			pr_err("%s: APR handle NULL\n", __func__);
+			rc = -EINVAL;
+			goto fail_cmd;
+	}
+
+	sz = sizeof(struct asm_lge_dts_param);
+	q6asm_add_hdr_async(ac, &lge_dts_param.hdr, sz, TRUE);
+	atomic_set(&ac->cmd_state_pp, -1);
+
+	lge_dts_param.hdr.opcode = ASM_STREAM_CMD_SET_PP_PARAMS_V2;
+	lge_dts_param.param.data_payload_addr_lsw = 0;
+	lge_dts_param.param.data_payload_addr_msw = 0;
+
+	lge_dts_param.param.mem_map_handle = 0;
+	lge_dts_param.param.data_payload_size = sizeof(lge_dts_param) -
+							sizeof(lge_dts_param.hdr) - sizeof(lge_dts_param.param);
+
+	lge_dts_param.data.module_id = APPI_LGE_SOUND_DTS_MODULE_ID;
+	lge_dts_param.data.param_id = lge_dts_param_id[param_id];
+	lge_dts_param.data.param_size = lge_dts_param.param.data_payload_size - sizeof(lge_dts_param.data);
+	lge_dts_param.data.reserved = 0;
+	lge_dts_param.value = val;
+
+	rc = apr_send_pkt(ac->apr, (uint32_t *) &lge_dts_param);
+	if (rc < 0) {
+			pr_err("%s: set-params send failed paramid[0x%x]\n", __func__,
+											lge_dts_param.data.param_id);
+			rc = -EINVAL;
+			goto fail_cmd;
+	}
+
+	rc = wait_event_timeout(ac->cmd_wait,
+					(atomic_read(&ac->cmd_state_pp) >= 0), 5*HZ);
+
+	if (!rc) {
+			pr_err("%s: timeout, set-params paramid[0x%x]\n", __func__,
+											lge_dts_param.data.param_id);
+			rc = -ETIMEDOUT;
+			goto fail_cmd;
+	}
+	if (atomic_read(&ac->cmd_state_pp) > 0) {
+			pr_err("%s: DSP returned error[%s] set-params paramid[0x%x]\n",
+							__func__, adsp_err_get_err_str(
+							atomic_read(&ac->cmd_state_pp)),
+							lge_dts_param.data.param_id);
+			rc = adsp_err_get_lnx_err_code(
+							atomic_read(&ac->cmd_state_pp));
+			goto fail_cmd;
+	}
+	rc = 0;
+
+fail_cmd:
+        return rc;
+}
+
+
+#endif
 
 static int __q6asm_read(struct audio_client *ac, bool is_custom_len_reqd,
 			int len)
