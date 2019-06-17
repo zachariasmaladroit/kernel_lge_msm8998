@@ -5683,3 +5683,24 @@ CONFIG_DYNAMIC_STUNE_BOOST=y
 # CONFIG_INPUT_STUNE_BOOST=50
 # CONFIG_COOLDOWN_STUNE_BOOST=20
 # CONFIG_DEVFREQ_GOV_QCOM_BW_HWMON_BOOST_PERCENT=50
+
+# tshoot security features
+#
+# SEEMP
+# CONFIG_SEEMP_CORE is not set
+#
+# TTBR0 PAN emulation
+# CONFIG_ARM64_SW_TTBR0_PAN is not set
+# CONFIG_PROC_KALLSYMS is not set
+
+# eval / security vs. performance [vdso32 ?]
+# resource hog: 50% improved syscall performance by disabling vs. 4.9 minus 2nd pass
+CONFIG_HAVE_ARCH_SECCOMP_FILTER=y
+CONFIG_SECCOMP_FILTER=y
+CONFIG_SECCOMP=y
+
+# logspam
+#
+# CONFIG_FB_MSM_MDSS_XLOG_DEBUG is not set
+# CONFIG_LGE_DISPLAY_XLOG_ENABLED is not set
+# CONFIG_LGE_DISPLAY_ERROR_DETECT is not set
