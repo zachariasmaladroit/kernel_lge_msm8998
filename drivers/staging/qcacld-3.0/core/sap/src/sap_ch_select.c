@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2017, 2019 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -454,6 +454,9 @@ void sap_update_unsafe_channel_list(ptSapContext pSapCtx)
 				     &unsafe_channel_count,
 				     sizeof(unsafe_channel_list));
 
+	unsafe_channel_count = QDF_MIN(unsafe_channel_count,
+				       (uint16_t)NUM_CHANNELS);
+
 	for (i = 0; i < unsafe_channel_count; i++) {
 		for (j = 0; j < NUM_CHANNELS; j++) {
 			if (safe_channels[j].channelNumber ==
@@ -590,7 +593,8 @@ uint8_t sap_select_preferred_channel_from_channel_list(uint8_t best_chnl,
 		return SAP_CHANNEL_NOT_SELECTED;
 
 	for (i = 0; i < sap_ctx->acs_cfg->ch_list_count; i++) {
-		if (sap_ctx->acs_cfg->ch_list[i] == best_chnl) {
+		if ((sap_ctx->acs_cfg->ch_list[i] == best_chnl) &&
+		!(CDS_IS_DFS_CH(best_chnl) && cds_disallow_mcc(best_chnl))) {
 			QDF_TRACE(QDF_MODULE_ID_SAP,
 				QDF_TRACE_LEVEL_INFO_HIGH,
 				"Best channel is: %d",
@@ -638,6 +642,8 @@ static bool sap_chan_sel_init(tHalHandle halHandle,
 #endif
 	uint32_t dfs_master_cap_enabled;
 	bool include_dfs_ch = true;
+	bool sta_sap_scc_on_dfs_chan =
+		cds_is_sta_sap_scc_allowed_on_dfs_channel();
 
 	QDF_TRACE(QDF_MODULE_ID_SAP, QDF_TRACE_LEVEL_INFO_HIGH, "In %s",
 		  __func__);
@@ -687,13 +693,14 @@ static bool sap_chan_sel_init(tHalHandle halHandle,
 			continue;
 		}
 
-		if (include_dfs_ch == false) {
+		if ((include_dfs_ch == false) || sta_sap_scc_on_dfs_chan) {
 			if (CDS_IS_DFS_CH(*pChans)) {
 				chSafe = false;
 				QDF_TRACE(QDF_MODULE_ID_SAP,
 					  QDF_TRACE_LEVEL_INFO_HIGH,
-					  "In %s, DFS Ch %d not considered for ACS",
-					  __func__, *pChans);
+					  "In %s, DFS Ch %d not considered for ACS. include_dfs_ch %u, sta_sap_scc_on_dfs_chan %d",
+					  __func__, *pChans, include_dfs_ch,
+					  sta_sap_scc_on_dfs_chan);
 				continue;
 			}
 		}
@@ -1646,7 +1653,7 @@ static void sap_compute_spect_weight(tSapChSelSpectInfo *pSpectInfoParams,
 
 				QDF_TRACE(QDF_MODULE_ID_SAP,
 					  QDF_TRACE_LEVEL_INFO_HIGH,
-					  "In %s, bssdes.ch_self=%d, bssdes.ch_ID=%d, bssdes.rssi=%d, SpectCh.bssCount=%d, pScanResult=%p, ChannelWidth %d, secondaryChanOffset %d, center frequency %d",
+					  "In %s, bssdes.ch_self=%d, bssdes.ch_ID=%d, bssdes.rssi=%d, SpectCh.bssCount=%d, pScanResult=%pK, ChannelWidth %d, secondaryChanOffset %d, center frequency %d",
 					  __func__,
 					  pScanResult->BssDescriptor.
 					  channelIdSelf,
@@ -2169,10 +2176,10 @@ static void sap_sort_chl_weight_ht40_24_g(tSapChSelSpectInfo *pSpectInfoParams)
 				}
 			}
 		} else {
-			tmpWeight1 = pSpectInfo[j].weight +
-						pSpectInfo[j + 4].weight;
-			if (pSpectInfo[j].weight <=
-					pSpectInfo[j + 4].weight) {
+			tmpWeight1 = pSpectInfo[j].weight_copy +
+						pSpectInfo[j + 4].weight_copy;
+			if (pSpectInfo[j].weight_copy <=
+					pSpectInfo[j + 4].weight_copy) {
 				pSpectInfo[j].weight = tmpWeight1;
 				pSpectInfo[j + 4].weight =
 					SAP_ACS_WEIGHT_MAX * 2;

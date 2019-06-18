@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -1257,7 +1257,7 @@ static sme_QosStatusType sme_qos_internal_setup_req(tpAniSirGlobal pMac,
 			pentry->tspec_mask = pACInfo->tspec_mask_status;
 			pentry->QoSInfo = Tspec_Info;
 			QDF_TRACE(QDF_MODULE_ID_SME, QDF_TRACE_LEVEL_DEBUG,
-				  "%s: %d: Creating entry on session %d at %p with flowID %d",
+				  "%s: %d: Creating entry on session %d at %pK with flowID %d",
 				  __func__, __LINE__,
 				  sessionId, pentry, QosFlowID);
 			csr_ll_insert_tail(&sme_qos_cb.flow_list, &pentry->link,
@@ -1639,7 +1639,7 @@ static sme_QosStatusType sme_qos_internal_setup_req(tpAniSirGlobal pMac,
 			pentry->tspec_mask = tmask;
 			pentry->QoSInfo = Tspec_Info;
 			QDF_TRACE(QDF_MODULE_ID_SME, QDF_TRACE_LEVEL_DEBUG,
-				  "%s: %d: On session %d creating entry at %p with flowID %d",
+				  "%s: %d: On session %d creating entry at %pK with flowID %d",
 				  __func__, __LINE__,
 				  sessionId, pentry, QosFlowID);
 			csr_ll_insert_tail(&sme_qos_cb.flow_list, &pentry->link,
@@ -1861,7 +1861,7 @@ static sme_QosStatusType sme_qos_internal_modify_req(tpAniSirGlobal pMac,
 		 */
 		flow_info->reason = SME_QOS_REASON_MODIFY;
 		QDF_TRACE(QDF_MODULE_ID_SME, QDF_TRACE_LEVEL_DEBUG,
-			  "%s: %d: On session %d creating modified entry at %p with flowID %d",
+			  "%s: %d: On session %d creating modified entry at %pK with flowID %d",
 			  __func__, __LINE__,
 			  sessionId, pNewEntry, pNewEntry->QosFlowID);
 		/* add the new entry under construction to the Flow List */
@@ -2367,7 +2367,7 @@ static sme_QosStatusType sme_qos_internal_release_req(tpAniSirGlobal pMac,
 					/* delete the entry from Flow List */
 					QDF_TRACE(QDF_MODULE_ID_SME,
 						  QDF_TRACE_LEVEL_DEBUG,
-						  "%s: %d: Deleting entry at %p with flowID %d",
+						  "%s: %d: Deleting entry at %pK with flowID %d",
 						  __func__, __LINE__, flow_info,
 						  QosFlowID);
 					csr_ll_remove_entry(&sme_qos_cb.
@@ -2430,7 +2430,7 @@ static sme_QosStatusType sme_qos_internal_release_req(tpAniSirGlobal pMac,
 					/* delete the entry from Flow List */
 					QDF_TRACE(QDF_MODULE_ID_SME,
 						  QDF_TRACE_LEVEL_DEBUG,
-						  "%s: %d: On session %d deleting entry at %p with flowID %d",
+						  "%s: %d: On session %d deleting entry at %pK with flowID %d",
 						__func__, __LINE__, sessionId,
 						  flow_info, QosFlowID);
 					csr_ll_remove_entry(&sme_qos_cb.
@@ -2626,7 +2626,7 @@ static sme_QosStatusType sme_qos_internal_release_req(tpAniSirGlobal pMac,
 
 				QDF_TRACE(QDF_MODULE_ID_SME,
 					  QDF_TRACE_LEVEL_DEBUG,
-					  "%s: %d: Deleting entry at %p with flowID %d",
+					  "%s: %d: Deleting entry at %pK with flowID %d",
 					  __func__, __LINE__, flow_info,
 					  flow_info->QosFlowID);
 			} else if (buffered_cmd) {
@@ -2673,7 +2673,7 @@ static sme_QosStatusType sme_qos_internal_release_req(tpAniSirGlobal pMac,
 			pACInfo->num_flows[flow_info->tspec_mask - 1]--;
 			/* delete the entry from Flow List */
 			QDF_TRACE(QDF_MODULE_ID_SME, QDF_TRACE_LEVEL_DEBUG,
-				  "%s: %d: On session %d deleting entry at %p with flowID %d",
+				  "%s: %d: On session %d deleting entry at %pK with flowID %d",
 				  __func__, __LINE__,
 				  sessionId, flow_info, QosFlowID);
 			csr_ll_remove_entry(&sme_qos_cb.flow_list, pEntry,
@@ -3100,7 +3100,7 @@ QDF_STATUS sme_qos_ese_process_reassoc_tspec_rsp(tpAniSirGlobal pMac,
 	}
 
 	QDF_TRACE(QDF_MODULE_ID_SME, QDF_TRACE_LEVEL_WARN,
-		  "TspecLen = %d, pbFrames = %p, pTspecIE = %p",
+		  "TspecLen = %d, pbFrames = %pK, pTspecIE = %pK",
 		  tspecIeLen, pCsrConnectedInfo->pbFrames, pTspecIE);
 
 	numTspec = (tspecIeLen) / sizeof(tDot11fIEWMMTSPEC);
@@ -3284,7 +3284,7 @@ QDF_STATUS sme_qos_create_tspec_ricie(tpAniSirGlobal pMac,
 	if (pRICBuffer == NULL || pRICIdentifier == NULL || pRICLength ==
 								NULL) {
 		QDF_TRACE(QDF_MODULE_ID_SME, QDF_TRACE_LEVEL_ERROR,
-			FL("RIC data is NULL, %p, %p, %p"),
+			FL("RIC data is NULL, %pK, %pK, %pK"),
 			pRICBuffer, pRICIdentifier, pRICLength);
 		return QDF_STATUS_E_FAILURE;
 	}
@@ -4111,7 +4111,6 @@ static QDF_STATUS sme_qos_del_ts_req(tpAniSirGlobal pMac,
 	struct sme_qos_acinfo *pACInfo;
 	tSirDeltsReq *pMsg;
 	sme_QosWmmTspecInfo *pTspecInfo;
-	QDF_STATUS status = QDF_STATUS_E_FAILURE;
 
 #ifdef FEATURE_WLAN_DIAG_SUPPORT
 	WLAN_HOST_DIAG_EVENT_DEF(qos, host_event_wlan_qos_payload_type);
@@ -4181,23 +4180,23 @@ static QDF_STATUS sme_qos_del_ts_req(tpAniSirGlobal pMac,
 		  pTspecInfo->ts_info.up, pTspecInfo->ts_info.tid);
 	qdf_mem_zero(&pACInfo->curr_QoSInfo[tspec_mask - 1],
 		     sizeof(sme_QosWmmTspecInfo));
-	if (QDF_IS_STATUS_SUCCESS(cds_send_mb_message_to_mac(pMsg))) {
-		status = QDF_STATUS_SUCCESS;
-		QDF_TRACE(QDF_MODULE_ID_SME, QDF_TRACE_LEVEL_DEBUG,
-			  "%s: %d: sme_qos_del_ts_req:Test: sent down a DELTS req to PE",
-			  __func__, __LINE__);
-		/* event: EVENT_WLAN_QOS */
-#ifdef FEATURE_WLAN_DIAG_SUPPORT
-		qos.eventId = SME_QOS_DIAG_DELTS;
-		qos.reasonCode = SME_QOS_DIAG_USER_REQUESTED;
-		WLAN_HOST_DIAG_EVENT_REPORT(&qos, EVENT_WLAN_QOS);
-#endif /* FEATURE_WLAN_DIAG_SUPPORT */
-	}
-	sme_set_tspec_uapsd_mask_per_session(pMac,
-			&pMsg->req.tspec.tsinfo,
-			sessionId);
 
-	return status;
+	if (!QDF_IS_STATUS_SUCCESS(cds_send_mb_message_to_mac(pMsg))) {
+		sme_err("DELTS req to PE failed");
+		return QDF_STATUS_E_FAILURE;
+	}
+
+	sme_debug("sent down a DELTS req to PE");
+#ifdef FEATURE_WLAN_DIAG_SUPPORT
+	qos.eventId = SME_QOS_DIAG_DELTS;
+	qos.reasonCode = SME_QOS_DIAG_USER_REQUESTED;
+	WLAN_HOST_DIAG_EVENT_REPORT(&qos, EVENT_WLAN_QOS);
+#endif
+
+	sme_set_tspec_uapsd_mask_per_session(pMac, &pMsg->req.tspec.tsinfo,
+					     sessionId);
+
+	return QDF_STATUS_SUCCESS;
 }
 
 /*
@@ -4939,8 +4938,12 @@ static QDF_STATUS sme_qos_process_handoff_assoc_req_ev(tpAniSirGlobal pMac,
 	if (csr_roam_is11r_assoc(pMac, sessionId))
 		pSession->ftHandoffInProgress = true;
 #endif
-	/* If FT handoff is in progress, legacy handoff need not be enabled */
-	if (!pSession->ftHandoffInProgress)
+	/* If FT handoff/ESE in progress, legacy handoff need not be enabled */
+	if (!pSession->ftHandoffInProgress
+#ifdef FEATURE_WLAN_ESE
+	    && !csr_roam_is_ese_assoc(pMac, sessionId)
+#endif
+	   )
 		pSession->handoffRequested = true;
 
 	/* this session no longer needs UAPSD */
@@ -6352,7 +6355,7 @@ static QDF_STATUS sme_qos_buffer_existing_flows(tpAniSirGlobal mac_ctx,
 		}
 		/* delete the entry from Flow List */
 		QDF_TRACE(QDF_MODULE_ID_SME, QDF_TRACE_LEVEL_DEBUG,
-			  FL("Deleting original entry at %p with flowID %d"),
+			  FL("Deleting original entry at %pK with flowID %d"),
 			  flow_info, flow_info->QosFlowID);
 		csr_ll_remove_entry(&sme_qos_cb.flow_list, list_entry, true);
 		qdf_mem_free(flow_info);
@@ -6399,7 +6402,7 @@ static QDF_STATUS sme_qos_delete_existing_flows(tpAniSirGlobal pMac,
 						       flow_info->QosFlowID);
 			}
 			QDF_TRACE(QDF_MODULE_ID_SME, QDF_TRACE_LEVEL_DEBUG,
-				  "%s: %d: Deleting entry at %p with flowID %d",
+				  "%s: %d: Deleting entry at %pK with flowID %d",
 				  __func__, __LINE__,
 				  flow_info, flow_info->QosFlowID);
 			/* delete the entry from Flow List */
@@ -6769,7 +6772,7 @@ static QDF_STATUS sme_qos_modify_fnp(tpAniSirGlobal pMac, tListElem *pEntry)
 	case SME_QOS_REASON_MODIFY:
 		/* delete the original entry from Flow List */
 		QDF_TRACE(QDF_MODULE_ID_SME, QDF_TRACE_LEVEL_DEBUG,
-			  "%s: %d: Deleting original entry at %p with flowID %d",
+			  "%s: %d: Deleting original entry at %pK with flowID %d",
 			  __func__, __LINE__, flow_info, flow_info->QosFlowID);
 		csr_ll_remove_entry(&sme_qos_cb.flow_list, pEntry, true);
 		/* reclaim the memory */
@@ -6955,7 +6958,7 @@ sme_qos_reassoc_success_ev_fnp(tpAniSirGlobal mac_ctx,
 	} else {
 		/* delete the entry from Flow List */
 		QDF_TRACE(QDF_MODULE_ID_SME, QDF_TRACE_LEVEL_DEBUG,
-			FL("Deleting entry at %p with flowID %d"),
+			FL("Deleting entry at %pK with flowID %d"),
 			flow_info, flow_info->QosFlowID);
 		csr_ll_remove_entry(&sme_qos_cb.flow_list, entry, true);
 		/* reclaim the memory */
@@ -7040,7 +7043,7 @@ static QDF_STATUS sme_qos_add_ts_failure_fnp(tpAniSirGlobal pMac, tListElem
 		}
 		/* delete the entry from Flow List */
 		QDF_TRACE(QDF_MODULE_ID_SME, QDF_TRACE_LEVEL_DEBUG,
-			  "%s: %d: Deleting entry at %p with flowID %d",
+			  "%s: %d: Deleting entry at %pK with flowID %d",
 			  __func__, __LINE__, flow_info, flow_info->QosFlowID);
 		csr_ll_remove_entry(&sme_qos_cb.flow_list, pEntry, true);
 		/* reclaim the memory */
@@ -7220,7 +7223,7 @@ static QDF_STATUS sme_qos_add_ts_success_fnp(tpAniSirGlobal mac_ctx,
 	}
 	if (delete_entry) {
 		QDF_TRACE(QDF_MODULE_ID_SME, QDF_TRACE_LEVEL_DEBUG,
-			FL("Deleting entry at %p with flowID %d"),
+			FL("Deleting entry at %pK with flowID %d"),
 			flow_info, flow_info->QosFlowID);
 		/* delete the entry from Flow List */
 		csr_ll_remove_entry(&sme_qos_cb.flow_list, entry, true);
