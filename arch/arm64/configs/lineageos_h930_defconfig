@@ -6022,6 +6022,16 @@ CONFIG_ION_MSM=y
 # CONFIG_ALLOC_BUFFERS_IN_4K_CHUNKS is not set # default =y
 # later added performance enhancements and tweaks behind a config entry
 
+# RSEQ (selected via Makefile by default)
+CONFIG_HAVE_RSEQ=y
+CONFIG_RSEQ=y
+
+# AIO
+# CONFIG_AIO has legitimate use for the functionfs
+# driver, which is used with adb and mtp. It is now required to be enabled
+# for better performance with those services.
+CONFIG_AIO=y
+
 # add additional drivers that might be needed
 # CONFIG_RELAY is not set
 
