@@ -119,6 +119,7 @@
  * PATH_MAX includes the nul terminator --RR.
  */
 
+#define EMBEDDED_NAME_MAX	(PATH_MAX - offsetof(struct filename, iname))
 
 struct filename *
 getname_flags(const char __user *filename, int flags, int *empty)
