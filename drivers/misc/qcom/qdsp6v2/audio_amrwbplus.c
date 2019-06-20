@@ -101,11 +101,11 @@ static long audio_ioctl_shared(struct file *file, unsigned int cmd,
 			pr_err("Audio Start procedure failed rc=%d\n", rc);
 			break;
 		}
-			pr_debug("%s:AUDIO_START sessionid[%d]enable[%d]\n", __func__,
-				audio->ac->session,
-				audio->enabled);
-			if (audio->stopped == 1)
-				audio->stopped = 0;
+		pr_debug("%s:AUDIO_START sessionid[%d]enable[%d]\n", __func__,
+			audio->ac->session,
+			audio->enabled);
+		if (audio->stopped == 1)
+			audio->stopped = 0;
 			break;
 		}
 	default:
