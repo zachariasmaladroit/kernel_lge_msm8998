@@ -28,11 +28,6 @@
 #include <sound/adsp_err.h>
 #include <linux/qdsp6v2/apr_tal.h>
 
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-#include <linux/input/scroff_volctr.h>
-#include <linux/input/sovc_notifier.h>
-#endif
-
 #define WAKELOCK_TIMEOUT	5000
 enum {
 	AFE_COMMON_RX_CAL = 0,
@@ -493,25 +488,9 @@ static int32_t afe_callback(struct apr_client_data *data, void *priv)
 				pr_debug("%s: AFE_EVENT_TFADSP_STATE_INIT data = 0x%x\n",
 					__func__, payload[1]);
 				adsp_afe_tfadsp_status = AFE_EVENT_TFADSP_STATE_INIT;
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-				tfa9872_playing = true;
-				if (sovc_switch && !sovc_tmp_onoff) {
-					mutex_lock(&sovc_playing_state_lock);
-					sovc_notifier_call_chain(SOVC_EVENT_PLAYING, NULL);
-					mutex_unlock(&sovc_playing_state_lock);
-				}
-#endif
 			} else if(payload[0] == AFE_EVENT_TFADSP_STATE_CLOSE) {
 				pr_debug("%s: AFE_EVENT_TFADSP_STATE_CLOSE data = 0x%x\n",
 					__func__, payload[1]);
-#ifdef CONFIG_TOUCHSCREEN_SCROFF_VOLCTR
-				tfa9872_playing = false;
-				if (sovc_switch && sovc_tmp_onoff && !es9218p_playing && !sovc_tmp_userspace_playing) {
-					mutex_lock(&sovc_playing_state_lock);
-					sovc_notifier_call_chain(SOVC_EVENT_STOPPED, NULL);
-					mutex_unlock(&sovc_playing_state_lock);
-				}
-#endif
 				adsp_afe_tfadsp_status = AFE_EVENT_TFADSP_STATE_CLOSE;
 			} else if(payload[0] == AFE_EVENT_TFADSP_STATE_CONFIGURED) {
 				if(payload[1] == 0) // success
