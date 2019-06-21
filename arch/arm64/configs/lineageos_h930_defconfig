@@ -6188,3 +6188,6 @@ CONFIG_ANDROID_SIMPLE_LMK=y
 # devfreq (eval)
 # CONFIG_ARM_MEMLAT_MON is not set
 # CONFIG_DEVFREQ_GOV_MEMLAT is not set
+#
+# ACPI
+# CONFIG_ACPI is not set
