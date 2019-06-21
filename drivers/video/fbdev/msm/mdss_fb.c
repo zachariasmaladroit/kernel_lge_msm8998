@@ -1933,7 +1933,7 @@ void mdss_fb_set_backlight(struct msm_fb_data_type *mfd, u32 bkl_lvl)
 			if (mfd->bl_level != bkl_lvl)
 				bl_notify_needed = true;
 #if defined(CONFIG_LGE_DISPLAY_COMMON)
-			pr_info("[Display] backlight sent to panel :%d\n", temp);
+			pr_debug("[Display] backlight sent to panel :%d\n", temp);
 #else
 			pr_debug("backlight sent to panel :%d\n", temp);
 #endif
@@ -1977,7 +1977,7 @@ void mdss_fb_update_backlight(struct msm_fb_data_type *mfd)
 					NOTIFY_TYPE_BL_AD_ATTEN_UPDATE);
 			mdss_fb_bl_update_notify(mfd, NOTIFY_TYPE_BL_UPDATE);
 #if defined(CONFIG_LGE_DISPLAY_COMMON)
-			pr_info("[Display] backlight sent to panel :%d\n", temp);
+			pr_debug("[Display] backlight sent to panel :%d\n", temp);
 #endif
 			pdata->set_backlight(pdata, temp);
 			mfd->bl_level_scaled = mfd->unset_bl_level;
