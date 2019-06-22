@@ -950,7 +950,7 @@ static void write_default_values(struct cgroup_subsys_state *css)
 	};
 
 	struct groups_data groups[3] = {
-		{ "top-app",	1, 1 },
+		{ "top-app",	5, 1 },
 		{ "foreground", 0, 1 },
 		{ "background", 0, 0 }};
 
