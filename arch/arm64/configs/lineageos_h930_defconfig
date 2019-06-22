@@ -6072,6 +6072,11 @@ CONFIG_JUMP_LABEL=y
 # tracing
 #
 # CONFIG_TRACEPOINTS is not set
+#
+# CONFIG_QCOM_RTB is not set
+# CONFIG_QCOM_RTB_SEPARATE_CPUS is not set
+#
+# CONFIG_TRACING_EVENTS_GPIO is not set
 
 # iommu debug
 # CONFIG_IOMMU_IO_PGTABLE_FAST_SELFTEST is not set
