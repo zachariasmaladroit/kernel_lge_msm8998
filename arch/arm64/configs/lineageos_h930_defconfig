@@ -5840,6 +5840,8 @@ CONFIG_SECURITY_YAMA=y
 # CONFIG_CAVIUM_ERRATUM_22375 is not set
 # CONFIG_CAVIUM_ERRATUM_23154 is not set
 # CONFIG_CAVIUM_ERRATUM_27456 is not set
+#
+# CONFIG_FRAME_POINTER is not set
 
 # logging and debug overhead
 #
