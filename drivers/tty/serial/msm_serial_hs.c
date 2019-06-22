@@ -3632,7 +3632,6 @@ static int msm_hs_probe(struct platform_device *pdev)
 #ifdef CONFIG_IPC_LOGGING
 	msm_uport->rx.ipc_rx_ctxt = ipc_log_context_create(
 					IPC_MSM_HS_LOG_DATA_PAGES, name, 0);
-#ifdef CONFIG_IPC_LOGGING
 	if (!msm_uport->rx.ipc_rx_ctxt)
 		dev_err(&pdev->dev, "%s: error creating rx logging context",
 								__func__);
