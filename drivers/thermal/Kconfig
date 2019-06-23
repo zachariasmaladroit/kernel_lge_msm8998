@@ -196,6 +196,7 @@ config LIMITS_LITE_HW
 config LIMITS_LITE_HW_POLLING
 	bool "LMH Lite hardware driver polling support"
 	depends on LIMITS_LITE_HW
+	default n
 	help
 	  Enable this option to periodically poll for temperature and throttling
 	  information.
