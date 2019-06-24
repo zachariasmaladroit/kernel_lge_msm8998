@@ -54,7 +54,7 @@ endif
 
 config KLAPSE
     bool
-    default n
+    default y
     help
         A simple rgb dynamic lapsing module similar to LineageOS' livedisplay
 
