@@ -5999,6 +5999,12 @@ CONFIG_OPTIMIZE_INLINING=y
 
 CONFIG_DEBUG_INFO_REDUCED=y
 
+# optimized implementations:
+# optimized libs
+#
+CONFIG_KERNEL_MODE_NEON=y
+CONFIG_XOR_BLOCKS=y
+
 # F2FS, needs "porting" of full upstream backported patchset, for now limited patchset
 # CONFIG_F2FS_FS is not set
 CONFIG_F2FS_STAT_FS=y
