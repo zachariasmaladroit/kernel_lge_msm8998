@@ -1707,8 +1707,8 @@ out:
 #ifdef CONFIG_LGE_USB_GADGET
 	dev->state = STATE_OFFLINE;
 	mutex_unlock(&dev->read_mutex);
-	mtp_rx_req_len = MTP_RX_BUFFER_INIT_SIZE;
-	mtp_tx_req_len = MTP_TX_BUFFER_INIT_SIZE;
+	mtp_rx_req_len = MTP_BULK_BUFFER_SIZE;
+	mtp_tx_req_len = MTP_BULK_BUFFER_SIZE;
 #else
 	mutex_unlock(&dev->read_mutex);
 	dev->state = STATE_OFFLINE;
