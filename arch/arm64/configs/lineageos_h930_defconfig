@@ -6004,6 +6004,8 @@ CONFIG_DEBUG_INFO_REDUCED=y
 #
 CONFIG_KERNEL_MODE_NEON=y
 CONFIG_XOR_BLOCKS=y
+#
+CONFIG_CRYPTO_AES_ARM64=y
 
 # F2FS, needs "porting" of full upstream backported patchset, for now limited patchset
 # CONFIG_F2FS_FS is not set
