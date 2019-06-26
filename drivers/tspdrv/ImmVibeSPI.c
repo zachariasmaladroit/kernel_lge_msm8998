@@ -709,7 +709,7 @@ VibeStatus I2CWriteWithResendOnError(unsigned char address, VibeUInt16 nBufferSi
         datacnt = 0;
         pktsize = (2 != i2c_recv_buf(dw7800.i2c, DW7800_PKTSIZE, &datacnt, 1));
         if (pktsize) {
-            DbgOut((DBL_WARNING, "dw7800_pktsize could not be read\n"));
+//            DbgOut((DBL_WARNING, "dw7800_pktsize could not be read\n"));
             udelay(250);
             continue;
         }
@@ -804,7 +804,7 @@ IMMVIBESPIAPI int ImmVibeSPI_ForceOut_BufferFull(void)
         }
 
         /* try again later */
-        DbgOut((DBL_WARNING, "dw7800_pktsize could not be read\n"));
+//        DbgOut((DBL_WARNING, "dw7800_pktsize could not be read\n"));
         nResendAttempt -= 1;
         return 1;
     }
