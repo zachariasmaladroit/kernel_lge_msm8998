@@ -15,9 +15,8 @@
 #ifndef _ZRAM_DRV_H_
 #define _ZRAM_DRV_H_
 
-#include <linux/rwsem.h>
+#include <linux/spinlock.h>
 #include <linux/zsmalloc.h>
-#include <linux/crypto.h>
 
 #include "zcomp.h"
 
@@ -86,7 +85,6 @@ struct zram_stats {
 	atomic64_t zero_pages;		/* no. of zero filled pages */
 	atomic64_t pages_stored;	/* no. of pages currently stored */
 	atomic_long_t max_used_pages;	/* no. of maximum pages stored */
-	atomic64_t writestall;		/* no. of write slow paths */
 };
 
 struct zram_meta {
@@ -104,6 +102,7 @@ struct zram {
 	 * the number of pages zram can consume for storing compressed data
 	 */
 	unsigned long limit_pages;
+	int max_comp_streams;
 
 	struct zram_stats stats;
 	atomic_t refcount; /* refcount for zram_meta */
@@ -114,14 +113,10 @@ struct zram {
 	 * we can store in a disk.
 	 */
 	u64 disksize;	/* bytes */
-	char compressor[CRYPTO_MAX_ALG_NAME];
+	char compressor[10];
 	/*
 	 * zram is claimed so open request will be failed
 	 */
 	bool claim; /* Protected by bdev->bd_mutex */
 };
-
-#ifdef CONFIG_HSWAP
-extern int zram0_free_size(void);
-#endif
 #endif
