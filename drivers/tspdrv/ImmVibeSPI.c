@@ -378,7 +378,7 @@ static int i2c_recv_buf(struct i2c_client *i2c, unsigned char reg, unsigned char
     msg[1].buf = buf;
 
     res = i2c_transfer(i2c->adapter, msg, 2);
-    DbgOut((DBL_INFO, "dw7800: i2c recv res=%d\n", res));
+//    DbgOut((DBL_INFO, "dw7800: i2c recv res=%d\n", res));
 
     return res;
 }
@@ -394,7 +394,7 @@ static bool i2c_send_buf(struct i2c_client *i2c, unsigned char *buf, int count)
     msg.buf = buf;
 
     res = i2c_transfer(i2c->adapter, &msg, 1);
-    DbgOut((DBL_INFO, "dw7800: i2c send res=%d\n", res));
+//    DbgOut((DBL_INFO, "dw7800: i2c send res=%d\n", res));
 
     return res;
 }
@@ -423,15 +423,15 @@ static void dw7800_dump_registers(struct dw7800_dev *dev)
     dev->design = buf[1] & 0x0F;
     i2c_recv_buf(dev->i2c, DW7800_INFO+2, buf, 1);
     i2c_recv_buf(dev->i2c, DW7800_INFO+3, buf, 1);
-    DbgOut((DBL_INFO, "dw7800: 0x%02x 0x%02x 0x%02x 0x%02x\n",
-        buf[0], buf[1], buf[2], buf[3]));
+//    DbgOut((DBL_INFO, "dw7800: 0x%02x 0x%02x 0x%02x 0x%02x\n",
+//        buf[0], buf[1], buf[2], buf[3]));
     i2c_recv_buf(dev->i2c, DW7800_SWRESET, buf, 1);
     i2c_recv_buf(dev->i2c, DW7800_SWRESET+1, buf, 1);
     i2c_recv_buf(dev->i2c, DW7800_SWRESET+2, buf, 1);
     i2c_recv_buf(dev->i2c, DW7800_SWRESET+3, buf, 1);
     i2c_recv_buf(dev->i2c, DW7800_SWRESET+4, buf, 1);
-    DbgOut((DBL_INFO, "dw7800: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n",
-        buf[0], buf[1], buf[2], buf[3], buf[4]));
+//    DbgOut((DBL_INFO, "dw7800: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n",
+//        buf[0], buf[1], buf[2], buf[3], buf[4]));
 }
 
 static void dw7800_poweron(struct dw7800_dev *dev)
@@ -629,7 +629,7 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Terminate(void)
     /* Set duty cycle to 50% */
     /* To be implemented with appropriate hardware access macros */
 
-    DbgOut((DBL_INFO, "ImmVibeSPI_ForceOut_Terminate.\n"));
+//    DbgOut((DBL_INFO, "ImmVibeSPI_ForceOut_Terminate.\n"));
     return VIBE_S_SUCCESS;
 }
 
