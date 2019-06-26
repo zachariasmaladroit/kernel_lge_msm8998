@@ -471,7 +471,7 @@ static struct zram_meta *zram_meta_alloc(char *pool_name, u64 disksize)
 {
 	size_t num_pages;
 	struct zram_meta *meta = kmalloc(sizeof(*meta), GFP_KERNEL);
-	char *backend = CONFIG_ZRAM_DEFAULT_POOL;
+	char *backend;
 
 	if (!meta)
 		return NULL;
@@ -483,9 +483,7 @@ static struct zram_meta *zram_meta_alloc(char *pool_name, u64 disksize)
 		goto out_error;
 	}
 
-	if (strlen(backend_par_buf))
-		backend = backend_par_buf;
-
+	backend = strlen(backend_par_buf) ? backend_par_buf : "zsmalloc";
 	meta->mem_pool = zpool_create_pool(backend, pool_name,
 			GFP_NOIO, NULL);
 	if (!meta->mem_pool) {
