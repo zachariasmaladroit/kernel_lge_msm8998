@@ -751,7 +751,7 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_Device_GetName(VibeUInt8 nActuatorIndex, cha
     char szRevision[24];
     if ((!szDevName) || (nSize < 1)) return VIBE_E_FAIL;
 
-    DbgOut((DBL_VERBOSE, "ImmVibeSPI_Device_GetName.\n"));
+//    DbgOut((DBL_VERBOSE, "ImmVibeSPI_Device_GetName.\n"));
 
     /* Append revision number to the device name */
     sprintf(szRevision, "%s-DW7800-%02x.%02x", DEVICE_NAME, (dw7800.id << 4) | dw7800.model, dw7800.design);
