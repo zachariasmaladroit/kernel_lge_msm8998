@@ -442,33 +442,33 @@ static void dw7800_poweron(struct dw7800_dev *dev)
     // Software reset
     data = SW_RESET_COMMAND;
     if (VIBE_S_SUCCESS != I2CWrite(DW7800_SWRESET, 1, &data))
-    {
-        DbgOut((DBL_ERROR, "I2CWrite failed to send SW_RESET_COMMAND\n"));
-    }
+//    {
+//        DbgOut((DBL_ERROR, "I2CWrite failed to send SW_RESET_COMMAND\n"));
+//    }
     msleep(1);
 
     // Send timing
     data = dev->htime << 4 | dev->freq;
     if (VIBE_S_SUCCESS != I2CWrite(DW7800_TIMING, 1, &data))
-    {
-        DbgOut((DBL_ERROR, "I2CWrite failed to send timing data\n"));
-    }
+//    {
+//        DbgOut((DBL_ERROR, "I2CWrite failed to send timing data\n"));
+//    }
     msleep(1);
 
     // Send LDO level
     data = dev->ldo;
     if (VIBE_S_SUCCESS != I2CWrite(DW7800_LDO, 1, &data))
-    {
-        DbgOut((DBL_ERROR, "I2CWrite failed to send ldo level data\n"));
-    }
+//    {
+//        DbgOut((DBL_ERROR, "I2CWrite failed to send ldo level data\n"));
+//    }
     msleep(1);
 
     // Enable
     data = HW_RESET_ENABLE_COMMAND;
     if (VIBE_S_SUCCESS != I2CWrite(DW7800_HWRESET, 1, &data))
-    {
-        DbgOut((DBL_ERROR, "I2CWrite failed to send HW_RESET_ENABLE_COMMAND\n"));
-    }
+//    {
+//        DbgOut((DBL_ERROR, "I2CWrite failed to send HW_RESET_ENABLE_COMMAND\n"));
+//    }
     msleep(1);
 
     dw7800_dump_registers(dev);
@@ -490,58 +490,58 @@ static int dw7800_probe(struct i2c_client* client, const struct i2c_device_id* i
     int ret = 0;
 
     if(client->dev.of_node) {
-        DbgOut((DBL_ERROR, "dw7800_probe: dw7800_parse_dt.\n"));
+//        DbgOut((DBL_ERROR, "dw7800_probe: dw7800_parse_dt.\n"));
         dw7800_parse_dt(&client->dev, &vib);
     } else {
-        DbgOut((DBL_ERROR, "dw7800_probe: client is NULL.\n"));
+//        DbgOut((DBL_ERROR, "dw7800_probe: client is NULL.\n"));
         return -EPROBE_DEFER;
     }
 
     if(vib.vpwr_on != 1) {
         if(!(vib.vreg_l21)) {
             //vib.vreg_l21 = regulator_get(&client->dev, "vib_vdd");
-            DbgOut((DBL_ERROR, "dw7800_probe: After regulator_get.\n"));
+//            DbgOut((DBL_ERROR, "dw7800_probe: After regulator_get.\n"));
             if(IS_ERR(vib.vreg_l21)) {
                 vib.vreg_l21 = NULL;
-                DbgOut((DBL_ERROR, "dw7800_probe: vib.vreg_l21 is NULL.\n"));
+//                DbgOut((DBL_ERROR, "dw7800_probe: vib.vreg_l21 is NULL.\n"));
                 return -EPROBE_DEFER;
             }
         } else {
-            DbgOut((DBL_ERROR, "dw7800_probe: regulator_get fail1.\n"));
+//            DbgOut((DBL_ERROR, "dw7800_probe: regulator_get fail1.\n"));
             return -EPROBE_DEFER;
         }
     } else {
-        DbgOut((DBL_ERROR, "dw7800_probe: regulator_get fail2.\n"));
+//        DbgOut((DBL_ERROR, "dw7800_probe: regulator_get fail2.\n"));
     }
 
     mutex_lock(&vib_lock);
 
     if (vib.vpwr_on != 1) {
-        DbgOut((DBL_ERROR, "dw7800_probe: regulator_enable.\n"));
+//        DbgOut((DBL_ERROR, "dw7800_probe: regulator_enable.\n"));
         //rc = regulator_enable(vib.vreg_l21);
     } else {
-        DbgOut((DBL_ERROR, "dw7800_probe: regulator_enable faile.\n"));
+//        DbgOut((DBL_ERROR, "dw7800_probe: regulator_enable faile.\n"));
         return -EPROBE_DEFER;
     }
 
     mutex_unlock(&vib_lock);
 
     if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
-        DbgOut((DBL_ERROR, "dw7800_probe: i2c_check_functionality failed.\n"));
+//        DbgOut((DBL_ERROR, "dw7800_probe: i2c_check_functionality failed.\n"));
         return -ENODEV;
     }
 
     dw7800.i2c = client;
     dw7800_poweron(&dw7800);
-    DbgOut((DBL_ERROR, "dw7800_probe: After dw7800_poweron.\n"));
+//    DbgOut((DBL_ERROR, "dw7800_probe: After dw7800_poweron.\n"));
 
     /* get device id */
     if (2 != i2c_recv_buf(client, DW7800_VERSION, &dw7800.version, 1)) {
-        DbgOut((DBL_ERROR, "dw7800_probe: failed to read version from dw7800.\n"));
+//        DbgOut((DBL_ERROR, "dw7800_probe: failed to read version from dw7800.\n"));
         /*return -ENODEV;*/
     }
 
-    DbgOut((DBL_ERROR, "dw7800_probe.\n"));
+//    DbgOut((DBL_ERROR, "dw7800_probe.\n"));
 
 #ifdef DW7800_SYSFS
     ret = sysfs_create_group(&client->dev.kobj, &dw7800_attr_group);
@@ -558,14 +558,14 @@ static void dw7800_shutdown(struct i2c_client* client)
     /* Reverse i2c_new_device */
 //    i2c_unregister_device(dw7800.i2c);
 
-    DbgOut((DBL_ERROR, "dw7800_shutdown.\n"));
+//    DbgOut((DBL_ERROR, "dw7800_shutdown.\n"));
 
     return;
 }
 
 static int dw7800_remove(struct i2c_client* client)
 {
-    DbgOut((DBL_ERROR, "dw7800_remove.\n"));
+//    DbgOut((DBL_ERROR, "dw7800_remove.\n"));
 
     return 0;
 }
@@ -577,7 +577,7 @@ static int dw7800_remove(struct i2c_client* client)
 #define NAK_RESEND_ATTEMPT 3
 IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_AmpDisable(VibeUInt8 nActuatorIndex)
 {
-    DbgOut((DBL_ERROR, "ImmVibeSPI_ForceOut_AmpDisable.\n"));
+//    DbgOut((DBL_ERROR, "ImmVibeSPI_ForceOut_AmpDisable.\n"));
 
     /* Nothing to do. DW7800 enters standby when FIFO is empty. */
 
@@ -589,7 +589,7 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_AmpDisable(VibeUInt8 nActuatorIndex
 */
 IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_AmpEnable(VibeUInt8 nActuatorIndex)
 {
-    DbgOut((DBL_ERROR, "ImmVibeSPI_ForceOut_AmpEnable.\n"));
+//    DbgOut((DBL_ERROR, "ImmVibeSPI_ForceOut_AmpEnable.\n"));
 
     /* Set duty cycle to 50% */
     /* To be implemented with appropriate hardware access macros */
@@ -609,7 +609,7 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Initialize(void)
 
     retVal = i2c_add_driver(&dw7800_driver);
     if (retVal) {
-		        DbgOut((DBL_ERROR, "ImmVibeSPI_ForceOut_Initialize: Cannot add driver.\n"));
+//		        DbgOut((DBL_ERROR, "ImmVibeSPI_ForceOut_Initialize: Cannot add driver.\n"));
 		        return VIBE_E_FAIL;
     }
 
@@ -649,7 +649,7 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex
 #endif
 
     if (VIBE_S_SUCCESS != I2CWriteWithResendOnError(DW7800_DATA, nBufferSizeInBytes, pForceOutputBuffer)) {
-        DbgOut((DBL_ERROR, "ImmVibeSPI_ForceOut_SetSamples: i2c write failed\n"));
+//        DbgOut((DBL_ERROR, "ImmVibeSPI_ForceOut_SetSamples: i2c write failed\n"));
         return VIBE_E_FAIL;
     }
 
@@ -729,7 +729,7 @@ VibeStatus I2CWriteWithResendOnError(unsigned char address, VibeUInt16 nBufferSi
         }
     }
 
-    DbgOut((DBL_ERROR, "I2CWriteWithResendOnError failed\n"));
+//    DbgOut((DBL_ERROR, "I2CWriteWithResendOnError failed\n"));
 
     return VIBE_E_FAIL;
 }
