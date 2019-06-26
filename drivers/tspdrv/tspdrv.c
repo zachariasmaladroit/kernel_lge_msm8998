@@ -297,7 +297,7 @@ static int __init tspdrv_init(void)
     DbgOutErr(("*** tspdrv: runtime recorder feature is ON for debugging which should be OFF in release version.\n"
                         "*** tspdrv: please turn off the feature by removing VIBE_RUNTIME_RECODE macro.\n"));
 #endif
-    DbgOutInfo(("tspdrv: init_module.\n"));
+//    DbgOutInfo(("tspdrv: init_module.\n"));
 
 #ifdef IMPLEMENT_AS_CHAR_DRIVER
     g_nMajor = register_chrdev(0, MODULE_NAME, &fops);
@@ -351,7 +351,7 @@ static int __init tspdrv_init(void)
 
 static void __exit tspdrv_exit(void)
 {
-    DbgOutInfo(("tspdrv: cleanup_module.\n"));
+//    DbgOutInfo(("tspdrv: cleanup_module.\n"));
 
     DbgRecorderTerminate(());
 
@@ -370,7 +370,7 @@ static void __exit tspdrv_exit(void)
 
 static int open(struct inode *inode, struct file *file)
 {
-    DbgOutInfo(("tspdrv: open.\n"));
+//    DbgOutInfo(("tspdrv: open.\n"));
 
     if (!try_module_get(THIS_MODULE)) return -ENODEV;
 
@@ -379,7 +379,7 @@ static int open(struct inode *inode, struct file *file)
 
 static int release(struct inode *inode, struct file *file)
 {
-    DbgOutInfo(("tspdrv: release.\n"));
+//    DbgOutInfo(("tspdrv: release.\n"));
 
     /*
     ** Reset force and stop timer when the driver is closed, to make sure
@@ -624,12 +624,12 @@ static int suspend(struct platform_device *pdev, pm_message_t state)
 {
     if (g_bIsPlaying)
     {
-        DbgOutInfo(("tspdrv: can't suspend, still playing effects.\n"));
+//        DbgOutInfo(("tspdrv: can't suspend, still playing effects.\n"));
         return -EBUSY;
     }
     else
     {
-        DbgOutInfo(("tspdrv: suspend.\n"));
+//        DbgOutInfo(("tspdrv: suspend.\n"));
         return 0;
     }
 }
