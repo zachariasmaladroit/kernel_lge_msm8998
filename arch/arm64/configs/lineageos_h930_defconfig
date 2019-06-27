@@ -6231,6 +6231,9 @@ CONFIG_ANDROID_LMK_ADJ_RBTREE=y
 #
 # CONFIG_QCOM_DLOAD_MODE is not set
 # CONFIG_QCOM_MINIDUMP is not set
+#
+# CONFIG_USB_F_QDSS is not set
+# CONFIG_USB_CONFIGFS_F_QDSS is not set
 
 # cruft, unnecessary features, relicts / remnants
 # RAID
