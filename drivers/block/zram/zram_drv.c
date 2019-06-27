@@ -40,8 +40,6 @@ static DEFINE_MUTEX(zram_index_mutex);
 
 static int zram_major;
 static const char *default_compressor = "lz4";
-#define BACKEND_PAR_BUF_SIZE	32
-static char backend_par_buf[BACKEND_PAR_BUF_SIZE];
 
 /*
  * We don't need to see memory allocation errors more than once every 1
@@ -286,7 +284,7 @@ static ssize_t mem_used_max_store(struct device *dev,
 	if (init_done(zram)) {
 		struct zram_meta *meta = zram->meta;
 		atomic_long_set(&zram->stats.max_used_pages,
-			zpool_get_total_size(meta->mem_pool) >> PAGE_SHIFT);
+				zs_get_total_pages(meta->mem_pool));
 	}
 	up_read(&zram->init_lock);
 
@@ -368,7 +366,7 @@ static ssize_t compact_store(struct device *dev,
 	}
 
 	meta = zram->meta;
-	zpool_compact(meta->mem_pool);
+	zs_compact(meta->mem_pool);
 	up_read(&zram->init_lock);
 
 	return len;
@@ -396,14 +394,17 @@ static ssize_t mm_stat_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
 	struct zram *zram = dev_to_zram(dev);
+	struct zs_pool_stats pool_stats;
 	u64 orig_size, mem_used = 0;
-	long max_used, num_compacted = 0;
+	long max_used;
 	ssize_t ret;
+
+	memset(&pool_stats, 0x00, sizeof(struct zs_pool_stats));
 
 	down_read(&zram->init_lock);
 	if (init_done(zram)) {
-		mem_used = zpool_get_total_size(zram->meta->mem_pool);
-		num_compacted = zpool_get_num_compacted(zram->meta->mem_pool);
+		mem_used = zs_get_total_pages(zram->meta->mem_pool);
+		zs_pool_stats(zram->meta->mem_pool, &pool_stats);
 	}
 
 	orig_size = atomic64_read(&zram->stats.pages_stored);
@@ -413,11 +414,11 @@ static ssize_t mm_stat_show(struct device *dev,
 			"%8llu %8llu %8llu %8lu %8ld %8llu %8lu\n",
 			orig_size << PAGE_SHIFT,
 			(u64)atomic64_read(&zram->stats.compr_data_size),
-			mem_used,
+			mem_used << PAGE_SHIFT,
 			zram->limit_pages << PAGE_SHIFT,
 			max_used << PAGE_SHIFT,
 			(u64)atomic64_read(&zram->stats.same_pages),
-			num_compacted);
+			pool_stats.pages_compacted);
 	up_read(&zram->init_lock);
 
 	return ret;
@@ -459,10 +460,10 @@ static void zram_meta_free(struct zram_meta *meta, u64 disksize)
 		if (!handle || zram_test_flag(meta, index, ZRAM_SAME))
 			continue;
 
-		zpool_free(meta->mem_pool, handle);
+		zs_free(meta->mem_pool, handle);
 	}
 
-	zpool_destroy_pool(meta->mem_pool);
+	zs_destroy_pool(meta->mem_pool);
 	vfree(meta->table);
 	kfree(meta);
 }
@@ -471,7 +472,6 @@ static struct zram_meta *zram_meta_alloc(char *pool_name, u64 disksize)
 {
 	size_t num_pages;
 	struct zram_meta *meta = kmalloc(sizeof(*meta), GFP_KERNEL);
-	char *backend;
 
 	if (!meta)
 		return NULL;
@@ -483,9 +483,7 @@ static struct zram_meta *zram_meta_alloc(char *pool_name, u64 disksize)
 		goto out_error;
 	}
 
-	backend = strlen(backend_par_buf) ? backend_par_buf : "zsmalloc";
-	meta->mem_pool = zpool_create_pool(backend, pool_name,
-			GFP_NOIO, NULL);
+	meta->mem_pool = zs_create_pool(pool_name);
 	if (!meta->mem_pool) {
 		pr_err("Error creating memory pool\n");
 		goto out_error;
@@ -523,7 +521,7 @@ static void zram_free_page(struct zram *zram, size_t index)
 	if (!handle)
 		return;
 
-	zpool_free(meta->mem_pool, handle);
+	zs_free(meta->mem_pool, handle);
 
 	atomic64_sub(zram_get_obj_size(meta, index),
 			&zram->stats.compr_data_size);
@@ -551,7 +549,7 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
 		return 0;
 	}
 
-	cmem = zpool_map_handle(meta->mem_pool, handle, ZPOOL_MM_RO);
+	cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_RO);
 	if (size == PAGE_SIZE) {
 		memcpy(mem, cmem, PAGE_SIZE);
 	} else {
@@ -560,7 +558,7 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
 		ret = zcomp_decompress(zstrm, cmem, size, mem);
 		zcomp_stream_put(zram->comp);
 	}
-	zpool_unmap_handle(meta->mem_pool, handle);
+	zs_unmap_object(meta->mem_pool, handle);
 	bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
 
 	/* Should NEVER happen. Return bio error if it does. */
@@ -712,23 +710,22 @@ compress_again:
 	 * from the slow path and handle has already been allocated.
 	 */
 	if (!handle)
-		ret = zpool_malloc(meta->mem_pool, clen,
+		handle = zs_malloc(meta->mem_pool, clen,
 				__GFP_KSWAPD_RECLAIM |
 				__GFP_NOWARN |
 				__GFP_HIGHMEM |
-				__GFP_CMA |
-				__GFP_MOVABLE,
-				&handle);
-	if (ret < 0) {
+				__GFP_MOVABLE |
+				__GFP_CMA);
+	if (!handle) {
 		zcomp_stream_put(zram->comp);
 		zstrm = NULL;
 
 		atomic64_inc(&zram->stats.writestall);
 
-		ret = zpool_malloc(meta->mem_pool, clen,
-				GFP_NOIO | __GFP_HIGHMEM | | __GFP_CMA |
-				__GFP_MOVABLE, &handle);
-		if (ret == 0)
+		handle = zs_malloc(meta->mem_pool, clen,
+				GFP_NOIO | __GFP_HIGHMEM |
+				__GFP_MOVABLE | __GFP_CMA);
+		if (handle)
 			goto compress_again;
 
 		if (printk_timed_ratelimit(&zram_rs_time,
@@ -740,15 +737,16 @@ compress_again:
 		goto out;
 	}
 
-	alloced_pages = zpool_get_total_size(meta->mem_pool) >> PAGE_SHIFT;
+	alloced_pages = zs_get_total_pages(meta->mem_pool);
 	update_used_max(zram, alloced_pages);
+
 	if (zram->limit_pages && alloced_pages > zram->limit_pages) {
-		zpool_free(meta->mem_pool, handle);
+		zs_free(meta->mem_pool, handle);
 		ret = -ENOMEM;
 		goto out;
 	}
 
-	cmem = zpool_map_handle(meta->mem_pool, handle, ZPOOL_MM_WO);
+	cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
 
 	if ((clen == PAGE_SIZE) && !is_partial_io(bvec)) {
 		src = kmap_atomic(page);
@@ -760,7 +758,7 @@ compress_again:
 
 	zcomp_stream_put(zram->comp);
 	zstrm = NULL;
-	zpool_unmap_handle(meta->mem_pool, handle);
+	zs_unmap_object(meta->mem_pool, handle);
 
 	/*
 	 * Free memory associated with this sector
@@ -1418,8 +1416,6 @@ module_exit(zram_exit);
 
 module_param(num_devices, uint, 0);
 MODULE_PARM_DESC(num_devices, "Number of pre-created zram devices");
-module_param_string(backend, backend_par_buf, BACKEND_PAR_BUF_SIZE, S_IRUGO);
-MODULE_PARM_DESC(backend, "Compression storage (backend) name");
 
 MODULE_LICENSE("Dual BSD/GPL");
 MODULE_AUTHOR("Nitin Gupta <ngupta@vflare.org>");
