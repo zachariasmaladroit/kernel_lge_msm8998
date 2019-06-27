@@ -6086,7 +6086,8 @@ CONFIG_JUMP_LABEL=y
 #
 # CONFIG_TRACING_EVENTS_GPIO is not set
 #
-# CONFIG_FTRACE is not set
+# FTRACE: needed for success booting (for now)
+CONFIG_FTRACE=y
 
 # iommu debug
 # CONFIG_IOMMU_IO_PGTABLE_FAST_SELFTEST is not set
