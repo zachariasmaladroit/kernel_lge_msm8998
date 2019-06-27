@@ -6228,6 +6228,9 @@ CONFIG_ANDROID_LMK_ADJ_RBTREE=y
 # CONFIG_MSM_BOOT_STATS is not set
 # CONFIG_QCOM_CPUSS_DUMP is not set
 # CONFIG_QCOM_REMOTEQDSS is not set
+#
+# CONFIG_QCOM_DLOAD_MODE is not set
+# CONFIG_QCOM_MINIDUMP is not set
 
 # cruft, unnecessary features, relicts / remnants
 # RAID
