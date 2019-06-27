@@ -908,7 +908,7 @@ void pm_print_active_wakeup_sources(void)
 	struct wakeup_source *last_activity_ws = NULL;
 
 	srcuidx = srcu_read_lock(&wakeup_srcu);
-#ifdef CONFIG_LGE_PM
+#ifdef CONFIG_MATA
 	list_for_each_entry_rcu(ws, &wakeup_sources, entry) {
 		if (ws->active) {
 			ws->pending_count++;
@@ -1133,7 +1133,7 @@ static int print_wakeup_source_stats(struct seq_file *m,
 	} else {
 		active_time = ktime_set(0, 0);
 	}
-#ifdef CONFIG_LGE_PM
+#ifdef CONFIG_MATA
 	seq_printf(m, "%-12s\t%lu\t\t%lu\t\t%lu\t\t%lu\t\t%lld\t\t%lld\t\t%lld\t\t%lld\t\t%lld\t\t%lu\n",
 		   ws->name, active_count, ws->event_count,
 		   ws->wakeup_count, ws->expire_count,
@@ -1153,7 +1153,7 @@ static int print_wakeup_source_stats(struct seq_file *m,
 	return 0;
 }
 
-#ifdef CONFIG_LGE_PM
+#ifdef CONFIG_MATA
 static int print_wakeup_source_active_stats(struct seq_file *m,
 	struct wakeup_source *ws)
 {
@@ -1209,7 +1209,7 @@ static int wakeup_sources_stats_show(struct seq_file *m, void *unused)
 	struct wakeup_source *ws;
 	int srcuidx;
 
-#ifdef CONFIG_LGE_PM
+#ifdef CONFIG_MATA
 	seq_puts(m, "name\t\tactive_count\tevent_count\twakeup_count\t"
 		"expire_count\tactive_since\ttotal_time\t"
 		"max_time\tlast_change\tprevent_suspend_time\tpending_count\n");
@@ -1229,7 +1229,7 @@ static int wakeup_sources_stats_show(struct seq_file *m, void *unused)
 	return 0;
 }
 
-#ifdef CONFIG_LGE_PM
+#ifdef CONFIG_MATA
 static int wakeup_sources_active_stats_show(struct seq_file *m, void *unused)
 {
 	struct wakeup_source *ws;
@@ -1252,7 +1252,7 @@ static int wakeup_sources_stats_open(struct inode *inode, struct file *file)
 	return single_open(file, wakeup_sources_stats_show, NULL);
 }
 
-#ifdef CONFIG_LGE_PM
+#ifdef CONFIG_MATA
 static int wakeup_sources_active_stats_open(struct inode *inode,
 	struct file *file)
 {
@@ -1268,7 +1268,7 @@ static const struct file_operations wakeup_sources_stats_fops = {
 	.release = single_release,
 };
 
-#ifdef CONFIG_LGE_PM
+#ifdef CONFIG_MATA
 static const struct file_operations wakeup_sources_active_stats_fops = {
 	.owner = THIS_MODULE,
 	.open = wakeup_sources_active_stats_open,
@@ -1283,7 +1283,7 @@ static int __init wakeup_sources_debugfs_init(void)
 	wakeup_sources_stats_dentry = debugfs_create_file("wakeup_sources",
 			S_IRUGO, NULL, NULL, &wakeup_sources_stats_fops);
 
-#ifdef CONFIG_LGE_PM
+#ifdef CONFIG_MATA
 	wakeup_sources_stats_dentry = debugfs_create_file(
 		"wakeup_sources_active", S_IRUGO, NULL,
 		NULL, &wakeup_sources_active_stats_fops);
