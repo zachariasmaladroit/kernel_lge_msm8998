@@ -1857,8 +1857,8 @@ static const struct platform_suspend_ops lpm_suspend_ops = {
 static int lpm_probe(struct platform_device *pdev)
 {
 	int ret;
-	unsigned int cpu;
-	struct hrtimer *cpu_histtimer;
+	unsigned int cpu = raw_smp_processor_id();
+	struct hrtimer *cpu_histtimer = &per_cpu(histtimer, cpu);
 	struct kobject *module_kobj = NULL;
 
 	get_online_cpus();
