@@ -128,9 +128,11 @@ static void __dump_packet(u8 *packet, enum vidc_msg_prio log_level)
 {
 	u32 c = 0, packet_size = *(u32 *)packet;
 	const int row_size = 32;
-	/* row must contain enough for 0xdeadbaad * 8 to be converted into
-	 * "de ad ba ab " * 8 + '\0' */
-	char row[3 * row_size];
+	/*
+	 * row must contain enough for 0xdeadbaad * 8 to be converted into
+	 * "de ad ba ab " * 8 + '\0'
+	 */
+	char row[3 * 32];
 
 	for (c = 0; c * row_size < packet_size; ++c) {
 		int bytes_to_read = ((c + 1) * row_size > packet_size) ?
