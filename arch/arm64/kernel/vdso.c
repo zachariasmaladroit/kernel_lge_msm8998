@@ -130,6 +130,8 @@ static int __init vdso_init(void)
 	if (vdso_pagelist == NULL)
 		return -ENOMEM;
 
+	kmemleak_not_leak(vdso_pagelist);
+
 	/* Grab the vDSO data page. */
 	vdso_pagelist[0] = virt_to_page(vdso_data);
 
