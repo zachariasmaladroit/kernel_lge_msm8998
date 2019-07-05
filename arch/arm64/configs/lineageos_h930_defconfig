@@ -6237,6 +6237,10 @@ CONFIG_ANDROID_LMK_ADJ_RBTREE=y
 
 # developer access & other hardware-access
 #
+# disabling DISCOURAGED (reboot upon "stack overrun on calls to schedule()."
+# "If the stack end location is found to be over written always panic as the content of the corrupted region can no longer be trusted"
+# CONFIG_SCHED_STACK_END_CHECK is not set
+#
 # CONFIG_ALLOW_DEV_COREDUMP is not set
 # CONFIG_QCOM_MEMORY_DUMP_V2 is not set
 #
