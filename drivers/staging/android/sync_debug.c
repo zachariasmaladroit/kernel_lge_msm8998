@@ -180,10 +180,8 @@ static void sync_print_fence(struct seq_file *s, struct sync_fence *fence)
 	unsigned long flags;
 	int i;
 
-#ifdef CONFIG_SYNC_DEBUG
 	seq_printf(s, "[%pK] %s: %s\n", fence, fence->name,
 		   sync_status_str(atomic_read(&fence->status)));
-#endif
 
 	for (i = 0; i < fence->num_fences; ++i) {
 		struct sync_pt *pt =
