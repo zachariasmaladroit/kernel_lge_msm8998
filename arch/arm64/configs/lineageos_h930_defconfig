@@ -5826,7 +5826,6 @@ CONFIG_SECURITY_YAMA=y
 # CONFIG_SLUB_CPU_PARTIAL is not set # more indeterminism in the latency of the free , taking of locks that may cause latency spikes
 # CONFIG_VM_EVENT_COUNTERS is not set
 #
-# CONFIG_SYNC_DEBUG is not set
 
 # logging and debug overhead
 #
@@ -6113,7 +6112,7 @@ CONFIG_JUMP_LABEL=y
 # CONFIG_TRACING_EVENTS_GPIO is not set
 #
 # FTRACE: needed for success booting (for now)
-# CONFIG_FTRACE is not set
+CONFIG_FTRACE=y
 
 # iommu debug
 # CONFIG_IOMMU_IO_PGTABLE_FAST_SELFTEST is not set
@@ -6126,6 +6125,7 @@ CONFIG_JUMP_LABEL=y
 # CONFIG_MMC_PERF_PROFILING is not set
 # CONFIG_KALLSYMS_ALL is not set
 # CONFIG_DEBUG_INFO is not set
+CONFIG_SYNC_DEBUG=y
 #
 # except:
 CONFIG_DEBUG_INFO_REDUCED=y
