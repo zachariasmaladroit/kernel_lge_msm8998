@@ -135,21 +135,21 @@ static void sync_event_print(struct seq_file *s,
 
 	switch (sync_event->type) {
 	case KGSL_CMD_SYNCPOINT_TYPE_TIMESTAMP: {
-		seq_printf(s, "sync: ctx: %d ts: %d",
-				sync_event->context->id, sync_event->timestamp);
+//		seq_printf(s, "sync: ctx: %d ts: %d",
+//				sync_event->context->id, sync_event->timestamp);
 		break;
 	}
 	case KGSL_CMD_SYNCPOINT_TYPE_FENCE:
 		spin_lock_irqsave(&sync_event->handle_lock, flags);
 
-		seq_printf(s, "sync: [%pK] %s", sync_event->handle,
-		(sync_event->handle && sync_event->handle->fence)
-				? sync_event->handle->fence->name : "NULL");
+//		seq_printf(s, "sync: [%pK] %s", sync_event->handle,
+//		(sync_event->handle && sync_event->handle->fence)
+//				? sync_event->handle->fence->name : "NULL");
 
 		spin_unlock_irqrestore(&sync_event->handle_lock, flags);
 		break;
 	default:
-		seq_printf(s, "sync: type: %d", sync_event->type);
+//		seq_printf(s, "sync: type: %d", sync_event->type);
 		break;
 	}
 }
@@ -193,13 +193,13 @@ static void print_flags(struct seq_file *s, const struct flag_entry *table,
 
 	for (i = 0; i < table_size; i++) {
 		if (flags & table[i].mask) {
-			seq_printf(s, "%c%s", first ? '\0' : '|', table[i].str);
+//			seq_printf(s, "%c%s", first ? '\0' : '|', table[i].str);
 			flags &= ~(table[i].mask);
 			first = 0;
 		}
 	}
 	if (flags) {
-		seq_printf(s, "%c0x%lx", first ? '\0' : '|', flags);
+//		seq_printf(s, "%c0x%lx", first ? '\0' : '|', flags);
 		first = 0;
 	}
 	if (first)
@@ -235,7 +235,7 @@ static void cmdobj_print(struct seq_file *s,
 	else
 		seq_puts(s, " markerobj ");
 
-	seq_printf(s, "\t %d ", drawobj->timestamp);
+//	seq_printf(s, "\t %d ", drawobj->timestamp);
 
 	seq_puts(s, " priv: ");
 	print_flags(s, cmdobj_priv, ARRAY_SIZE(cmdobj_priv),
@@ -276,13 +276,13 @@ static int ctx_print(struct seq_file *s, void *unused)
 	struct kgsl_event *event;
 	unsigned int queued = 0, consumed = 0, retired = 0;
 
-	seq_printf(s, "id: %d type: %s priority: %d process: %s (%d) tid: %d\n",
-		   drawctxt->base.id,
-		   ctx_type_str(drawctxt->type),
-		   drawctxt->base.priority,
-		   drawctxt->base.proc_priv->comm,
-		   drawctxt->base.proc_priv->pid,
-		   drawctxt->base.tid);
+//	seq_printf(s, "id: %d type: %s priority: %d process: %s (%d) tid: %d\n",
+//		   drawctxt->base.id,
+//		   ctx_type_str(drawctxt->type),
+//		   drawctxt->base.priority,
+//		   drawctxt->base.proc_priv->comm,
+//		   drawctxt->base.proc_priv->pid,
+//		   drawctxt->base.tid);
 
 	seq_puts(s, "flags: ");
 	print_flags(s, context_flags, ARRAY_SIZE(context_flags),
@@ -300,9 +300,9 @@ static int ctx_print(struct seq_file *s, void *unused)
 				KGSL_TIMESTAMP_CONSUMED, &consumed);
 	kgsl_readtimestamp(drawctxt->base.device, &drawctxt->base,
 				KGSL_TIMESTAMP_RETIRED, &retired);
-	seq_printf(s, "queued: %u consumed: %u retired: %u global:%u\n",
-		   queued, consumed, retired,
-		   drawctxt->internal_timestamp);
+//	seq_printf(s, "queued: %u consumed: %u retired: %u global:%u\n",
+//		   queued, consumed, retired,
+//		   drawctxt->internal_timestamp);
 
 	seq_puts(s, "drawqueue:\n");
 
@@ -316,8 +316,8 @@ static int ctx_print(struct seq_file *s, void *unused)
 	seq_puts(s, "events:\n");
 	spin_lock(&drawctxt->base.events.lock);
 	list_for_each_entry(event, &drawctxt->base.events.events, node)
-		seq_printf(s, "\t%d: %pF created: %u\n", event->timestamp,
-				event->func, event->created);
+//		seq_printf(s, "\t%d: %pF created: %u\n", event->timestamp,
+//				event->func, event->created);
 	spin_unlock(&drawctxt->base.events.lock);
 
 	return 0;
