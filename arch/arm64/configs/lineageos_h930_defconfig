@@ -6125,7 +6125,11 @@ CONFIG_FTRACE=y
 # debug stuff (disabling recommended)
 # CONFIG_PROFILING is not set
 # CONFIG_MMC_PERF_PROFILING is not set
+# CONFIG_KALLSYMS_ALL is not set
+#
+# except:
 CONFIG_DEBUG_INFO_REDUCED=y
+
 
 # ION
 CONFIG_ION=y
