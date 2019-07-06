@@ -1431,8 +1431,10 @@ void *msm_vidc_open(int core_id, int session_type)
 	list_add_tail(&inst->list, &core->instances);
 	mutex_unlock(&core->lock);
 
+#ifdef CONFIG_DEBUG_FS
 	inst->debugfs_root =
 		msm_vidc_debugfs_init_inst(inst, core->debugfs_root);
+#endif
 
 	pr_debug("vidc_open = true\n");
 	vidc_open = true;
