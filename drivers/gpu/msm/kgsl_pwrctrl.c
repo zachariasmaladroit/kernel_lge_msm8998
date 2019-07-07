@@ -65,7 +65,7 @@ static unsigned int ib_votes[KGSL_MAX_BUSLEVELS];
 static int last_vote_buslevel;
 static int max_vote_buslevel;
 
-static int kgsl_pwrctrl_limit_enable = 0;
+static int kgsl_pwrctrl_limit_enable = 1;
 
 static void kgsl_pwrctrl_clk(struct kgsl_device *device, int state,
 					int requested_state);
