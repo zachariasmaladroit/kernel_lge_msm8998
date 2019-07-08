@@ -151,7 +151,6 @@ int freeze_processes(void)
 	pr_debug("\n");
 	BUG_ON(in_atomic());
 
-#ifdef CONFIG_HAVE_LOW_MEMORY_KILLER
 	/*
 	 * Now that the whole userspace is frozen we need to disbale
 	 * the OOM killer to disallow any further interference with
@@ -159,7 +158,6 @@ int freeze_processes(void)
 	 */
 	if (!error && !oom_killer_disable())
 		error = -EBUSY;
-#endif
 
 	if (error)
 		thaw_processes();
