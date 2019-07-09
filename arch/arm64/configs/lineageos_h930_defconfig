@@ -6341,3 +6341,7 @@ CONFIG_QCOM_DLOAD_MODE=y
 # LGE superfluous features for us
 #
 # CONFIG_LGE_DM_VERITY_RECOVERY is not set
+
+# LGE essentials
+# 
+## LGE_QFPROM_INTERFACE -> rollback fuse (!)
