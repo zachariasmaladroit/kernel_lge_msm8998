@@ -115,9 +115,36 @@ enum {
 	POWER_SUPPLY_PL_USBMID_USBMID,
 };
 
+#ifdef CONFIG_LGE_PM
+enum {
+	POWER_SUPPLY_CONNECTOR_TYPEC,
+	POWER_SUPPLY_CONNECTOR_MICRO_USB,
+};
+
+enum {
+	POWER_SUPPLY_PL_STACKED_BATFET,
+	POWER_SUPPLY_PL_NON_STACKED_BATFET,
+};
+
+enum {
+	POWER_SUPPLY_PD_INACTIVE = 0,
+	POWER_SUPPLY_PD_ACTIVE,
+	POWER_SUPPLY_PD_PPS_ACTIVE,
+};
+
+enum {
+	POWER_SUPPLY_QC_CTM_DISABLE = BIT(0),
+	POWER_SUPPLY_QC_THERMAL_BALANCE_DISABLE = BIT(1),
+	POWER_SUPPLY_QC_INOV_THERMAL_DISABLE = BIT(2),
+};
+#endif
+
 enum power_supply_property {
 	/* Properties of type `int' */
 	POWER_SUPPLY_PROP_STATUS = 0,
+#ifdef CONFIG_LGE_PM
+	POWER_SUPPLY_PROP_STATUS_RAW,
+#endif
 	POWER_SUPPLY_PROP_CHARGE_TYPE,
 	POWER_SUPPLY_PROP_HEALTH,
 	POWER_SUPPLY_PROP_PRESENT,
@@ -261,6 +288,38 @@ enum power_supply_property {
 	POWER_SUPPLY_PROP_PD_VOLTAGE_MIN,
 	POWER_SUPPLY_PROP_SDP_CURRENT_MAX,
 	POWER_SUPPLY_PROP_FCC_STEPPER_ENABLE,
+#ifdef CONFIG_LGE_PM
+	POWER_SUPPLY_PROP_CONNECTOR_TYPE,
+	POWER_SUPPLY_PROP_PARALLEL_BATFET_MODE,
+	POWER_SUPPLY_PROP_PARALLEL_FCC_MAX,
+	POWER_SUPPLY_PROP_MIN_ICL,
+	POWER_SUPPLY_PROP_MOISTURE_DETECTED,
+	POWER_SUPPLY_PROP_BATT_PROFILE_VERSION,
+	POWER_SUPPLY_PROP_BATT_FULL_CURRENT,
+	POWER_SUPPLY_PROP_RECHARGE_SOC,
+	POWER_SUPPLY_PROP_TOGGLE_STAT,
+	POWER_SUPPLY_PROP_ALLOW_HVDCP3,
+	POWER_SUPPLY_PROP_HVDCP_OPTI_ALLOWED,
+	POWER_SUPPLY_PROP_MAX_PULSE_ALLOWED,
+	POWER_SUPPLY_PROP_IGNORE_FALSE_NEGATIVE_ISENSE,
+	POWER_SUPPLY_PROP_BATTERY_INFO,
+	POWER_SUPPLY_PROP_BATTERY_INFO_ID,
+	POWER_SUPPLY_PROP_ENABLE_JEITA_DETECTION,
+	POWER_SUPPLY_PROP_ESR_ACTUAL,
+	POWER_SUPPLY_PROP_ESR_NOMINAL,
+	POWER_SUPPLY_PROP_SOH,
+	POWER_SUPPLY_PROP_PARALLEL_BATFET_EN,
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECTION
+	POWER_SUPPLY_PROP_MOISTURE_DETECTION,
+	POWER_SUPPLY_PROP_TYPEC_CC_DISABLE,
+	POWER_SUPPLY_PROP_TYPEC_IS_OCP,
+#endif
+#ifdef CONFIG_IDTP9223_CHARGER
+	POWER_SUPPLY_PROP_QIPMA_ON,
+	POWER_SUPPLY_PROP_CONNECTION_TYPE,
+	POWER_SUPPLY_PROP_QIPMA_ON_STATUS,
+#endif
+#endif
 	/* Local extensions of type int64_t */
 	POWER_SUPPLY_PROP_CHARGE_COUNTER_EXT,
 	/* Properties of type `const char *' */
@@ -268,6 +327,9 @@ enum power_supply_property {
 	POWER_SUPPLY_PROP_MANUFACTURER,
 	POWER_SUPPLY_PROP_SERIAL_NUMBER,
 	POWER_SUPPLY_PROP_BATTERY_TYPE,
+#ifdef CONFIG_LGE_PM
+	POWER_SUPPLY_PROP_CYCLE_COUNTS,
+#endif
 };
 
 enum power_supply_type {
@@ -375,7 +437,9 @@ struct power_supply_desc {
 				     enum power_supply_property psp);
 	void (*external_power_changed)(struct power_supply *psy);
 	void (*set_charged)(struct power_supply *psy);
-
+#ifdef CONFIG_LGE_PM_LGE_POWER_CORE
+	void (*external_lge_power_changed)(struct power_supply *psy);
+#endif
 	/*
 	 * Set if thermal zone should not be created for this power supply.
 	 * For example for virtual supplies forwarding calls to actual
@@ -422,6 +486,14 @@ struct power_supply {
 	char *online_trig_name;
 	struct led_trigger *charging_blink_full_solid_trig;
 	char *charging_blink_full_solid_trig_name;
+#endif
+#ifdef CONFIG_LGE_PM_LGE_POWER_CORE
+	char **lge_power_supplied_to;
+	size_t num_lge_power_supplicants;
+	char **lge_power_supplied_from;
+	size_t num_lge_power_supplies;
+	char **lge_psy_power_supplied_from;
+	size_t num_lge_psy_power_supplies;
 #endif
 };
 

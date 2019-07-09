@@ -555,6 +555,16 @@ struct mdss_data_type {
 	wait_queue_head_t secure_waitq;
 	struct cx_ipeak_client *mdss_cx_ipeak;
 	struct mult_factor bus_throughput_factor;
+#ifdef CONFIG_LGE_VSYNC_SKIP
+	char enable_skip_vsync;
+	ulong skip_value;
+	ulong weight;
+	ulong bucket;
+	ulong skip_count;
+	int skip_ratio;
+	bool skip_first;
+	unsigned int interval_min_fps;
+#endif
 };
 
 extern struct mdss_data_type *mdss_res;

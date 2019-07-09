@@ -1,4 +1,4 @@
-/* Copyright (c) 2015-2018, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2015-2017, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -287,14 +287,22 @@
 			compatible = "android,firmware";
 			fstab {
 				compatible = "android,fstab";
-				vendor {
-					compatible = "android,vendor";
-					dev = "/dev/block/platform/soc/1da4000.ufshc/by-name/vendor";
-					type = "ext4";
-					mnt_flags = "ro,barrier=1,discard";
-					fsmgr_flags = "wait,slotselect,verify";
-					status = "ok";
-				};
+                vendor {
+                    compatible = "android,vendor";
+                    dev = "/dev/block/platform/soc/1da4000.ufshc/by-name/vendor";
+                    type = "ext4";
+                    mnt_flags = "ro,barrier=1,discard";
+                    fsmgr_flags = "wait,slotselect,verify";
+                    status = "disabled";
+                };
+                system {
+                    compatible = "android,system";
+                    dev = "/dev/block/platform/soc/1da4000.ufshc/by-name/system";
+                    type = "ext4";
+                    mnt_flags = "ro,barrier=1";
+                    fsmgr_flags = "wait,verify";
+                    status = "ok";
+                };
 			};
 		};
 	};
@@ -310,46 +318,46 @@
 			reg = <0 0x85800000 0 0x3700000>;
 		};
 
-		pil_ipa_gpu_mem: pil_ipa_gpu_region@95200000 {
+		pil_ipa_gpu_mem: pil_ipa_gpu_region@95C00000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0 0x95200000 0 0x100000>;
+			reg = <0 0x95C00000 0 0x100000>;
 		};
 
-		pil_slpi_mem: pil_slpi_region@94300000 {
+		pil_slpi_mem: pil_slpi_region@94D00000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0 0x94300000 0 0xf00000>;
+			reg = <0 0x94D00000 0 0xf00000>;
 		};
 
-		pil_mba_mem: pil_mba_region@94100000 {
+		pil_mba_mem: pil_mba_region@94B00000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0 0x94100000 0 0x200000>;
+			reg = <0 0x94B00000 0 0x200000>;
 		};
 
-		pil_video_mem: pil_video_region@93c00000 {
+		pil_video_mem: pil_video_region@94600000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0 0x93c00000 0 0x500000>;
+			reg = <0 0x94600000 0 0x500000>;
 		};
 
-		modem_mem: modem_region@8cc00000 {
+		modem_mem: modem_region@8b400000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0 0x8cc00000 0 0x7000000>;
+			reg = <0 0x8b400000 0 0x7700000>;
 		};
 
-		pil_adsp_mem: pil_adsp_region@0x8b200000 {
+		pil_adsp_mem: pil_adsp_region@0x92B00000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0 0x8b200000 0 0x1a00000>;
+			reg = <0 0x92B00000 0 0x1b00000>;
 		};
 
 		spss_mem: spss_region@8ab00000 { /* for SPSS-PIL */
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0 0x8ab00000 0 0x700000>;
+			reg = <0 0x8ab00000 0 0x600000>;
 		};
 
 		adsp_mem: adsp_region {
@@ -394,8 +402,8 @@
 			linux,cma-default;
 		};
 
-		cont_splash_mem: splash_region@9d600000 {
-			reg = <0x0 0x9d600000 0x0 0x02400000>;
+		cont_splash_mem: splash_region@9d400000 {
+			reg = <0x0 0x9d400000 0x0 0x02400000>;
 			label = "cont_splash_mem";
 		};
 	};
@@ -2135,6 +2143,7 @@
 		status = "ok";
 		memory-region = <&modem_mem>;
 		qcom,mem-protect-id = <0xF>;
+                qcom,complete-ramdump = <1>;
 
 		/* GPIO inputs from mss */
 		qcom,gpio-err-fatal = <&smp2pgpio_ssr_smp2p_1_in 0 0>;
@@ -2357,6 +2366,21 @@
 			 <&clock_gcc clk_gcc_ce1_axi_m_clk>;
 		qcom,ce-opp-freq = <171430000>;
 		qcom,qsee-reentrancy-support = <2>;
+	};
+
+	mcd {
+		compatible = "qcom,mcd";
+		qcom,ce-hw-instance = <0>;
+		qcom,ce-device = <0>;
+		interrupts = <0 248 0>;
+		interrupt-names = "mcd_irq";
+		clock-names = "core_clk_src", "core_clk",
+			"iface_clk", "bus_clk";
+		clocks = <&clock_gcc clk_ce1_clk>,
+			   <&clock_gcc clk_qseecom_ce1_clk>,
+			   <&clock_gcc clk_gcc_ce1_ahb_m_clk>,
+			   <&clock_gcc clk_gcc_ce1_axi_m_clk>;
+		qcom,ce-opp-freq = <171430000>;
 	};
 
 	qcom_tzlog: tz-log@146BF720 {
@@ -2908,9 +2932,9 @@
 			reg = <0x10 8>;
 		};
 
-		dload_type@1c {
+		dload_type@18 {
 			compatible = "qcom,msm-imem-dload-type";
-			reg = <0x1c 4>;
+			reg = <0x18 4>;
 		};
 
 		restart_reason@65c {

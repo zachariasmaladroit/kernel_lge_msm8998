@@ -1885,6 +1885,19 @@ void qpnp_adc_disable_voltage(struct qpnp_adc_drv *adc);
  */
 void qpnp_adc_free_voltage_resource(struct qpnp_adc_drv *adc);
 
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECTION
+/**
+ * qpnp_vadc_pullup_volt_chk() - Performs ADC read on the channel.
+ *      It uses the refreshed VADC design from qpnp-vadc-hc.
+ * @dev:    Structure device for qpnp vadc
+ * @channel:    Input channel to perform the ADC read.
+ * @result: Structure pointer of type adc_chan_result
+ *      in which the ADC read results are stored.
+ */
+int32_t qpnp_vadc_pullup_volt_chk(struct qpnp_vadc_chip *dev,
+		enum qpnp_vadc_channels channel,
+		struct qpnp_vadc_result *result);
+#endif
 #else
 static inline int32_t qpnp_vadc_read(struct qpnp_vadc_chip *dev,
 				uint32_t channel,

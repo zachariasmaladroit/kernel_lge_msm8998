@@ -12,6 +12,10 @@
 
 #ifndef __BATTERY_H
 #define __BATTERY_H
+#ifdef CONFIG_LGE_PM
+int qcom_batt_init(int smb_version);
+#else
 int qcom_batt_init(void);
+#endif
 void qcom_batt_deinit(void);
 #endif /* __BATTERY_H */

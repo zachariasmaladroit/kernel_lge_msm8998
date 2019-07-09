@@ -11,7 +11,12 @@
  *
  */
 
-#define pr_fmt(fmt)	"%s: " fmt, __func__
+#if defined(CONFIG_LGE_DISPLAY_COMMON)
+#define pr_fmt(fmt)     "[DisplayPort] %s: " fmt, __func__
+#else
+#define pr_fmt(fmt)     " %s: " fmt, __func__
+#endif
+
 
 #include <linux/io.h>
 #include <linux/delay.h>
@@ -745,11 +750,11 @@ void mdss_dp_timing_cfg(struct dss_io_data *ctrl_io,
 	u32 total_ver, total_hor;
 	u32 data;
 
-	pr_debug("width=%d hporch= %d %d %d\n",
+	pr_info("width=%d hporch= %d %d %d\n",
 		pinfo->xres, pinfo->lcdc.h_back_porch,
 		pinfo->lcdc.h_front_porch, pinfo->lcdc.h_pulse_width);
 
-	pr_debug("height=%d vporch= %d %d %d\n",
+	pr_info("height=%d vporch= %d %d %d\n",
 		pinfo->yres, pinfo->lcdc.v_back_porch,
 		pinfo->lcdc.v_front_porch, pinfo->lcdc.v_pulse_width);
 

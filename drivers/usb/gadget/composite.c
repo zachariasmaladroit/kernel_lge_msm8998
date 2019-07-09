@@ -537,6 +537,11 @@ static int config_buf(struct usb_configuration *config,
 	list_for_each_entry(f, &config->functions, list) {
 		struct usb_descriptor_header **descriptors;
 
+#ifdef CONFIG_LGE_USB_GADGET_MULTI_CONFIG
+		if (config->cdev->is_mac_os && f->set_mac_os)
+			f->set_mac_os(f);
+#endif
+
 		switch (speed) {
 		case USB_SPEED_SUPER:
 			descriptors = f->ss_descriptors;
@@ -824,6 +829,11 @@ static int set_config(struct usb_composite_dev *cdev,
 
 		if (!f)
 			break;
+
+#ifdef CONFIG_LGE_USB_GADGET_MULTI_CONFIG
+		if (f->set_config)
+			f->set_config(f, number);
+#endif
 
 		/*
 		 * Record which endpoints are used by the function. This is used
@@ -1688,6 +1698,11 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 				value = min(w_length, (u16) value);
 			break;
 		case USB_DT_STRING:
+#ifdef CONFIG_LGE_USB_GADGET_MULTI_CONFIG
+			DBG(cdev, "USB_DT_STRING w_length: %02X\n", w_length);
+			if (w_length == 0x02) /* MAC OS TYPE */
+				cdev->is_mac_os = true;
+#endif
 			spin_lock(&cdev->lock);
 			value = get_string(cdev, req->buf,
 					w_index, w_value & 0xff);
@@ -2085,6 +2100,9 @@ void composite_disconnect(struct usb_gadget *gadget)
 		INFO(cdev, "delayed status mismatch..resetting\n");
 		cdev->delayed_status = 0;
 	}
+#ifdef CONFIG_LGE_USB_GADGET_MULTI_CONFIG
+	cdev->is_mac_os = false;
+#endif
 	spin_unlock_irqrestore(&cdev->lock, flags);
 }
 
@@ -2350,7 +2368,9 @@ void composite_suspend(struct usb_gadget *gadget)
 	cdev->suspended = 1;
 	spin_unlock_irqrestore(&cdev->lock, flags);
 
+#ifndef CONFIG_LGE_USB_GADGET
 	usb_gadget_vbus_draw(gadget, 2);
+#endif
 }
 
 void composite_resume(struct usb_gadget *gadget)

@@ -386,7 +386,11 @@ static int msm_pcm_playback_prepare(struct snd_pcm_substream *substream)
 		}
 	} else {
 		ret = q6asm_open_write_with_retry(prtd->audio_client,
+#ifdef CONFIG_MACH_LGE // 24bit ASM patch
+				fmt_type, 24);
+#else
 				fmt_type, bits_per_sample);
+#endif
 		if (ret < 0) {
 			pr_err("%s: q6asm_open_write_with_retry failed (%d)\n",
 			__func__, ret);
@@ -880,8 +884,8 @@ static int msm_pcm_capture_copy(struct snd_pcm_substream *substream,
 	int xfer;
 	char *bufptr;
 	void *data = NULL;
-	static uint32_t idx;
-	static uint32_t size;
+	uint32_t idx;
+	uint32_t size;
 	uint32_t offset = 0;
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct msm_audio *prtd = substream->runtime->private_data;
@@ -1491,16 +1495,15 @@ static int msm_pcm_add_compress_control(struct snd_soc_pcm_runtime *rtd)
 	pr_debug("%s: Registering new mixer ctl %s\n", __func__, mixer_str);
 	pdata = dev_get_drvdata(rtd->platform->dev);
 	if (pdata) {
-		if (!pdata->pcm) {
+		if (!pdata->pcm)
 			pdata->pcm = rtd->pcm;
-			ret = snd_soc_add_platform_controls(rtd->platform,
-							pcm_compress_control,
-							ARRAY_SIZE
-							(pcm_compress_control));
-			if (ret < 0)
-				pr_err("%s: failed add ctl %s. err = %d\n",
-					__func__, mixer_str, ret);
-		}
+		ret = snd_soc_add_platform_controls(rtd->platform,
+						pcm_compress_control,
+						ARRAY_SIZE
+						(pcm_compress_control));
+		if (ret < 0)
+			pr_err("%s: failed add ctl %s. err = %d\n",
+				__func__, mixer_str, ret);
 	} else {
 		pr_err("%s: NULL pdata\n", __func__);
 		ret = -EINVAL;

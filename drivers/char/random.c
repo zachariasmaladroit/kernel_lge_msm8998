@@ -1466,7 +1466,7 @@ static ssize_t
 urandom_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
 {
 	static int maxwarn = 10;
-	int ret;
+	int ret = 0;
 
 	if (unlikely(nonblocking_pool.initialized == 0) &&
 	    maxwarn > 0) {
@@ -1478,9 +1478,9 @@ urandom_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
 
 	nbytes = min_t(size_t, nbytes, INT_MAX >> (ENTROPY_SHIFT + 3));
 	ret = extract_entropy_user(&nonblocking_pool, buf, nbytes);
+		trace_urandom_read(8 * nbytes, ENTROPY_BITS(&nonblocking_pool),
+			ENTROPY_BITS(&input_pool));
 
-	trace_urandom_read(8 * nbytes, ENTROPY_BITS(&nonblocking_pool),
-			   ENTROPY_BITS(&input_pool));
 	return ret;
 }
 

@@ -3200,6 +3200,7 @@ int mdss_mdp_layer_atomic_validate_wfd(struct msm_fb_data_type *mfd,
 	mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_ON);
 	rc = mdss_mdp_wfd_setup(wfd, output_layer);
 	if (rc) {
+		mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_OFF);
 		pr_err("fail to prepare wfd = %d\n", rc);
 		mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_OFF);
 		goto validate_failed;

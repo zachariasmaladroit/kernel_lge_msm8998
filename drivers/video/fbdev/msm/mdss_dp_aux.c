@@ -11,7 +11,11 @@
  *
  */
 
-#define pr_fmt(fmt)	"%s: " fmt, __func__
+#if defined(CONFIG_LGE_DISPLAY_COMMON)
+#define pr_fmt(fmt)     "[DisplayPort] %s: " fmt, __func__
+#else
+#define pr_fmt(fmt)     " %s: " fmt, __func__
+#endif
 
 #include <linux/module.h>
 #include <linux/kernel.h>
@@ -252,6 +256,13 @@ static int dp_aux_write_cmds(struct mdss_dp_drv_pdata *ep,
 	if (!wait_for_completion_timeout(&ep->aux_comp, HZ/4)) {
 		pr_err("aux write timeout\n");
 		ep->aux_error_num = EDP_AUX_ERR_TOUT;
+
+		if (!ep->dp_initialized) {
+			pr_err("DP not initialized\n");
+			ret = -ENODEV;
+			goto end;
+		}
+
 		/* Reset the AUX controller state machine */
 		mdss_dp_aux_reset(&ep->ctrl_io);
 	}
@@ -260,7 +271,7 @@ static int dp_aux_write_cmds(struct mdss_dp_drv_pdata *ep,
 		ret = len;
 	else
 		ret = ep->aux_error_num;
-
+end:
 	ep->aux_cmd_busy = 0;
 	mutex_unlock(&ep->aux_mutex);
 	return  ret;
@@ -309,6 +320,13 @@ static int dp_aux_read_cmds(struct mdss_dp_drv_pdata *ep,
 	if (!wait_for_completion_timeout(&ep->aux_comp, HZ/4)) {
 		pr_err("aux read timeout\n");
 		ep->aux_error_num = EDP_AUX_ERR_TOUT;
+
+		if (!ep->dp_initialized) {
+			pr_err("DP not initialized\n");
+			ret = -ENODEV;
+			goto end;
+		}
+
 		/* Reset the AUX controller state machine */
 		mdss_dp_aux_reset(&ep->ctrl_io);
 		ret = ep->aux_error_num;
@@ -562,7 +580,7 @@ int dp_edid_buf_error(char *buf, int len)
 
 	bp = buf;
 	if (len < 128) {
-		pr_err("Error: len=%x\n", len);
+		pr_err("Error: len=0x%x\n", len);
 		return -EINVAL;
 	}
 
@@ -570,7 +588,7 @@ int dp_edid_buf_error(char *buf, int len)
 		csum += *bp++;
 
 	if (csum != 0) {
-		pr_err("Error: csum=%x\n", csum);
+		pr_err("Error: csum=0x%x\n", csum);
 		return -EINVAL;
 	}
 
@@ -1562,7 +1580,7 @@ static void dp_sink_parse_sink_count(struct mdss_dp_drv_pdata *ep)
 	/* BIT 6*/
 	ep->sink_count.cp_ready = data & BIT(6);
 
-	pr_debug("sink_count = 0x%x, cp_ready = 0x%x\n",
+	pr_info("sink_count = 0x%x, cp_ready = 0x%x\n",
 			ep->sink_count.count, ep->sink_count.cp_ready);
 }
 
@@ -2203,7 +2221,7 @@ static int dp_cap_lane_rate_set(struct mdss_dp_drv_pdata *ep)
 
 	cap = &ep->dpcd;
 
-	pr_debug("bw=%x lane=%d\n", ep->link_rate, ep->lane_cnt);
+	pr_debug("bw=0x%x lane=%d\n", ep->link_rate, ep->lane_cnt);
 	buf[0] = ep->link_rate;
 	buf[1] = ep->lane_cnt;
 	if (cap->enhanced_frame)
@@ -2248,7 +2266,7 @@ static int dp_train_pattern_set_write(struct mdss_dp_drv_pdata *ep,
 {
 	char buf[4];
 
-	pr_debug("pattern=%x\n", pattern);
+	pr_debug("pattern=0x%x\n", pattern);
 	buf[0] = pattern;
 	return dp_aux_write_buf(ep, 0x102, buf, 1, 0);
 }
@@ -2271,7 +2289,7 @@ bool mdss_dp_aux_clock_recovery_done(struct mdss_dp_drv_pdata *ep)
 		data |= ep->link_status.lane_01_status;
 	}
 
-	pr_debug("data=%x mask=%x\n", data, mask);
+	pr_debug("data=0x%x mask=0x%x\n", data, mask);
 	data &= mask;
 	if (data == mask) /* all done */
 		return true;
@@ -2304,7 +2322,7 @@ bool mdss_dp_aux_channel_eq_done(struct mdss_dp_drv_pdata *ep)
 		data |= ep->link_status.lane_01_status;
 	}
 
-	pr_debug("data=%x mask=%x\n", data, mask);
+	pr_debug("data=0x%x mask=0x%x\n", data, mask);
 
 	data &= mask;
 	if (data == mask)/* all done */
@@ -2554,16 +2572,18 @@ static int dp_start_link_train_2(struct mdss_dp_drv_pdata *ep)
 static int dp_link_rate_down_shift(struct mdss_dp_drv_pdata *ep)
 {
 	int ret = 0;
+	u32 link_rate = DP_LINK_RATE_162;
+	u32 max_pclk_khz = 0;
 
 	if (!ep)
 		return -EINVAL;
 
 	switch (ep->link_rate) {
 	case DP_LINK_RATE_540:
-		ep->link_rate = DP_LINK_RATE_270;
+		link_rate = DP_LINK_RATE_270;
 		break;
 	case DP_LINK_RATE_270:
-		ep->link_rate = DP_LINK_RATE_162;
+		link_rate = DP_LINK_RATE_162;
 		break;
 	case DP_LINK_RATE_162:
 	default:
@@ -2571,8 +2591,18 @@ static int dp_link_rate_down_shift(struct mdss_dp_drv_pdata *ep)
 		break;
 	};
 
-	pr_debug("new rate=%d\n", ep->link_rate);
+	max_pclk_khz = mdss_dp_calc_max_pclk_rate(ep,
+			link_rate, ep->lane_cnt);
+	max_pclk_khz *= 1000;
+	if (max_pclk_khz >= ep->pixel_rate) {
+		pr_debug("pclk is within the max pclk range\n");
+		ep->link_rate = link_rate;
+	} else {
+		pr_err("pclk is out of max pclk range\n");
+		pr_err("cannot down shift the link_rate\n");
+	}
 
+	pr_debug("new rate=0x%X\n", link_rate);
 	return ret;
 }
 
@@ -2615,7 +2645,7 @@ int mdss_dp_link_train(struct mdss_dp_drv_pdata *dp)
 		}
 	}
 
-	pr_debug("Training 1 completed successfully\n");
+	pr_info("Training 1 completed successfully\n");
 
 	dp_write(dp->base + DP_STATE_CTRL, 0x0);
 	/* Make sure to clear the current pattern before starting a new one */
@@ -2634,7 +2664,7 @@ int mdss_dp_link_train(struct mdss_dp_drv_pdata *dp)
 		}
 	}
 
-	pr_debug("Training 2 completed successfully\n");
+	pr_info("Training 2 completed successfully\n");
 
 	dp_write(dp->base + DP_STATE_CTRL, 0x0);
 	/* Make sure to clear the current pattern before starting a new one */

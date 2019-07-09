@@ -108,6 +108,13 @@ struct msm_actuator_ctrl_t {
 	struct msm_camera_gpio_conf *gconf;
 	struct msm_pinctrl_info pinctrl_info;
 	uint8_t cam_pinctrl_status;
+
+/* LGE_CHANGE_S, for RENESAS CLAF test, 2016-12-02, hyungmoo.huh@lge.com */
+	uint16_t af_boundary_min;
+	uint16_t af_boundary_max;
+	uint8_t init_set_flag;
+	uint32_t act_type;
+/* LGE_CHANGE_E, for RENESAS CLAF test, 2016-12-02, hyungmoo.huh@lge.com */
 };
 
 #endif

@@ -1678,6 +1678,11 @@ static int set_max_internal_buffers_size(struct msm_vidc_inst *inst)
 		if (internal_buffers[i].req == NULL)
 			continue;
 
+        //[S][QCOM][CASE#03087947][CR#2094156] allocate max internal buffers bug fix
+        if (internal_buffers[i].req == NULL)
+            continue;
+        //[E][QCOM][CASE#03087947][CR#2094156] allocate max internal buffers bug fix
+
 		rc = allocate_and_set_internal_bufs(inst,
 					internal_buffers[i].req,
 					&inst->scratchbufs, false);

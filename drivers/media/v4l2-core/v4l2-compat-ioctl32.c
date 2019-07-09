@@ -656,14 +656,14 @@ struct v4l2_framebuffer32 {
 	__u32			flags;
 	compat_caddr_t		base;
 	struct {
-		__u32		width;
-		__u32		height;
-		__u32		pixelformat;
-		__u32		field;
-		__u32		bytesperline;
-		__u32		sizeimage;
-		__u32		colorspace;
-		__u32		priv;
+		__u32	width;
+		__u32	height;
+		__u32	pixelformat;
+		__u32	field;
+		__u32	bytesperline;
+		__u32	sizeimage;
+		__u32	colorspace;
+		__u32	priv;
 	} fmt;
 };
 

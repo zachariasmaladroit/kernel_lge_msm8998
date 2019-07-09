@@ -520,6 +520,7 @@ static inline void save_v4l2_buffer(struct v4l2_buffer *b,
 						struct buffer_info *binfo)
 {
 	int i = 0;
+
 	for (i = 0; i < b->length; ++i) {
 		if (EXTRADATA_IDX(b->length) &&
 			(i == EXTRADATA_IDX(b->length)) &&

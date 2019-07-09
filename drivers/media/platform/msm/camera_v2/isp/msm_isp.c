@@ -36,6 +36,10 @@
 #include "msm_isp40.h"
 #include "msm_isp32.h"
 
+#ifdef CONFIG_LGE_PM
+#include <soc/qcom/lge/board_lge.h>
+#endif
+
 static struct msm_sd_req_vb2_q vfe_vb2_ops;
 static struct msm_isp_buf_mgr vfe_buf_mgr;
 static struct msm_vfe_common_dev_data vfe_common_data;
@@ -467,7 +471,7 @@ static int isp_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 {
 	struct page *page;
 	struct vfe_device *vfe_dev = vma->vm_private_data;
-	struct isp_kstate *isp_page = NULL;
+	struct isp_proc *isp_page = NULL;
 
 	isp_page = vfe_dev->isp_page;
 
@@ -637,6 +641,16 @@ int vfe_hw_probe(struct platform_device *pdev)
 	const struct of_device_id *match_dev;
 	int rc = 0;
 
+#ifdef CONFIG_LGE_PM
+	/* In chargerlogo boot, this device does not release bimc_msmbus_clk.
+	   This is not used in chargerlogo,
+	   so we block probing this device when chargerlogo boot */
+	if (lge_get_boot_mode() == LGE_BOOT_MODE_CHARGERLOGO) {
+		pr_err("%s: failed\n", __func__);
+		return -ENODEV;
+	}
+#endif
+
 	vfe_dev = kzalloc(sizeof(struct vfe_device), GFP_KERNEL);
 	if (!vfe_dev) {
 		pr_err("%s: no enough memory\n", __func__);
@@ -749,7 +763,7 @@ int vfe_hw_probe(struct platform_device *pdev)
 	vfe_dev->buf_mgr->init_done = 1;
 	vfe_dev->vfe_open_cnt = 0;
 	/*Allocate a page in kernel and map it to camera user process*/
-	vfe_dev->isp_page = (struct isp_kstate *)get_zeroed_page(GFP_KERNEL);
+	vfe_dev->isp_page = (struct isp_proc *)get_zeroed_page(GFP_KERNEL);
 	if (vfe_dev->isp_page == NULL) {
 		pr_err("%s: no enough memory\n", __func__);
 		rc = -ENOMEM;

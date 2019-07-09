@@ -184,3 +184,14 @@ obj-$(CONFIG_BIF)		+= bif/
 obj-$(CONFIG_SENSORS_SSC)	+= sensors/
 obj-$(CONFIG_ESOC)              += esoc/
 obj-$(CONFIG_TEE)		+= tee/
+
+obj-$(CONFIG_TSPDRV) += tspdrv/
+
+# TDMB
+obj-$(CONFIG_LGE_BROADCAST_TDMB) += broadcast/
+
+# ISDBT
+obj-$(CONFIG_LGE_BROADCAST_ISDBT_JAPAN) += broadcast/
+
+# Mobicore
+obj-$(CONFIG_TRUSTONIC_TEE) += gud/

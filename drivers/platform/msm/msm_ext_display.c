@@ -9,8 +9,11 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
-
-#define pr_fmt(fmt)	"%s: " fmt, __func__
+#if defined(CONFIG_LGE_DISPLAY_COMMON)
+#define pr_fmt(fmt)	"[DisplayPort] %s: " fmt, __func__
+#else
+#define pr_fmt(fmt)     " %s: " fmt, __func__
+#endif
 
 #include <linux/slab.h>
 #include <linux/bitops.h>
@@ -181,7 +184,7 @@ static int msm_ext_disp_send_cable_notification(struct msm_ext_disp *ext_disp,
 	state = ext_disp->hdmi_sdev.state;
 	switch_set_state(&ext_disp->hdmi_sdev, !!new_state);
 
-	pr_debug("Cable state %s %d\n",
+	pr_info("Cable state %s %d\n",
 			ext_disp->hdmi_sdev.state == state ?
 			"is same" : "switched to",
 			ext_disp->hdmi_sdev.state);
@@ -202,7 +205,7 @@ static int msm_ext_disp_send_audio_notification(struct msm_ext_disp *ext_disp,
 	state = ext_disp->audio_sdev.state;
 	switch_set_state(&ext_disp->audio_sdev, !!new_state);
 
-	pr_debug("Audio state %s %d\n",
+	pr_info("Audio state %s %d\n",
 			ext_disp->audio_sdev.state == state ?
 			"is same" : "switched to",
 			ext_disp->audio_sdev.state);
@@ -222,11 +225,6 @@ static int msm_ext_disp_process_display(struct msm_ext_disp *ext_disp,
 			msm_ext_disp_name(type));
 		goto end;
 	}
-
-	if (state == EXT_DISPLAY_CABLE_CONNECT)
-		ext_disp->current_disp = type;
-	else
-		ext_disp->current_disp = EXT_DISPLAY_TYPE_MAX;
 
 	ret = msm_ext_disp_send_cable_notification(ext_disp, state);
 
@@ -272,7 +270,7 @@ static int msm_ext_disp_process_audio(struct msm_ext_disp *ext_disp,
 	}
 
 	reinit_completion(&ext_disp->hpd_comp);
-	ret = wait_for_completion_timeout(&ext_disp->hpd_comp, HZ * 2);
+	ret = wait_for_completion_timeout(&ext_disp->hpd_comp, HZ * 5);
 	if (!ret) {
 		pr_err("audio timeout\n");
 		ret = -EINVAL;
@@ -294,6 +292,8 @@ static bool msm_ext_disp_validate_connect(struct msm_ext_disp *ext_disp,
 	if (ext_disp->current_disp != type)
 		return false;
 end:
+	pr_info("set current display to [%d]\n", type);
+	ext_disp->current_disp = type;
 	return true;
 }
 
@@ -301,12 +301,16 @@ static bool msm_ext_disp_validate_disconnect(struct msm_ext_disp *ext_disp,
 		enum msm_ext_disp_type type, u32 flags)
 {
 	/* check if nothing connected */
-	if (ext_disp->current_disp == EXT_DISPLAY_TYPE_MAX)
+
+	pr_info(" : [%d], [%d]\n", ext_disp->current_disp, type);
+	if (ext_disp->current_disp == EXT_DISPLAY_TYPE_MAX) {
 		return false;
+	}
 
 	/* check if a different display's request */
-	if (ext_disp->current_disp != type)
+	if (ext_disp->current_disp != type) {
 		return false;
+	}
 
 	return true;
 }
@@ -332,7 +336,7 @@ static int msm_ext_disp_hpd(struct platform_device *pdev,
 
 	mutex_lock(&ext_disp->lock);
 
-	pr_debug("HPD for display (%s), NEW STATE = %d, flags = %d\n",
+	pr_info("HPD for display (%s), NEW STATE = %d, flags = %d\n",
 			msm_ext_disp_name(type), state, flags);
 
 	if (state < EXT_DISPLAY_CABLE_DISCONNECT ||
@@ -377,9 +381,19 @@ static int msm_ext_disp_hpd(struct platform_device *pdev,
 		msm_ext_disp_process_audio(ext_disp, type, state, flags);
 		msm_ext_disp_update_audio_ops(ext_disp, type, state, flags);
 		msm_ext_disp_process_display(ext_disp, type, state, flags);
+
+#if defined(CONFIG_LGE_DISPLAY_COMMON)
+		if (flags & (MSM_EXT_DISP_HPD_VIDEO |MSM_EXT_DISP_HPD_ASYNC_VIDEO)){
+		    pr_info("%s, flags = %d, hpd_video =%ld, hpd_async+video =%ld\n",__func__,
+		                flags,MSM_EXT_DISP_HPD_VIDEO,MSM_EXT_DISP_HPD_ASYNC_VIDEO);
+		    ext_disp->current_disp = EXT_DISPLAY_TYPE_MAX;
+		}
+#else
+		ext_disp->current_disp = EXT_DISPLAY_TYPE_MAX;
+#endif
 	}
 
-	pr_debug("Hpd (%d) for display (%s)\n", state,
+	pr_info("Hpd (%d) for display (%s)\n", state,
 			msm_ext_disp_name(type));
 
 end:
@@ -637,7 +651,7 @@ static int msm_ext_disp_notify(struct platform_device *pdev,
 		goto end;
 	}
 
-	pr_debug("%s notifying hpd (%d)\n",
+	pr_info("%s notifying hpd (%d)\n",
 		msm_ext_disp_name(ext_disp->current_disp), state);
 
 	complete_all(&ext_disp->hpd_comp);

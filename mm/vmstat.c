@@ -759,13 +759,16 @@ const char * const vmstat_text[] = {
 	"numa_local",
 	"numa_other",
 #endif
-	"workingset_refault",
-	"workingset_activate",
-	"workingset_nodereclaim",
+	"refault_inactive_file",
+	"refault_active_file",
+	"refault_nodereclaim",
 	"nr_anon_transparent_hugepages",
 	"nr_free_cma",
 	"nr_swapcache",
 	"nr_indirectly_reclaimable",
+#ifdef CONFIG_MIGRATE_HIGHORDER
+	"nr_free_highorder",
+#endif
 
 	/* enum writeback_stat_item counters */
 	"nr_dirty_threshold",

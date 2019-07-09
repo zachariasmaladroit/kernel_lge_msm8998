@@ -190,6 +190,10 @@ void sdhci_pltfm_free(struct platform_device *pdev)
 	struct resource *iomem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 
 	iounmap(host->ioaddr);
+#ifdef CONFIG_MACH_LGE
+	/* STATIC ANALYSIS */
+	if (iomem)
+#endif
 	release_mem_region(iomem->start, resource_size(iomem));
 	sdhci_free_host(host);
 }

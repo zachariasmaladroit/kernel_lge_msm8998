@@ -42,6 +42,10 @@ struct msm_camera_sensor_slave_info32 {
 	struct msm_sensor_init_params sensor_init_params;
 	enum msm_sensor_output_format_t output_format;
 	uint8_t bypass_video_node_creation;
+
+#if 1 /* CONFIG_MACH_LGE */
+	char proxy_name[32];
+#endif
 };
 
 struct msm_camera_csid_lut_params32 {
@@ -228,6 +232,10 @@ struct msm_ois_params_t32 {
 
 struct msm_ois_set_info_t32 {
 	struct msm_ois_params_t32 ois_params;
+#if 1 /* CONFIG_LG_OIS */
+	compat_uptr_t ois_info;
+	compat_uptr_t setting;
+#endif
 };
 
 struct msm_ois_cfg_data32 {
@@ -237,6 +245,25 @@ struct msm_ois_cfg_data32 {
 		compat_uptr_t settings;
 	} cfg;
 };
+
+#if 1 /* CONFIG_MACH_LGE */
+struct msm_proxy_info_t32{
+	uint16_t proxy_val;
+	uint32_t proxy_conv;
+	uint32_t proxy_sig;
+	uint32_t proxy_amb;
+	uint32_t proxy_raw;
+	uint32_t cal_count;
+	uint32_t cal_done;
+};
+
+struct msm_proxy_cfg_data32 {
+	int cfgtype;
+	union {
+		struct msm_proxy_info_t set_info;
+	} cfg;
+};
+#endif
 
 struct msm_flash_init_info_t32 {
 	enum msm_flash_driver_type flash_driver_type;
@@ -289,6 +316,10 @@ struct msm_flash_cfg_data_t32 {
 #define VIDIOC_MSM_LASER_LED_CFG32 \
 	_IOWR('V', BASE_VIDIOC_PRIVATE + 16, struct msm_laser_led_cfg_data_t32)
 
+#if 1 /* CONFIG_MACH_LGE */
+#define VIDIOC_MSM_PROXY_CFG32 \
+	_IOWR('V', BASE_VIDIOC_PRIVATE + 16, struct msm_proxy_cfg_data32)
+#endif
 #endif
 
 #endif

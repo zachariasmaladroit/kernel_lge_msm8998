@@ -63,6 +63,28 @@
 /* decoder parameter length */
 #define DDP_DEC_MAX_NUM_PARAM		18
 
+#if defined(CONFIG_SND_LGE_EFFECT) || defined(CONFIG_SND_LGE_NORMALIZER) || defined(CONFIG_SND_LGE_MABL) || defined(CONFIG_SND_LGE_DTS)
+int lgesound_current_be_id = MSM_FRONTEND_DAI_MULTIMEDIA4;
+int lgesound_lge_effect_be_id = MSM_FRONTEND_DAI_MULTIMEDIA4;
+#endif
+
+#if defined(CONFIG_SND_LGE_MABL)
+#include "lge_dsp_sound_mabl.h"
+int lgesoundmabl_devicespeaker;
+int lgesoundmabl_monoenable;
+int lgesoundmabl_lrbalancecontrol;
+int lgesoundmabl_allparam;
+#endif
+#ifdef CONFIG_SND_LGE_MQA
+#include "lge_dsp_mqa.h"
+#endif
+
+#if defined(CONFIG_SND_LGE_DTS)
+#include "lge_dsp_sound_dts.h"
+int lge_dts_param[LGE_DTS_PARAM_MAX];
+int lge_dts_dirty[LGE_DTS_PARAM_MAX];
+#endif
+
 /* Default values used if user space does not set */
 #define COMPR_PLAYBACK_MIN_FRAGMENT_SIZE (8 * 1024)
 #define COMPR_PLAYBACK_MAX_FRAGMENT_SIZE (128 * 1024)
@@ -205,6 +227,9 @@ struct msm_compr_audio_effects {
 	struct eq_params equalizer;
 	struct soft_volume_params volume;
 	struct query_audio_effect query;
+#ifdef CONFIG_SND_LGE_MQA
+	struct lgmqa_params lgmqa;
+#endif
 };
 
 struct msm_compr_dec_params {
@@ -1321,7 +1346,11 @@ static int msm_compr_configure_dsp_for_playback
 		pr_debug("%s: stream_id %d bits_per_sample %d\n",
 				__func__, ac->stream_id, bits_per_sample);
 		ret = q6asm_stream_open_write_v4(ac,
+#ifdef CONFIG_MACH_LGE // 24bit ASM patch
+				prtd->codec, 24,
+#else
 				prtd->codec, bits_per_sample,
+#endif
 				ac->stream_id,
 				prtd->gapless_state.use_dsp_gapless_mode);
 		if (ret < 0) {
@@ -1734,6 +1763,25 @@ static int msm_compr_capture_open(struct snd_compr_stream *cstream)
 	atomic_set(&prtd->error, 0);
 
 	runtime->private_data = prtd;
+
+#ifdef CONFIG_SND_LGE_NORMALIZER
+    lgesoundnormalizer_enable = 0xFF00FF00;
+    lgesoundnormalizer_makeupgain = 0xFF00FF00;
+    lgesoundnormalizer_prefilter = 0xFF00FF00;
+    lgesoundnormalizer_limiterthreshold = 0xFF00FF00;
+    lgesoundnormalizer_limiterslope = 0xFF00FF00;
+    lgesoundnormalizer_compressorthreshold = 0xFF00FF00;
+    lgesoundnormalizer_compressorslope = 0xFF00FF00;
+    lgesoundnormalizer_devicespeaker = 0xFF00FF00;
+    lgesoundnormalizer_onoff = 0xFF00FF00;
+    lgesoundnormalizer_allparam = 0xFF00FF00;
+#endif
+#ifdef CONFIG_SND_LGE_MABL
+    lgesoundmabl_devicespeaker = 0xFF00FF00;
+    lgesoundmabl_monoenable = 0xFF00FF00;
+    lgesoundmabl_lrbalancecontrol = 0xFF00FF00;
+    lgesoundmabl_allparam = 0xFF00FF00;
+#endif
 
 	return 0;
 }
@@ -2631,7 +2679,11 @@ static int msm_compr_trigger(struct snd_compr_stream *cstream, int cmd)
 		pr_debug("%s: open_write stream_id %d bits_per_sample %d",
 				__func__, stream_id, bits_per_sample);
 		rc = q6asm_stream_open_write_v4(prtd->audio_client,
+#ifdef CONFIG_MACH_LGE // 24bit ASM patch
+				prtd->codec, 24,
+#else
 				prtd->codec, bits_per_sample,
+#endif
 				stream_id,
 				prtd->gapless_state.use_dsp_gapless_mode);
 		if (rc < 0) {
@@ -3178,6 +3230,440 @@ static int msm_compr_volume_get(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+#if defined(CONFIG_SND_LGE_MABL) || defined(CONFIG_SND_LGE_DTS)
+static int lge_dsp_sound_offload_playback_number_put(struct snd_kcontrol *kcontrol,
+                                 struct snd_ctl_elem_value *ucontrol)
+{
+        struct snd_soc_component *comp = snd_kcontrol_chip(kcontrol);
+        int pcm_device_id = (int)ucontrol->value.integer.value[0];
+
+	if (pcm_device_id < 0 || pcm_device_id > comp->card->num_links) {
+		pr_err(" %s Invalid arguments pcm_device_id %d lgesound_current_be_id %d ", __func__, pcm_device_id, lgesound_current_be_id);
+		return 0;
+	}
+        lgesound_current_be_id = comp->card->dai_link[pcm_device_id].be_id;
+
+        return 0;
+}
+
+static int lge_dsp_sound_offload_playback_number_get(struct snd_kcontrol *kcontrol,
+                                 struct snd_ctl_elem_value *ucontrol)
+{
+        pr_debug("%s: lgesound_current_be_id(%d)\n", __func__, lgesound_current_be_id);
+        //ucontrol->value.integer.value[0] = lgesound_current_be_id;
+        return 0;
+}
+
+static const struct snd_kcontrol_new msm_compr_playback_lge_controls[] = {
+
+        SOC_SINGLE_EXT("Offload Playback Number", 0, 0, 100, 0,
+                        lge_dsp_sound_offload_playback_number_get,
+                        lge_dsp_sound_offload_playback_number_put),
+};
+
+#endif
+
+#if defined(CONFIG_SND_LGE_MABL)
+static int lge_dsp_sound_mabl_devicespeaker_put(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *comp = snd_kcontrol_chip(kcontrol);
+	struct msm_compr_pdata *pdata = (struct msm_compr_pdata *)
+			snd_soc_component_get_drvdata(comp);
+	struct snd_compr_stream *cstream = pdata->cstream[lgesound_current_be_id];
+	struct msm_compr_audio *prtd = NULL;
+	int rc;
+
+	lgesoundmabl_devicespeaker = (int)ucontrol->value.integer.value[0];
+
+	if (!cstream || cstream->runtime == NULL) {
+		pr_err("%s: compress stream is not open status, so ignore this cmd\n", __func__);
+		return -EINVAL;
+	}
+	else {
+		prtd = cstream->runtime->private_data;
+	}
+
+	pr_info("+++++++++++++++++++++++++++++++++++++\n");
+	pr_info("%s: value %d\n", __func__, (int)ucontrol->value.integer.value[0]);
+	pr_info("+++++++++++++++++++++++++++++++++++++\n");
+	if ((lgesoundmabl_allparam == 1) && prtd && prtd->audio_client) {
+		rc = q6asm_set_lgesoundmabl_devicespeaker(prtd->audio_client, (int)ucontrol->value.integer.value[0]);
+		if (rc < 0) {
+			pr_err("%s: apr command failed rc=%d\n",
+						__func__, rc);
+		}
+	}
+
+	return 0;
+}
+
+static int lge_dsp_sound_mabl_devicespeaker_get(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = lgesoundmabl_devicespeaker;
+	return 0;
+}
+
+static int lge_dsp_sound_mabl_monoenable_put(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *comp = snd_kcontrol_chip(kcontrol);
+	struct msm_compr_pdata *pdata = (struct msm_compr_pdata *)
+			snd_soc_component_get_drvdata(comp);
+	struct snd_compr_stream *cstream = pdata->cstream[lgesound_current_be_id];
+	struct msm_compr_audio *prtd = NULL;
+	int rc;
+
+	lgesoundmabl_monoenable = (int)ucontrol->value.integer.value[0];
+
+	if (!cstream || cstream->runtime == NULL) {
+		pr_err("%s: compress stream is not open status, so ignore this cmd\n", __func__);
+		return -EINVAL;
+	}
+	else {
+		prtd = cstream->runtime->private_data;
+	}
+
+	pr_info("+++++++++++++++++++++++++++++++++++++\n");
+	pr_info("%s: value %d\n", __func__, (int)ucontrol->value.integer.value[0]);
+	pr_info("+++++++++++++++++++++++++++++++++++++\n");
+	if ((lgesoundmabl_allparam == 1) && prtd && prtd->audio_client) {
+		rc = q6asm_set_lgesoundmabl_monoenable(prtd->audio_client, (int)ucontrol->value.integer.value[0]);
+		if (rc < 0) {
+			pr_err("%s: apr command failed rc=%d\n",
+						__func__, rc);
+		}
+	}
+
+	return 0;
+}
+
+static int lge_dsp_sound_mabl_monoenable_get(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = lgesoundmabl_monoenable;
+	return 0;
+}
+
+static int lge_dsp_sound_mabl_lrbalancecontrol_put(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *comp = snd_kcontrol_chip(kcontrol);
+	struct msm_compr_pdata *pdata = (struct msm_compr_pdata *)
+			snd_soc_component_get_drvdata(comp);
+	struct snd_compr_stream *cstream = pdata->cstream[lgesound_current_be_id];
+	struct msm_compr_audio *prtd = NULL;
+	int rc;
+
+	lgesoundmabl_lrbalancecontrol = (int)ucontrol->value.integer.value[0];
+
+	if (!cstream || cstream->runtime == NULL) {
+		pr_err("%s: compress stream is not open status, so ignore this cmd\n", __func__);
+		return -EINVAL;
+	}
+	else {
+		prtd = cstream->runtime->private_data;
+	}
+
+	pr_info("+++++++++++++++++++++++++++++++++++++\n");
+	pr_info("%s: value %d\n", __func__, (int)ucontrol->value.integer.value[0]);
+	pr_info("+++++++++++++++++++++++++++++++++++++\n");
+	if ((lgesoundmabl_allparam == 1) && prtd && prtd->audio_client) {
+		rc = q6asm_set_lgesoundmabl_lrbalancecontrol(prtd->audio_client, (int)ucontrol->value.integer.value[0]);
+		if (rc < 0) {
+			pr_err("%s: apr command failed rc=%d\n",
+						__func__, rc);
+		}
+	}
+
+	return 0;
+}
+
+static int lge_dsp_sound_mabl_lrbalancecontrol_get(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = lgesoundmabl_lrbalancecontrol;
+	return 0;
+}
+static int lge_dsp_sound_mabl_allparam_put(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *comp = snd_kcontrol_chip(kcontrol);
+	struct msm_compr_pdata *pdata = (struct msm_compr_pdata *)
+			snd_soc_component_get_drvdata(comp);
+	struct snd_compr_stream *cstream = pdata->cstream[lgesound_current_be_id];
+	struct msm_compr_audio *prtd = NULL;
+	int rc;
+	struct lgesoundmabl_allparam_st all_param = {
+        .DeviceSpeaker = lgesoundmabl_devicespeaker,
+        .MonoEnable = lgesoundmabl_monoenable,
+        .LrBalanceControl = lgesoundmabl_lrbalancecontrol,
+	};
+	lgesoundmabl_allparam = (int)ucontrol->value.integer.value[0];
+
+	if (!cstream || cstream->runtime == NULL) {
+		pr_err("%s: compress stream is not open status, so ignore this cmd\n", __func__);
+		return -EINVAL;
+	}
+	else {
+		prtd = cstream->runtime->private_data;
+	}
+
+	pr_info("+++++++++++++++++++++++++++++++++++++\n");
+	pr_info("%s: value %d\n", __func__, (int)ucontrol->value.integer.value[0]);
+	pr_info("+++++++++++++++++++++++++++++++++++++\n");
+	if ((lgesoundmabl_allparam == 1) && prtd && prtd->audio_client) {
+		rc = q6asm_set_lgesoundmabl_allparam(prtd->audio_client, &all_param);
+		if (rc < 0) {
+			pr_err("%s: apr command failed rc=%d\n",
+						__func__, rc);
+		}
+	}
+
+	return 0;
+}
+
+static int lge_dsp_sound_mabl_allparam_get(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = lgesoundmabl_allparam;
+	return 0;
+}
+
+/* System Pin has no volume control */
+static const struct snd_kcontrol_new msm_compr_lge_effect_controls[] = {
+        SOC_SINGLE_EXT("Offload MABL devicespeaker",
+                        MSM_FRONTEND_DAI_MULTIMEDIA4,
+                        0, 1, 0,
+                        lge_dsp_sound_mabl_devicespeaker_get,
+                        lge_dsp_sound_mabl_devicespeaker_put),
+        SOC_SINGLE_EXT("Offload MABL monoenable",
+                        MSM_FRONTEND_DAI_MULTIMEDIA4,
+                        0, 1, 0,
+                        lge_dsp_sound_mabl_monoenable_get,
+                        lge_dsp_sound_mabl_monoenable_put),
+        SOC_SINGLE_EXT("Offload MABL lrbalancecontrol",
+                        MSM_FRONTEND_DAI_MULTIMEDIA4,
+                        0, 62, 0,
+                        lge_dsp_sound_mabl_lrbalancecontrol_get,
+                        lge_dsp_sound_mabl_lrbalancecontrol_put),
+        SOC_SINGLE_EXT("Offload MABL AllParam",
+                        MSM_FRONTEND_DAI_MULTIMEDIA4,
+                        0, 1, 0,
+                        lge_dsp_sound_mabl_allparam_get,
+                        lge_dsp_sound_mabl_allparam_put),
+};
+#endif
+
+#if defined(CONFIG_SND_LGE_DTS)
+static void lge_dsp_sound_dts_set_dirty(int param_id, int value)
+{
+	if(param_id >= LGE_DTS_PARAM_MAX)
+		return;
+	lge_dts_dirty[param_id] = 0xBA;
+	lge_dts_param[param_id] = value;
+}
+
+static void lge_dsp_sound_dts_apply_dirty(struct msm_compr_audio *prtd)
+{
+	int i =0;
+	int rc;
+	for(i = 0; i < ARRAY_SIZE(lge_dts_dirty); i++) {
+		if(lge_dts_dirty[i] == 0xBA){
+		    pr_debug("%s: [DTS] apply dirty cmd  %d, %d \n", __func__, i, lge_dts_param[i] );
+			if (prtd && prtd->audio_client) {
+				rc = q6asm_set_lge_dts_param(prtd->audio_client, i, lge_dts_param[i]);
+				if (rc < 0) {
+					pr_err("%s: apr command failed rc=%d\n",
+							__func__, rc);
+				}
+			}
+		}
+		lge_dts_dirty[i] = 0;
+	}
+}
+
+static void lge_dsp_sound_dts_clear_dirty(int param_id, int value)
+{
+	int i =0;
+	if((param_id != DTS_TURN_ON)  || (value !=0))
+		return;
+	for(i = 0; i < ARRAY_SIZE(lge_dts_dirty); i++) {
+		lge_dts_dirty[i] = 0;
+	}
+}
+
+static int lge_dsp_sound_dts_param_put(struct snd_kcontrol *kcontrol,
+                                 struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *comp = snd_kcontrol_chip(kcontrol);
+	struct msm_compr_pdata *pdata = (struct msm_compr_pdata *)
+										snd_soc_component_get_drvdata(comp);
+	struct snd_compr_stream *cstream = pdata->cstream[lgesound_current_be_id];
+	struct msm_compr_audio *prtd = NULL;
+	int rc;
+	int param_id = (int)ucontrol->value.integer.value[0];
+	int val = (int)ucontrol->value.integer.value[1];
+
+	if (param_id < 0 || param_id >= LGE_DTS_PARAM_MAX) {
+		pr_err("%s: [DTS] param_id %d is not valid\n", __func__, param_id);
+		return -EINVAL;
+	}
+
+	lge_dts_param[(int)ucontrol->value.integer.value[0]] = (int)ucontrol->value.integer.value[1];
+	lge_dsp_sound_dts_clear_dirty(param_id,val);
+	if (!cstream || cstream->runtime == NULL) {
+		pr_debug("%s: [DTS] compress stream is not open status, set to dirty cmd  %d, %d \n", __func__, param_id, val );
+		lge_dsp_sound_dts_set_dirty(param_id,val);
+		return -EINVAL;
+	}
+	else {
+		prtd = cstream->runtime->private_data;
+	}
+
+	pr_info("+++++++++++++++++++++++++++++++++++++\n");
+	pr_info("%s: [DTS] param_id %d value %d\n", __func__, (int)ucontrol->value.integer.value[0], (int)ucontrol->value.integer.value[1]);
+	pr_info("+++++++++++++++++++++++++++++++++++++\n");
+
+	lge_dsp_sound_dts_apply_dirty(prtd);
+	if (prtd && prtd->audio_client) {
+		rc = q6asm_set_lge_dts_param(prtd->audio_client, param_id, val);
+		if (rc < 0) {
+			pr_err("%s: apr command failed rc=%d\n",
+					__func__, rc);
+		}
+	}
+
+	return 0;
+}
+
+static int lge_dsp_sound_dts_param_get(struct snd_kcontrol *kcontrol,
+                                 struct snd_ctl_elem_value *ucontrol)
+{
+        return 0;
+}
+
+static const struct snd_kcontrol_new msm_compr_lge_dts_controls[] = {
+        SOC_SINGLE_MULTI_EXT("dts_virt_on",
+                        MSM_FRONTEND_DAI_MULTIMEDIA4,
+                        0, 1, 0, 2,
+                        lge_dsp_sound_dts_param_get,
+                        lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_virt_mode",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 2, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_geq_on",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 1, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_geq_band1",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 20, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_geq_band2",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 20, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_geq_band3",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 20, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_geq_band4",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 20, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_geq_band5",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 20, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_geq_band6",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 20, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_geq_band7",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 20, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_geq_band8",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 20, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_geq_band9",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 20, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_geq_band10",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 20, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_bassboost_on",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 1, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_vocalboost_on",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 1, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_loudnesslvl_on",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 1, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_geq_preset",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 12, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_bassboost_level",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 100, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_vocalboost_level",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 100, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_volume_level",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0,8092, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_turn_on",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 1, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_speaker_enable",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 1, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+		SOC_SINGLE_MULTI_EXT("dts_fade_enable",
+						MSM_FRONTEND_DAI_MULTIMEDIA4,
+						0, 1, 0, 2,
+						lge_dsp_sound_dts_param_get,
+						lge_dsp_sound_dts_param_put),
+
+};
+#endif
+
 static int msm_compr_audio_effects_config_put(struct snd_kcontrol *kcontrol,
 					   struct snd_ctl_elem_value *ucontrol)
 {
@@ -3270,6 +3756,16 @@ static int msm_compr_audio_effects_config_put(struct snd_kcontrol *kcontrol,
 						&(audio_effects->volume),
 						values, SOFT_VOLUME_INSTANCE_2);
 		break;
+#ifdef CONFIG_SND_LGE_MQA
+    case LGMQA_MODULE:
+        pr_info("%s: LGMQA_MODULE \n", __func__);
+                        if (msm_audio_effects_is_effmodule_supp_in_top(effects_module,
+                                                prtd->audio_client->topology))
+                                msm_audio_effects_lgmqa_handler(prtd->audio_client,
+                                                   &(audio_effects->lgmqa),
+                                                     values);
+        break;
+#endif
 	default:
 		pr_err("%s Invalid effects config module\n", __func__);
 		return -EINVAL;
@@ -4067,6 +4563,19 @@ static int msm_compr_probe(struct snd_soc_platform *platform)
 
 	snd_soc_add_platform_controls(platform, msm_compr_gapless_controls,
 				      ARRAY_SIZE(msm_compr_gapless_controls));
+
+#if defined(CONFIG_SND_LGE_MABL) || defined(CONFIG_SND_LGE_DTS)
+        snd_soc_add_platform_controls(platform,msm_compr_playback_lge_controls,
+                                      ARRAY_SIZE(msm_compr_playback_lge_controls));
+#endif	
+#if defined(CONFIG_SND_LGE_MABL)
+        snd_soc_add_platform_controls(platform,msm_compr_lge_effect_controls,
+                                      ARRAY_SIZE(msm_compr_lge_effect_controls));
+#endif
+#if defined(CONFIG_SND_LGE_DTS)
+        snd_soc_add_platform_controls(platform,msm_compr_lge_dts_controls,
+                                      ARRAY_SIZE(msm_compr_lge_dts_controls));
+#endif
 
 	rc =  of_property_read_string(platform->dev->of_node,
 		"qcom,adsp-version", &qdsp_version);

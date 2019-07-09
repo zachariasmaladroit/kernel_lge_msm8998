@@ -56,6 +56,8 @@ int hdmi_panel_get_vic(struct mdss_panel_info *pinfo,
 		u32 ret = hdmi_get_supported_mode(&info, ds_data, pinfo->vic);
 		u32 supported = info.supported;
 
+		pr_warn("pinfo.pixel_formats = %d\n", info.pixel_formats);
+
 		if (!ret && supported) {
 			new_vic = pinfo->vic;
 		} else {

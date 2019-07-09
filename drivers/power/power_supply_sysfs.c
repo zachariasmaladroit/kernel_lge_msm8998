@@ -46,8 +46,12 @@ static ssize_t power_supply_show_property(struct device *dev,
 	static char *type_text[] = {
 		"Unknown", "Battery", "UPS", "Mains", "USB", "USB_DCP",
 		"USB_CDP", "USB_ACA", "USB_HVDCP", "USB_HVDCP_3", "USB_PD",
+#ifdef CONFIG_LGE_PM
+		"Wireless", "USB", "BMS", "Parallel", "Main", "Wipower",
+#else
 		"Wireless", "USB_FLOAT", "BMS", "Parallel", "Main", "Wipower",
-		"TYPEC", "TYPEC_UFP", "TYPEC_DFP"
+#endif
+		"TYPEC", "TYPEC_UFP", "TYPEC_DFP",
 	};
 	static char *status_text[] = {
 		"Unknown", "Charging", "Discharging", "Not charging", "Full"
@@ -106,6 +110,10 @@ static ssize_t power_supply_show_property(struct device *dev,
 
 	if (off == POWER_SUPPLY_PROP_STATUS)
 		return sprintf(buf, "%s\n", status_text[value.intval]);
+  #ifdef CONFIG_LGE_PM
+	else if (off == POWER_SUPPLY_PROP_STATUS_RAW)
+		return sprintf(buf, "%s\n", status_text[value.intval]);
+  #endif
 	else if (off == POWER_SUPPLY_PROP_CHARGE_TYPE)
 		return sprintf(buf, "%s\n", charge_type[value.intval]);
 	else if (off == POWER_SUPPLY_PROP_HEALTH)
@@ -163,6 +171,9 @@ static ssize_t power_supply_store_property(struct device *dev,
 static struct device_attribute power_supply_attrs[] = {
 	/* Properties of type `int' */
 	POWER_SUPPLY_ATTR(status),
+#ifdef CONFIG_LGE_PM
+	POWER_SUPPLY_ATTR(status_raw),
+#endif
 	POWER_SUPPLY_ATTR(charge_type),
 	POWER_SUPPLY_ATTR(health),
 	POWER_SUPPLY_ATTR(present),
@@ -306,6 +317,38 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(pd_voltage_min),
 	POWER_SUPPLY_ATTR(sdp_current_max),
 	POWER_SUPPLY_ATTR(fcc_stepper_enable),
+#ifdef CONFIG_LGE_PM
+	POWER_SUPPLY_ATTR(connector_type),
+	POWER_SUPPLY_ATTR(parallel_batfet_mode),
+	POWER_SUPPLY_ATTR(parallel_fcc_max),
+	POWER_SUPPLY_ATTR(min_icl),
+	POWER_SUPPLY_ATTR(moisture_detected),
+	POWER_SUPPLY_ATTR(batt_profile_version),
+	POWER_SUPPLY_ATTR(batt_full_current),
+	POWER_SUPPLY_ATTR(recharge_soc),
+	POWER_SUPPLY_ATTR(toggle_stat),
+	POWER_SUPPLY_ATTR(allow_hvdcp3),
+	POWER_SUPPLY_ATTR(hvdcp_opti_allowed),
+	POWER_SUPPLY_ATTR(max_pulse_allowed),
+	POWER_SUPPLY_ATTR(ignore_false_negative_isense),
+	POWER_SUPPLY_ATTR(battery_info),
+	POWER_SUPPLY_ATTR(battery_info_id),
+	POWER_SUPPLY_ATTR(enable_jeita_detection),
+	POWER_SUPPLY_ATTR(esr_actual),
+	POWER_SUPPLY_ATTR(esr_nominal),
+	POWER_SUPPLY_ATTR(soh),
+	POWER_SUPPLY_ATTR(parallel_batfet_en),
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECTION
+	POWER_SUPPLY_ATTR(moisture_detection),
+	POWER_SUPPLY_ATTR(typec_cc_disable),
+	POWER_SUPPLY_ATTR(typec_is_ocp),
+#endif
+#ifdef CONFIG_IDTP9223_CHARGER
+	POWER_SUPPLY_ATTR(qipma_on),
+	POWER_SUPPLY_ATTR(connection_type),
+	POWER_SUPPLY_ATTR(qipma_on_status),
+#endif
+#endif
 	/* Local extensions of type int64_t */
 	POWER_SUPPLY_ATTR(charge_counter_ext),
 	/* Properties of type `const char *' */
@@ -313,6 +356,9 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(manufacturer),
 	POWER_SUPPLY_ATTR(serial_number),
 	POWER_SUPPLY_ATTR(battery_type),
+#ifdef CONFIG_LGE_PM
+	POWER_SUPPLY_ATTR(cycle_counts),
+#endif
 };
 
 static struct attribute *
@@ -440,6 +486,15 @@ int power_supply_uevent(struct device *dev, struct kobj_uevent_env *env)
 		if (ret)
 			goto out;
 	}
+
+#ifdef CONFIG_LGE_PM_VENEER_PSY
+	{	extern bool veneer_uevent_duplicated(const char* sender, char* data, int length);
+		if (veneer_uevent_duplicated(psy->desc->name, env->buf, env->buflen-1)) {
+			pr_debug("an UEVENT for %s is skipped\n", psy->desc->name);
+			ret = -ENOTSYNC;
+		}
+	}
+#endif
 
 out:
 	free_page((unsigned long)prop_buf);

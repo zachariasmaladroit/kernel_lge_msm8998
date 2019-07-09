@@ -43,6 +43,45 @@
 #include <sound/compress_params.h>
 #include <sound/q6common.h>
 
+#ifdef CONFIG_SND_LGE_NORMALIZER
+#include "lge_dsp_sound_normalizer.h"
+#endif
+#ifdef CONFIG_SND_LGE_MABL
+#include "lge_dsp_sound_mabl.h"
+#endif
+#ifdef CONFIG_SND_LGE_MQA
+#include "lge_dsp_mqa.h"
+#endif
+#ifdef CONFIG_SND_LGE_DTS
+#include "lge_dsp_sound_dts.h"
+#define APPI_LGE_SOUND_DTS_MODULE_ID            0x1000F010
+static int32_t lge_dts_param_id[LGE_DTS_PARAM_MAX] = {
+	0x1000F011,
+	0x1000F012,
+	0x1000F013,
+	0x1000F014,
+	0x1000F015,
+	0x1000F016,
+	0x1000F017,
+	0x1000F018,
+	0x1000F019,
+	0x1000F01A,
+	0x1000F01B,
+	0x1000F01C,
+	0x1000F01D,
+	0x1000F01E,
+	0x1000F01F,
+	0x1000F020,
+	0x1000F021,
+	0x1000F024,
+	0x1000F025,
+	0x1000F026,
+	0x1000F022,
+	0x1000F023,
+	0x1000F027
+};
+#endif
+
 #define TRUE        0x01
 #define FALSE       0x00
 #define SESSION_MAX 9
@@ -2841,6 +2880,12 @@ static int __q6asm_open_read(struct audio_client *ac,
 		open.mode_flags |= ASM_LEGACY_STREAM_SESSION <<
 			ASM_SHIFT_STREAM_PERF_MODE_FLAG_IN_OPEN_READ;
 	}
+#if defined(CONFIG_SND_LGE_EFFECT) || defined(CONFIG_SND_LGE_NORMALIZER) || defined(CONFIG_SND_LGE_MABL) || defined(CONFIG_SND_LGE_DTS)
+        if (open.preprocopo_id == ASM_STREAM_POSTPROC_TOPO_ID_DEFAULT_LGE ||
+                open.preprocopo_id == ASM_STREAM_POSTPROC_TOPO_ID_OFFLOAD_LGE ||
+                open.preprocopo_id == ASM_STREAM_POSTPROC_TOPO_ID_OFFLOAD_LGE_TEST)
+                open.preprocopo_id = ASM_STREAM_POSTPROCOPO_ID_DEFAULT;
+#endif
 
 	switch (format) {
 	case FORMAT_LINEAR_PCM:
@@ -3244,7 +3289,6 @@ static int __q6asm_open_write(struct audio_client *ac, uint32_t format,
 		break;
 	case FORMAT_APTX:
 		open.dec_fmt_id = ASM_MEDIA_FMT_APTX;
-		break;
 	case FORMAT_GEN_COMPR:
 		open.dec_fmt_id = ASM_MEDIA_FMT_GENERIC_COMPRESSED;
 		break;
@@ -3470,6 +3514,13 @@ static int __q6asm_open_read_write(struct audio_client *ac, uint32_t rd_format,
 	ac->topology = open.postprocopo_id;
 	ac->app_type = q6asm_get_asm_app_type_cal();
 
+
+#if defined(CONFIG_SND_LGE_EFFECT) || defined(CONFIG_SND_LGE_NORMALIZER) || defined(CONFIG_SND_LGE_MABL) || defined(CONFIG_SND_LGE_DTS)
+        if (open.postprocopo_id == ASM_STREAM_POSTPROC_TOPO_ID_DEFAULT_LGE ||
+                open.postprocopo_id == ASM_STREAM_POSTPROC_TOPO_ID_OFFLOAD_LGE||
+                open.postprocopo_id == ASM_STREAM_POSTPROC_TOPO_ID_OFFLOAD_LGE_TEST)
+                open.postprocopo_id = ASM_STREAM_POSTPROCOPO_ID_DEFAULT;
+#endif
 
 	switch (wr_format) {
 	case FORMAT_LINEAR_PCM:
@@ -8115,6 +8166,310 @@ int q6asm_equalizer(struct audio_client *ac, void *eq_p)
 fail_cmd:
 	return rc;
 }
+
+#ifdef CONFIG_SND_LGE_MABL
+int q6asm_set_lgesoundmabl_devicespeaker(struct audio_client *ac, int devicespeaker)
+{
+        struct asm_lgesoundmabl_param_devicespeaker lgesoundmabl_devicespeaker;
+        struct param_hdr_v3 param_info;
+        int rc  = 0;
+
+        pr_debug("%s: devicespeaker:%d\n", __func__, devicespeaker);
+
+        if (!ac || ac->apr == NULL) {
+                pr_err("%s: APR handle NULL\n", __func__);
+                rc = -EINVAL;
+                goto fail_cmd;
+        }
+
+        memset(&lgesoundmabl_devicespeaker, 0, sizeof(lgesoundmabl_devicespeaker));
+        memset(&param_info, 0, sizeof(param_info));
+
+        param_info.module_id = APPI_LGE_SOUND_MABL_MODULE_ID;
+        param_info.instance_id = INSTANCE_ID_0;
+        param_info.param_id = APPI_LGE_SOUND_MABL_DEVICE_SPEAKER;
+        param_info.param_size = sizeof(lgesoundmabl_devicespeaker);
+
+        lgesoundmabl_devicespeaker.DeviceSpeaker = devicespeaker;
+
+        rc = q6asm_pack_and_set_pp_param_in_band(ac, param_info, (u8 *) &lgesoundmabl_devicespeaker);
+        if (rc)
+		        pr_err("%s: set-params send failed paramid[0x%x] rc %d\n",
+		           __func__, param_info.param_id, rc);
+fail_cmd:
+        return rc;
+
+}
+
+int q6asm_set_lgesoundmabl_monoenable(struct audio_client *ac, int monoenable)
+{
+	struct asm_lgesoundmabl_param_monoenable lgesoundmabl_monoenable;
+	struct param_hdr_v3 param_info;
+        int rc  = 0;
+        
+        pr_debug("%s: monoenable:%d\n", __func__, monoenable);
+
+        if (!ac || ac->apr == NULL) {
+                pr_err("%s: APR handle NULL\n", __func__);
+                rc = -EINVAL;
+                goto fail_cmd;
+        }
+
+        memset(&lgesoundmabl_monoenable, 0, sizeof(lgesoundmabl_monoenable));
+        memset(&param_info, 0, sizeof(param_info));
+
+        param_info.module_id = APPI_LGE_SOUND_MABL_MODULE_ID;
+        param_info.instance_id = INSTANCE_ID_0;
+        param_info.param_id = APPI_LGE_SOUND_MABL_MONO_AUDIO_ENABLE;
+        param_info.param_size = sizeof(lgesoundmabl_monoenable);
+
+        lgesoundmabl_monoenable.MonoEnable = monoenable;
+
+        rc = q6asm_pack_and_set_pp_param_in_band(ac, param_info, (u8 *) &lgesoundmabl_monoenable);
+        if (rc)
+		        pr_err("%s: set-params send failed paramid[0x%x] rc %d\n",
+		           __func__, param_info.param_id, rc);
+fail_cmd:
+        return rc;
+}
+
+int q6asm_set_lgesoundmabl_lrbalancecontrol(struct audio_client *ac, int lrbalancecontrol)
+{
+	struct asm_lgesoundmabl_param_lrbalancecontrol lgesoundmabl_lrbalancecontrol;
+	struct param_hdr_v3 param_info;
+        int rc  = 0;
+
+        pr_debug("%s: lrbalancecontrol:%d\n", __func__, lrbalancecontrol);
+
+        if (!ac || ac->apr == NULL) {
+                pr_err("%s: APR handle NULL\n", __func__);
+                rc = -EINVAL;
+                goto fail_cmd;
+        }
+
+        memset(&lgesoundmabl_lrbalancecontrol, 0, sizeof(lgesoundmabl_lrbalancecontrol));
+        memset(&param_info, 0, sizeof(param_info));
+
+        param_info.module_id = APPI_LGE_SOUND_MABL_MODULE_ID;
+        param_info.instance_id = INSTANCE_ID_0;
+        param_info.param_id = APPI_LGE_SOUND_MABL_LR_BALANCE_CONTROL;
+        param_info.param_size = sizeof(lgesoundmabl_lrbalancecontrol);
+
+        lgesoundmabl_lrbalancecontrol.LrBalanceControl = lrbalancecontrol;
+
+        rc = q6asm_pack_and_set_pp_param_in_band(ac, param_info, (u8 *) &lgesoundmabl_lrbalancecontrol);
+        if (rc)
+		        pr_err("%s: set-params send failed paramid[0x%x] rc %d\n",
+		           __func__, param_info.param_id, rc);
+fail_cmd:
+        return rc;
+}
+int q6asm_set_lgesoundmabl_allparam(struct audio_client *ac, struct lgesoundmabl_allparam_st *param)
+{
+	struct asm_lgesoundmabl_param_allparam lgesoundmabl_allparam_str;
+	struct param_hdr_v3 param_info;
+        int rc  = 0;
+
+        pr_debug("%s: DeviceSpeaker:%d\n", __func__, param->DeviceSpeaker);
+        pr_debug("%s: MonoEnable:%d\n", __func__, param->MonoEnable);
+        pr_debug("%s: LrBalanceControl:%d\n", __func__, param->LrBalanceControl);
+
+        if (!ac || ac->apr == NULL) {
+                pr_err("%s: APR handle NULL\n", __func__);
+                rc = -EINVAL;
+                goto fail_cmd;
+        }
+
+        memset(&lgesoundmabl_allparam_str, 0, sizeof(lgesoundmabl_allparam_str));
+        memset(&param_info, 0, sizeof(param_info));
+
+        param_info.module_id = APPI_LGE_SOUND_MABL_MODULE_ID;
+        param_info.instance_id = INSTANCE_ID_0;
+        param_info.param_id = APPI_LGE_SOUND_MABL_ALL_PARAM;
+        param_info.param_size = sizeof(lgesoundmabl_allparam_str);
+
+        lgesoundmabl_allparam_str.DeviceSpeaker = param->DeviceSpeaker;
+        lgesoundmabl_allparam_str.MonoEnable = param->MonoEnable;
+        lgesoundmabl_allparam_str.LrBalanceControl = param->LrBalanceControl;
+
+        rc = q6asm_pack_and_set_pp_param_in_band(ac, param_info, (u8 *) &lgesoundmabl_allparam_str);
+        if (rc)
+		        pr_err("%s: set-params send failed paramid[0x%x] rc %d\n",
+		           __func__, param_info.param_id, rc);
+fail_cmd:
+        return rc;
+}
+#endif //CONFIG_SND_LGE_MABL
+
+#ifdef CONFIG_SND_LGE_MQA
+int q6asm_set_lgmqa_param_properties(struct audio_client *ac, long *val)
+{
+        struct asm_lgmqa_param_all lgmqa_paramAll;
+        int sz = 0;
+        int rc  = 0;
+
+        if (!ac || ac->apr == NULL) {
+                pr_err("%s: APR handle NULL\n", __func__);
+                rc = -EINVAL;
+                goto fail_cmd;
+        }
+
+        sz = sizeof(struct asm_lgmqa_param_all);
+        q6asm_add_hdr_async(ac, &lgmqa_paramAll.hdr, sz, TRUE);
+        atomic_set(&ac->cmd_state_pp, -1);
+
+        lgmqa_paramAll.hdr.opcode = ASM_STREAM_CMD_SET_PP_PARAMS_V2;
+        lgmqa_paramAll.param.data_payload_addr_lsw = 0;
+        lgmqa_paramAll.param.data_payload_addr_msw = 0;
+
+        lgmqa_paramAll.param.mem_map_handle = 0;
+        lgmqa_paramAll.param.data_payload_size = sizeof(lgmqa_paramAll) -
+                                sizeof(lgmqa_paramAll.hdr) - sizeof(lgmqa_paramAll.param);
+
+        lgmqa_paramAll.data.module_id = AUDPROC_MODULE_ID_LGMQA;
+        lgmqa_paramAll.data.param_id = AUDPROC_PARAM_ID_LGMQA_PROPERTIES;
+        lgmqa_paramAll.data.param_size = lgmqa_paramAll.param.data_payload_size - sizeof(lgmqa_paramAll.data);
+        lgmqa_paramAll.data.reserved = 0;
+
+        pr_err("#### %s in Kernel use array: %ld, %ld, %ld, %ld",__func__,val[0],val[1],val[2],val[3]);
+        lgmqa_paramAll.powermode = *val++;
+
+        lgmqa_paramAll.multiplerate = *val++;
+        lgmqa_paramAll.outputmode = *val++;
+
+        pr_err("%s:send packet ALL powerMode[%d], multipleRate[%d], outputMode[%d]\n",__func__,lgmqa_paramAll.powermode,lgmqa_paramAll.multiplerate,lgmqa_paramAll.outputmode);
+
+
+        rc = apr_send_pkt(ac->apr, (uint32_t *) &lgmqa_paramAll);
+        if (rc < 0) {
+                pr_err("%s: set-params send failed paramid[0x%x]\n", __func__,
+                                                lgmqa_paramAll.data.param_id);
+                rc = -EINVAL;
+                goto fail_cmd;
+        }
+
+        rc = wait_event_timeout(ac->cmd_wait,
+                        (atomic_read(&ac->cmd_state_pp) >= 0), 5*HZ);
+
+        if (!rc) {
+                pr_err("%s: timeout, set-params paramid[0x%x]\n", __func__,
+                                                lgmqa_paramAll.data.param_id);
+                rc = -ETIMEDOUT;
+                goto fail_cmd;
+        }
+        if (atomic_read(&ac->cmd_state_pp) > 0) {
+                pr_err("%s: DSP returned error[%s] set-params paramid[0x%x]\n",
+                                __func__, adsp_err_get_err_str(
+                                atomic_read(&ac->cmd_state_pp)),
+                                lgmqa_paramAll.data.param_id);
+                rc = adsp_err_get_lnx_err_code(
+                                atomic_read(&ac->cmd_state_pp));
+                goto fail_cmd;
+        }
+        rc = 0;
+fail_cmd:
+        return rc;
+}
+int q6asm_set_lgmqa_param_one(struct audio_client *ac, int cmd, int val)
+{
+        struct asm_lgmqa_param_one lgmqa_param;
+        int sz = 0;
+        int rc  = 0;
+
+        if (!ac || ac->apr == NULL) {
+                pr_err("%s: APR handle NULL\n", __func__);
+                rc = -EINVAL;
+                goto fail_cmd;
+        }
+
+        sz = sizeof(struct asm_lgmqa_param_one);
+        q6asm_add_hdr_async(ac, &lgmqa_param.hdr, sz, TRUE);
+        atomic_set(&ac->cmd_state_pp, -1);
+
+        lgmqa_param.hdr.opcode = ASM_STREAM_CMD_SET_PP_PARAMS_V2;
+        lgmqa_param.param.data_payload_addr_lsw = 0;
+        lgmqa_param.param.data_payload_addr_msw = 0;
+
+        lgmqa_param.param.mem_map_handle = 0;
+        lgmqa_param.param.data_payload_size = sizeof(lgmqa_param) -
+                                sizeof(lgmqa_param.hdr) - sizeof(lgmqa_param.param);
+
+        lgmqa_param.data.module_id = AUDPROC_MODULE_ID_LGMQA;
+        lgmqa_param.data.param_id = cmd;
+        lgmqa_param.data.param_size = lgmqa_param.param.data_payload_size - sizeof(lgmqa_param.data);
+        lgmqa_param.data.reserved = 0;
+        lgmqa_param.msg = val;
+
+
+        pr_err("%s:send packet\n",__func__);
+        rc = apr_send_pkt(ac->apr, (uint32_t *) &lgmqa_param);
+        if (rc < 0) {
+                pr_err("%s: set-params send failed paramid[0x%x]\n", __func__,
+                                                lgmqa_param.data.param_id);
+                rc = -EINVAL;
+                goto fail_cmd;
+        }
+
+        rc = wait_event_timeout(ac->cmd_wait,
+                        (atomic_read(&ac->cmd_state_pp) >= 0), 5*HZ);
+
+        if (!rc) {
+                pr_err("%s: timeout, set-params paramid[0x%x]\n", __func__,
+                                                lgmqa_param.data.param_id);
+                rc = -ETIMEDOUT;
+                goto fail_cmd;
+        }
+        if (atomic_read(&ac->cmd_state_pp) > 0) {
+                pr_err("%s: DSP returned error[%s] set-params paramid[0x%x]\n",
+                                __func__, adsp_err_get_err_str(
+                                atomic_read(&ac->cmd_state_pp)),
+                                lgmqa_param.data.param_id);
+                rc = adsp_err_get_lnx_err_code(
+                                atomic_read(&ac->cmd_state_pp));
+                goto fail_cmd;
+        }
+        rc = 0;
+fail_cmd:
+        return rc;
+}
+#endif
+
+#ifdef CONFIG_SND_LGE_DTS
+int q6asm_set_lge_dts_param(struct audio_client *ac, int param_id, int val)
+{
+	struct audproc_lge_dts_param lge_dts_param;
+	struct param_hdr_v3 param_hdr = {0};
+	int rc = 0;
+
+	pr_debug("+++++++++++++++++++++++++++++++++++++++++++++\n");
+	pr_debug("%s: dts param: id = %d value = %d \n", __func__, param_id, val);
+	pr_debug("+++++++++++++++++++++++++++++++++++++++++++++\n");
+
+	if (!ac || ac->apr == NULL) {
+			pr_err("%s: APR handle NULL\n", __func__);
+			return -EINVAL;
+	}
+
+	memset(&lge_dts_param, 0, sizeof(lge_dts_param));
+	atomic_set(&ac->cmd_state_pp, -1);
+
+
+	param_hdr.module_id = APPI_LGE_SOUND_DTS_MODULE_ID;
+	param_hdr.instance_id = INSTANCE_ID_0;
+	param_hdr.param_id = lge_dts_param_id[param_id];
+	param_hdr.param_size = sizeof(lge_dts_param);
+	lge_dts_param.value = val;
+
+	rc = q6asm_pack_and_set_pp_param_in_band(ac, param_hdr,
+				(uint8_t *) &lge_dts_param);
+	if (rc < 0)
+		pr_err("%s: set-params send failed paramid[0x%x] rc %d\n",
+			__func__, param_hdr.param_id, rc);
+	return rc;
+}
+
+
+#endif
 
 static int __q6asm_read(struct audio_client *ac, bool is_custom_len_reqd,
 			int len)

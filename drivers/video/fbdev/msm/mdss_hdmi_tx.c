@@ -3286,6 +3286,13 @@ static int hdmi_tx_power_off(struct hdmi_tx_ctrl *hdmi_ctrl)
 
 	hdmi_tx_set_mode(hdmi_ctrl, true);
 
+#if defined(CONFIG_LGE_DISPLAY_COMMON)
+	/* commit : 346c653d3 , owner : jooyoung55.lee */
+	/* reset Max PCLK */
+	hdmi_edid_set_max_pclk_rate(hdmi_tx_get_fd(HDMI_TX_FEAT_EDID),
+			hdmi_ctrl->max_pclk_khz);
+#endif
+
 	hdmi_tx_core_off(hdmi_ctrl);
 
 	hdmi_ctrl->panel_power_on = false;

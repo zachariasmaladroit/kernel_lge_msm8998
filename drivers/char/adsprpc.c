@@ -58,7 +58,7 @@
 #define ADSP_MMAP_ADD_PAGES 0x1000
 
 #define FASTRPC_ENOSUCH 39
-#define VMID_SSC_Q6     38
+#define VMID_SSC_Q6    38
 #define VMID_ADSP_Q6    6
 #define AC_VM_ADSP_HEAP_SHARED 33
 #define DEBUGFS_SIZE 3072
@@ -2470,13 +2470,15 @@ static int fastrpc_file_free(struct fastrpc_file *fl)
 		return 0;
 	cid = fl->cid;
 
-	(void)fastrpc_release_current_dsp_process(fl);
-
 	spin_lock(&fl->apps->hlock);
 	hlist_del_init(&fl->hn);
 	spin_unlock(&fl->apps->hlock);
 	kfree(fl->debug_buf);
 
+	if (!fl->sctx) {
+		goto bail;
+	}
+	(void)fastrpc_release_current_dsp_process(fl);
 	if (!fl->sctx)
 		goto bail;
 
@@ -2797,6 +2799,16 @@ static ssize_t fastrpc_debugfs_read(struct file *filp, char __user *buffer,
 			"%-20d|0x%-20lX\n\n",
 			map->secure, map->attr);
 		}
+		len += scnprintf(fileinfo + len, DEBUGFS_SIZE - len,
+			"\n======%s %s %s======\n", title,
+			" LIST OF BUFS ", title);
+		spin_lock(&fl->hlock);
+		len += scnprintf(fileinfo + len, DEBUGFS_SIZE - len,
+			"%-19s|%-19s|%-19s\n",
+			"virt", "phys", "size");
+		len += scnprintf(fileinfo + len, DEBUGFS_SIZE - len,
+			"%s%s%s%s%s\n", single_line, single_line,
+			single_line, single_line, single_line);
 		len += scnprintf(fileinfo + len, DEBUGFS_SIZE - len,
 			"\n%s %s %s\n", title,
 			" LIST OF PENDING SMQCONTEXTS ", title);
@@ -3211,7 +3223,7 @@ static int fastrpc_restart_notifier_cb(struct notifier_block *nb,
 			else
 				smd_close(ctx->chan);
 
-			ctx->chan = 0;
+			ctx->chan = NULL;
 			pr_info("'restart notifier: closed /dev/%s c %d %d'\n",
 				 gcinfo[cid].name, MAJOR(me->dev_no), cid);
 		}

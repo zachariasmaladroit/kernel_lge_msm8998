@@ -29,6 +29,9 @@
 #include "smb-lib.h"
 #include "storm-watch.h"
 #include <linux/pmic-voter.h>
+#ifdef CONFIG_LGE_PM
+#include <linux/of_gpio.h>
+#endif
 
 #define SMB138X_DEFAULT_FCC_UA 1000000
 #define SMB138X_DEFAULT_ICL_UA 1500000
@@ -96,6 +99,9 @@ struct smb_dt_props {
 	int	dc_icl_ua;
 	int	chg_temp_max_mdegc;
 	int	connector_temp_max_mdegc;
+#ifdef CONFIG_LGE_PM
+	bool	disable_connector_temp;
+#endif
 	int	pl_mode;
 };
 
@@ -104,6 +110,9 @@ struct smb138x {
 	struct smb_dt_props	dt;
 	struct power_supply	*parallel_psy;
 	u32			wa_flags;
+#ifdef CONFIG_LGE_PM
+	uint32_t		smb_bat_en;
+#endif
 };
 
 static int __debug_mask;
@@ -113,11 +122,15 @@ module_param_named(
 
 static irqreturn_t smb138x_handle_slave_chg_state_change(int irq, void *data)
 {
+#ifdef CONFIG_LGE_PM
+	pr_debug("irq : chg_state_change\n");
+#else
 	struct smb_irq_data *irq_data = data;
 	struct smb138x *chip = irq_data->parent_data;
 
 	if (chip->parallel_psy)
 		power_supply_changed(chip->parallel_psy);
+#endif
 
 	return IRQ_HANDLED;
 }
@@ -197,8 +210,44 @@ static int smb138x_parse_dt(struct smb138x *chip)
 	if (rc < 0)
 		chip->dt.connector_temp_max_mdegc = 105000;
 
+#ifdef CONFIG_LGE_PM
+	chip->dt.disable_connector_temp = of_property_read_bool(node,
+				"lge,disable-connector-temp");
+
+	chip->smb_bat_en = of_get_named_gpio(node, "lge,smb-bat-en-gpio", 0);
+
+	if (!gpio_is_valid(chip->smb_bat_en)) {
+		pr_err("Unable to sbu gpio %d.\n", chip->smb_bat_en);
+	}
+	pr_info("Parallel charger batfet gpio %d\n", chip->smb_bat_en);
+#endif
 	return 0;
 }
+
+#ifdef CONFIG_LGE_PM
+int smb138x_set_smb_bat_en(struct smb138x *chip, bool bat_en) {
+	int rc;
+
+	if (!gpio_is_valid(chip->smb_bat_en)) {
+		pr_info("Couldn't set parallel batfet_en rc=%d\n", rc);
+		return -1;
+	}
+
+	if (!bat_en)
+		rc = gpiod_direction_output(gpio_to_desc(chip->smb_bat_en), true);
+	else
+		rc = gpiod_direction_output(gpio_to_desc(chip->smb_bat_en), false);
+
+	if (rc < 0) {
+		pr_info("Couldn't set parallel batfet_en rc=%d\n", rc);
+		return rc;
+	}
+
+	pr_info("Parallel batfet %s\n", bat_en ? "enabled" : "disabled");
+	return rc;
+
+}
+#endif
 
 /************************
  * USB PSY REGISTRATION *
@@ -522,6 +571,44 @@ static int smb138x_get_prop_connector_health(struct smb138x *chip)
 	return POWER_SUPPLY_HEALTH_OVERHEAT;
 }
 
+#ifdef CONFIG_LGE_PM
+int smb138x_get_prop_slave_status(struct smb_charger *chg,
+		union power_supply_propval *val)
+{
+	u8 stat;
+	int rc;
+
+	rc = smblib_read(chg, BATTERY_CHARGER_STATUS_1_REG, &stat);
+	if (rc < 0) {
+		pr_err("Couldn't read SMB138X BATTERY_CHARGER_STATUS_1 rc=%d\n", rc);
+		return rc;
+	}
+	stat = stat & BATTERY_CHARGER_STATUS_MASK;
+
+	switch (stat) {
+	case TRICKLE_CHARGE:
+	case PRE_CHARGE:
+	case FAST_CHARGE:
+	case FULLON_CHARGE:
+	case TAPER_CHARGE:
+		val->intval = POWER_SUPPLY_STATUS_CHARGING;
+		break;
+	case TERMINATE_CHARGE:
+	case INHIBIT_CHARGE:
+		val->intval = POWER_SUPPLY_STATUS_FULL;
+		break;
+	case DISABLE_CHARGE:
+		val->intval = POWER_SUPPLY_STATUS_NOT_CHARGING;
+		break;
+	default:
+		val->intval = POWER_SUPPLY_STATUS_UNKNOWN;
+		break;
+	}
+
+	return 0;
+}
+#endif
+
 static enum power_supply_property smb138x_parallel_props[] = {
 	POWER_SUPPLY_PROP_CHARGE_TYPE,
 	POWER_SUPPLY_PROP_CHARGING_ENABLED,
@@ -606,12 +693,32 @@ static int smb138x_parallel_get_prop(struct power_supply *psy,
 		val->intval = chip->dt.pl_mode;
 		break;
 	case POWER_SUPPLY_PROP_CONNECTOR_HEALTH:
+#ifdef CONFIG_LGE_PM
+		if(chip->dt.disable_connector_temp)
+			val->intval = POWER_SUPPLY_HEALTH_COOL;
+		else
+			val->intval = smb138x_get_prop_connector_health(chip);
+#else
 		val->intval = smb138x_get_prop_connector_health(chip);
+#endif
 		break;
 	case POWER_SUPPLY_PROP_SET_SHIP_MODE:
 		/* Not in ship mode as long as device is active */
 		val->intval = 0;
 		break;
+#ifdef CONFIG_LGE_PM
+	case POWER_SUPPLY_PROP_PARALLEL_BATFET_MODE:
+		val->intval = POWER_SUPPLY_PL_NON_STACKED_BATFET;
+		break;
+
+	case POWER_SUPPLY_PROP_MIN_ICL:
+		val->intval = 0;
+		break;
+
+	case POWER_SUPPLY_PROP_PARALLEL_FCC_MAX:
+		val->intval = INT_MAX;
+		break;
+#endif
 	default:
 		pr_err("parallel power supply get prop %d not supported\n",
 			prop);
@@ -661,6 +768,9 @@ static int smb138x_parallel_set_prop(struct power_supply *psy,
 	switch (prop) {
 	case POWER_SUPPLY_PROP_INPUT_SUSPEND:
 		rc = smb138x_set_parallel_suspend(chip, (bool)val->intval);
+#ifdef CONFIG_LGE_PM
+		rc |= smb138x_set_smb_bat_en(chip, (bool)!val->intval);
+#endif
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_MAX:
 		if ((chip->dt.pl_mode == POWER_SUPPLY_PL_USBIN_USBIN)
@@ -1103,10 +1213,14 @@ static int smb138x_setup_wa_flags(struct smb138x *chip)
 
 static irqreturn_t smb138x_handle_temperature_change(int irq, void *data)
 {
+#ifdef CONFIG_LGE_PM
+	pr_info("irq : temperature_change\n");
+#else
 	struct smb_irq_data *irq_data = data;
 	struct smb138x *chip = irq_data->parent_data;
 
 	power_supply_changed(chip->parallel_psy);
+#endif
 	return IRQ_HANDLED;
 }
 
@@ -1125,6 +1239,7 @@ static int smb138x_determine_initial_status(struct smb138x *chip)
 	smblib_handle_usb_plugin(0, &irq_data);
 	smblib_handle_usb_typec_change(0, &irq_data);
 	smblib_handle_usb_source_change(0, &irq_data);
+
 	return 0;
 }
 
@@ -1197,6 +1312,12 @@ static struct smb_irq_info smb138x_irqs[] = {
 		.name		= "bat-terminal-missing",
 		.handler	= smblib_handle_batt_psy_changed,
 	},
+#ifdef CONFIG_IDTP9223_CHARGER
+	[BATT_QIPMA_ON_IRQ] = {
+		.name       = "bat-qi-pma-on",
+		.handler    = smblib_handle_debug,
+	},
+#endif
 /* USB INPUT IRQs */
 	[USBIN_COLLAPSE_IRQ] = {
 		.name		= "usbin-collapse",

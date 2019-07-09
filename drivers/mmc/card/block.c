@@ -46,6 +46,12 @@
 #include <linux/mmc/host.h>
 #include <linux/mmc/mmc.h>
 #include <linux/mmc/sd.h>
+#ifdef CONFIG_MACH_LGE
+#include <linux/mmc/slot-gpio.h>
+#endif
+#ifdef CONFIG_MMC_FFU
+#include <linux/mmc/ffu.h>
+#endif
 
 #include <asm/uaccess.h>
 
@@ -1727,8 +1733,13 @@ static int mmc_blk_cmd_recovery(struct mmc_card *card, struct request *req,
 		mmc_retune_recheck(card->host);
 
 		prev_cmd_status_valid = false;
+#ifdef CONFIG_MACH_LGE
+		pr_err("[LGE][MMC]%s: error %d sending status command, %sing, cd-gpio:%d\n",
+		       req->rq_disk->disk_name, err, retry ? "retry" : "abort", mmc_gpio_get_cd(card->host));
+#else
 		pr_err_ratelimited("%s: error %d sending status command, %sing\n",
 		       req->rq_disk->disk_name, err, retry ? "retry" : "abort");
+#endif
 	}
 
 	/* We couldn't get a response from the card.  Give up. */
@@ -2216,6 +2227,15 @@ static int mmc_blk_err_check(struct mmc_card *card,
 	struct request *req = mq_mrq->req;
 	int need_retune = card->host->need_retune;
 	int ecc_err = 0, gen_err = 0;
+
+#ifdef CONFIG_MACH_LGE
+	/* LGE_CHANGE, 2015-09-23, H1-BSP-FS@lge.com
+	 * When uSD is not inserted, return proper error-value.
+	 */
+	if(mmc_card_sd(card) && !mmc_gpio_get_cd(card->host)) {
+		return MMC_BLK_NOMEDIUM;
+	}
+#endif
 
 	if (card->host->sdr104_wa && mmc_card_sd(card) &&
 	    (card->host->ios.timing == MMC_TIMING_UHS_SDR104) &&
@@ -4129,6 +4149,10 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
 		/* claim host only for the first request */
 		mmc_get_card(card);
 
+#ifdef CONFIG_MMC_BLOCK_DEFERRED_RESUME
+	if (mmc_bus_needs_resume(card->host))
+		mmc_resume_bus(card->host);
+#endif
 		if (mmc_card_doing_bkops(host->card)) {
 			ret = mmc_stop_bkops(host->card);
 			if (ret)
@@ -4570,6 +4594,10 @@ force_ro_fail:
 	return ret;
 }
 
+#ifdef CONFIG_MACH_LGE
+/* duplicated code. this defines already exists in linux/mmc/card.h
+*/
+#else
 #define CID_MANFID_SANDISK	0x2
 #define CID_MANFID_TOSHIBA	0x11
 #define CID_MANFID_MICRON	0x13
@@ -4580,6 +4608,7 @@ force_ro_fail:
 #define CID_MANFID_TOSHIBA	0x11
 #define CID_MANFID_MICRON	0x13
 #define CID_MANFID_SAMSUNG	0x15
+#endif
 
 static const struct mmc_fixup blk_fixups[] =
 {

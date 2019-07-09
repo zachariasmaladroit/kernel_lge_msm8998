@@ -99,6 +99,10 @@ struct bio {
 #endif
 	};
 
+#ifdef CONFIG_LGE_IOSCHED_EXTENSION
+	unsigned short		bi_excontrol;
+#endif
+
 	unsigned short		bi_vcnt;	/* how many bio_vec's */
 
 	/*
@@ -277,6 +281,17 @@ enum rq_flag_bits {
 #define REQ_HASHED		(1ULL << __REQ_HASHED)
 #define REQ_MQ_INFLIGHT		(1ULL << __REQ_MQ_INFLIGHT)
 #define REQ_NO_TIMEOUT		(1ULL << __REQ_NO_TIMEOUT)
+
+#ifdef CONFIG_LGE_IOSCHED_EXTENSION
+#define __REQ_EX_MAX 15
+enum req_exflag_bits {
+	__REQ_EX_ORDERED,
+
+	__REQ_EX_NR_BITS = __REQ_EX_MAX,
+};
+
+#define REQ_EX_ORDERED (1 << __REQ_EX_ORDERED)
+#endif
 
 typedef unsigned int blk_qc_t;
 #define BLK_QC_T_NONE	-1U

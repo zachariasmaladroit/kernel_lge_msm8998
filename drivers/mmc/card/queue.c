@@ -19,6 +19,10 @@
 #include <linux/bitops.h>
 #include <linux/delay.h>
 
+#ifdef CONFIG_LGE_BDI_STRICTLIMIT_DIRTY
+#include <linux/backing-dev.h>
+#endif
+
 #include <linux/mmc/card.h>
 #include <linux/mmc/host.h>
 #include <linux/sched/rt.h>
@@ -485,6 +489,14 @@ success:
 
 	mq->thread = kthread_run(mmc_queue_thread, mq, "mmcqd/%d%s",
 		host->index, subname ? subname : "");
+
+#ifdef CONFIG_LGE_BDI_STRICTLIMIT_DIRTY
+	if (mmc_card_sd(card)) {
+			mq->queue->backing_dev_info->capabilities |= BDI_CAP_STRICTLIMIT;
+			bdi_set_min_ratio(mq->queue->backing_dev_info, 10);
+			bdi_set_max_ratio(mq->queue->backing_dev_info, 30);
+	}
+#endif
 
 	if (IS_ERR(mq->thread)) {
 		ret = PTR_ERR(mq->thread);

@@ -56,6 +56,33 @@ struct panel_id {
 #define LVDS_PANEL		11	/* LVDS */
 #define DP_PANEL		12	/* LVDS */
 
+#if defined(CONFIG_LGE_DISPLAY_COMMON)
+/* backlight mapping table type list */
+enum lge_bl_map_type {
+	LGE_BLDFT = 0,		/* default */
+	LGE_BL = LGE_BLDFT,	/* main backlight */
+#if defined(CONFIG_LGE_HIGH_LUMINANCE_MODE)
+	LGE_BLHL,			/* main backlight with high luminance */
+#endif /* CONFIG_LGE_HIGH_LUMINANCE_MODE */
+#if defined(CONFIG_LGE_DISPLAY_VIDEO_ENHANCEMENT)
+	LGE_BLVE, 			/* main backlight with video enhancement */
+#endif /* CONFIG_LGE_DISPLAY_VIDEO_ENHANCEMENT */
+#if defined(CONFIG_LGE_DISPLAY_AMBIENT_SUPPORTED)
+	LGE_BLEX,		/* ambient backlight */
+#endif /* CONFIG_LGE_DISPLAY_AMBIENT_SUPPORTED */
+	LGE_BLMAPMAX
+};
+
+enum lcd_panel_type {
+	LGD_SIC_LG49407_1440_2720_INCELL_CMD_PANEL,
+	LGD_SIC_LG49408_1440_2880_INCELL_CMD_PANEL,
+	LGD_SIW_LG43401_NOTOUCH_CMD_PANEL,
+	LGD_SIW_LG43402_1440_2880_ONCELL_CMD_PANEL,
+	UNKNOWN_PANEL
+};
+
+
+#endif
 #define DSC_PPS_LEN		128
 #define INTF_EVENT_STR(x)	#x
 
@@ -126,6 +153,9 @@ enum {
 	MODE_GPIO_HIGH,
 	MODE_GPIO_LOW,
 };
+
+
+
 
 /*
  * enum sim_panel_modes - Different panel modes for simulator panels
@@ -308,7 +338,22 @@ enum mdss_intf_events {
 	MDSS_EVENT_DSI_TIMING_DB_CTRL,
 	MDSS_EVENT_AVR_MODE,
 	MDSS_EVENT_REGISTER_CLAMP_HANDLER,
-	MDSS_EVENT_DSI_DYNAMIC_BITCLK,
+#if defined(CONFIG_LGE_DISPLAY_AMBIENT_SUPPORTED)
+	MDSS_EVENT_PANEL_ULP_TO_LP_MODE,
+	MDSS_EVENT_PANEL_LP_TO_ULP_MODE,
+#if defined(CONFIG_LGE_DISPLAY_CHANGE_PARTIAL_AREA_IN_KICKOFF)
+	MDSS_EVENT_PANEL_CHANGE_PARTIAL_AREA,
+#if defined(CONFIG_LGE_DISPLAY_BIST_MODE)
+	MDSS_EVENT_PANEL_BIST_OFF,
+#if defined(CONFIG_LGE_DISPLAY_DYNAMIC_RESOLUTION_SWITCH)
+	MDSS_EVENT_PANEL_BIST_VERIFY,
+#endif /* CONFIG_LGE_DISPLAY_DYNAMIC_RESOLUTION_SWITCH */
+#endif /* CONFIG_LGE_DISPLAY_BIST_MODE */
+#endif /* CONFIG_LGE_DISPLAY_CHANGE_PARTIAL_AREA_IN_KICKOFF */
+#endif /* CONFIG_LGE_DISPLAY_AMBIENT_SUPPORTED */
+#if defined(CONFIG_LGE_DISPLAY_COMMON)
+	MDSS_EVENT_PANEL_REG_BACKUP,
+#endif
 	MDSS_EVENT_MAX,
 };
 
@@ -669,6 +714,9 @@ struct dsc_desc {
 	char *range_min_qp;
 	char *range_max_qp;
 	char *range_bpg_offset;
+#if defined(CONFIG_LGE_DISPLAY_AMBIENT_SUPPORTED)
+	u32 partial_height;
+#endif
 };
 
 struct fbc_panel_info {
@@ -805,18 +853,25 @@ struct mdss_panel_info {
 	int pwm_pmic_gpio;
 	int pwm_lpg_chan;
 	int pwm_period;
+#if defined(CONFIG_LGE_DISPLAY_COMMON)
+	u32 default_brightness;
+	int panel_type;
+	int blmap_size;
+	int *blmap[LGE_BLMAPMAX];
+#if defined(CONFIG_LGE_HIGH_LUMINANCE_MODE)
+	int hl_mode_on;
+#endif
+#if defined(CONFIG_LGE_DISPLAY_VIDEO_ENHANCEMENT)
+	int ve_mode_on;
+#endif /* CONFIG_LGE_DISPLAY_VIDEO_ENHANCEMENT */
+#endif
 	bool dynamic_fps;
-	bool dynamic_bitclk;
-	u32 *supp_bitclks;
-	u32 supp_bitclk_len;
 	bool ulps_feature_enabled;
 	bool ulps_suspend_enabled;
 	bool panel_ack_disabled;
 	bool esd_check_enabled;
 	bool allow_phy_power_off;
 	char dfps_update;
-	/* new requested bitclk before it is updated in hw */
-	int new_clk_rate;
 	/* new requested fps before it is updated in hw */
 	int new_fps;
 	/* stores initial fps after boot */
@@ -929,12 +984,22 @@ struct mdss_panel_info {
 
 	/* stores initial adaptive variable refresh vtotal value */
 	u32 saved_avr_vtotal;
+#ifdef CONFIG_LGE_LCD_POWER_CTRL
+	bool power_ctrl;
+#endif
 
 	/* HDR properties of display panel*/
 	struct mdss_panel_hdr_properties hdr_properties;
-
 	/* esc clk recommended for the panel */
 	u32 esc_clk_rate_hz;
+
+#if defined(CONFIG_LGE_DISPLAY_AMBIENT_SUPPORTED)
+	bool ambient_init_done;
+	void *ambient_info;
+	u16 ambient_xsft;
+	u16 ambient_ysft;
+	u8 ambient_sft_interval;
+#endif
 };
 
 struct mdss_panel_timing {

@@ -19,6 +19,10 @@
 #include <linux/regulator/consumer.h>
 #include <linux/extcon.h>
 #include "storm-watch.h"
+#ifdef CONFIG_LGE_PM
+#include <linux/gpio.h>
+#include <linux/of_gpio.h>
+#endif
 
 enum print_reason {
 	PR_INTERRUPT	= BIT(0),
@@ -65,9 +69,18 @@ enum print_reason {
 #define OTG_DELAY_VOTER			"OTG_DELAY_VOTER"
 #define USBIN_I_VOTER			"USBIN_I_VOTER"
 #define WEAK_CHARGER_VOTER		"WEAK_CHARGER_VOTER"
+#ifdef CONFIG_LGE_PM
+#define OTG_VOTER			"OTG_VOTER"
+#define PL_FCC_LOW_VOTER		"PL_FCC_LOW_VOTER"
+#endif
 #define WBC_VOTER			"WBC_VOTER"
+#ifdef CONFIG_LGE_PM
+#define MOISTURE_VOTER			"MOISTURE_VOTER"
+#define HVDCP2_ICL_VOTER		"HVDCP2_ICL_VOTER"
+#endif
 #define OV_VOTER			"OV_VOTER"
-#define FCC_STEPPER_VOTER		"FCC_STEPPER_VOTER"
+#define FCC_STEPPER_VOTER              "FCC_STEPPER_VOTER"
+#define FG_ESR_VOTER			"FG_ESR_VOTER"
 
 #define VCONN_MAX_ATTEMPTS	3
 #define OTG_MAX_ATTEMPTS	3
@@ -106,6 +119,9 @@ enum smb_irq_index {
 	BATT_LOW_IRQ,
 	BATT_THERM_ID_MISS_IRQ,
 	BATT_TERM_MISS_IRQ,
+#ifdef CONFIG_IDTP9223_CHARGER
+	BATT_QIPMA_ON_IRQ,
+#endif
 	USBIN_COLLAPSE_IRQ,
 	USBIN_LT_3P6V_IRQ,
 	USBIN_UV_IRQ,
@@ -243,6 +259,9 @@ struct smb_charger {
 	struct smb_iio		iio;
 	int			*debug_mask;
 	int			*try_sink_enabled;
+#ifdef CONFIG_LGE_PM
+	int			*audio_headset_drp_wait_ms;
+#endif
 	enum smb_mode		mode;
 	struct smb_chg_freq	chg_freq;
 	int			smb_version;
@@ -295,9 +314,15 @@ struct smb_charger {
 	struct votable		*hvdcp_hw_inov_dis_votable;
 	struct votable		*usb_irq_enable_votable;
 	struct votable		*typec_irq_disable_votable;
+#ifdef CONFIG_LGE_PM
+	struct votable		*disable_power_role_switch;
+#endif
 
 	/* work */
 	struct work_struct	bms_update_work;
+#ifdef CONFIG_LGE_PM
+	struct work_struct	pl_update_work;
+#endif
 	struct work_struct	rdstd_cc2_detach_work;
 	struct delayed_work	hvdcp_detect_work;
 	struct delayed_work	ps_change_timeout_work;
@@ -322,10 +347,16 @@ struct smb_charger {
 	int			*thermal_mitigation;
 	int			dcp_icl_ua;
 	int			fake_capacity;
+#ifdef CONFIG_LGE_PM
+	int			fake_batt_status;
+#endif
 	bool			step_chg_enabled;
 	bool			sw_jeita_enabled;
 	bool			is_hdc;
 	bool			chg_done;
+#ifdef CONFIG_LGE_PM
+	bool			connector_type;
+#endif
 	bool			micro_usb_mode;
 	bool			otg_en;
 	bool			vconn_en;
@@ -347,6 +378,11 @@ struct smb_charger {
 	u8			float_cfg;
 	bool			use_extcon;
 	bool			otg_present;
+#ifdef CONFIG_LGE_PM
+	bool			is_audio_adapter;
+	bool			disable_stat_sw_override;
+	bool			in_chg_lock;
+#endif
 	bool			fcc_stepper_mode;
 
 	/* workaround flag */
@@ -356,6 +392,11 @@ struct smb_charger {
 	bool			try_sink_active;
 	int			boost_current_ua;
 	int			temp_speed_reading_count;
+#ifdef CONFIG_LGE_PM
+	int			qc2_max_pulses;
+	bool			non_compliant_chg_detected;
+	bool			fake_usb_insertion;
+#endif
 
 	/* extcon for VBUS / ID notification to USB for uUSB */
 	struct extcon_dev	*extcon;
@@ -367,6 +408,13 @@ struct smb_charger {
 	/* qnovo */
 	int			usb_icl_delta_ua;
 	int			pulse_cnt;
+#ifdef CONFIG_LGE_PM
+	int			die_health;
+	int32_t		smb_bat_en;
+#ifdef CONFIG_IDTP9223_CHARGER
+	int			qipma_on_status;
+#endif
+#endif
 };
 
 int smblib_read(struct smb_charger *chg, u16 addr, u8 *val);
@@ -432,12 +480,32 @@ int smblib_get_prop_batt_health(struct smb_charger *chg,
 				union power_supply_propval *val);
 int smblib_get_prop_system_temp_level(struct smb_charger *chg,
 				union power_supply_propval *val);
+#ifdef CONFIG_LGE_PM
+int smblib_get_prop_system_temp_level_max(struct smb_charger *chg,
+				union power_supply_propval *val);
+#endif
 int smblib_get_prop_input_current_limited(struct smb_charger *chg,
+				union power_supply_propval *val);
+int smblib_get_prop_batt_voltage_now(struct smb_charger *chg,
+				union power_supply_propval *val);
+int smblib_get_prop_batt_current_now(struct smb_charger *chg,
+				union power_supply_propval *val);
+int smblib_get_prop_batt_temp(struct smb_charger *chg,
+				union power_supply_propval *val);
+int smblib_get_prop_batt_charge_counter(struct smb_charger *chg,
 				union power_supply_propval *val);
 int smblib_set_prop_input_suspend(struct smb_charger *chg,
 				const union power_supply_propval *val);
 int smblib_set_prop_batt_capacity(struct smb_charger *chg,
 				const union power_supply_propval *val);
+#ifdef CONFIG_LGE_PM
+int smblib_set_prop_batt_status(struct smb_charger *chg,
+				const union power_supply_propval *val);
+#endif
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECTION
+int smblib_set_prop_moisture_detection(struct smb_charger *chg,
+				  const union power_supply_propval *val);
+#endif
 int smblib_set_prop_system_temp_level(struct smb_charger *chg,
 				const union power_supply_propval *val);
 int smblib_set_prop_input_current_limited(struct smb_charger *chg,
@@ -460,6 +528,10 @@ int smblib_get_prop_usb_suspend(struct smb_charger *chg,
 				union power_supply_propval *val);
 int smblib_get_prop_usb_voltage_max(struct smb_charger *chg,
 				union power_supply_propval *val);
+#ifdef CONFIG_LGE_PM
+int smblib_get_prop_usb_voltage_max_design(struct smb_charger *chg,
+				union power_supply_propval *val);
+#endif
 int smblib_get_prop_usb_voltage_now(struct smb_charger *chg,
 				union power_supply_propval *val);
 int smblib_get_prop_usb_current_now(struct smb_charger *chg,
@@ -508,6 +580,14 @@ int smblib_set_prop_ship_mode(struct smb_charger *chg,
 				const union power_supply_propval *val);
 int smblib_set_prop_charge_qnovo_enable(struct smb_charger *chg,
 				const union power_supply_propval *val);
+#ifdef CONFIG_LGE_USB_MOISTURE_DETECTION
+int smblib_get_prop_typec_cc_disable(struct smb_charger *chg,
+				union power_supply_propval *val);
+int smblib_set_prop_typec_cc_disable(struct smb_charger *chg,
+				const union power_supply_propval *val);
+int smblib_get_prop_typec_is_ocp(struct smb_charger *chg,
+				union power_supply_propval *val);
+#endif
 void smblib_suspend_on_debug_battery(struct smb_charger *chg);
 int smblib_rerun_apsd_if_required(struct smb_charger *chg);
 int smblib_get_prop_fcc_delta(struct smb_charger *chg,
@@ -526,8 +606,63 @@ int smblib_get_prop_from_bms(struct smb_charger *chg,
 				union power_supply_propval *val);
 int smblib_set_prop_pr_swap_in_progress(struct smb_charger *chg,
 				const union power_supply_propval *val);
+#ifdef CONFIG_LGE_PM
+int smblib_stat_sw_override_cfg(struct smb_charger *chg, bool override);
+#endif
 void smblib_usb_typec_change(struct smb_charger *chg);
+#ifdef CONFIG_LGE_PM
+int smblib_toggle_stat(struct smb_charger *chg, int reset);
+#endif
 
 int smblib_init(struct smb_charger *chg);
 int smblib_deinit(struct smb_charger *chg);
+
+#ifdef CONFIG_LGE_PM
+// Workaround functions implemented in extension-workarounds.c
+void workaround_resuming_suspended_usbin_trigger(struct smb_charger* chg);
+void workaround_blocking_vddmin_chargerlogo(struct smb_charger *chg);
+void workaround_charging_without_cc_reserve(struct smb_charger* chg, int (*smblib_request_dpdm)(struct smb_charger *chg, bool enable));
+void workaround_charging_without_cc_withdraw(struct smb_charger* chg, void (*handle_typec_removal)(struct smb_charger *chg));
+void workaround_support_weak_supply_trigger(struct smb_charger* chg, bool trigger);
+void workaround_support_weak_supply_check(void);
+void workaround_usb_compliance_mode_register(bool* reference);
+bool workaround_usb_compliance_mode_enabled(void);
+void workaround_force_incompatible_hvdcp_clear(struct smb_charger* chg);
+void workaround_force_incompatible_hvdcp_trigger(struct smb_charger* chg);
+void workaround_force_incompatible_hvdcp_require(void);
+bool workaround_force_incompatible_hvdcp_is_running(void);
+void workaround_recovering_abnormal_apsd_pdactive(struct smb_charger *chg, bool pd_active);
+void workaround_recovering_abnormal_apsd_pdreset(struct smb_charger *chg);
+void workaround_recovering_abnormal_apsd_dcp(struct smb_charger *chg);
+void workaround_recovering_abnormal_apsd_clear(void);
+void workaround_floating_during_rerun_apsd(enum power_supply_type pst);
+void workaround_floating_during_rerun_reset(void);
+bool workaround_floating_during_rerun_working(void);
+void workaround_charging_with_rd_tigger(struct smb_charger* chg);
+void workaround_charging_with_rd_func(struct smb_charger* chg);
+void workaround_charging_with_rd_clear(struct smb_charger* chg);
+void workaround_skipping_vusb_delay_trigger(struct smb_charger* chg);
+bool workaround_skipping_vusb_delay_enabled(void);
+void workaround_disable_nonstandard_high_voltage_charger_trigger(struct smb_charger* chg);
+bool workaround_avoiding_mbg_fault_uart(bool enable);
+bool workaround_avoiding_mbg_fault_usbid(bool enable);
+void workaround_check_unknown_cable(struct smb_charger *chg);
+void workaround_check_unknown_cable_clear(struct smb_charger *chg);
+
+// Override functions implemented in smb-lib.c
+irqreturn_t override_handle_chg_state_change(int irq, void *arg);
+irqreturn_t override_handle_usb_plugin(int irq, void *arg);
+irqreturn_t override_handle_usb_source_change(int irq, void *arg);
+irqreturn_t override_handle_icl_change(int irq, void *arg);
+irqreturn_t override_handle_usb_typec_change(int irq, void *arg);
+irqreturn_t override_handle_dc_debug(int irq, void *arg);
+irqreturn_t override_handle_aicl_fail(int irq, void* arg);
+irqreturn_t override_handle_switcher_power_ok(int irq, void* arg);
+
+#ifdef CONFIG_IDTP9223_CHARGER
+int smblib_get_prop_qipma_on(struct smb_charger *chg, union power_supply_propval *val);
+irqreturn_t smblib_handle_batt_qipma_on(int irq, void *data);
+#endif
+#endif /* CONFIG_LGE_PM : for LGE workaround */
+
 #endif /* __SMB2_CHARGER_H */

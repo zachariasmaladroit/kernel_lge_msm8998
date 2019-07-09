@@ -35,7 +35,7 @@ int phandle_format = PHANDLE_BOTH;	/* Use linux,phandle or phandle properties */
 int generate_symbols;	/* enable symbols & fixup support */
 int generate_fixups;		/* suppress generation of fixups on symbol support */
 int auto_label_aliases;		/* auto generate labels -> aliases */
-
+int show_deleted_list;
 static int is_power_of_2(int x)
 {
 	return (x > 0) && ((x & (x - 1)) == 0);
@@ -62,7 +62,7 @@ static void fill_fullpaths(struct node *tree, const char *prefix)
 #define FDT_VERSION(version)	_FDT_VERSION(version)
 #define _FDT_VERSION(version)	#version
 static const char usage_synopsis[] = "dtc [options] <input file>";
-static const char usage_short_opts[] = "qI:O:o:V:d:R:S:p:a:fb:i:H:sW:E:@Ahv";
+static const char usage_short_opts[] = "qI:O:o:V:d:R:S:p:a:fb:i:H:sW:E:@ADhv";
 static struct option const usage_long_opts[] = {
 	{"quiet",            no_argument, NULL, 'q'},
 	{"in-format",         a_argument, NULL, 'I'},
@@ -83,6 +83,7 @@ static struct option const usage_long_opts[] = {
 	{"error",             a_argument, NULL, 'E'},
 	{"symbols",	     no_argument, NULL, '@'},
 	{"auto-alias",       no_argument, NULL, 'A'},
+	{"deleted-list",     no_argument, NULL, 'D'},
 	{"help",             no_argument, NULL, 'h'},
 	{"version",          no_argument, NULL, 'v'},
 	{NULL,               no_argument, NULL, 0x0},
@@ -111,11 +112,17 @@ static const char * const usage_opts_help[] = {
 	"\n\tValid phandle formats are:\n"
 	 "\t\tlegacy - \"linux,phandle\" properties only\n"
 	 "\t\tepapr  - \"phandle\" properties only\n"
-	 "\t\tboth   - Both \"linux,phandle\" and \"phandle\" properties",
+	 "\t\tboth   - Both \"linux,phandle\" and \"phandle\" properties"
+	 "\n\t\tspecific - '&phandle' appears instead of phandle id\n"
+	 "\t\t\tto distinguish between cell data and phandle.\n"
+	 "\t\t\tIt is just for only comparing trees. So, do not use\n"
+	 "\t\t\toutput as runtime dts.\n"
+	 "\t\tspecific2 - '&phandle(id)' instead of '&phandle'",
 	"\n\tEnable/disable warnings (prefix with \"no-\")",
 	"\n\tEnable/disable errors (prefix with \"no-\")",
 	"\n\tEnable generation of symbols",
 	"\n\tEnable auto-alias of labels",
+	"\n\tShow list of deleted nodes and properties at end of dts(dts to dts only)",
 	"\n\tPrint this help and exit",
 	"\n\tPrint version and exit",
 	NULL,
@@ -239,6 +246,10 @@ int main(int argc, char *argv[])
 				phandle_format = PHANDLE_EPAPR;
 			else if (streq(optarg, "both"))
 				phandle_format = PHANDLE_BOTH;
+			else if (streq(optarg, "specific"))
+				phandle_format = PHANDLE_SPECIFIC;
+			else if (streq(optarg, "specific2"))
+				phandle_format = PHANDLE_SPECIFIC2;
 			else
 				die("Invalid argument \"%s\" to -H option\n",
 				    optarg);
@@ -261,6 +272,8 @@ int main(int argc, char *argv[])
 			break;
 		case 'A':
 			auto_label_aliases = 1;
+		case 'D':
+			show_deleted_list = 1;
 			break;
 
 		case 'h':

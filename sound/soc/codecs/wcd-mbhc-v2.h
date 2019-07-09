@@ -16,6 +16,9 @@
 #include <linux/stringify.h>
 #include <linux/power_supply.h>
 #include "wcdcal-hwdep.h"
+#ifdef CONFIG_MACH_LGE //LGE Update // add switch dev for mbhc
+#include <linux/switch.h>
+#endif //LGE Update // add switch dev for mbhc
 
 #define TOMBAK_MBHC_NC	0
 #define TOMBAK_MBHC_NO	1
@@ -462,6 +465,9 @@ struct wcd_mbhc {
 	struct mutex hphl_pa_lock;
 	struct mutex hphr_pa_lock;
 
+#ifdef CONFIG_MACH_LGE //LGE Update // add switch dev for mbhc
+	struct switch_dev sdev;
+#endif //LGE Update // add switch dev for mbhc
 	unsigned long intr_status;
 	bool is_hph_ocp_pending;
 
@@ -470,6 +476,9 @@ struct wcd_mbhc {
 	struct notifier_block psy_nb;
 	struct power_supply *usb_psy;
 	struct work_struct usbc_analog_work;
+#ifndef CONFIG_MACH_LGE
+	bool force_linein;
+#endif
 };
 #define WCD_MBHC_CAL_SIZE(buttons, rload) ( \
 	sizeof(struct wcd_mbhc_general_cfg) + \

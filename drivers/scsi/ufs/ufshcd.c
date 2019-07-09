@@ -50,6 +50,10 @@
 #include "ufs-debugfs.h"
 #include "ufs-qcom.h"
 
+#ifdef CONFIG_MACH_LGE
+#include "ufsdbg-print.h"
+#endif
+
 #define CREATE_TRACE_POINTS
 #include <trace/events/ufs.h>
 
@@ -249,6 +253,7 @@ static u32 ufs_query_desc_max_size[] = {
 	QUERY_DESC_RFU_MAX_SIZE,
 	QUERY_DESC_GEOMETRY_MAZ_SIZE,
 	QUERY_DESC_POWER_MAX_SIZE,
+	QUERY_DESC_DEVICE_HEALTH_MAX_SIZE,
 	QUERY_DESC_RFU_MAX_SIZE,
 };
 
@@ -736,8 +741,14 @@ static void ufshcd_print_uic_err_hist(struct ufs_hba *hba,
 
 		if (err_hist->reg[p] == 0)
 			continue;
+
+#ifdef CONFIG_MACH_LGE
+		print_ufs_error_spec(hba, err_name, err_hist->reg[p],
+			ktime_to_us(err_hist->tstamp[p]), i);
+#else
 		dev_err(hba->dev, "%s[%d] = 0x%x at %lld us", err_name, i,
 			err_hist->reg[p], ktime_to_us(err_hist->tstamp[p]));
+#endif
 	}
 }
 
@@ -1426,6 +1437,9 @@ static void ufshcd_ungate_work(struct work_struct *work)
 	ufshcd_hba_vreg_set_hpm(hba);
 	ufshcd_enable_clocks(hba);
 
+	/* enable the host irq */
+	ufshcd_enable_irq(hba);
+
 	/* Exit from hibern8 */
 	if (ufshcd_can_hibern8_during_gating(hba)) {
 		/* Prevent gating in this path */
@@ -1582,6 +1596,9 @@ static void ufshcd_gate_work(struct work_struct *work)
 		}
 		ufshcd_set_link_hibern8(hba);
 	}
+
+	/* disable the host irq */
+	ufshcd_disable_irq(hba);
 
 	/*
 	 * If auto hibern8 is supported then the link will already
@@ -2838,6 +2855,17 @@ static int ufshcd_compose_upiu(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
 		if (likely(lrbp->cmd)) {
 			ret = ufshcd_prepare_req_desc_hdr(hba, lrbp,
 				&upiu_flags, lrbp->cmd->sc_data_direction);
+
+#ifdef CONFIG_LGE_IOSCHED_EXTENSION
+			if (hba->dev_quirks & UFS_DEVICE_QUIRK_CMD_ORDERED) {
+				if ( (lrbp->cmd->request->cmd_flags & REQ_WRITE) &&
+					 (lrbp->cmd->request->bio) &&
+					 (lrbp->cmd->request->bio->bi_excontrol & REQ_EX_ORDERED) ) {
+					upiu_flags |= UPIU_TASK_ATTR_ORDERED;
+				}
+			}
+#endif
+
 			ufshcd_prepare_utp_scsi_cmd_upiu(lrbp, upiu_flags);
 		} else {
 			ret = -EINVAL;
@@ -3803,17 +3831,53 @@ static inline int ufshcd_read_desc(struct ufs_hba *hba,
 	return ufshcd_read_desc_param(hba, desc_id, desc_index, 0, buf, size);
 }
 
+#ifdef CONFIG_UFS_LGE_FEATURE
+int ufshcd_read_power_desc(struct ufs_hba *hba,
+					 u8 *buf,
+					 u32 size)
+{
+	return ufshcd_read_desc(hba, QUERY_DESC_IDN_POWER, 0, buf, size);
+}
+#else
 static inline int ufshcd_read_power_desc(struct ufs_hba *hba,
 					 u8 *buf,
 					 u32 size)
 {
 	return ufshcd_read_desc(hba, QUERY_DESC_IDN_POWER, 0, buf, size);
 }
+#endif
 
 int ufshcd_read_device_desc(struct ufs_hba *hba, u8 *buf, u32 size)
 {
 	return ufshcd_read_desc(hba, QUERY_DESC_IDN_DEVICE, 0, buf, size);
 }
+
+#ifdef CONFIG_UFS_LGE_FEATURE
+int ufshcd_read_geo_desc(struct ufs_hba *hba, u8 *buf, u32 size)
+{
+	return ufshcd_read_desc(hba, QUERY_DESC_IDN_GEOMETRY, 0, buf, size);
+}
+
+int ufshcd_read_config_desc(struct ufs_hba *hba, u8 *buf, u32 size)
+{
+	return ufshcd_read_desc(hba, QUERY_DESC_IDN_CONFIGURAION, 0, buf, size);
+}
+
+int ufshcd_read_unit_desc(struct ufs_hba *hba, int u_index, u8 *buf, u32 size)
+{
+	return ufshcd_read_desc(hba, QUERY_DESC_IDN_UNIT, u_index, buf, size);
+}
+
+int ufshcd_read_inter_desc(struct ufs_hba *hba, u8 *buf, u32 size)
+{
+	return ufshcd_read_desc(hba, QUERY_DESC_IDN_INTERCONNECT, 0, buf, size);
+}
+
+int ufshcd_read_health_desc(struct ufs_hba *hba, u8 *buf, u32 size)
+{
+	return ufshcd_read_desc(hba, QUERY_DESC_IDN_DEVICE_HEALTH, 0, buf, size);
+}
+#endif
 
 /**
  * ufshcd_read_string_desc - read string descriptor
@@ -6364,7 +6428,17 @@ static irqreturn_t ufshcd_update_uic_error(struct ufs_hba *hba)
 						__func__, reg);
 					hba->full_init_linereset = true;
 				}
+#ifdef CONFIG_MACH_LGE
+                else{
+                  dev_err(hba->dev, "%s: LINERESET during cmd=0x%x, reg 0x%x\n",__func__, cmd->command, reg);
+                }
+#endif
 			}
+#ifdef CONFIG_MACH_LGE
+            else{
+              dev_err(hba->dev, "%s: LINERESET during cmd=NULL, reg 0x%x\n", __func__, reg);
+            }
+#endif
 			if (!hba->full_init_linereset)
 				schedule_work(&hba->rls_work);
 		}
@@ -7003,6 +7077,10 @@ static int ufshcd_reset_and_restore(struct ufs_hba *hba)
 	int err = 0;
 	unsigned long flags;
 	int retries = MAX_HOST_RESET_RETRIES;
+
+#ifdef CONFIG_MACH_LGE
+	dev_err(hba->dev, "%s: [LGE] start reset to restore host and device\n", __func__);
+#endif
 
 	do {
 		err = ufshcd_vops_full_reset(hba);
@@ -7684,6 +7762,7 @@ static int ufshcd_query_ioctl(struct ufs_hba *hba, u8 lun, void __user *buffer)
 		case QUERY_DESC_IDN_INTERCONNECT:
 		case QUERY_DESC_IDN_GEOMETRY:
 		case QUERY_DESC_IDN_POWER:
+		case QUERY_DESC_IDN_DEVICE_HEALTH:
 			index = 0;
 			break;
 		case QUERY_DESC_IDN_UNIT:
@@ -7779,6 +7858,9 @@ static int ufshcd_query_ioctl(struct ufs_hba *hba, u8 lun, void __user *buffer)
 		case QUERY_FLAG_IDN_PURGE_ENABLE:
 		case QUERY_FLAG_IDN_FPHYRESOURCEREMOVAL:
 		case QUERY_FLAG_IDN_BUSY_RTC:
+#ifdef CONFIG_UFS_LGE_FEATURE
+		case QUERY_FLAG_IDN_PERMANENT_DIS_FWUPT:
+#endif
 			break;
 		default:
 			goto out_einval;
@@ -9211,6 +9293,51 @@ static ssize_t ufshcd_spm_lvl_store(struct device *dev,
 	return ufshcd_pm_lvl_store(dev, attr, buf, count, false);
 }
 
+#ifdef CONFIG_UFSDBG_SYSFS_COMMON
+static ssize_t ufsdbg_health_desc_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	int err = 0;
+	struct ufs_hba *hba = dev_get_drvdata(dev);
+	int curr_len = 0;
+	int buff_len = QUERY_DESC_DEVICE_HEALTH_MAX_SIZE;
+	u8 desc_buf[QUERY_DESC_DEVICE_HEALTH_MAX_SIZE];
+
+	pm_runtime_get_sync(hba->dev);
+	err = ufshcd_read_health_desc(hba, desc_buf, buff_len);
+	pm_runtime_put_sync(hba->dev);
+
+	if (!err) {
+		curr_len = sprintf(buf, "bLength %d bDescriptorIDN %d bPreEOLInfo %d bDeviceLifeTimeEstA %d bDeviceLifeTimeEstB %d\n",
+			desc_buf[0], desc_buf[1], desc_buf[2], desc_buf[3], desc_buf[4]);
+	}
+
+	return curr_len;
+}
+
+static ssize_t ufsdbg_health_desc_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	return 0;
+}
+
+static void ufsdbg_add_health_desc_sysfs_node(struct ufs_hba *hba)
+{
+	hba->health_desc_attr.show = ufsdbg_health_desc_show;
+	hba->health_desc_attr.store = ufsdbg_health_desc_store;
+	sysfs_attr_init(&hba->health_desc_attr.attr);
+	hba->health_desc_attr.attr.name = "health_desc";
+	hba->health_desc_attr.attr.mode = S_IRUGO;
+	if (device_create_file(hba->dev, &hba->health_desc_attr))
+		dev_err(hba->dev, "Failed to create sysfs for health_desc_attr\n");
+}
+
+static void ufsdbg_add_sysfs_nodes(struct ufs_hba *hba)
+{
+	ufsdbg_add_health_desc_sysfs_node(hba);
+}
+#endif
+
 static void ufshcd_add_spm_lvl_sysfs_nodes(struct ufs_hba *hba)
 {
 	hba->spm_lvl_attr.show = ufshcd_spm_lvl_show;
@@ -9900,6 +10027,41 @@ static void ufshcd_init_lanes_per_dir(struct ufs_hba *hba)
 		hba->lanes_per_direction = UFSHCD_DEFAULT_LANES_PER_DIRECTION;
 	}
 }
+
+#ifdef CONFIG_UFSDBG_SYSFS_COMMON
+#include <linux/proc_fs.h>
+static struct proc_dir_entry*	procfs_root;
+
+bool ufsdbg_procfs_create(struct ufs_hba* hba)
+{
+	#define UFSDBG_PROCFS_ROOT    "storage"	/* /proc/storage/ufs */
+	struct proc_dir_entry*	root;
+	char name[64];
+
+	if (!hba)
+		return false;
+
+	root = proc_mkdir(UFSDBG_PROCFS_ROOT, NULL);
+	if (NULL != root) {
+		sprintf(name, "/sys/devices/soc/%s", dev_name(hba->dev));
+		if (!proc_symlink("ufs", root, name)) {
+			return false;
+		}
+	}
+
+	procfs_root = root;
+	return true;
+}
+
+bool ufsdbg_procfs_destroy(struct ufs_hba* hba)
+{
+	if (procfs_root)
+		proc_remove(procfs_root);
+
+	return true;
+}
+#endif
+
 /**
  * ufshcd_init - Driver initialization routine
  * @hba: per-adapter instance
@@ -9973,6 +10135,10 @@ int ufshcd_init(struct ufs_hba *hba, void __iomem *mmio_base, unsigned int irq)
 	host->unique_id = host->host_no;
 	host->max_cmd_len = MAX_CDB_SIZE;
 	host->set_dbd_for_caching = 1;
+
+#ifdef CONFIG_SCSI_DEVICE_IDENTIFIER
+	host->by_ufs = 1;
+#endif
 
 	hba->max_pwr_info.is_valid = false;
 
@@ -10096,6 +10262,11 @@ int ufshcd_init(struct ufs_hba *hba, void __iomem *mmio_base, unsigned int irq)
 	ufsdbg_add_debugfs(hba);
 
 	ufshcd_add_sysfs_nodes(hba);
+
+#ifdef CONFIG_UFSDBG_SYSFS_COMMON
+	ufsdbg_add_sysfs_nodes(hba);
+	ufsdbg_procfs_create(hba);
+#endif
 
 	return 0;
 

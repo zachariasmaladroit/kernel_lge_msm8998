@@ -23,6 +23,9 @@
 #include <linux/msm-bus-board.h>
 #include "mdss_mdp_pp_cache_config.h"
 
+#ifdef CONFIG_LGE_DISPLAY_COMMON
+#include "lge/lge_mdss_display.h"
+#endif
 struct mdp_csc_cfg mdp_csc_8bit_convert[MDSS_MDP_MAX_CSC] = {
 	[MDSS_MDP_CSC_YUV2RGB_601L] = {
 		0,
@@ -1137,7 +1140,8 @@ static int pp_vig_pipe_setup(struct mdss_mdp_pipe *pipe, u32 *op)
 		if (pipe->src_fmt->is_yuv) {
 			/* TODO: check csc cfg from PP block */
 			mdss_mdp_csc_setup(MDSS_MDP_BLOCK_SSPP_10, pipe->num,
-			pp_vig_csc_pipe_val(pipe));
+            pp_vig_csc_pipe_val(pipe));
+
 			csc_op = ((0 << 2) |	/* DST_DATA=RGB */
 					  (1 << 1) |	/* SRC_DATA=YCBCR*/
 					  (1 << 0));	/* CSC_10_EN */

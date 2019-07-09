@@ -312,8 +312,22 @@ static void __save_error_info(struct super_block *sb, const char *func,
 static void save_error_info(struct super_block *sb, const char *func,
 			    unsigned int line)
 {
+#ifdef CONFIG_MACH_LGE
+	struct ext4_super_block *es = EXT4_SB(sb)->s_es;
+#endif
+
 	__save_error_info(sb, func, line);
+
+#ifdef CONFIG_MACH_LGE
+	if (!strncmp(es->s_volume_name, "system", 6) &&
+			sb->s_flags & MS_RDONLY) {
+		printk("EXT4-fs error from Read only system partiton, so skip ext4_commit_super\n");
+	} else {
+		ext4_commit_super(sb, 1);
+	}
+#else
 	ext4_commit_super(sb, 1);
+#endif
 }
 
 /*
@@ -387,6 +401,12 @@ static void ext4_handle_error(struct super_block *sb)
 		 */
 		smp_wmb();
 		sb->s_flags |= MS_RDONLY;
+#ifdef CONFIG_MACH_LGE
+		if(!strcmp(EXT4_SB(sb)->s_es->s_volume_name,"data") &&
+			system_state != SYSTEM_RESTART &&
+			system_state != SYSTEM_POWER_OFF)
+			printk(KERN_CRIT "EXT4-fs data remounted as RO in ext4_handle_error\n");
+#endif
 	}
 	if (test_opt(sb, ERRORS_PANIC)) {
 		if (EXT4_SB(sb)->s_journal &&
@@ -588,6 +608,16 @@ void __ext4_abort(struct super_block *sb, const char *function,
 		if (EXT4_SB(sb)->s_journal)
 			jbd2_journal_abort(EXT4_SB(sb)->s_journal, -EIO);
 		save_error_info(sb, function, line);
+#ifdef CONFIG_MACH_LGE
+		/* LGE_CHANGE, 2016-11-24, DIVAP-BSP-FS@lge.com
+		 * put panic when ext4 partition(data partition) is remounted as Read Only
+		 */
+		if(!strcmp(EXT4_SB(sb)->s_es->s_volume_name,"data") &&
+			system_state != SYSTEM_RESTART &&
+			system_state != SYSTEM_POWER_OFF &&
+			!test_opt(sb, ERRORS_RO))
+			panic("EXT4-fs panic from previous error. remounted as RO \n");
+#endif
 	}
 	if (test_opt(sb, ERRORS_PANIC)) {
 		if (EXT4_SB(sb)->s_journal &&
@@ -4021,7 +4051,7 @@ no_journal:
 	}
 
 	block = ext4_count_free_clusters(sb);
-	ext4_free_blocks_count_set(sbi->s_es, 
+	ext4_free_blocks_count_set(sbi->s_es,
 				   EXT4_C2B(sbi, block));
 	err = percpu_counter_init(&sbi->s_freeclusters_counter, block,
 				  GFP_KERNEL);
@@ -4113,6 +4143,12 @@ no_journal:
 cantfind_ext4:
 	if (!silent)
 		ext4_msg(sb, KERN_ERR, "VFS: Can't find ext4 filesystem");
+#ifdef CONFIG_MACH_LGE
+	/* LGE_CHANGE, BSP-FS@lge.com
+	   add return code if ext4 superblock is damaged
+	*/
+	ret=-ESUPER;
+#endif
 	goto failed_mount;
 
 #ifdef CONFIG_QUOTA

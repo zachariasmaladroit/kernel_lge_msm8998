@@ -532,3 +532,4 @@ header-y += msm_ipa.h
 header-y += smcinvoke.h
 header-y += habmmid.h
 header-y += hab_ioctl.h
+header-y += lib_triton.h

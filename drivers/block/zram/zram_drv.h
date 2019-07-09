@@ -133,4 +133,8 @@ struct zram {
 	struct dentry *debugfs_dir;
 #endif
 };
+
+#ifdef CONFIG_HSWAP
+extern int zram0_free_size(void);
+#endif
 #endif

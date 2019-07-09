@@ -577,6 +577,10 @@ int msm_camera_get_dt_power_setting_data(struct device_node *of_node,
 				ps[i].seq_val = SENSOR_GPIO_CUSTOM2;
 			else if (!strcmp(seq_name, "sensor_gpio_custom3"))
 				ps[i].seq_val = SENSOR_GPIO_CUSTOM3;
+#ifdef CONFIG_MACH_LGE
+			else if (!strcmp(seq_name, "sensor_gpio_ldaf"))
+				ps[i].seq_val = SENSOR_GPIO_LDAF_EN;
+#endif
 			else
 				rc = -EILSEQ;
 			break;
@@ -1101,6 +1105,49 @@ int msm_camera_init_gpio_pin_tbl(struct device_node *of_node,
 		rc = 0;
 	}
 
+#ifdef CONFIG_MACH_LGE
+	rc = of_property_read_u32(of_node, "qcom,gpio-ois-reset", &val);
+	if (rc != -EINVAL) {
+		if (rc < 0) {
+			pr_err("%s:%d read qcom,gpio-ois-reset failed rc %d\n",
+				__func__, __LINE__, rc);
+			goto ERROR;
+		} else if (val >= gpio_array_size) {
+			pr_err("%s:%d qcom,gpio-ois-reset invalid %d\n",
+				__func__, __LINE__, val);
+			rc = -EINVAL;
+			goto ERROR;
+		}
+		gconf->gpio_num_info->gpio_num[SENSOR_GPIO_OIS_RESET] =
+			gpio_array[val];
+		gconf->gpio_num_info->valid[SENSOR_GPIO_OIS_RESET] = 1;
+		CDBG("%s qcom,gpio-ois-reset %d\n", __func__,
+			gconf->gpio_num_info->gpio_num[SENSOR_GPIO_OIS_RESET]);
+	} else {
+		rc = 0;
+	}
+
+	rc = of_property_read_u32(of_node, "qcom,gpio-ldaf-en", &val);
+	if (rc != -EINVAL) {
+		if (rc < 0) {
+			pr_err("%s:%d read qcom,gpio-ldaf-en failed rc %d\n",
+				__func__, __LINE__, rc);
+			goto ERROR;
+		} else if (val >= gpio_array_size) {
+			pr_err("%s:%d qcom,gpio-ldaf-en invalid %d\n",
+				__func__, __LINE__, val);
+			rc = -EINVAL;
+			goto ERROR;
+		}
+		gconf->gpio_num_info->gpio_num[SENSOR_GPIO_LDAF_EN] =
+			gpio_array[val];
+		gconf->gpio_num_info->valid[SENSOR_GPIO_LDAF_EN] = 1;
+		CDBG("%s qcom,gpio-ldaf-en %d\n", __func__,
+			gconf->gpio_num_info->gpio_num[SENSOR_GPIO_LDAF_EN]);
+	} else {
+		rc = 0;
+	}
+#endif
 	return rc;
 
 ERROR:
@@ -1427,7 +1474,6 @@ int msm_camera_power_up(struct msm_camera_power_ctrl_t *ctrl,
 {
 	int rc = 0, index = 0, no_gpio = 0, ret = 0;
 	struct msm_sensor_power_setting *power_setting = NULL;
-
 	CDBG("%s:%d\n", __func__, __LINE__);
 	if (!ctrl || !sensor_i2c_client) {
 		pr_err("failed ctrl %pK sensor_i2c_client %pK\n", ctrl,
@@ -1436,6 +1482,13 @@ int msm_camera_power_up(struct msm_camera_power_ctrl_t *ctrl,
 	}
 	if (ctrl->gpio_conf->cam_gpiomux_conf_tbl != NULL)
 		pr_err("%s:%d mux install\n", __func__, __LINE__);
+
+#ifdef CONFIG_MACH_LGE
+	if(ctrl->cam_vreg->bob_vreg) {
+		pr_err("__debug set load 2000000\n");
+		regulator_set_load(ctrl->cam_vreg->bob_vreg, 2000000);
+	}
+#endif
 
 	ret = msm_camera_pinctrl_init(&(ctrl->pinctrl_info), ctrl->dev);
 	if (ret < 0) {
@@ -1464,7 +1517,7 @@ int msm_camera_power_up(struct msm_camera_power_ctrl_t *ctrl,
 		switch (power_setting->seq_type) {
 		case SENSOR_CLK:
 			if (power_setting->seq_val >= ctrl->clk_info_size) {
-				pr_err("%s clk index %d >= max %zu\n", __func__,
+				pr_err_ratelimited("%s clk index %d >= max %zu\n", __func__,
 					power_setting->seq_val,
 					ctrl->clk_info_size);
 				goto power_up_failed;
@@ -1476,7 +1529,7 @@ int msm_camera_power_up(struct msm_camera_power_ctrl_t *ctrl,
 				ctrl->clk_info, ctrl->clk_ptr,
 				ctrl->clk_info_size, true);
 			if (rc < 0) {
-				pr_err("%s: clk enable failed\n", __func__);
+				pr_err_ratelimited("%s: clk enable failed\n", __func__);
 				goto power_up_failed;
 			}
 			break;
@@ -1559,7 +1612,7 @@ int msm_camera_power_up(struct msm_camera_power_ctrl_t *ctrl,
 	CDBG("%s exit\n", __func__);
 	return 0;
 power_up_failed:
-	pr_err("%s:%d failed\n", __func__, __LINE__);
+	pr_err_ratelimited("%s:%d failed\n", __func__, __LINE__);
 	for (index--; index >= 0; index--) {
 		CDBG("%s index %d\n", __func__, index);
 		power_setting = &ctrl->power_setting[index];
@@ -1659,6 +1712,13 @@ int msm_camera_power_down(struct msm_camera_power_ctrl_t *ctrl,
 	if (device_type == MSM_CAMERA_PLATFORM_DEVICE)
 		sensor_i2c_client->i2c_func_tbl->i2c_util(
 			sensor_i2c_client, MSM_CCI_RELEASE);
+
+#ifdef CONFIG_MACH_LGE
+	if(ctrl->cam_vreg->bob_vreg) {
+		pr_err("__debug set load 0\n");
+		regulator_set_load(ctrl->cam_vreg->bob_vreg, 0);
+	}
+#endif
 
 	for (index = 0; index < ctrl->power_down_setting_size; index++) {
 		CDBG("%s index %d\n", __func__, index);

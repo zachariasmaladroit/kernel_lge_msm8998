@@ -42,7 +42,7 @@
 /* Z floating defined in ohms */
 #define TAVIL_ZDET_FLOATING_IMPEDANCE 0x0FFFFFFE
 
-#define TAVIL_ZDET_NUM_MEASUREMENTS   150
+#define TAVIL_ZDET_NUM_MEASUREMENTS   900
 #define TAVIL_MBHC_GET_C1(c)          ((c & 0xC000) >> 14)
 #define TAVIL_MBHC_GET_X1(x)          (x & 0x3FFF)
 /* Z value compared in milliOhm */
@@ -350,15 +350,37 @@ static void tavil_mbhc_hph_l_pull_up_control(
 	dev_dbg(codec->dev, "%s: HS pull up current:%d\n",
 		__func__, pull_up_cur);
 
+#if 0 // #ifdef CONFIG_SND_SOC_ES9218P
+    snd_soc_update_bits(codec, WCD934X_MBHC_NEW_PLUG_DETECT_CTL,
+            0xC0, 0x40);
+#else
 	snd_soc_update_bits(codec, WCD934X_MBHC_NEW_PLUG_DETECT_CTL,
 			    0xC0, pull_up_cur << 6);
+#endif
 }
-
+static int micb_ena_status;
+static int micb_pullup_status;
 static int tavil_mbhc_request_micbias(struct snd_soc_codec *codec,
 				      int micb_num, int req)
 {
 	int ret;
-
+#ifdef CONFIG_MACH_LGE
+	pr_info("[LGE MBHC] enter en_status=%d, pullup_status=%d, req=%d \n", micb_ena_status, micb_pullup_status, req);
+	if((req == MICB_ENABLE) || (req == MICB_DISABLE)) {
+		if(micb_ena_status == req)
+		{
+			pr_info("[LGE MBHC] micb ena count=%d, req=%d is already applied \n", micb_ena_status, req);
+			return 0;
+		}
+	}
+	if((req == MICB_PULLUP_ENABLE) || (req == MICB_PULLUP_DISABLE)) {
+		if(micb_pullup_status == req)
+		{
+			pr_info("[LGE MBHC] pullup count=%d, req=%d is already applied \n", micb_pullup_status, req);
+			return 0;
+		}
+	}
+#endif
 	/*
 	 * If micbias is requested, make sure that there
 	 * is vote to enable mclk
@@ -374,7 +396,13 @@ static int tavil_mbhc_request_micbias(struct snd_soc_codec *codec,
 	 */
 	if (req == MICB_DISABLE)
 		tavil_cdc_mclk_enable(codec, false);
-
+#ifdef CONFIG_MACH_LGE
+	if((req == MICB_ENABLE) || (req == MICB_DISABLE))
+		micb_ena_status = req;//2, 3
+	else if((req == MICB_PULLUP_ENABLE) || (req == MICB_PULLUP_DISABLE))
+		micb_pullup_status = req;//0, 1
+	pr_info("[LGE MBHC] exit en_status=%d, pullup_status=%d \n", micb_ena_status, micb_pullup_status);
+#endif
 	return ret;
 }
 
@@ -453,6 +481,9 @@ static inline void tavil_mbhc_get_result_params(struct wcd9xxx *wcd9xxx,
 	};
 
 	regmap_update_bits(wcd9xxx->regmap, WCD934X_ANA_MBHC_ZDET, 0x20, 0x20);
+#ifdef CONFIG_MACH_MSM8998_JOAN
+	usleep_range(5000, 5050);
+#endif
 	for (i = 0; i < TAVIL_ZDET_NUM_MEASUREMENTS; i++) {
 		regmap_read(wcd9xxx->regmap, WCD934X_ANA_MBHC_RESULT_2, &val);
 		if (val & 0x80)
@@ -572,12 +603,24 @@ static void tavil_wcd_mbhc_calc_impedance(struct wcd_mbhc *mbhc, uint32_t *zl,
 	int32_t z1L, z1R, z1Ls;
 	int zMono, z_diff1, z_diff2;
 	bool is_fsm_disable = false;
+
+#ifdef CONFIG_MACH_MSM8998_JOAN
+	struct tavil_mbhc_zdet_param zdet_param[] = {
+		{4, 0, 4, 0x08, 0x14, 0x18}, /* < 32ohm */
+		{2, 0, 3, 0x18, 0x7C, 0x90}, /* 32ohm < Z < 400ohm */
+		{1, 4, 5, 0x18, 0x7C, 0x90}, /* 400ohm < Z < 1200ohm */
+		{1, 6, 7, 0x18, 0x7C, 0x90}, /* >1200ohm */
+		{4, 0, 7, 0x08, 0x14, 0x18}, /* < LGE */
+	};
+#else
 	struct tavil_mbhc_zdet_param zdet_param[] = {
 		{4, 0, 4, 0x08, 0x14, 0x18}, /* < 32ohm */
 		{2, 0, 3, 0x18, 0x7C, 0x90}, /* 32ohm < Z < 400ohm */
 		{1, 4, 5, 0x18, 0x7C, 0x90}, /* 400ohm < Z < 1200ohm */
 		{1, 6, 7, 0x18, 0x7C, 0x90}, /* >1200ohm */
 	};
+#endif
+
 	struct tavil_mbhc_zdet_param *zdet_param_ptr = NULL;
 	s16 d1_a[][4] = {
 		{0, 30, 90, 30},
@@ -588,6 +631,15 @@ static void tavil_wcd_mbhc_calc_impedance(struct wcd_mbhc *mbhc, uint32_t *zl,
 	s16 *d1 = NULL;
 
 	WCD_MBHC_RSC_ASSERT_LOCKED(mbhc);
+
+#ifdef CONFIG_MACH_MSM8998_JOAN
+	if(snd_soc_read(codec, WCD934X_ANA_HPH) & 0xC0)
+	{
+	  pr_err("[LGE MBHC]  WCD934X_ANA_HPH reset!\n");
+	  snd_soc_write(codec, WCD934X_ANA_HPH, 0x00);
+	  usleep_range(5000, 5050);
+	}
+#endif
 
 	reg0 = snd_soc_read(codec, WCD934X_ANA_MBHC_BTN5);
 	reg1 = snd_soc_read(codec, WCD934X_ANA_MBHC_BTN6);
@@ -611,8 +663,13 @@ static void tavil_wcd_mbhc_calc_impedance(struct wcd_mbhc *mbhc, uint32_t *zl,
 			   WCD934X_ANA_MBHC_MECH, 0x01, 0x00);
 
 	/* First get impedance on Left */
-	d1 = d1_a[1];
+#ifdef CONFIG_MACH_MSM8998_JOAN
+	d1 = d1_a[0];
+	zdet_param_ptr = &zdet_param[4];
+#else /* QCT Original */
+    d1 = d1_a[1];
 	zdet_param_ptr = &zdet_param[1];
+#endif  /* CONFIG_MACH_MSM8998_JOAN */
 	tavil_mbhc_zdet_ramp(codec, zdet_param_ptr, &z1L, NULL, d1);
 
 	if (!TAVIL_MBHC_IS_SECOND_RAMP_REQUIRED(z1L))

@@ -15,7 +15,8 @@ obj-$(CONFIG_MSM_GLINK_SPI_XPRT)	+=	glink_spi_xprt.o
 obj-$(CONFIG_MSM_SMEM_LOGGING)	+=	smem_log.o
 obj-$(CONFIG_MSM_SYSMON_GLINK_COMM)	+= sysmon-glink.o sysmon-qmi.o
 obj-$(CONFIG_ARCH_MSM8996) +=	kryo-l2-accessors.o
-obj-$(CONFIG_MSM_SMP2P)	+=	smp2p.o smp2p_loopback.o smp2p_debug.o smp2p_sleepstate.o
+obj-$(CONFIG_MSM_SMP2P)	+=	smp2p.o smp2p_debug.o smp2p_sleepstate.o
+obj-$(CONFIG_MSM_SMP2P_TEST)	+=	smp2p_loopback.o smp2p_test.o smp2p_spinlock_test.o
 obj-$(CONFIG_MSM_QMI_INTERFACE)	+=	qmi_interface.o
 obj-$(CONFIG_MSM_RPM_SMD)	+=	rpm-smd.o
 obj-$(CONFIG_MSM_HVC) += hvc.o
@@ -106,6 +107,9 @@ obj-$(CONFIG_QSEE_IPC_IRQ_BRIDGE) += qsee_ipc_irq_bridge.o
 obj-$(CONFIG_WCD_DSP_GLINK) += wcd-dsp-glink.o
 obj-$(CONFIG_QCOM_SMCINVOKE) += smcinvoke.o
 obj-$(CONFIG_QCOM_EARLY_RANDOM)	+= early_random.o
+
+obj-$(CONFIG_MACH_LGE) += lge/
+
 obj-$(CONFIG_QCOM_CX_IPEAK) += cx_ipeak.o
 obj-$(CONFIG_MSM_CACHE_M4M_ERP64) += cache_m4m_erp64.o
 obj-$(CONFIG_MSM_HAB) += hab/

@@ -1,0 +1,39 @@
+/* Copyright (c) 2016, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/ {
+        aliases {
+                i2c6 = &i2c_6;
+        };
+};
+
+&i2c_6 { /* BLSP1 QUP6 (NFC) */
+        qcom,clk-freq-out = <400000>;
+        status = "ok";
+
+        cxd224x-i2c@28 {
+           compatible = "sony,cxd224x";
+           status = "ok";
+           reg = <0x28>;
+           sony,gpio_sda = <&tlmm 43 0x00>;
+           sony,gpio_scl = <&tlmm 44 0x00>;
+           sony,gpio_irq = <&tlmm 116 0x00>;
+           sony,gpio_hvdd = <&tlmm 8 0x00>;
+           sony,gpio_xrst = <&tlmm 123 0x00>;
+           sony,gpio_mode = <&tlmm 12 0x00>;
+           sony,i2c-pull-up = <1>;
+           qcom,clk-src = "BBCLK2";
+           interrupt-parent = <&tlmm>;
+           interrupts = <116 0>;
+           interrupt-names = "nfc_irq";
+        };
+};

@@ -359,6 +359,13 @@ void ext4_io_submit(struct ext4_io_submit *io)
 		int io_op = io->io_wbc->sync_mode == WB_SYNC_ALL ?
 			    WRITE_SYNC : WRITE;
 		bio_get(io->io_bio);
+
+#ifdef CONFIG_LGE_IOSCHED_EXTENSION
+		if (io->io_wbc->for_background) {
+			io->io_bio->bi_excontrol |= REQ_EX_ORDERED;
+		}
+#endif
+
 		submit_bio(io_op, io->io_bio);
 		bio_put(io->io_bio);
 	}

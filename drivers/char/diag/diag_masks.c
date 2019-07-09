@@ -1748,7 +1748,6 @@ static int __diag_mask_init(struct diag_mask_info *mask_info, int mask_len,
 		mask_info->update_buf = kzalloc(update_buf_len, GFP_KERNEL);
 		if (!mask_info->update_buf) {
 			kfree(mask_info->ptr);
-			mask_info->ptr = NULL;
 			return -ENOMEM;
 		}
 		kmemleak_not_leak(mask_info->update_buf);
@@ -1942,6 +1941,7 @@ static void diag_msg_mask_exit(void)
 {
 	int i;
 	struct diag_msg_mask_t *mask = NULL;
+
 	mutex_lock(&driver->msg_mask_lock);
 	mask = (struct diag_msg_mask_t *)(msg_mask.ptr);
 	if (mask) {

@@ -1,4 +1,4 @@
-/* Copyright (c) 2016-2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2016-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -22,7 +22,9 @@ void fg_circ_buf_add(struct fg_circ_buf *buf, int val)
 
 void fg_circ_buf_clr(struct fg_circ_buf *buf)
 {
-	memset(buf, 0, sizeof(*buf));
+	buf->size = 0;
+	buf->head = 0;
+	memset(buf->arr, 0, sizeof(buf->arr));
 }
 
 int fg_circ_buf_avg(struct fg_circ_buf *buf, int *avg)
@@ -195,8 +197,11 @@ bool is_qnovo_en(struct fg_chip *chip)
 			POWER_SUPPLY_PROP_CHARGE_QNOVO_ENABLE, &pval);
 	if (rc < 0)
 		return false;
-
+#ifdef CONFIG_LGE_PM
+	return true;
+#else
 	return pval.intval != 0;
+#endif
 }
 
 #define EXPONENT_SHIFT		11
@@ -288,8 +293,6 @@ int fg_sram_write(struct fg_chip *chip, u16 address, u8 offset,
 		reinit_completion(&chip->soc_update);
 		enable_irq(chip->irqs[SOC_UPDATE_IRQ].irq);
 		atomic_access = true;
-	} else {
-		flags = FG_IMA_DEFAULT;
 	}
 
 	/*
@@ -319,11 +322,17 @@ int fg_sram_write(struct fg_chip *chip, u16 address, u8 offset,
 		}
 	}
 
-	rc = fg_interleaved_mem_write(chip, address, offset, val, len,
-			atomic_access);
+	if (chip->use_dma)
+		rc = fg_direct_mem_write(chip, address, offset, val, len,
+				false);
+	else
+		rc = fg_interleaved_mem_write(chip, address, offset, val, len,
+				atomic_access);
+
 	if (rc < 0)
 		pr_err("Error in writing SRAM address 0x%x[%d], rc=%d\n",
 			address, offset, rc);
+
 out:
 	if (atomic_access)
 		disable_irq_nosync(chip->irqs[SOC_UPDATE_IRQ].irq);
@@ -350,9 +359,14 @@ int fg_sram_read(struct fg_chip *chip, u16 address, u8 offset,
 
 	if (!(flags & FG_IMA_NO_WLOCK))
 		vote(chip->awake_votable, SRAM_READ, true, 0);
+
 	mutex_lock(&chip->sram_rw_lock);
 
-	rc = fg_interleaved_mem_read(chip, address, offset, val, len);
+	if (chip->use_dma)
+		rc = fg_direct_mem_read(chip, address, offset, val, len);
+	else
+		rc = fg_interleaved_mem_read(chip, address, offset, val, len);
+
 	if (rc < 0)
 		pr_err("Error in reading SRAM address 0x%x[%d], rc=%d\n",
 			address, offset, rc);
@@ -460,7 +474,7 @@ int fg_masked_write(struct fg_chip *chip, int addr, u8 mask, u8 val)
 		return -ENXIO;
 
 	mutex_lock(&chip->bus_lock);
-	sec_access = (addr & 0x00FF) > 0xD0;
+	sec_access = (addr & 0x00FF) > 0xB8;
 	if (sec_access) {
 		rc = regmap_write(chip->regmap, (addr & 0xFF00) | 0xD0, 0xA5);
 		if (rc < 0) {
@@ -482,6 +496,33 @@ int fg_masked_write(struct fg_chip *chip, int addr, u8 mask, u8 val)
 out:
 	mutex_unlock(&chip->bus_lock);
 	return rc;
+}
+
+int fg_dump_regs(struct fg_chip *chip)
+{
+	int i, rc;
+	u8 buf[256];
+
+	if (!chip)
+		return -EINVAL;
+
+	rc = fg_read(chip, chip->batt_soc_base, buf, sizeof(buf));
+	if (rc < 0)
+		return rc;
+
+	pr_info("batt_soc_base registers:\n");
+	for (i = 0; i < sizeof(buf); i++)
+		pr_info("%04x:%02x\n", chip->batt_soc_base + i, buf[i]);
+
+	rc = fg_read(chip, chip->mem_if_base, buf, sizeof(buf));
+	if (rc < 0)
+		return rc;
+
+	pr_info("mem_if_base registers:\n");
+	for (i = 0; i < sizeof(buf); i++)
+		pr_info("%04x:%02x\n", chip->mem_if_base + i, buf[i]);
+
+	return 0;
 }
 
 int64_t twos_compliment_extend(int64_t val, int sign_bit_pos)
@@ -838,7 +879,7 @@ static int fg_sram_debugfs_create(struct fg_chip *chip)
 {
 	struct dentry *dfs_sram;
 	struct dentry *file;
-	mode_t dfs_mode = S_IRUSR | S_IWUSR;
+	mode_t dfs_mode = 0600;
 
 	pr_debug("Creating FG_SRAM debugfs file-system\n");
 	dfs_sram = debugfs_create_dir("sram", chip->dfs_root);
@@ -849,7 +890,7 @@ static int fg_sram_debugfs_create(struct fg_chip *chip)
 	}
 
 	dbgfs_data.help_msg.size = strlen(dbgfs_data.help_msg.data);
-	file = debugfs_create_blob("help", S_IRUGO, dfs_sram,
+	file = debugfs_create_blob("help", 0444, dfs_sram,
 					&dbgfs_data.help_msg);
 	if (!file) {
 		pr_err("error creating help entry\n");
@@ -949,7 +990,7 @@ int fg_debugfs_create(struct fg_chip *chip)
 		goto err_remove_fs;
 	}
 
-	if (!debugfs_create_file("alg_flags", S_IRUSR, chip->dfs_root, chip,
+	if (!debugfs_create_file("alg_flags", 0400, chip->dfs_root, chip,
 				 &fg_alg_flags_fops)) {
 		pr_err("failed to create alg_flags file\n");
 		goto err_remove_fs;
@@ -960,4 +1001,28 @@ int fg_debugfs_create(struct fg_chip *chip)
 err_remove_fs:
 	debugfs_remove_recursive(chip->dfs_root);
 	return -ENOMEM;
+}
+
+void fg_stay_awake(struct fg_chip *chip, int awake_reason)
+{
+	spin_lock(&chip->awake_lock);
+
+	if (!chip->awake_status)
+		pm_stay_awake(chip->dev);
+
+	chip->awake_status |= awake_reason;
+
+	spin_unlock(&chip->awake_lock);
+}
+
+void fg_relax(struct fg_chip *chip, int awake_reason)
+{
+	spin_lock(&chip->awake_lock);
+
+	chip->awake_status &= ~awake_reason;
+
+	if (!chip->awake_status)
+		pm_relax(chip->dev);
+
+	spin_unlock(&chip->awake_lock);
 }

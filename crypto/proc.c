@@ -22,6 +22,46 @@
 #include <linux/seq_file.h>
 #include "internal.h"
 
+#if defined (CONFIG_CRYPTO_FIPS)
+static struct ctl_table crypto_sysctl_table[] = {
+#ifdef CONFIG_CRYPTO_FIPS
+	{
+		.procname       = "fips_enabled",
+		.data           = &fips_enabled,
+		.maxlen         = sizeof(int),
+		.mode           = 0444,
+		.proc_handler   = proc_dointvec
+	},
+#endif
+	{}
+};
+
+static struct ctl_table crypto_dir_table[] = {
+	{
+		.procname       = "crypto",
+		.mode           = 0555,
+		.child          = crypto_sysctl_table
+	},
+	{}
+};
+
+static struct ctl_table_header *crypto_sysctls;
+
+static void crypto_proc_fips_init(void)
+{
+	crypto_sysctls = register_sysctl_table(crypto_dir_table);
+}
+
+static void crypto_proc_fips_exit(void)
+{
+	if (crypto_sysctls)
+		unregister_sysctl_table(crypto_sysctls);
+}
+#else
+#define crypto_proc_fips_init()
+#define crypto_proc_fips_exit()
+#endif
+
 static void *c_start(struct seq_file *m, loff_t *pos)
 {
 	down_read(&crypto_alg_sem);
@@ -109,9 +149,11 @@ static const struct file_operations proc_crypto_ops = {
 void __init crypto_init_proc(void)
 {
 	proc_create("crypto", 0, NULL, &proc_crypto_ops);
+	crypto_proc_fips_init();
 }
 
 void __exit crypto_exit_proc(void)
 {
+	crypto_proc_fips_exit();
 	remove_proc_entry("crypto", NULL);
 }

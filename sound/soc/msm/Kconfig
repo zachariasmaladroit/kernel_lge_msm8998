@@ -262,4 +262,53 @@ config SND_SOC_660
 	 the machine driver and the corresponding
 	 DAI-links
 
+config SND_LGE_MABL
+	bool "LGE DSP MABL"
+	default y
+	help
+	 To support LGE DSP MABL
+
+config SND_LGE_DTS
+	bool "LGE DSP DTS"
+	default n
+	help
+	 To support LGE DSP DTS
+
+config SND_LGE_DSDP_DUAL_AUDIO
+	bool "LGE DSDP DUAL AUDIO"
+	default n
+	help
+	 To support LGE Sound DSDP Dual Audio
+
+config SND_USE_QUAT_MI2S
+	bool "USE QUAT MI2S PORT"
+	default n
+	help
+	 To support MSM QUAT MI2S PORT for HiFi DAC
+
+
+config SND_SABRE_EAR_AMP
+	bool "USE SABRE9018C EAR AMP"
+	default n
+	help
+	 To support Sabre EAR AMP support.
+
+config SND_LGE_TX_NXP_LIB
+	bool "USE TX NXP LIB"
+	default n
+	help
+	 To support TX NXP LIB.
+
+config SND_FM_RX_MI2S
+	bool "USE FM Radio Rx MI2S"
+	default n
+	help
+	 To support FM Radio Speaker(MI2S) path.
+
+config SND_LGE_MQA
+	bool "USE MQA Support"
+	default n
+	help
+	 To support MQA format DSP decoding
+
 endmenu

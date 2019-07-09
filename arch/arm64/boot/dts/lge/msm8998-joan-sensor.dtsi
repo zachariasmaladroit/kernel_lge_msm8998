@@ -1,0 +1,90 @@
+/* Copyright (c) 2016, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+&soc {
+	/*
+	/* I2C device */
+	i2c_7: i2c@c1b5000 { /* BLSP1 QUP2 */
+	status = "ok";
+
+};
+/* Cap sensor Low(RF) */
+i2c@c1b5000 {
+	/* sx9320 cap sensor */
+	Semtech_sx9320@28 {
+		compatible = "Semtech,sx9320";
+		reg = <0x28>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <62 0>;
+		pinctrl-names = "capsensor_int_active", "capsensor_int_suspend";
+		pinctrl-0 = <&capsensor_int_active>;
+		pinctrl-1 = <&capsensor_int_suspend>;
+
+		Semtech,nirq-gpio = <&tlmm 62 0x00>;
+		Semtech,DynamicThres_REF_Offset = <44523>; /* base capacitance for reference sensor */
+		Semtech,DynamicThres_Temp_Slope = <60>;		/* slope for main-sensor/reference-sensor */
+		Semtech,DynamicThres_StartupThreshold = <500>; /* Threshold for Startup function */
+		Semtech,DynamicThres_StandardCapMain = <300000>;/* base capacitance for main sensor*/
+		status = "ok";	/**/
+        Semtech,reg-init  = /bits/ 8 < 0x10 0x16
+                                0x14 0x00
+                                0x20 0x00
+                                0x23 0x00
+                                0x24 0x44
+                                0x26 0x00
+                                0x27 0x44
+                                0x28 0x01 /*PH0 to CS0 input*/
+                                0x29 0x10
+                                0x2A 0x04 /*PH2 CS2-input,CS1-dync,CS0-HZ*/
+                                0x2B 0x00
+                                0x2C 0x12
+                                0x2D 0x08
+                                0x30 0x09
+                                0x31 0x21
+                                0x32 0x02
+                                0x33 0x20
+                                0x34 0x0C
+                                0x35 0x00
+                                0x36 0xFF
+                                0x37 0x2D
+                                0x40 0x00
+                                0x41 0x00
+                                0x42 0x00
+                                0x43 0x00
+                                0x44 0x00
+                                0x45 0x05
+                                0x46 0x00
+                                0x47 0x00
+                                0x48 0x00
+                                0x49 0x80
+                                0x4A 0x00
+                                0x4B 0x00
+                                0x4C 0x00
+                                0x4D 0x00
+                                0x4E 0x80
+                                0x4F 0x0C
+                                0x50 0x00
+                                0x51 0x70
+                                0x52 0x20
+                                0x53 0xE1
+                                0x54 0xF0
+                                0x03 0x00
+                                0x05 0x70
+                                0x06 0x00
+                                0x07 0x00
+                                0x08 0x00
+								0x11 0x20>;
+
+		};
+	};
+
+};

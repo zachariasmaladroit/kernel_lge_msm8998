@@ -63,6 +63,23 @@ enum pon_restart_reason {
 	/* 32 ~ 63 for OEMs/ODMs secific features */
 	PON_RESTART_REASON_OEM_MIN		= 0x20,
 	PON_RESTART_REASON_OEM_MAX		= 0x3f,
+#ifdef CONFIG_MACH_LGE
+	/* sync with QcomModulePkg/Include/Library/ShutdownServices.h */
+	PON_RESTART_REASON_NORMAL		= 0x20,
+	PON_RESTART_REASON_WALLPAPER_FAIL	= 0x21,
+	PON_RESTART_REASON_FOTA			= 0x22,
+	PON_RESTART_REASON_FOTA_LCD_OFF		= 0x23,
+	PON_RESTART_REASON_FOTA_OUT_LCD_OFF	= 0x24,
+	PON_RESTART_REASON_LCD_OFF		= 0x25,
+	PON_RESTART_REASON_CHARGE_RESET		= 0x26,
+	PON_RESTART_REASON_LAF_DLOAD_MODE	= 0x27,
+	PON_RESTART_REASON_LAF_RESTART_MODE	= 0x28,
+	PON_RESTART_REASON_LAF_ONRS		= 0x29,
+	PON_RESTART_REASON_LAF_DLOAD_MTP	= 0x2A,
+	PON_RESTART_REASON_LAF_DLOAD_TETHER	= 0x2B,
+	PON_RESTART_REASON_XBOOT_AAT_WRITE	= 0x2C,
+	PON_RESTART_REASON_SHIP_MODE		= 0x31,
+#endif
 };
 
 #ifdef CONFIG_INPUT_QPNP_POWER_ON
@@ -72,6 +89,9 @@ int qpnp_pon_trigger_config(enum pon_trigger_source pon_src, bool enable);
 int qpnp_pon_wd_config(bool enable);
 int qpnp_pon_set_restart_reason(enum pon_restart_reason reason);
 bool qpnp_pon_check_hard_reset_stored(void);
+#ifdef CONFIG_LGE_PM
+int qpnp_pon_is_off_reason(void);
+#endif
 
 #else
 static int qpnp_pon_system_pwr_off(enum pon_power_off_type type)
@@ -96,6 +116,9 @@ static inline bool qpnp_pon_check_hard_reset_stored(void)
 {
 	return false;
 }
+#ifdef CONFIG_LGE_PM
+static inline int qpnp_pon_is_off_reason(void) { return -ENODEV; }
+#endif
 #endif
 
 #endif
