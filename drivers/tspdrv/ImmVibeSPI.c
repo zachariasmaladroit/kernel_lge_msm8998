@@ -296,12 +296,12 @@ static ssize_t dw7800_registers_store(struct device *dev,
     char name[45];
 
     if (count >= 45) {
-        pr_err("%s:input too long\n", __func__);
+        pr_debug("%s:input too long\n", __func__);
         return -1;
     }
 
     if (sscanf(buf, "%30s %x", name, &value) != 2) {
-        pr_err("%s:unable to parse input\n", __func__);
+        pr_debug("%s:unable to parse input\n", __func__);
         return -1;
     }
 
@@ -311,12 +311,12 @@ static ssize_t dw7800_registers_store(struct device *dev,
             if (dw7800_regs[i].writeable) {
                 error = i2c_smbus_write_byte_data(dw7800.i2c, dw7800_regs[i].reg, value);
                 if (error) {
-                    pr_err("%s:Failed to write %s\n", __func__, name);
+                    pr_debug("%s:Failed to write %s\n", __func__, name);
                     return -1;
                 }
             }
             else {
-                pr_err("%s:Register %s is not writeable\n", __func__, name);
+                pr_debug("%s:Register %s is not writeable\n", __func__, name);
                 return -1;
             }
 
@@ -324,7 +324,7 @@ static ssize_t dw7800_registers_store(struct device *dev,
         }
     }
 
-    pr_err("%s:no such register %s\n", __func__, name);
+    pr_debug("%s:no such register %s\n", __func__, name);
     return -1;
 
 }
