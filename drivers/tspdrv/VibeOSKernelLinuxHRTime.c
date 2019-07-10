@@ -71,7 +71,7 @@ static enum hrtimer_restart VibeOSKernelTimerProc(struct hrtimer *timer)
 {
     /* Return right away if timer is not supposed to run */
     if (!g_bTimerStarted) {
-        pr_err("%s: g_bTimerStarted : %d\n", __func__, g_bTimerStarted);
+        pr_debug("%s: g_bTimerStarted : %d\n", __func__, g_bTimerStarted);
         return  HRTIMER_NORESTART;
     }
 
@@ -189,7 +189,7 @@ static void VibeOSKernelLinuxStopTimer(void)
     if (g_bTimerStarted)
     {
         if (VibeSemIsLocked(&g_hSemaphore)) {
-            pr_err("%s, VibeSemIsLocked wake up semaphore\n", __func__);
+            pr_debug("%s, VibeSemIsLocked wake up semaphore\n", __func__);
             up(&g_hSemaphore);
         }
         g_bTimerStarted = false;
