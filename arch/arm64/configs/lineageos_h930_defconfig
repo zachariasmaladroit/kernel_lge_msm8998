@@ -6272,6 +6272,10 @@ CONFIG_DEVFREQ_GOV_MEMLAT=y
 #
 # modem testmode command & other related
 # CONFIG_LGE_DM_APP is not set
+#
+# secure boot enforced CC (common criteria) mode
+# useless with unlocked bootloader and custom ROMs (?!)
+# CONFIG_CRYPTO_CCMODE is not set
 
 # LGE essentials
 # 
