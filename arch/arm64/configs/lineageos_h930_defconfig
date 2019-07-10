@@ -6269,6 +6269,9 @@ CONFIG_DEVFREQ_GOV_MEMLAT=y
 # LGE superfluous features for us
 #
 # CONFIG_LGE_DM_VERITY_RECOVERY is not set
+#
+# modem testmode command & other related
+# CONFIG_LGE_DM_APP is not set
 
 # LGE essentials
 # 
