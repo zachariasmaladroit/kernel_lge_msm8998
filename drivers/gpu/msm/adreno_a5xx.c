@@ -2208,6 +2208,28 @@ static int a5xx_gpmu_init(struct adreno_device *adreno_dev)
 	return 0;
 }
 
+static int a5xx_switch_to_unsecure_mode(struct adreno_device *adreno_dev,
+				struct adreno_ringbuffer *rb)
+{
+	unsigned int *cmds;
+	int ret;
+
+	cmds = adreno_ringbuffer_allocspace(rb, 2);
+	if (IS_ERR(cmds))
+		return PTR_ERR(cmds);
+	if (cmds == NULL)
+		return -ENOSPC;
+
+	cmds += cp_secure_mode(adreno_dev, cmds, 0);
+
+	ret = adreno_ringbuffer_submit_spin(rb, NULL, 2000);
+	if (ret)
+		spin_idle_debug(KGSL_DEVICE(adreno_dev),
+				"Switch to unsecure failed to idle\n");
+
+	return ret;
+}
+
 /*
  * a5xx_microcode_load() - Load microcode
  * @adreno_dev: Pointer to adreno device
@@ -2366,7 +2388,7 @@ static void _set_ordinals(struct adreno_device *adreno_dev,
 		*cmds++ = 0x0;
 }
 
-int a5xx_critical_packet_submit(struct adreno_device *adreno_dev,
+static int a5xx_critical_packet_submit(struct adreno_device *adreno_dev,
 					struct adreno_ringbuffer *rb)
 {
 	unsigned int *cmds;
@@ -2422,6 +2444,27 @@ static int a5xx_send_me_init(struct adreno_device *adreno_dev,
 	return ret;
 }
 
+static int a5xx_set_unsecured_mode(struct adreno_device *adreno_dev,
+		struct adreno_ringbuffer *rb)
+{
+	int ret = 0;
+
+	if (ADRENO_QUIRK(adreno_dev, ADRENO_QUIRK_CRITICAL_PACKETS)) {
+		ret = a5xx_critical_packet_submit(adreno_dev, rb);
+		if (ret)
+			return ret;
+	}
+
+	/* GPU comes up in secured mode, make it unsecured by default */
+	if (ADRENO_FEATURE(adreno_dev, ADRENO_CONTENT_PROTECTION))
+		ret = a5xx_switch_to_unsecure_mode(adreno_dev, rb);
+	else
+		kgsl_regwrite(&adreno_dev->dev,
+				A5XX_RBBM_SECVID_TRUST_CNTL, 0x0);
+
+	return ret;
+}
+
 /*
  * a5xx_rb_start() - Start the ringbuffer
  * @adreno_dev: Pointer to adreno device
@@ -2465,7 +2508,7 @@ static int a5xx_rb_start(struct adreno_device *adreno_dev,
 		return ret;
 
 	/* GPU comes up in secured mode, make it unsecured by default */
-	ret = adreno_set_unsecured_mode(adreno_dev, rb);
+	ret = a5xx_set_unsecured_mode(adreno_dev, rb);
 	if (ret)
 		return ret;
 
