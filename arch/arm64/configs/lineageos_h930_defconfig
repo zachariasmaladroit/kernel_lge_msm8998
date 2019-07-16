@@ -6219,7 +6219,7 @@ CONFIG_CMA_ALIGNMENT=8
 # CONFIG_GCMA_DEFAULT=y
 # CONFIG_GCMA_STATS is not set
 CONFIG_PROCESS_RECLAIM=y
-CONFIG_HSWAP=y # LGs hybrid swap, LMK + zram + swap
+# CONFIG_HSWAP is not set # LGs hybrid swap, LMK + zram + swap, mut ex w. rbtree (eval)
 # CONFIG_BOOST_DYING_TASK is not set
 # CONFIG_MEMCG is not set
 # CONFIG_MEMCG_SWAP is not set
