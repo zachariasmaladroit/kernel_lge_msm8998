@@ -5803,7 +5803,9 @@ CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE=0
 # CONFIG_INTEGRITY_AUDIT is not set
 # CONFIG_IMA is not set
 # CONFIG_EVM is not set
-CONFIG_SECURITY_YAMA=y
+# CONFIG_SECURITY_YAMA is not set
+#
+# CONFIG_SECCOMP is not set # fake syscalls (kernel/sys.c)
 
 # performance overhead, slimming down
 #
