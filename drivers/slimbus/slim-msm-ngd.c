@@ -2020,13 +2020,7 @@ static int ngd_slim_suspend(struct device *dev)
 {
 	int ret = -EBUSY;
 	struct platform_device *pdev = to_platform_device(dev);
-	struct msm_slim_ctrl *cdev;
-
-	if (of_device_is_compatible(pdev->dev.of_node,
-				    "qcom,iommu-slim-ctrl-cb"))
-		return 0;
-
-	cdev = platform_get_drvdata(pdev);
+	struct msm_slim_ctrl *cdev = platform_get_drvdata(pdev);
 	if (!pm_runtime_enabled(dev) ||
 		(!pm_runtime_suspended(dev) &&
 			cdev->state == MSM_CTRL_IDLE)) {
@@ -2062,14 +2056,9 @@ static int ngd_slim_suspend(struct device *dev)
 static int ngd_slim_resume(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
-	struct msm_slim_ctrl *cdev;
+	struct msm_slim_ctrl *cdev = platform_get_drvdata(pdev);
 	int ret = 0;
 
-	if (of_device_is_compatible(pdev->dev.of_node,
-				    "qcom,iommu-slim-ctrl-cb"))
-		return 0;
-
-	cdev = platform_get_drvdata(pdev);
 	/*
 	 * If deferred response was requested for power-off and it failed,
 	 * mark runtime-pm status as active to be consistent
