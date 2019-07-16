@@ -414,21 +414,11 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -pipe \
 		   -fno-delete-null-pointer-checks \
 		   -fivopts \
 		   -fvariable-expansion-in-unroller \
-		   -fipa-cp-clone \
-		   -fipa-icf -fipa-ra \
-		   -flra-remat \
-		   -fcode-hoisting -fhoist-adjacent-loads \
-		   -fipa-cp -fipa-bit-cp \
-		   -fipa-vrp \
-		   -fsplit-loops \
-		   -fshrink-wrap -fshrink-wrap-separate \
-		   -floop-interchange -floop-unroll-and-jam \
-		   -ftree-loop-distribution \
-		   -fsplit-paths \
 		   -flive-range-shrinkage \
 		   -foptimize-strlen \
+		   -fmodulo-sched -fmodulo-sched-allow-regmoves \
 		   -march=armv8-a+crypto+crc \
-		   -mcpu=cortex-a73+crypto+crc \
+		   -mcpu=cortex-a53+crypto+crc \
 		   -std=gnu89 $(call cc-option,-fno-PIE)
 
 #		   -freorder-blocks -freorder-blocks-algorithm=stc -freorder-functions -freorder-blocks-and-partition \
