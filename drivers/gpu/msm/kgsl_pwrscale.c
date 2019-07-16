@@ -962,11 +962,6 @@ int kgsl_pwrscale_init(struct device *dev, const char *governor)
 		return PTR_ERR(devfreq);
 	}
 
-	/*
-	* Prevert userspace from messing
-	* with min kgsl frequency
-	*/
-	devfreq->is_boost_device = true;
 	pwrscale->devfreqptr = devfreq;
 
 	pwrscale->gpu_profile.bus_devfreq = NULL;
