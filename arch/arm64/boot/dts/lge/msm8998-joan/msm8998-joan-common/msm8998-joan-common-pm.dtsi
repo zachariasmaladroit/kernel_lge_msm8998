@@ -408,6 +408,7 @@
 				"adc", "pmic", "/sys/class/thermal/thermal_zone1/temp",
 				/* Battery */
 				"battery", "capacity", "/sys/class/power_supply/battery/capacity",
+				"battery", "cycle", "/sys/class/power_supply/bms/cycle_count",
 				"battery", "health", "/sys/class/power_supply/battery/health",
 				"battery", "present", "/sys/class/power_supply/battery/present",
 				"battery", "pseudo_batt", "/sys/class/lge_power/pseudo_battery/pseudo_batt",
@@ -817,7 +818,7 @@
 &spmi_bus {
 	qcom,pm8998@0 {
 		qcom,power-on@800 {
-			qcom,s3-debounce = <8>;
+			qcom,s3-debounce = <32>;
 			qcom,s3-src = "kpdpwr-and-resin";
 
 			qcom,pon_1 {  /* KPD_PWR_N */
@@ -831,10 +832,10 @@
 			};
 			qcom,pon_3 {  /* KPD_PWR_N AND RESIN_N */
 				status = "ok";
-				qcom,support-reset = <0>;
+				qcom,support-reset = <1>;
 				qcom,s1-timer = <6720>;
 				qcom,s2-timer = <2000>;
-				qcom,s2-type = <7>;
+				qcom,s2-type = <PON_POWER_OFF_DVDD_HARD_RESET>;
 			};
 		};
 	};
@@ -876,3 +877,24 @@
 		};
 	};
 };
+
+&pil_adsp_mem {
+	reg = <0 0x92B00000 0 0x1e00000>;
+};
+
+&pil_video_mem {
+	reg = <0 0x94900000 0 0x500000>;
+};
+
+&pil_mba_mem {
+	reg = <0 0x94E00000 0 0x200000>;
+};
+
+&pil_slpi_mem {
+	reg = <0 0x95000000 0 0xf00000>;
+};
+
+&pil_ipa_gpu_mem {
+	reg = <0 0x95F00000 0 0x100000>;
+};
+

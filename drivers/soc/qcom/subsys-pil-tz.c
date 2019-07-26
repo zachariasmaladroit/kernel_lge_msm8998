@@ -1070,6 +1070,8 @@ static int pil_tz_driver_probe(struct platform_device *pdev)
 	d->subsys_desc.ramdump = subsys_ramdump;
 	d->subsys_desc.free_memory = subsys_free_memory;
 	d->subsys_desc.crash_shutdown = subsys_crash_shutdown;
+        d->subsys_desc.ramdump_disable_gpio = 1;
+        d->subsys_desc.ramdump_disable = 1;
 	if (of_property_read_bool(pdev->dev.of_node,
 					"qcom,pil-generic-irq-handler")) {
 		d->subsys_desc.generic_handler = subsys_generic_handler;

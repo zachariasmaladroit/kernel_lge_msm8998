@@ -670,12 +670,12 @@ void mdss_fb_update_backlight_ex(struct msm_fb_data_type *mfd)
 			mfd->bl_level = mfd->unset_bl_level_ex;
 			temp = mfd->bl_level;
 			if (mdss_fb_is_power_on_lp(mfd)) {
-                            pr_info("backlight sent to panel :%d\n", temp);
-                            pdata->set_backlight(pdata, temp);
+				pr_info("backlight sent to panel :%d\n", temp);
+				pdata->set_backlight(pdata, temp);
+				mfd->allow_bl_update_ex = true;
 			} else {
 				pr_info("ignore unset_bl_level_ex value\n");
-                        }
-			mfd->allow_bl_update_ex = true;
+			}
 		}
 	}
 	mutex_unlock(&mfd->bl_lock);
