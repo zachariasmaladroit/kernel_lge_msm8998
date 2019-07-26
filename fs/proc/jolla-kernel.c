@@ -6,8 +6,8 @@
 
 static int jolla_kernel_proc_show(struct seq_file *m, void *v)
 {
-	seq_printf(m, "{\"kernel-name\": \"jolla_kernel_joan\","
-			"\"version\": \"v2.3\","
+	seq_printf(m, "{\"kernel-name\": \"ceres_kernel_joan\","
+			"\"version\": \"base\","
 			"\"buildtime\": \"%s\"}\n", JOLLA_KERNEL_TIMESTAMP);
 	return 0;
 }
@@ -26,7 +26,7 @@ static const struct file_operations jolla_kernel_proc_fops = {
 
 static int __init proc_jolla_kernel_init(void)
 {
-	proc_create("jolla-kernel", 0, NULL, &jolla_kernel_proc_fops);
+	proc_create("ceres-kernel", 0, NULL, &jolla_kernel_proc_fops);
 	return 0;
 }
 module_init(proc_jolla_kernel_init);
