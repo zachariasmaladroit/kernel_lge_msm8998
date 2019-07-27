@@ -581,37 +581,6 @@ static ssize_t es9218_registers_store(struct device *dev,
 static DEVICE_ATTR(registers, S_IWUSR | S_IRUGO,
         es9218_registers_show, es9218_registers_store);
 
-static ssize_t force_advanced_mode_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	size_t count = 0;
-
-	count += sprintf(buf, "%d\n", force_advanced_mode);
-
-	return count;
-}
-
-static ssize_t force_advanced_mode_store(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t count)
-{
-	int rc, val;
-
-	rc = kstrtoint(buf, 10, &val);
-	if (rc)
-		return -EINVAL;
-
-	if (val == 0 || val == 1) {
-		if (force_advanced_mode != val)
-			force_advanced_mode = val;
-	} else
-		return -EINVAL;
-
-	return count;
-}
-
-static DEVICE_ATTR(force_advanced_mode, S_IWUSR | S_IRUGO,
-        force_advanced_mode_show, force_advanced_mode_store);
-
 #endif  //  End of  #ifdef  ES9218P_SYSFS
 
 
@@ -1013,6 +982,36 @@ static ssize_t get_forced_ess_filter(struct device *dev,
 }
 static DEVICE_ATTR(ess_filter, S_IWUSR|S_IRUGO, get_forced_ess_filter, set_forced_ess_filter);
 
+static ssize_t force_advanced_mode_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	size_t count = 0;
+
+	count += sprintf(buf, "%d\n", force_advanced_mode);
+
+	return count;
+}
+
+static ssize_t force_advanced_mode_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	int rc, val;
+
+	rc = kstrtoint(buf, 10, &val);
+	if (rc)
+		return -EINVAL;
+
+	if (val == 0 || val == 1) {
+		if (force_advanced_mode != val)
+			force_advanced_mode = val;
+	} else
+		return -EINVAL;
+
+	return count;
+}
+
+static DEVICE_ATTR(force_advanced_mode, S_IWUSR | S_IRUGO,
+        force_advanced_mode_show, force_advanced_mode_store);
 
 static struct attribute *es9218_attrs[] = {
 #ifdef CONFIG_SND_SOC_LGE_ESS_DIGITAL_FILTER
@@ -1021,6 +1020,7 @@ static struct attribute *es9218_attrs[] = {
         &dev_attr_ess_filter.attr,
 #endif
     &dev_attr_registers.attr,
+    &dev_attr_force_advanced_mode.attr,
     &dev_attr_headset_type.attr,
     &dev_attr_avc_volume.attr,
     NULL
