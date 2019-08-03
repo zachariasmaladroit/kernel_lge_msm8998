@@ -400,7 +400,13 @@ KBUILD_CFLAGS   := -mcpu=cortex-a73 -mtune=cortex-a73 \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
 		   -std=gnu89 $(call cc-option,-fno-PIE) \
-		   -fmodulo-sched -fmodulo-sched-allow-regmoves
+		   -fmodulo-sched -fmodulo-sched-allow-regmoves \
+		   -fdiagnostics-color=always \
+		   -fivopts \
+		   -fshrink-wrap \
+		   -fsplit-paths \
+		   -flive-range-shrinkage \
+		   -foptimize-strlen
 
 
 KBUILD_AFLAGS_KERNEL :=
