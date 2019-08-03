@@ -1048,13 +1048,13 @@ static void csr_neighbor_roam_info_ctx_init(
 				ROAM_SCAN_OFFLOAD_START,
 				REASON_CTX_INIT);
 
-		if (roam_profile &&
-			roam_profile->supplicant_disabled_roaming) {
-			sme_debug("Supplicant disabled driver roaming");
-			csr_roam_offload_scan(pMac, session_id,
-				ROAM_SCAN_OFFLOAD_STOP,
-				REASON_SUPPLICANT_DISABLED_ROAMING);
-		}
+			if (roam_profile &&
+				roam_profile->supplicant_disabled_roaming) {
+				sme_debug("Supplicant disabled driver roaming");
+				csr_roam_offload_scan(pMac, session_id,
+					ROAM_SCAN_OFFLOAD_STOP,
+					REASON_SUPPLICANT_DISABLED_ROAMING);
+			}
 
 	}
 }
