@@ -1,7 +1,7 @@
 VERSION = 4
 PATCHLEVEL = 4
 SUBLEVEL = 174
-EXTRAVERSION = _ceres_II.base
+EXTRAVERSION = _ceres_II.base_1_2
 NAME = Blurry Fish Butt
 
 # *DOCUMENTATION*
