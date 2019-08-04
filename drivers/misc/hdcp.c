@@ -1168,6 +1168,7 @@ static int hdcp_lib_library_unload(struct hdcp_lib_handle *handle)
 			pr_err("hdcp2p2 shutdown_app failed err: %d\n", rc);
 			goto exit;
 		}
+	}
 
 	/* deallocate the resources for qseecom hdcpsrm handle */
 	if (hdcpsrm_handle) {
@@ -1176,6 +1177,7 @@ static int hdcp_lib_library_unload(struct hdcp_lib_handle *handle)
 			pr_err("srm shutdown_app failed err: %d\n", rc);
 			goto exit;
 		}
+	}
 
 	handle->hdcp_state &= ~HDCP_STATE_APP_LOADED;
 	pr_debug("success\n");

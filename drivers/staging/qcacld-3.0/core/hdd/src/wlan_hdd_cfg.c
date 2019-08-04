@@ -6034,6 +6034,7 @@ static QDF_STATUS update_mac_from_string(hdd_context_t *pHddCtx,
 		} else {
 			status = QDF_STATUS_E_FAILURE;
 			break;
+		}
 	}
 	return status;
 }
