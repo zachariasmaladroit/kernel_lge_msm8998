@@ -346,9 +346,9 @@ bool charging_ceiling_create(struct device_node* dnode);
 int  charging_time_remains(int rawsoc);
 void charging_time_clear(void);
 void charging_time_destroy(void);
-bool charging_time_update(enum charging_supplier charger);
+bool charging_time_update(enum charging_supplier charger, bool reloading);
 bool charging_time_create(struct device_node* dnode, int fullraw,
-	bool (*feed_charging_time)(int* power),
+	bool (*feed_charging_time)(int* power, int* rawsoc, int* bcc_ttf),
 	void (*back_charging_time)(int power));
 
 void protection_battemp_monitor(void);

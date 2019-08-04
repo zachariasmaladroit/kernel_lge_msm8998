@@ -22,6 +22,8 @@
 
 #define WCD_USLEEP_RANGE 50
 #define MAX_IMPED_PARAMS 6
+#define RX1_DIG_VOL_REG 0xb5c
+#define RX2_DIG_VOL_REG 0xb70
 
 enum {
 	DAC_GAIN_0DB = 0,
@@ -277,9 +279,13 @@ void wcd_clsh_imped_config(struct snd_soc_codec *codec, int imped, bool reset)
 	/* reset = 1, which means request is to reset the register values */
 	if (reset) {
 		for (i = 0; i < MAX_IMPED_PARAMS; i++)
-			snd_soc_update_bits(codec,
-				imped_table_ptr[index][i].reg,
-				imped_table_ptr[index][i].mask, 0);
+			if ((imped_table_ptr[index][i].reg != RX1_DIG_VOL_REG) &&
+			    (imped_table_ptr[index][i].reg != RX2_DIG_VOL_REG)){ //WA-SR#03804646
+				pr_debug("%s, codec_reg: 0x%x\n", __func__, imped_table_ptr[index][i].reg);
+				snd_soc_update_bits(codec,
+					imped_table_ptr[index][i].reg,
+					imped_table_ptr[index][i].mask, 0);
+			}
 		return;
 	}
 	index = get_impedance_index(imped);

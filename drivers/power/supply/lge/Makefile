@@ -1,5 +1,5 @@
 obj-y		+= charging-ceiling.o
-obj-y		+= charging-time.o
+obj-y		+= charging-time-v2.o
 obj-y		+= protection-battemp.o
 obj-y		+= protection-batvolt.o
 obj-y		+= protection-showcase.o

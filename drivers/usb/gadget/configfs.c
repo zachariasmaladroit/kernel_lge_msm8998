@@ -36,6 +36,7 @@ void acc_disconnect(void);
 #ifdef CONFIG_LGE_USB_GADGET
 extern int ncm_ctrlrequest(struct usb_composite_dev *cdev,
 				const struct usb_ctrlrequest *ctrl);
+extern void clear_ncm_start_requested(void);
 #endif
 
 static struct class *android_class;
@@ -1855,6 +1856,9 @@ static void android_disconnect(struct usb_gadget *gadget)
 
 #ifdef CONFIG_USB_CONFIGFS_F_ACC
 	acc_disconnect();
+#endif
+#ifdef CONFIG_LGE_USB_GADGET
+	clear_ncm_start_requested();
 #endif
 	gi->connected = 0;
 	if (!gi->unbinding)

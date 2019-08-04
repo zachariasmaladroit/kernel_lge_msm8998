@@ -515,7 +515,9 @@ static int store_aod_area(struct mdss_dsi_ctrl_pdata *ctrl, struct mdss_rect req
 		horizontal_area |= BIT(4) | BIT(5);
 	}
 
-	if (ec < TARGET_RES_HORIZONTAL_QHD - DIC_H_PARTIAL_AREA_STEP1 &&
+	if (ec == 0) {
+		pr_debug("%s: do not need to estimate\n", __func__);
+	} else if (ec < TARGET_RES_HORIZONTAL_QHD - DIC_H_PARTIAL_AREA_STEP1 &&
 			ec >= TARGET_RES_HORIZONTAL_QHD - DIC_H_PARTIAL_AREA_STEP2) {
 		horizontal_area |= BIT(0);
 	} else if (ec < TARGET_RES_HORIZONTAL_QHD - DIC_H_PARTIAL_AREA_STEP2 &&

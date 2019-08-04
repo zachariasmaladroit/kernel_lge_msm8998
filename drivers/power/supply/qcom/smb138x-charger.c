@@ -226,10 +226,10 @@ static int smb138x_parse_dt(struct smb138x *chip)
 
 #ifdef CONFIG_LGE_PM
 int smb138x_set_smb_bat_en(struct smb138x *chip, bool bat_en) {
-	int rc;
+	int rc = 0;
 
 	if (!gpio_is_valid(chip->smb_bat_en)) {
-		pr_info("Couldn't set parallel batfet_en rc=%d\n", rc);
+		pr_info("Couldn't set parallel batfet_en\n");
 		return -1;
 	}
 

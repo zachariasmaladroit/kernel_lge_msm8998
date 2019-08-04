@@ -1,6 +1,6 @@
 /**
    @copyright
-   Copyright (c) 2013 - 2017, INSIDE Secure Oy. All rights reserved.
+   Copyright (c) 2013 - 2018, INSIDE Secure Oy. All rights reserved.
 */
 
 #include <linux/kernel.h>
@@ -865,6 +865,21 @@ spd_hooks_init(
             HOOKS_STATS_COUNT);
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,13,0)
+int
+spd_hooks_register(
+        struct KernelSpdNet *spd_net)
+{
+    return nf_register_net_hooks(spd_net->net, spd_hooks, 6);
+}
+
+void
+spd_hooks_unregister(
+        struct KernelSpdNet *spd_net)
+{
+    nf_unregister_net_hooks(spd_net->net, spd_hooks, 6);
+}
+#else
 static int register_count = 0;
 
 int
@@ -929,6 +944,7 @@ spd_hooks_unregister(
         DEBUG_HIGH("Kernel spd hooks unregistered in net %p.", spd_net->net);
     }
 }
+#endif
 
 int
 kernelspd_register_protect_hooks(

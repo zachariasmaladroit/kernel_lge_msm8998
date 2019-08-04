@@ -1515,8 +1515,9 @@ static int _smblib_vconn_regulator_enable(struct regulator_dev *rdev)
 	printk("USB [%s]: chg->vconn_en =%d\n", __func__, chg->vconn_en);
 #endif
 #ifdef CONFIG_LGE_PM
-	rc = smblib_masked_write(chg, TYPE_C_CFG_2_REG, VCONN_ILIM500MA_CFG_BIT,
-		VCONN_ILIM500MA_CFG_BIT);
+	rc = smblib_masked_write(chg, TYPE_C_CFG_2_REG,
+			VCONN_SOFTSTART_CFG_MASK | VCONN_ILIM500MA_CFG_BIT,
+			VCONN_SOFTSTART_CFG_MASK | VCONN_ILIM500MA_CFG_BIT);
 	if (rc < 0)
 		smblib_err(chg, "Couldn't write to TYPE_C_CFG_2_REG rc=%d\n", rc);
 #endif
@@ -2868,6 +2869,13 @@ int smblib_get_prop_typec_power_role(struct smb_charger *chg,
 int smblib_get_prop_pd_allowed(struct smb_charger *chg,
 			       union power_supply_propval *val)
 {
+#ifdef CONFIG_LGE_USB_FACTORY
+	int typec_mode = smblib_get_prop_typec_mode(chg);
+	if (typec_mode == POWER_SUPPLY_TYPEC_SINK_DEBUG_ACCESSORY) {
+		val->intval = 0;
+		return 0;
+	}
+#endif
 	val->intval = get_effective_result(chg->pd_allowed_votable);
 	return 0;
 }
@@ -4446,6 +4454,28 @@ static int typec_try_sink(struct smb_charger *chg)
 	bool debounce_done, vbus_detected, sink;
 	u8 stat;
 	int exit_mode = ATTACHED_SRC, rc;
+#ifdef CONFIG_LGE_USB
+	int typec_mode;
+
+	if (!(*chg->try_sink_enabled))
+		return ATTACHED_SRC;
+
+	typec_mode = smblib_get_prop_typec_mode(chg);
+	if (typec_mode == POWER_SUPPLY_TYPEC_SINK_AUDIO_ADAPTER
+		|| typec_mode == POWER_SUPPLY_TYPEC_SINK_DEBUG_ACCESSORY)
+		return ATTACHED_SRC;
+
+	rc = smblib_read(chg, TYPE_C_INTRPT_ENB_SOFTWARE_CTRL_REG, &stat);
+	if (rc < 0) {
+		smblib_err(chg, "Couldn't read TYPE_C_INTRPT_ENB_SOFTWARE_CTRL rc=%d\n",
+			   rc);
+		goto try_sink_exit;
+	}
+	smblib_dbg(chg, PR_REGISTER, "TYPE_C_INTRPT_ENB_SOFTWARE_CTRL = 0x%02x\n", stat);
+
+	if (stat & TYPEC_POWER_ROLE_CMD_MASK)
+		return ATTACHED_SRC;
+#endif
 
 	/* ignore typec interrupt while try.snk WIP */
 	chg->try_sink_active = true;

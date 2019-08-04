@@ -33,14 +33,24 @@ spd_proc_new_bypass_packet(
         struct KernelSpdNet *spd_net,
         const struct IPSelectorFields *fields)
 {
+    bool wake_up = false;
+
     write_lock(&spd_net->spd_proc_lock);
 
-    spd_net->bypass_packet_fields = *fields;
-    spd_net->bypass_packet_set = true;
+    if (spd_net->bypass_packet_set == false)
+    {
+        spd_net->bypass_packet_fields = *fields;
+        spd_net->bypass_packet_set = true;
+
+        wake_up = true;
+    }
 
     write_unlock(&spd_net->spd_proc_lock);
 
-    wake_up_interruptible(&spd_net->wait_queue);
+    if (wake_up == true)
+    {
+        wake_up_interruptible(&spd_net->wait_queue);
+    }
 }
 
 static int
@@ -479,9 +489,13 @@ process_command(
                 return -EFAULT;
             }
 
-            write_lock_bh(&spd_net->spd_lock);
-            spd_net->bypass_kuid = make_kuid(current_user_ns(), (uid_t) uid);
-            write_unlock_bh(&spd_net->spd_lock);
+            {
+                kuid_t kuid = make_kuid(current_user_ns(), (uid_t) uid);
+
+                write_lock_bh(&spd_net->spd_lock);
+                spd_net->bypass_kuid = kuid;
+                write_unlock_bh(&spd_net->spd_lock);
+            }
 
             SPD_NET_DEBUG(HIGH, spd_net, "Set bypass uid to %u.", uid);
         }
@@ -712,10 +726,15 @@ spd_proc_read(
     struct KernelSpdNet *spd_net = file->private_data;
     size_t read_len = 0;
     const size_t fields_size = sizeof spd_net->bypass_packet_fields;
+    bool has_packet = false;
 
     write_lock_bh(&spd_net->spd_proc_lock);
 
-    if (spd_net->bypass_packet_set == true)
+    has_packet = spd_net->bypass_packet_set;
+
+    write_unlock_bh(&spd_net->spd_proc_lock);
+
+    if (has_packet == true)
     {
         int status = 0;
 
@@ -753,14 +772,14 @@ spd_proc_read(
             *pos = read_len;
         }
 
+        write_lock_bh(&spd_net->spd_proc_lock);
         spd_net->bypass_packet_set = false;
+        write_unlock_bh(&spd_net->spd_proc_lock);
     }
     else if (file->f_flags & O_NONBLOCK)
     {
         read_len = -EAGAIN;
     }
-
-    write_unlock_bh(&spd_net->spd_proc_lock);
 
     return read_len;
 }

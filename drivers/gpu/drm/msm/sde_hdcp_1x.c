@@ -1,4 +1,4 @@
-/* Copyright (c) 2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -975,8 +975,8 @@ static int sde_hdcp_1x_authentication_part1(struct sde_hdcp_1x *hdcp)
 
 	rc = sde_hdcp_1x_revoked_rcv_chk(hdcp);
 	if (rc) {
+		pr_err("receiver failed SRM check\n");
 		rc = -SDE_HDCP_SRM_FAIL;
-		goto error;
 	}
 
 	rc = sde_hdcp_1x_send_an_aksv_to_sink(hdcp);
@@ -1305,8 +1305,8 @@ static int sde_hdcp_1x_authentication_part2(struct sde_hdcp_1x *hdcp)
 
 	rc = sde_hdcp_1x_revoked_rpt_chk(hdcp);
 	if (rc) {
+		pr_err("repeater failed SRM check\n");
 		rc = -SDE_HDCP_SRM_FAIL;
-		goto error;
 	}
 
 	do {

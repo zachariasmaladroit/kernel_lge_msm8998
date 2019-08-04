@@ -1,6 +1,6 @@
 /**
    @copyright
-   Copyright (c) 2017, INSIDE Secure Oy. All rights reserved.
+   Copyright (c) 2017 - 2018, INSIDE Secure Oy. All rights reserved.
 */
 
 #include <linux/kernel.h>
@@ -88,17 +88,10 @@ kernel_stats_register(
 }
 
 
-static char stats_param_string[2] = "";
-static struct kparam_string kps =
-{
-    .string                 = stats_param_string,
-    .maxlen                 = 1,
-};
-
 static int
-stats_param_call(
+stats_param_set(
         const char *arg,
-        struct kernel_param *kp)
+        const struct kernel_param *kp)
 {
     int i;
 
@@ -115,12 +108,16 @@ stats_param_call(
     return 0;
 }
 
-module_param_call(
+static struct kernel_param_ops stats_param_ops =
+{
+    .set = stats_param_set,
+};
+
+module_param_cb(
         stats_param_string,
-        stats_param_call,
-        param_get_string,
-        &kps,
-        0644);
+        &stats_param_ops,
+        NULL,
+        0200);
 
 MODULE_PARM_DESC(
         stats_param_string,

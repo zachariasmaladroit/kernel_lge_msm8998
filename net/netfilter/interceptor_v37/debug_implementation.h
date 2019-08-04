@@ -1,6 +1,6 @@
 /**
    @copyright
-   Copyright (c) 2011 - 2015, INSIDE Secure Oy. All rights reserved.
+   Copyright (c) 2011 - 2018, INSIDE Secure Oy. All rights reserved.
 */
 
 
@@ -197,9 +197,10 @@
 
 #endif
 
+#ifndef ASSERT_IMPLEMENTATION
 #ifdef ENABLE_ASSERT
 #define ASSERT_IMPLEMENTATION(condition, description)   \
-    ((void) ((condition) ? 0 :                          \
+    ((void) ((condition) ? (void) 0 :                   \
              (assert_outputf(                           \
                      DEBUG_STRINGIFY(condition),        \
                      __FILE__,                          \
@@ -210,6 +211,7 @@
 
 #else
 #define ASSERT_IMPLEMENTATION(condition, description)
+#endif
 #endif
 
 #define COMPILE_STATIC_ASSERT_IMPLEMENTATION(condition)         \

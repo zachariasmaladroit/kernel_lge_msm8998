@@ -2438,12 +2438,6 @@ static int mdss_dp_notify_clients(struct mdss_dp_drv_pdata *dp,
 				mdss_dp_state_ctrl(&dp->ctrl_io, ST_PUSH_IDLE);
 
 			/*
-			 * Just in case if NOTIFY_DISCONNECT_IRQ_HPD is timedout
-			 */
-			if (dp->power_on)
-				mdss_dp_state_ctrl(&dp->ctrl_io, ST_PUSH_IDLE);
-
-			/*
 			 * user modules already turned off. Need to explicitly
 			 * turn off DP core here.
 			 */

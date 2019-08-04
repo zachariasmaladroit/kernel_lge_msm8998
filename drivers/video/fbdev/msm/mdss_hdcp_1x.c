@@ -1013,8 +1013,8 @@ static int hdcp_1x_authentication_part1(struct hdcp_1x *hdcp)
 
 	rc = hdcp_1x_revoked_rcv_chk(hdcp);
 	if (rc) {
+		pr_err("receiver failed SRM check\n");
 		rc = -HDCP_SRM_CHECK_FAIL;
-		goto error;
 	}
 
 	rc = hdcp_1x_send_an_aksv_to_sink(hdcp);
@@ -1343,8 +1343,8 @@ static int hdcp_1x_authentication_part2(struct hdcp_1x *hdcp)
 
 	rc = hdcp_1x_revoked_rpt_chk(hdcp);
 	if (rc) {
+		pr_err("repeater failed SRM check\n");
 		rc = -HDCP_SRM_CHECK_FAIL;
-		goto error;
 	}
 
 	do {

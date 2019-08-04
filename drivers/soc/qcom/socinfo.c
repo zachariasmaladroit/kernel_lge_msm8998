@@ -874,7 +874,7 @@ msm_get_serial_number(struct device *dev,
 			struct device_attribute *attr,
 			char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "%u\n",
+	return snprintf(buf, PAGE_SIZE, "0x%08x\n",
 		socinfo_get_serial_number());
 }
 

@@ -1836,10 +1836,8 @@ ecryptfs_process_key_cipher(struct crypto_blkcipher **key_tfm,
 		goto out;
 	}
 #ifdef CONFIG_SD_ENCRYPTION_ADVANCED
-	/* Note that H1_SPRINT doesn't use cbc mode. Check when you port the device */
-	kfree(full_alg_name);
-	full_alg_name = kmalloc(strlen("cbc(aes)") + 1, GFP_KERNEL);
-	strlcpy(full_alg_name, "cbc(aes)", strlen("cbc(aes)") + 1);
+	rc = ecryptfs_crypto_api_algify_cipher_name(&full_alg_name, cipher_name,
+					    "cbc");
 #else
 	rc = ecryptfs_crypto_api_algify_cipher_name(&full_alg_name, cipher_name,
 					    "ecb");

@@ -396,7 +396,7 @@ static void notify_siblings(struct veneer* veneer_me) {
 	/* Capping IUSB/IBAT/IDC by charger */
 	charging_ceiling_vote(veneer_me->veneer_supplier);
 	/* Calculating remained charging time */
-	charging_time_update(veneer_me->veneer_supplier);
+	charging_time_update(veneer_me->veneer_supplier, false);
 	/* LGE OTP scenario */
 	protection_battemp_monitor();
 	/* To meet battery spec. */
@@ -797,9 +797,9 @@ static void psy_external_changed(struct power_supply* psy_me) {
 				veneer_me->usbin_realtype = POWER_SUPPLY_TYPE_UNKNOWN;
 				veneer_me->usbin_typefix = false;
 				veneer_me->usbin_aicl = 0;
-				power_supply_set_property(psy_usb, POWER_SUPPLY_PROP_RESISTANCE, &buffer);
 				cancel_delayed_work(&veneer_me->dwork_slowchg);
 			}
+			power_supply_set_property(psy_usb, POWER_SUPPLY_PROP_RESISTANCE, &buffer);
 			strcat(hit, "U:PRESENT ");
 		}
 		/* Update usb type */
@@ -850,40 +850,60 @@ static void psy_external_changed(struct power_supply* psy_me) {
 	}
 }
 
-static bool feed_charging_time(int* power) {
+static bool feed_charging_time(int* power, int* rawsoc, int* bsm_ttf)
+{
 	/* Power may be unstable at the initial time of detecting charger */
 	struct veneer* veneer_me = veneer_data_fromair();
+	struct power_supply* psy = NULL;
+	union power_supply_propval val = { .intval = 0 };
+	char buffer [16];
 
 	if (veneer_me) {
-		struct power_supply* 		psy;
-		union power_supply_propval	val = { .intval = 0 };
+		*power = 0;
+		*rawsoc = 0;
 
-		if (veneer_me->presence_usb) {
+		psy = NULL;
+		if (veneer_me->presence_usb)
 			psy = get_psy_usb(veneer_me);
 		}
-		else if (veneer_me->presence_wireless) {
+		else if (veneer_me->presence_wireless)
 			psy = get_psy_wireless(veneer_me);
+		
+		if (psy) {
+			if (!power_supply_get_property(
+					psy, POWER_SUPPLY_PROP_POWER_NOW, &val))
+				*power = val.intval / 1000;
+		
+		psy = get_psy_battery(veneer_me);
+		if (psy) {
+			if (!power_supply_get_property(
+					psy, POWER_SUPPLY_PROP_CAPACITY_RAW, &val))
+				*rawsoc = val.intval;
 		}
-		else
-			psy = NULL;
 
-		*power = (psy && !power_supply_get_property(psy, POWER_SUPPLY_PROP_POWER_NOW, &val))
-			? val.intval / 1000 : 0;
+		if (unified_nodes_show("bsm_timetofull", buffer))
+			sscanf(buffer, "%d", bsm_ttf);
+		else
+			*bsm_ttf = 0;
 
 		return true;
 	}
-	else
-		return false;
+
+	return false;
 }
 
-static void back_charging_time(int power) {
+static void back_charging_time(int power)
+{
 	/* Simple signal for finishing of charging-time-table */
 	struct veneer* veneer_me = veneer_data_fromair();
-	struct power_supply* psy_batt = veneer_me ? get_psy_battery(veneer_me) : NULL;
+	struct power_supply* psy_batt = NULL;
 
-	if (psy_batt) {
-		pr_veneer("Building charging time table for %dmW is done\n", power);
-		power_supply_changed(psy_batt);
+	if (veneer_me) {
+		psy_batt = get_psy_battery(veneer_me);
+		if (psy_batt) {
+			pr_veneer("Building charging time table for %dmW is done\n", power);
+			power_supply_changed(psy_batt);
+		}
 	}
 }
 

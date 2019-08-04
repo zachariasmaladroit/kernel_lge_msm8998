@@ -80,11 +80,15 @@ struct f_ncm {
 
 #ifdef CONFIG_LGE_USB_GADGET
 static struct delayed_work start_work;
-static int start_requested;
+static int start_requested = 0;
 
 int get_ncm_start_requested(void) {
 	return start_requested;
 }
+void clear_ncm_start_requested(void) {
+	start_requested = 0;
+}
+EXPORT_SYMBOL_GPL(clear_ncm_start_requested);
 #endif
 
 static inline struct f_ncm *func_to_ncm(struct usb_function *f)
@@ -1653,6 +1657,12 @@ static struct miscdevice ncm_device = {
 	.fops = &ncm_fops,
 };
 
+static void ncm_start_work(struct work_struct *data)
+{
+	char *envp[2] = { "NCM=START", NULL };
+	kobject_uevent_env(&ncm_device.this_device->kobj, KOBJ_CHANGE, envp);
+}
+
 int ncm_ctrlrequest(struct usb_composite_dev *cdev,
 		const struct usb_ctrlrequest *ctrl)
 {
@@ -1662,6 +1672,9 @@ int ncm_ctrlrequest(struct usb_composite_dev *cdev,
 	u16 w_index = le16_to_cpu(ctrl->wIndex);
 	u16 w_value = le16_to_cpu(ctrl->wValue);
 	u16 w_length = le16_to_cpu(ctrl->wLength);
+
+	if(start_work.work.func != ncm_start_work)
+		return -ENODEV;
 
 	if (b_requestType == (USB_DIR_OUT | USB_TYPE_VENDOR)) {
 		if (ctrl->bRequest == 0xf0) {
@@ -1693,12 +1706,6 @@ int ncm_ctrlrequest(struct usb_composite_dev *cdev,
 	return value;
 }
 EXPORT_SYMBOL_GPL(ncm_ctrlrequest);
-
-static void ncm_start_work(struct work_struct *data)
-{
-	char *envp[2] = { "NCM=START", NULL };
-	kobject_uevent_env(&ncm_device.this_device->kobj, KOBJ_CHANGE, envp);
-}
 
 static ssize_t ncm_start_requested_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
