@@ -501,8 +501,8 @@ struct usbpd {
 	struct gpio_desc *uart_sbu_sel_gpio;
 #endif
 #ifdef CONFIG_LGE_USB_MOISTURE_DETECTION
-	struct hrtimer		edge_timer;
-	struct hrtimer		sbu_timer;
+//	struct hrtimer		edge_timer;
+//	struct hrtimer		sbu_timer;
 	struct delayed_work	init_edge_adc_work;
 	struct delayed_work	init_sbu_adc_work;
 	struct delayed_work	edge_adc_work;
@@ -610,7 +610,7 @@ static inline void start_usb_peripheral(struct usbpd *pd)
 		cc = ORIENTATION_CC2;
 #endif
 
-	usbpd_info(&pd->dev, "%s : entered into\n", __func__);
+//	usbpd_info(&pd->dev, "%s : entered into\n", __func__);
 	extcon_set_cable_state_(pd->extcon, EXTCON_USB_CC,
 			cc == ORIENTATION_CC2);
 	extcon_set_cable_state_(pd->extcon, EXTCON_USB_SPEED, 1);
@@ -1205,7 +1205,7 @@ static void usbpd_set_state(struct usbpd *pd, enum usbpd_state next_state)
 #ifdef CONFIG_LGE_USB
 			if(pd->psy_type == POWER_SUPPLY_TYPE_UNKNOWN)
 			{
-				usbpd_info(&pd->dev, "APSD is not yet completed, wait 800ms\n");
+//				usbpd_info(&pd->dev, "APSD is not yet completed, wait 800ms\n");
 				msleep(800);
 				ret = power_supply_get_property(pd->usb_psy,
 					POWER_SUPPLY_PROP_REAL_TYPE, &val);
@@ -1639,8 +1639,8 @@ static void handle_vdm_rx(struct usbpd *pd, struct rx_msg *rx_msg)
 		break;
 
 	case SVDM_CMD_TYPE_RESP_NAK:
-		usbpd_info(&pd->dev, "VDM NAK received for SVID:0x%04x command:0x%x\n",
-				svid, cmd);
+//		usbpd_info(&pd->dev, "VDM NAK received for SVID:0x%04x command:0x%x\n",
+//				svid, cmd);
 
 		switch (cmd) {
 		case USBPD_SVDM_DISCOVER_IDENTITY:
@@ -1911,7 +1911,7 @@ static void usbpd_sm(struct work_struct *w)
 			pd->vconn_enabled = false;
 		}
 
-		usbpd_info(&pd->dev, "USB Type-C disconnect\n");
+//		usbpd_info(&pd->dev, "USB Type-C disconnect\n");
 
 #ifdef CONFIG_LGE_USB
 		if (pd->vconn_enabled) {
@@ -3018,7 +3018,7 @@ static int psy_changed(struct notifier_block *nb, unsigned long evt, void *ptr)
 		return 0;
 	}
 
-	usbpd_info(&pd->dev,"pd->typec_mode=%d typec_mode=%d\n",pd->typec_mode, typec_mode);
+//	usbpd_info(&pd->dev,"pd->typec_mode=%d typec_mode=%d\n",pd->typec_mode, typec_mode);
 #ifdef CONFIG_LGE_USB_MOISTURE_DETECTION
 	if (pd->adc_initialized) {
 		if (pd->sbu_sel && !pd->sbu_moisture) {
@@ -3076,7 +3076,7 @@ static int psy_changed(struct notifier_block *nb, unsigned long evt, void *ptr)
 	}
 
 	if (pd->sbu_moisture) {
-		usbpd_info(&pd->dev, "[moisture] moisture is detected, skip set power role\n");
+//		usbpd_info(&pd->dev, "[moisture] moisture is detected, skip set power role\n");
 		typec_mode = POWER_SUPPLY_TYPEC_NONE;
 		pd->current_pr = PR_NONE;
 		pd->edge_mtime = pd->sbu_mtime = CURRENT_TIME;
@@ -3091,12 +3091,12 @@ static int psy_changed(struct notifier_block *nb, unsigned long evt, void *ptr)
 #if defined(CONFIG_LGE_USB_DEBUGGER) || defined(CONFIG_LGE_USB_FACTORY)
 		} else if (typec_mode == POWER_SUPPLY_TYPEC_SINK_DEBUG_ACCESSORY) {//only debug accessory cable (pif cable, usb debugger)
 			if (!pd->vbus_present) {		//case of vbus remove only
-				usbpd_info(&pd->dev,"->TYPEC_NONE - VBUS OFF ONLY\n");
+//				usbpd_info(&pd->dev,"->TYPEC_NONE - VBUS OFF ONLY\n");
 				pd->current_pr = PR_NONE;
 				kick_sm(pd, 0);
 				return 0;
 			} else {
-				usbpd_info(&pd->dev,"->PR_SINK !! - VBUS ON ONLY\n");
+//				usbpd_info(&pd->dev,"->PR_SINK !! - VBUS ON ONLY\n");
 				pd->psy_type = POWER_SUPPLY_TYPE_USB;
 				pd->current_pr = PR_SINK;
 				pd->in_pr_swap = false;
@@ -3136,9 +3136,9 @@ static int psy_changed(struct notifier_block *nb, unsigned long evt, void *ptr)
 	}
 
 	pd->typec_mode = typec_mode;
-	usbpd_info(&pd->dev, "typec_mode = %s  present:%d, type:%d, orientation:%d\n",
-			typec_to_string(typec_mode), pd->vbus_present, pd->psy_type,
-			usbpd_get_plug_orientation(pd));
+//	usbpd_info(&pd->dev, "typec_mode = %s  present:%d, type:%d, orientation:%d\n",
+//			typec_to_string(typec_mode), pd->vbus_present, pd->psy_type,
+//			usbpd_get_plug_orientation(pd));
 
 	switch (typec_mode) {
 	/* Disconnect */
@@ -3153,7 +3153,7 @@ static int psy_changed(struct notifier_block *nb, unsigned long evt, void *ptr)
 			usbpd_dbg(&pd->dev, "Ignoring disconnect due to PR swap\n");
 			return 0;
 		}
-		usbpd_info(&pd->dev,"TYPEC_NONE - DISCONNECT CABLE\n");
+//		usbpd_info(&pd->dev,"TYPEC_NONE - DISCONNECT CABLE\n");
 #ifdef CONFIG_LGE_USB_DEBUGGER
 		if(pd->is_debug_accessory) {
 			pd->is_debug_accessory = false;
@@ -3167,8 +3167,8 @@ static int psy_changed(struct notifier_block *nb, unsigned long evt, void *ptr)
 	case POWER_SUPPLY_TYPEC_SOURCE_DEFAULT:
 	case POWER_SUPPLY_TYPEC_SOURCE_MEDIUM:
 	case POWER_SUPPLY_TYPEC_SOURCE_HIGH:
-		usbpd_info(&pd->dev, "Type-C Source (%s) connected\n",
-				src_current(typec_mode));
+//		usbpd_info(&pd->dev, "Type-C Source (%s) connected\n",
+//				src_current(typec_mode));
 
 		/* if waiting for SinkTxOk to start an AMS */
 		if (pd->spec_rev == USBPD_REV_30 &&
@@ -3184,7 +3184,7 @@ static int psy_changed(struct notifier_block *nb, unsigned long evt, void *ptr)
 		 * source so we can turn off VBUS, Vconn, PD PHY etc.
 		 */
 		if (pd->current_pr == PR_SRC) {
-			usbpd_info(&pd->dev, "Forcing disconnect from source mode\n");
+//			usbpd_info(&pd->dev, "Forcing disconnect from source mode\n");
 			pd->current_pr = PR_NONE;
 			break;
 		}
@@ -3197,9 +3197,9 @@ static int psy_changed(struct notifier_block *nb, unsigned long evt, void *ptr)
 	case POWER_SUPPLY_TYPEC_SINK:
 #ifdef CONFIG_LGE_USB
 		if (pd->vbus_present) {
-			usbpd_info(&pd->dev, "Type-C Sink%s connected with VBUS\n",
-				   typec_mode == POWER_SUPPLY_TYPEC_SINK ?
-				   "" : " (powered)");
+//			usbpd_info(&pd->dev, "Type-C Sink%s connected with VBUS\n",
+//				   typec_mode == POWER_SUPPLY_TYPEC_SINK ?
+//				   "" : " (powered)");
 
 			if (pd->current_pr == PR_SINK)
 				return 0;
@@ -3209,9 +3209,9 @@ static int psy_changed(struct notifier_block *nb, unsigned long evt, void *ptr)
 		}
 #endif
 
-		usbpd_info(&pd->dev, "Type-C Sink%s connected\n",
-				typec_mode == POWER_SUPPLY_TYPEC_SINK ?
-					"" : " (powered)");
+//		usbpd_info(&pd->dev, "Type-C Sink%s connected\n",
+//				typec_mode == POWER_SUPPLY_TYPEC_SINK ?
+//					"" : " (powered)");
 
 		if (pd->current_pr == PR_SRC)
 			return 0;
@@ -3220,13 +3220,13 @@ static int psy_changed(struct notifier_block *nb, unsigned long evt, void *ptr)
 		break;
 
 	case POWER_SUPPLY_TYPEC_SINK_DEBUG_ACCESSORY:
-		usbpd_info(&pd->dev, "Type-C Debug Accessory connected\n");
+//		usbpd_info(&pd->dev, "Type-C Debug Accessory connected\n");
 #ifdef CONFIG_LGE_USB_DEBUGGER
 		pd->is_debug_accessory = true;
 		schedule_work(&pd->usb_debugger_work);
 #endif
 #ifdef CONFIG_LGE_USB_FACTORY
-		usbpd_info(&pd->dev,"pd->vbus_present:%d\n",pd->vbus_present);
+//		usbpd_info(&pd->dev,"pd->vbus_present:%d\n",pd->vbus_present);
 		if(pd->vbus_present){
 			pd->psy_type = POWER_SUPPLY_TYPE_USB;
 			pd->current_pr = PR_SINK;
@@ -3235,7 +3235,7 @@ static int psy_changed(struct notifier_block *nb, unsigned long evt, void *ptr)
 #endif
 		break;
 	case POWER_SUPPLY_TYPEC_SINK_AUDIO_ADAPTER:
-		usbpd_info(&pd->dev, "Type-C Analog Audio Adapter connected\n");
+//		usbpd_info(&pd->dev, "Type-C Analog Audio Adapter connected\n");
 		break;
 	default:
 		usbpd_warn(&pd->dev, "Unsupported typec mode:%d\n",
@@ -3625,7 +3625,7 @@ static int usbpd_dr_set_property(struct dual_role_phy_instance *dual_role,
 			pd->prop_moisture_en = *val;
 
 		if (*val == DUAL_ROLE_PROP_MOISTURE_EN_DISABLE) {
-			usbpd_info(&pd->dev, "[moisture] %s: disable moisture detection\n", __func__);
+//			usbpd_info(&pd->dev, "[moisture] %s: disable moisture detection\n", __func__);
 			if (pd->edge_sel){
 				pd->edge_moisture = 0;
 				gpiod_direction_output(pd->sbu_oe, 0); //sbu oe enable
@@ -3653,7 +3653,7 @@ static int usbpd_dr_set_property(struct dual_role_phy_instance *dual_role,
 			dual_role_instance_changed(pd->dual_role);
 			power_supply_changed(pd->usb_psy);
 		} else if (*val == DUAL_ROLE_PROP_MOISTURE_EN_ENABLE){
-			usbpd_info(&pd->dev, "[moisture] %s: enable moisture detection\n", __func__);
+//			usbpd_info(&pd->dev, "[moisture] %s: enable moisture detection\n", __func__);
 			if (pd->edge_sel) {
 				schedule_delayed_work(&pd->init_edge_adc_work, 0);
 			}
@@ -3670,12 +3670,12 @@ static int usbpd_dr_set_property(struct dual_role_phy_instance *dual_role,
 			break;
 		}
 		if (pd->prop_moisture_en == DUAL_ROLE_PROP_MOISTURE_EN_DISABLE) {
-			usbpd_info(&pd->dev, "[moisture] %s: moisture detection is disabled\n",
-				__func__);
+//			usbpd_info(&pd->dev, "[moisture] %s: moisture detection is disabled\n",
+//				__func__);
 			mutex_unlock(&pd->moisture_lock);
 			break;
 		} else if (pd->sbu_moisture) {
-			usbpd_info(&pd->dev, "[moisture] %s: skip, wet state\n", __func__);
+//			usbpd_info(&pd->dev, "[moisture] %s: skip, wet state\n", __func__);
 			mutex_unlock(&pd->moisture_lock);
 			break;
 		} else if (*val == pd->prop_moisture) {
@@ -3685,7 +3685,7 @@ static int usbpd_dr_set_property(struct dual_role_phy_instance *dual_role,
 			pd->prop_moisture = *val;
 
 		if (*val == DUAL_ROLE_PROP_MOISTURE_TRUE) {
-			usbpd_info(&pd->dev, "[moisture] %s: set moisture true\n", __func__);
+//			usbpd_info(&pd->dev, "[moisture] %s: set moisture true\n", __func__);
 			if (pd->sbu_sel) {
 				qpnp_adc_tm_disable_chan_meas(pd->adc_tm_dev, &pd->sbu_adc_param);
 				if (pd->sbu_run_work) {
@@ -3714,7 +3714,7 @@ static int usbpd_dr_set_property(struct dual_role_phy_instance *dual_role,
 				schedule_delayed_work(&pd->edge_adc_work, msecs_to_jiffies(0));
 
 		} else if (*val == DUAL_ROLE_PROP_MOISTURE_FALSE) {
-			usbpd_info(&pd->dev, "[moisture] %s: set moisture false\n", __func__);
+//			usbpd_info(&pd->dev, "[moisture] %s: set moisture false\n", __func__);
 			/* not used */
 		}
 		mutex_unlock(&pd->moisture_lock);
@@ -4180,7 +4180,7 @@ static void usb_debugger_work(struct work_struct *w)
 	int rc;
 #endif
 
-	usbpd_info(&pd->dev,"usb_debugger_work !!! debug_accessory:%d\n",pd->is_debug_accessory);
+//	usbpd_info(&pd->dev,"usb_debugger_work !!! debug_accessory:%d\n",pd->is_debug_accessory);
 #ifdef CONFIG_LGE_USB_FACTORY
 	if(!pd->lge_power_cd) {
 		usbpd_dbg(&pd->dev, "lge_power_cd is NULL\n");
@@ -4197,17 +4197,17 @@ static void usb_debugger_work(struct work_struct *w)
 			usbpd_err(&pd->dev,"usb id only check fail\n");
 			return;
 		} else if (lge_val.intval == FACTORY_CABLE) {
-			usbpd_info(&pd->dev,"factory cable connected\n");
+//			usbpd_info(&pd->dev,"factory cable connected\n");
 			return;
 		}
 #endif
 		msm_serial_set_uart_console(1);
 		gpiod_direction_output(pd->uart_sbu_sel_gpio, 1);
-		usbpd_info(&pd->dev,"uart on\n");
+//		usbpd_info(&pd->dev,"uart on\n");
 	} else {
 		gpiod_direction_output(pd->uart_sbu_sel_gpio, 0);
 		msm_serial_set_uart_console(0);
-		usbpd_info(&pd->dev,"uart off\n");
+//		usbpd_info(&pd->dev,"uart off\n");
 	}
 }
 #endif
@@ -4221,7 +4221,7 @@ static int pd_set_input_suspend(struct usbpd *pd, bool enable)
 	if (!psy)
 		return 0;
 
-	usbpd_info(&pd->dev,"[moisture] %s: set %d\n", __func__, enable);
+//	usbpd_info(&pd->dev,"[moisture] %s: set %d\n", __func__, enable);
 	pval.intval = enable;
 
 	return power_supply_set_property(psy, POWER_SUPPLY_PROP_MOISTURE_DETECTION, &pval);
@@ -4320,7 +4320,7 @@ static enum hrtimer_restart pd_edge_timeout(struct hrtimer *timer)
 
 static enum hrtimer_restart pd_sbu_timeout(struct hrtimer *timer)
 {
-	struct usbpd *pd = container_of(timer, struct usbpd, sbu_timer);
+//	struct usbpd *pd = container_of(timer, struct usbpd, sbu_timer);
 
 	usbpd_dbg(&pd->dev, "timeout");
 	cancel_delayed_work(&pd->sbu_adc_work);
@@ -4349,21 +4349,21 @@ static void pd_edge_adc_work(struct work_struct *w)
 		}
 	}
 
-	hrtimer_cancel(&pd->edge_timer);
-	usbpd_info(&pd->dev, "[moisture] %s: adc state: %d, tm state: %s\n", __func__,
-			pd->edge_adc_state, pd->edge_tm_state == ADC_TM_HIGH_STATE ? "high" : "low");
+//	hrtimer_cancel(&pd->edge_timer);
+//	usbpd_info(&pd->dev, "[moisture] %s: adc state: %d, tm state: %s\n", __func__,
+//			pd->edge_adc_state, pd->edge_tm_state == ADC_TM_HIGH_STATE ? "high" : "low");
 
 	if (pd->edge_lock) {
-		usbpd_info(&pd->dev, "[moisture] %s: cable is connected, skip work\n",
-				__func__);
+//		usbpd_info(&pd->dev, "[moisture] %s: cable is connected, skip work\n",
+//				__func__);
 		pd->edge_adc_state = ADC_STATE_DRY;
 		pd->edge_run_work = false;
 		goto out;
 	}
 
 	qpnp_vadc_read(pd->vadc_dev, VADC_AMUX_THM1_PU2, &results);
-	usbpd_info(&pd->dev, "[moisture] %s: usb edge adc = %d\n", __func__,
-			(int)results.physical);
+//	usbpd_info(&pd->dev, "[moisture] %s: usb edge adc = %d\n", __func__,
+//			(int)results.physical);
 
 	if (pd->edge_tm_state == ADC_TM_HIGH_STATE) {
 		pd->edge_adc_param.state_request = ADC_TM_LOW_THR_ENABLE;
@@ -4377,8 +4377,8 @@ static void pd_edge_adc_work(struct work_struct *w)
 	case ADC_STATE_DRY:
 		if (pd->edge_tm_state == ADC_TM_HIGH_STATE) {
 			if (pd->edge_moisture) {
-				usbpd_info(&pd->dev, "[moisture] %s: wet state: %s -> %s\n", __func__,
-						pd->edge_moisture ? "wet" : "dry", "dry");
+//				usbpd_info(&pd->dev, "[moisture] %s: wet state: %s -> %s\n", __func__,
+//						pd->edge_moisture ? "wet" : "dry", "dry");
 				pd->edge_moisture = 0;
 				pd_set_cc_disable(pd, false);
 				if (lge_get_board_rev_no() >= HW_REV_1_0)
@@ -4393,8 +4393,8 @@ static void pd_edge_adc_work(struct work_struct *w)
 		pd_set_cc_disable(pd, true);
 		msleep(100);
 		qpnp_vadc_read(pd->vadc_dev, VADC_AMUX_THM1_PU2, &results);
-		usbpd_info(&pd->dev, "[moisture] %s: usb edge adc1 = %d\n", __func__,
-			(int)results.physical);
+//		usbpd_info(&pd->dev, "[moisture] %s: usb edge adc1 = %d\n", __func__,
+//			(int)results.physical);
 		pd_set_cc_disable(pd, false);
 
 		 if ((int)results.physical < adc_gnd_low_threshold) {
@@ -4405,8 +4405,8 @@ static void pd_edge_adc_work(struct work_struct *w)
 			 for (i = 0; i < 10; ++i) {
 				 msleep(20);
 				 qpnp_vadc_read(pd->vadc_dev, VADC_AMUX_THM1_PU2, &results);
-				 usbpd_info(&pd->dev, "[moisture] %s: usb edge adc(#%d) = %d\n", __func__,
-						 i, (int)results.physical);
+//				 usbpd_info(&pd->dev, "[moisture] %s: usb edge adc(#%d) = %d\n", __func__,
+//						 i, (int)results.physical);
 				 if ((int)results.physical < adc_gnd_low_threshold ||
 						 (int)results.physical > adc_edge_high_threshold) {
 					 break;
@@ -4456,8 +4456,8 @@ static void pd_edge_adc_work(struct work_struct *w)
 		break;
 	case ADC_STATE_WET:
 		if (!pd->edge_moisture) {
-			usbpd_info(&pd->dev, "[moisture] %s: wet state: %s -> %s\n", __func__,
-					pd->edge_moisture ? "wet" : "dry", "wet");
+//			usbpd_info(&pd->dev, "[moisture] %s: wet state: %s -> %s\n", __func__,
+//					pd->edge_moisture ? "wet" : "dry", "wet");
 			pd->edge_moisture = 1;
 			if (lge_get_board_rev_no() >= HW_REV_1_0)
 				gpiod_direction_output(pd->edge_sel, 0);
@@ -4476,8 +4476,8 @@ static void pd_edge_adc_work(struct work_struct *w)
 					pm_stay_awake(&pd->dev);
 					pd->edge_run_work = true;
 				} else {
-					usbpd_info(&pd->dev, "[moisture] %s: maybe adc is up by cable\n",
-							__func__);
+//					usbpd_info(&pd->dev, "[moisture] %s: maybe adc is up by cable\n",
+//							__func__);
 				}
 			} else if((int)results.physical < adc_gnd_low_threshold) { //for OTG enable
 				if (!pd->vbus_present && !pd->sbu_moisture) {
@@ -4486,9 +4486,9 @@ static void pd_edge_adc_work(struct work_struct *w)
 				}
 			} else {
 				if (pd->vbus_present) { // vbus present
-					usbpd_info(&pd->dev, "[moisture] %s: vbus is on\n", __func__);
+//					usbpd_info(&pd->dev, "[moisture] %s: vbus is on\n", __func__);
 				} else {
-					usbpd_info(&pd->dev, "[moisture] %s: vbus is off\n", __func__);
+//					usbpd_info(&pd->dev, "[moisture] %s: vbus is off\n", __func__);
 				}
 				pd->edge_adc_param.state_request = ADC_TM_HIGH_THR_ENABLE;
 			}
@@ -4505,9 +4505,9 @@ static void pd_edge_adc_work(struct work_struct *w)
 				delay = ADC_POLL_TIMEOUT;
 			else
 				delay = pd_get_check_timeout(pd, pd->edge_mtime);
-			hrtimer_start(&pd->edge_timer, ms_to_ktime(delay/HZ*1000), HRTIMER_MODE_REL);
-			usbpd_info(&pd->dev, "[moisture] %s: count: %d delay: %lu(s)\n",
-					__func__, polling_count, delay/HZ);
+//			hrtimer_start(&pd->edge_timer, ms_to_ktime(delay/HZ*1000), HRTIMER_MODE_REL);
+//			usbpd_info(&pd->dev, "[moisture] %s: count: %d delay: %lu(s)\n",
+//					__func__, polling_count, delay/HZ);
 		}
 		break;
 	default:
@@ -4520,9 +4520,9 @@ static void pd_edge_adc_work(struct work_struct *w)
 		pd->edge_run_work = false;
 		msleep(50);
 		prev_adc_param = pd->edge_adc_param;
-		usbpd_info(&pd->dev, "[moisture] %s: ADC PARAM low: %d, high: %d, irq: %d\n",
-				__func__, pd->edge_adc_param.low_thr, pd->edge_adc_param.high_thr,
-				pd->edge_adc_param.state_request);
+//		usbpd_info(&pd->dev, "[moisture] %s: ADC PARAM low: %d, high: %d, irq: %d\n",
+//				__func__, pd->edge_adc_param.low_thr, pd->edge_adc_param.high_thr,
+//				pd->edge_adc_param.state_request);
 		ret = qpnp_adc_tm_channel_measure(pd->adc_tm_dev, &pd->edge_adc_param);
 		if (ret) {
 			usbpd_err(&pd->dev, "[moisture] %s: request ADC error %d\n", __func__, ret);
@@ -4539,8 +4539,8 @@ static void pd_edge_notification(enum qpnp_tm_state state, void *ctx)
 {
 	struct usbpd *pd = ctx;
 
-	usbpd_info(&pd->dev, "[moisture] %s: state: %s\n", __func__,
-			state == ADC_TM_HIGH_STATE ? "high" : "low");
+//	usbpd_info(&pd->dev, "[moisture] %s: state: %s\n", __func__,
+//			state == ADC_TM_HIGH_STATE ? "high" : "low");
 	if (state >= ADC_TM_STATE_NUM) {
 		usbpd_err(&pd->dev, "[moisture] %s: invalid notification %d\n",
 				__func__, state);
@@ -4573,11 +4573,11 @@ static void pd_sbu_ov_adc_work(struct work_struct *w)
 
 	if (!pd->vbus_present || pd->current_dr == DR_DFP) {
 		count = 0;
-		usbpd_info(&pd->dev, "[moisture] %s: vbus off or dfp, stop\n", __func__);
+//		usbpd_info(&pd->dev, "[moisture] %s: vbus off or dfp, stop\n", __func__);
 	} else {
 		qpnp_vadc_read(pd->vadc_dev, VADC_AMUX_THM2, &results);
-		usbpd_info(&pd->dev, "[moisture] %s: usb sbu adc = %d\n", __func__,
-					            (int)results.physical);
+//		usbpd_info(&pd->dev, "[moisture] %s: usb sbu adc = %d\n", __func__,
+//					            (int)results.physical);
 		if ((int)results.physical > 1875000 && pd_get_is_ocp(pd)) {
 			qpnp_adc_tm_disable_chan_meas(pd->adc_tm_dev, &pd->sbu_adc_param);
 			if (pd->sbu_run_work) {
@@ -4593,7 +4593,7 @@ static void pd_sbu_ov_adc_work(struct work_struct *w)
 			schedule_delayed_work(&pd->sbu_ov_adc_work, msecs_to_jiffies(1000));
 		} else {
 			count = 0;
-			usbpd_info(&pd->dev, "[moisture] %s: exceed count, stop\n", __func__);
+//			usbpd_info(&pd->dev, "[moisture] %s: exceed count, stop\n", __func__);
 		}
 	}
 	mutex_unlock(&pd->moisture_lock);
@@ -4620,13 +4620,13 @@ static void pd_sbu_adc_work(struct work_struct *w)
 		}
 	}
 
-	hrtimer_cancel(&pd->sbu_timer);
-	usbpd_dbg(&pd->dev, "[moisture] %s: adc state: %d, tm state: %s\n", __func__,
-			pd->sbu_adc_state, pd->sbu_tm_state == ADC_TM_HIGH_STATE ? "high" : "low");
+//	hrtimer_cancel(&pd->sbu_timer);
+//	usbpd_dbg(&pd->dev, "[moisture] %s: adc state: %d, tm state: %s\n", __func__,
+//			pd->sbu_adc_state, pd->sbu_tm_state == ADC_TM_HIGH_STATE ? "high" : "low");
 
 	if (pd->sbu_lock) {
-		usbpd_info(&pd->dev, "[moisture] %s: cable is connected, skip work\n",
-				__func__);
+//		usbpd_info(&pd->dev, "[moisture] %s: cable is connected, skip work\n",
+//				__func__);
 		pd->sbu_adc_state = ADC_STATE_DRY;
 		pd->sbu_run_work = false;
 		goto out;
@@ -4637,8 +4637,8 @@ static void pd_sbu_adc_work(struct work_struct *w)
 		usbpd_dbg(&pd->dev, "[moisture] %s: usb sbu adc = %d\n", __func__,
 				(int)results.physical);
 	else
-		usbpd_info(&pd->dev, "[moisture] %s: usb sbu adc = %d\n", __func__,
-				(int)results.physical);
+//		usbpd_info(&pd->dev, "[moisture] %s: usb sbu adc = %d\n", __func__,
+//				(int)results.physical);
 
 
 
@@ -4652,12 +4652,12 @@ static void pd_sbu_adc_work(struct work_struct *w)
 
 	switch (pd->sbu_adc_state) {
 	case ADC_STATE_DRY:
-		usbpd_info(&pd->dev, "[moisture] %s: usb sbu adc = %d\n", __func__,
-				(int)results.physical);
+//		usbpd_info(&pd->dev, "[moisture] %s: usb sbu adc = %d\n", __func__,
+//				(int)results.physical);
 		if (pd->sbu_tm_state == ADC_TM_HIGH_STATE) {
 			if (pd->sbu_moisture) {
-				usbpd_info(&pd->dev, "[moisture] %s: wet state: %s -> %s\n", __func__,
-						pd->sbu_moisture ? "wet" : "dry", "dry");
+//				usbpd_info(&pd->dev, "[moisture] %s: wet state: %s -> %s\n", __func__,
+//						pd->sbu_moisture ? "wet" : "dry", "dry");
 				pd->sbu_moisture = 0;
 				pd_set_input_suspend(pd, false);
 				pd_set_cc_disable(pd, false);
@@ -4678,8 +4678,8 @@ static void pd_sbu_adc_work(struct work_struct *w)
 		pd_set_cc_disable(pd, true);
 		msleep(100);
 		qpnp_vadc_read(pd->vadc_dev, VADC_AMUX_THM2, &results);
-		usbpd_info(&pd->dev, "[moisture] %s: usb sbu adc1 = %d\n", __func__,
-			(int)results.physical);
+//		usbpd_info(&pd->dev, "[moisture] %s: usb sbu adc1 = %d\n", __func__,
+//			(int)results.physical);
 		pd_set_cc_disable(pd, false);
 
 		if ((int)results.physical < adc_gnd_low_threshold) {
@@ -4688,8 +4688,8 @@ static void pd_sbu_adc_work(struct work_struct *w)
 		} else if ((int)results.physical < adc_low_threshold) {
 			if(!pd->vbus_present) { //vbus not present
 				if (prev_adc2) {
-					usbpd_info(&pd->dev, "[moisture] %s: adc changed: %d -> %d", __func__,
-							prev_adc2, (int)results.physical);
+//					usbpd_info(&pd->dev, "[moisture] %s: adc changed: %d -> %d", __func__,
+//							prev_adc2, (int)results.physical);
 					wet_adc = (int)results.physical;
 					pd->sbu_adc_state = ADC_STATE_WET;
 					delay = 0;
@@ -4699,8 +4699,8 @@ static void pd_sbu_adc_work(struct work_struct *w)
 					for (i = 0; i < 10; ++i) {
 						msleep(20);
 						qpnp_vadc_read(pd->vadc_dev, VADC_AMUX_THM2, &results);
-						usbpd_info(&pd->dev, "[moisture] %s: sbu adc %d: %d->%d, w:%d\n", __func__, i,
-								prev_adc, (int)results.physical, wet_count);
+//						usbpd_info(&pd->dev, "[moisture] %s: sbu adc %d: %d->%d, w:%d\n", __func__, i,
+//								prev_adc, (int)results.physical, wet_count);
 						if (prev_adc && //full
 								(prev_adc - (int)results.physical > 100000 ||
 								 prev_adc - (int)results.physical < -100000)) {
@@ -4713,7 +4713,7 @@ static void pd_sbu_adc_work(struct work_struct *w)
 						prev_adc = (int) results.physical;
 					}
 					pd_set_cc_disable(pd, false);
-					usbpd_info(&pd->dev, "[moisture] %s: wet_count = %d\n", __func__, wet_count);
+//					usbpd_info(&pd->dev, "[moisture] %s: wet_count = %d\n", __func__, wet_count);
 					if (wet_count >= 0) { //tuning
 						wet_adc = (int)results.physical;
 						pd->sbu_adc_state = ADC_STATE_WET;
@@ -4724,8 +4724,8 @@ static void pd_sbu_adc_work(struct work_struct *w)
 							pd->sbu_adc_state = ADC_STATE_DRY;
 							work = 1;
 						} else {
-							usbpd_info(&pd->dev, "[moisture] %s: detect not wet, wait adc change\n",
-									__func__);
+//							usbpd_info(&pd->dev, "[moisture] %s: detect not wet, wait adc change\n",
+//									__func__);
 							pd->sbu_adc_param.low_thr = (int)results.physical - ADC_CHANGE_THR > 0 ?
 								(int)results.physical - ADC_CHANGE_THR : 0;
 							pd->sbu_adc_param.high_thr = (int)results.physical + ADC_CHANGE_THR > adc_low_threshold ?
@@ -4737,8 +4737,8 @@ static void pd_sbu_adc_work(struct work_struct *w)
 				}
 				prev_adc2 = (int)results.physical;
 			} else { //Vbus present
-				usbpd_info(&pd->dev, "[moisture] %s: vbus is on, factory cable or usb cable connector is wet",
-						__func__);
+//				usbpd_info(&pd->dev, "[moisture] %s: vbus is on, factory cable or usb cable connector is wet",
+//						__func__);
 				prev_adc2 = (int)results.physical;
 				pd->sbu_adc_param.low_thr = (int)results.physical - ADC_CHANGE_THR > 0 ?
 					(int)results.physical - ADC_CHANGE_THR : 0;
@@ -4777,8 +4777,8 @@ static void pd_sbu_adc_work(struct work_struct *w)
 		break;
 	case ADC_STATE_WET:
 		if (!pd->sbu_moisture) {
-			usbpd_info(&pd->dev, "[moisture] %s: wet state: %s -> %s\n", __func__,
-					pd->sbu_moisture ? "wet" : "dry", "wet");
+//			usbpd_info(&pd->dev, "[moisture] %s: wet state: %s -> %s\n", __func__,
+//					pd->sbu_moisture ? "wet" : "dry", "wet");
 			pd->sbu_moisture = 1;
 			pd_set_cc_disable(pd, true);
 			pd_set_input_suspend(pd, true);
@@ -4838,18 +4838,18 @@ static void pd_sbu_adc_work(struct work_struct *w)
 			}
 
 			if (pd->pullup_volt == HW_PULLUP_1V) {
-				hrtimer_start(&pd->sbu_timer, ms_to_ktime(60 * 1000), HRTIMER_MODE_REL);
-				usbpd_dbg(&pd->dev, "[moisture] %s: count: %d delay: %lu(s)\n",
-						__func__, gpio_count, delay/HZ);
+//				hrtimer_start(&pd->sbu_timer, ms_to_ktime(60 * 1000), HRTIMER_MODE_REL);
+//				usbpd_dbg(&pd->dev, "[moisture] %s: count: %d delay: %lu(s)\n",
+//						__func__, gpio_count, delay/HZ);
 			} else {
-				hrtimer_start(&pd->sbu_timer, ms_to_ktime(delay/HZ*1000), HRTIMER_MODE_REL);
-				usbpd_info(&pd->dev, "[moisture] %s: count: %d delay: %lu(s)\n",
-						__func__, gpio_count, delay/HZ);
+//				hrtimer_start(&pd->sbu_timer, ms_to_ktime(delay/HZ*1000), HRTIMER_MODE_REL);
+//				usbpd_info(&pd->dev, "[moisture] %s: count: %d delay: %lu(s)\n",
+//						__func__, gpio_count, delay/HZ);
 			}
 
 			if (pd->edge_sel && pd->edge_adc_state != ADC_STATE_WET) {
-				usbpd_info(&pd->dev, "[moisture] %s: forcely set wet state to edge\n",
-						__func__);
+//				usbpd_info(&pd->dev, "[moisture] %s: forcely set wet state to edge\n",
+//						__func__);
 				pd->edge_adc_state = ADC_STATE_WET;
 				cancel_delayed_work(&pd->edge_adc_work);
 				schedule_delayed_work(&pd->edge_adc_work, 0);
@@ -4866,9 +4866,9 @@ static void pd_sbu_adc_work(struct work_struct *w)
 		pd->sbu_run_work = false;
 		msleep(50);
 		prev_adc_param = pd->sbu_adc_param;
-		usbpd_info(&pd->dev, "[moisture] %s: ADC PARAM low: %d, high: %d, irq: %d\n",
-				__func__, pd->sbu_adc_param.low_thr, pd->sbu_adc_param.high_thr,
-				pd->sbu_adc_param.state_request);
+//		usbpd_info(&pd->dev, "[moisture] %s: ADC PARAM low: %d, high: %d, irq: %d\n",
+//				__func__, pd->sbu_adc_param.low_thr, pd->sbu_adc_param.high_thr,
+//				pd->sbu_adc_param.state_request);
 		ret = qpnp_adc_tm_channel_measure(pd->adc_tm_dev, &pd->sbu_adc_param);
 		if (ret) {
 			usbpd_err(&pd->dev, "[moisture] %s: request ADC error %d\n", __func__, ret);
@@ -4885,8 +4885,8 @@ static void pd_sbu_notification(enum qpnp_tm_state state, void *ctx)
 {
 	struct usbpd *pd = ctx;
 
-	usbpd_info(&pd->dev, "[moisture] %s: state: %s\n", __func__,
-			state == ADC_TM_HIGH_STATE ? "high" : "low");
+//	usbpd_info(&pd->dev, "[moisture] %s: state: %s\n", __func__,
+//			state == ADC_TM_HIGH_STATE ? "high" : "low");
 	if (state >= ADC_TM_STATE_NUM) {
 		usbpd_err(&pd->dev, "[moisture] %s: invalid notification %d\n",
 				__func__, state);
@@ -4914,7 +4914,7 @@ static void pd_init_edge_adc_work(struct work_struct *w)
 		return;
 
 	mutex_lock(&pd->moisture_lock);
-	usbpd_info(&pd->dev, "[moisture] %s\n", __func__);
+//	usbpd_info(&pd->dev, "[moisture] %s\n", __func__);
 	if (pd->prop_moisture_en == DUAL_ROLE_PROP_MOISTURE_EN_DISABLE) {
 		if (lge_get_board_rev_no() >= HW_REV_1_0)
 			gpiod_direction_output(pd->edge_sel, 0);
@@ -4981,7 +4981,7 @@ static void pd_init_sbu_adc_work(struct work_struct *w)
 		return;
 
 	mutex_lock(&pd->moisture_lock);
-	usbpd_info(&pd->dev, "[moisture] %s\n", __func__);
+//	usbpd_info(&pd->dev, "[moisture] %s\n", __func__);
 	if (pd->prop_moisture_en == DUAL_ROLE_PROP_MOISTURE_EN_DISABLE) {
 		gpiod_direction_output(pd->sbu_sel, 0);
 		goto out;
@@ -5016,9 +5016,9 @@ static void pd_init_sbu_adc_work(struct work_struct *w)
 
 	if (pd->pullup_volt == HW_PULLUP_NONE) {
 		qpnp_vadc_pullup_volt_chk(pd->vadc_dev, VADC_AMUX_THM2, &results);
-		usbpd_info(&pd->dev, "[moisture] %s: sbu pullup adc = %d(%s)\n", __func__,
-				(int)results.physical,
-				(int)results.physical < 1100000 ? "1V" : "1.8V");
+//		usbpd_info(&pd->dev, "[moisture] %s: sbu pullup adc = %d(%s)\n", __func__,
+//				(int)results.physical,
+//				(int)results.physical < 1100000 ? "1V" : "1.8V");
 		if ((int)results.physical < 1100000) {
 			pd->pullup_volt = HW_PULLUP_1V;
 			adc_low_threshold = 714000; // 470K ohm
@@ -5165,10 +5165,10 @@ struct usbpd *usbpd_create(struct device *parent)
 	pd->timer.function = pd_timeout;
 	mutex_init(&pd->swap_lock);
 #ifdef CONFIG_LGE_USB_MOISTURE_DETECTION
-	hrtimer_init(&pd->edge_timer, CLOCK_BOOTTIME, HRTIMER_MODE_REL);
-	pd->edge_timer.function = pd_edge_timeout;
-	hrtimer_init(&pd->sbu_timer, CLOCK_BOOTTIME, HRTIMER_MODE_REL);
-	pd->sbu_timer.function = pd_sbu_timeout;
+//	hrtimer_init(&pd->edge_timer, CLOCK_BOOTTIME, HRTIMER_MODE_REL);
+//	pd->edge_timer.function = pd_edge_timeout;
+//	hrtimer_init(&pd->sbu_timer, CLOCK_BOOTTIME, HRTIMER_MODE_REL);
+//	pd->sbu_timer.function = pd_sbu_timeout;
 	mutex_init(&pd->moisture_lock);
 #endif
 
@@ -5294,7 +5294,7 @@ struct usbpd *usbpd_create(struct device *parent)
 	if (IS_ERR(pd->uart_sbu_sel_gpio)) {
 		usbpd_err(&pd->dev, "Unable to uart_sbu gpio\n");
 	}
-	usbpd_info(&pd->dev,"USB Debugger Initialized\n");
+//	usbpd_info(&pd->dev,"USB Debugger Initialized\n");
 #endif
 #ifdef CONFIG_LGE_USB_MOISTURE_DETECTION
 	INIT_DELAYED_WORK(&pd->init_edge_adc_work, pd_init_edge_adc_work);
@@ -5353,7 +5353,7 @@ struct usbpd *usbpd_create(struct device *parent)
 		if(ret != 0) {
 			usbpd_err(&pd->dev, "usb id only check fail\n");
 		} else if (lge_val.intval == FACTORY_CABLE) {
-			usbpd_info(&pd->dev, "factory cable connected, disable moisture detection\n");
+//			usbpd_info(&pd->dev, "factory cable connected, disable moisture detection\n");
 			pd->sbu_sel = NULL;
 			pd->edge_sel = NULL;
 		}
