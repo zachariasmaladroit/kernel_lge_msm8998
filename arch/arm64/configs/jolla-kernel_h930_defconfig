@@ -6196,7 +6196,7 @@ CONFIG_DEVFREQ_GOV_MEMLAT=y
 #
 # secure boot enforced CC (common criteria) mode
 # useless with unlocked bootloader and custom ROMs (?!)
-CONFIG_CRYPTO_CCMODE=y
+# CONFIG_CRYPTO_CCMODE is not set
 # enabled for now ...
 
 # LGE essentials
