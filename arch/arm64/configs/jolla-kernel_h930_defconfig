@@ -6047,6 +6047,10 @@ CONFIG_FTRACE=y
 # debug stuff (disabling recommended)
 # CONFIG_PROFILING is not set
 # CONFIG_MMC_PERF_PROFILING is not set
+CONFIG_ARCH_WANT_FRAME_POINTERS=y
+# CONFIG_FRAME_POINTER is not set
+#
+# reduced output recommended if debug needs to be used
 CONFIG_DEBUG_INFO_REDUCED=y
 
 # ION
