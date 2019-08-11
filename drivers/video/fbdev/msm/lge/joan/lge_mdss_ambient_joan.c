@@ -222,7 +222,7 @@ int lge_mdss_sw43402_prepare_cmds(struct mdss_panel_data *pdata, int cmd_index)
 		if (ainfo->pixel_shift_on)
 			data |= BIT(7);
 
-		pr_debug(("WRAOD : 0x%02x\n", data);
+		pr_debug("WRAOD : 0x%02x\n", data);
 		cmds->cmds[CMDS_WRAOD].payload[1] = data;
 
 		data = cmds->cmds[CMDS_AODCTL].payload[1];
@@ -287,7 +287,7 @@ int lge_mdss_ambient_partial_area_set(struct mdss_panel_info *pinfo, int height)
 	}
 
 	pinfo->dsc.partial_height = height;
-	pr_debug(("[Ambient] partial area %d\n", pinfo->dsc.partial_height);
+	pr_debug("[Ambient] partial area %d\n", pinfo->dsc.partial_height);
 
 	return 0;
 }
