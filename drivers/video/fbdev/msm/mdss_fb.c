@@ -5303,8 +5303,14 @@ int mdss_fb_do_ioctl(struct fb_info *info, unsigned int cmd,
 		ret = mdss_fb_mode_switch(mfd, dsi_mode);
 		break;
 	case MSMFB_ATOMIC_COMMIT:
-		devfreq_boost_kick(DEVFREQ_MSM_CPUBW);
-		cpu_input_boost_kick();
+#ifdef CONFIG_CPU_INPUT_BOOST
+		if (!is_vidc_open()) {
+#ifdef CONFIG_DEVFREQ_BOOST
+				devfreq_boost_kick(DEVFREQ_MSM_CPUBW);
+#endif
+				cpu_input_boost_kick();
+		}
+#endif
 		ret = mdss_fb_atomic_commit_ioctl(info, argp, file);
 		break;
 

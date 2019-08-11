@@ -8,6 +8,7 @@
 #ifdef CONFIG_CPU_INPUT_BOOST
 void cpu_input_boost_kick(void);
 void cpu_input_boost_kick_max(unsigned int duration_ms);
+bool is_vidc_open(void);
 #else
 static inline void cpu_input_boost_kick(void)
 {
@@ -15,6 +16,7 @@ static inline void cpu_input_boost_kick(void)
 static inline void cpu_input_boost_kick_max(unsigned int duration_ms)
 {
 }
+bool is_vidc_open(void);
 #endif
 
 #endif /* _CPU_INPUT_BOOST_H_ */
