@@ -224,7 +224,7 @@ static void lge_bypass_close(struct tty_struct *tty, struct file *file)
 static int diag_bypass_request(const unsigned char* buf, int count)
 {
     if(diag_bypass_enable) {
-        diag_process_hdlc_pkt((void*)buf, (unsigned)count, 0);
+        diag_process_hdlc_pkt((void*)buf, (unsigned)count, NULL);
         return count;
     }
     return 0;
