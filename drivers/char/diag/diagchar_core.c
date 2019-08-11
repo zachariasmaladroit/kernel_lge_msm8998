@@ -393,8 +393,8 @@ static int diagchar_open(struct inode *inode, struct file *file)
 	return -ENOMEM;
 
 fail:
-	driver->num_clients--;
 	mutex_unlock(&driver->diagchar_mutex);
+	driver->num_clients--;
 	pr_err_ratelimited("diag: Insufficient memory for new client");
 	return -ENOMEM;
 }
