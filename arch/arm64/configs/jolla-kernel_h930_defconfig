@@ -6153,6 +6153,7 @@ CONFIG_PROCESS_RECLAIM=y
 # CONFIG_BOOST_DYING_TASK is not set
 # CONFIG_MEMCG is not set
 # CONFIG_MEMCG_SWAP is not set
+
 # LMK: default =y
 # CONFIG_ANDROID_LOW_MEMORY_KILLER is not set
 CONFIG_ANDROID_LOW_MEMORY_KILLER_AUTODETECT_OOM_ADJ_VALUES=y
@@ -6160,6 +6161,10 @@ CONFIG_ANDROID_LMK_ADJ_RBTREE=y
 #
 # simple_lmk (pick either this or ALMK, mutually exclusive)
 CONFIG_ANDROID_SIMPLE_LMK=y
+
+# LGE: mm: vmscan, page_alloc, ion
+# CONFIG_MIGRATE_HIGHORDER is not set
+CONFIG_HIGHORDER_PAGES=46080
 
 # developer access & other hardware-access
 #
