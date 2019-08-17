@@ -213,7 +213,7 @@ static int tfa98xx_register_inputdev(struct tfa98xx *tfa98xx)
 	input = input_allocate_device();
 
 	if (!input) {
-		dev_err(tfa98xx->codec->dev, "Unable to allocate input device\n");
+		dev_err_ratelimited(tfa98xx->codec->dev, "Unable to allocate input device\n");
 		return -ENOMEM;
 	}
 
@@ -239,7 +239,7 @@ static int tfa98xx_register_inputdev(struct tfa98xx *tfa98xx)
 
 	err = input_register_device(input);
 	if (err) {
-		dev_err(tfa98xx->codec->dev, "Unable to register input device\n");
+		dev_err_ratelimited(tfa98xx->codec->dev, "Unable to register input device\n");
 		goto err_free_dev;
 	}
 
@@ -2297,7 +2297,7 @@ static int tfa98xx_register_dsp(struct tfa98xx *tfa98xx)
 		return handle;
 	}
 reg_err:
-	dev_err(&tfa98xx->i2c->dev,
+	dev_err_ratelimited(&tfa98xx->i2c->dev,
 		"Unable to match I2C address 0x%x with a container device\n",
 							tfa98xx->i2c->addr);
 	return -EINVAL;
@@ -2439,7 +2439,7 @@ enum tfa98xx_error tfa98xx_read_data(tfa98xx_handle_t handle,
 		} while ((err != ARRAY_SIZE(msgs)) && (++tries < I2C_RETRIES));
 
 		if (err != ARRAY_SIZE(msgs)) {
-			dev_err(&tfa98xx_client->dev, "read transfer error %d\n",
+			dev_err_ratelimited(&tfa98xx_client->dev, "read transfer error %d\n",
 									err);
 			error = TFA98XX_ERROR_FAIL;
 		}
@@ -2640,20 +2640,20 @@ static void tfa98xx_container_loaded(const struct firmware *cont, void *context)
 
 	tfa_err = tfa_load_cnt(container, container_size);
 	if (tfa_err != tfa_error_ok) {
-		dev_err(tfa98xx->dev, "Cannot load container file, aborting\n");
+		dev_err_ratelimited(tfa98xx->dev, "Cannot load container file, aborting\n");
 		return;
 	}
 
 	/* register codec with dsp */
 	tfa98xx->handle = tfa98xx_register_dsp(tfa98xx);
 	if (tfa98xx->handle < 0) {
-		dev_err(tfa98xx->dev, "Cannot register with DSP, aborting\n");
+		dev_err_ratelimited(tfa98xx->dev, "Cannot register with DSP, aborting\n");
 		tfa98xx->handle = -1;
 		return;
 	}
 
 	if (tfa_probe(tfa98xx->i2c->addr << 1, &handle) != TFA98XX_ERROR_OK) {
-		dev_err(tfa98xx->dev, "Failed to probe TFA98xx @ 0x%.2x\n", tfa98xx->i2c->addr);
+		dev_err_ratelimited(tfa98xx->dev, "Failed to probe TFA98xx @ 0x%.2x\n", tfa98xx->i2c->addr);
 		return;
 	}
 
@@ -2884,13 +2884,13 @@ static void tfa98xx_dsp_init(struct tfa98xx *tfa98xx)
 		ret = tfa98xx_tfa_start(tfa98xx, tfa98xx_profile, tfa98xx_vsteps);
 		if (ret == TFA98XX_ERROR_NOT_SUPPORTED) {
 			tfa98xx->dsp_fw_state = TFA98XX_DSP_FW_FAIL;
-			dev_err(&tfa98xx->i2c->dev, "Failed starting device\n");
+			dev_err_ratelimited(&tfa98xx->i2c->dev, "Failed starting device\n");
 			failed = true;
 		} else if (ret != TFA98XX_ERROR_OK) {
 			/* It may fail as we may not have a valid clock at that
 			 * time, so re-schedule and re-try later.
 			 */
-			dev_err(&tfa98xx->i2c->dev,
+			dev_err_ratelimited(&tfa98xx->i2c->dev,
 					"tfa_start failed! (err %d) - %d\n",
 					ret, tfa98xx->init_count);
 			reschedule = true;
@@ -2913,7 +2913,7 @@ static void tfa98xx_dsp_init(struct tfa98xx *tfa98xx)
 		}
 	} else {
 		/* exceeded max number ot start tentatives, cancel start */
-		dev_err(&tfa98xx->i2c->dev,
+		dev_err_ratelimited(&tfa98xx->i2c->dev,
 			"Failed starting device (%d)\n",
 			tfa98xx->init_count);
 			failed = true;
@@ -3147,7 +3147,7 @@ static int tfa98xx_startup(struct snd_pcm_substream *substream,
 				dev_info(codec->dev, "Unable to identify supported sample rate\n");
 
 			if (tfa98xx->rate_constraint.count >= TFA98XX_NUM_RATES) {
-				dev_err(codec->dev, "too many sample rates\n");
+				dev_err_ratelimited(codec->dev, "too many sample rates\n");
 			} else {
 				tfa98xx->rate_constraint_list[idx++] = sr;
 				tfa98xx->rate_constraint.count += 1;
@@ -3191,14 +3191,14 @@ static int tfa98xx_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
 	case SND_SOC_DAIFMT_I2S:
 		if ((fmt & SND_SOC_DAIFMT_MASTER_MASK) != SND_SOC_DAIFMT_CBS_CFS) {
-			dev_err(codec->dev, "Invalid Codec master mode\n");
+			dev_err_ratelimited(codec->dev, "Invalid Codec master mode\n");
 			return -EINVAL;
 		}
 		break;
 	case SND_SOC_DAIFMT_PDM:
 		break;
 	default:
-		dev_err(codec->dev, "Unsupported DAI format %d\n",
+		dev_err_ratelimited(codec->dev, "Unsupported DAI format %d\n",
 					fmt & SND_SOC_DAIFMT_FORMAT_MASK);
 		return -EINVAL;
 	}
@@ -3462,7 +3462,7 @@ static int tfa98xx_probe(struct snd_soc_codec *codec)
 	codec->control_data = tfa98xx->regmap;
 	ret = snd_soc_codec_set_cache_io(codec, 8, 16, SND_SOC_REGMAP);
 	if (ret != 0) {
-		dev_err(codec->dev, "Failed to set cache I/O: %d\n", ret);
+		dev_err_ratelimited(codec->dev, "Failed to set cache I/O: %d\n", ret);
 		return ret;
 	}
 #endif
@@ -3728,7 +3728,7 @@ static int tfa98xx_i2c_probe(struct i2c_client *i2c,
 	pr_debug("addr=0x%x\n", i2c->addr);
 
 	if (!i2c_check_functionality(i2c->adapter, I2C_FUNC_I2C)) {
-		dev_err(&i2c->dev, "check_functionality failed\n");
+		dev_err_ratelimited(&i2c->dev, "check_functionality failed\n");
 		return -EIO;
 	}
 
@@ -3746,7 +3746,7 @@ static int tfa98xx_i2c_probe(struct i2c_client *i2c,
 	tfa98xx->regmap = devm_regmap_init_i2c(i2c, &tfa98xx_regmap);
 	if (IS_ERR(tfa98xx->regmap)) {
 		ret = PTR_ERR(tfa98xx->regmap);
-		dev_err(&i2c->dev, "Failed to allocate register map: %d\n",
+		dev_err_ratelimited(&i2c->dev, "Failed to allocate register map: %d\n",
 			ret);
 		goto err;
 	}
@@ -3758,7 +3758,7 @@ static int tfa98xx_i2c_probe(struct i2c_client *i2c,
 	if (np) {
 		ret = tfa98xx_parse_dt(&i2c->dev, tfa98xx, np);
 		if (ret) {
-			dev_err(&i2c->dev, "Failed to parse DT node\n");
+			dev_err_ratelimited(&i2c->dev, "Failed to parse DT node\n");
 			goto err;
 		}
 		if (no_start)
@@ -3788,7 +3788,7 @@ static int tfa98xx_i2c_probe(struct i2c_client *i2c,
 	if (no_start == 0) {
 		ret = regmap_read(tfa98xx->regmap, 0x03, &reg);
 		if (ret < 0) {
-			dev_err(&i2c->dev, "Failed to read Revision register: %d\n",
+			dev_err_ratelimited(&i2c->dev, "Failed to read Revision register: %d\n",
 				ret);
 			return -EIO;
 		}
@@ -3883,7 +3883,7 @@ static int tfa98xx_i2c_probe(struct i2c_client *i2c,
 				ARRAY_SIZE(tfa98xx_dai));
 
 	if (ret < 0) {
-		dev_err(&i2c->dev, "Failed to register TFA98xx: %d\n", ret);
+		dev_err_ratelimited(&i2c->dev, "Failed to register TFA98xx: %d\n", ret);
 		goto err_off;
 	}
 
@@ -3896,7 +3896,7 @@ static int tfa98xx_i2c_probe(struct i2c_client *i2c,
 					NULL, tfa98xx_irq, irq_flags,
 					"tfa98xx", tfa98xx);
 		if (ret != 0) {
-			dev_err(&i2c->dev, "Failed to request IRQ %d: %d\n",
+			dev_err_ratelimited(&i2c->dev, "Failed to request IRQ %d: %d\n",
 					gpio_to_irq(tfa98xx->irq_gpio), ret);
 			goto err_off;
 		}
