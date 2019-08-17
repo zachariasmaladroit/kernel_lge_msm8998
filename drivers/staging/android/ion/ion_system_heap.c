@@ -446,16 +446,14 @@ void ion_system_heap_destroy_highorder_pools(struct ion_page_pool **pools)
  * ion_system_heap_destroy_pools to destroy the pools.
  */
 int ion_system_heap_create_highorder_pools(struct device *dev,
-					struct ion_page_pool **pools,
-					bool movable)
+					struct ion_page_pool **pools)
 {
 	int i;
 	for (i = 0; i < num_highorders; i++) {
 		struct ion_page_pool *pool;
 		gfp_t gfp_flags = m_highorder_gfp_flags;
 
-		pool = ion_page_pool_create(dev, gfp_flags, highorders[i],
-					movable);
+		pool = ion_page_pool_create(dev, gfp_flags, highorders[i]);
 		if (!pool)
 			goto err_create_pool;
 		pools[i] = pool;
@@ -1049,7 +1047,7 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *data)
 	if (!heap->highorder_pools)
 		goto err_alloc_highorder_pools;
 
-	if (ion_system_heap_create_highorder_pools(dev, heap->highorder_pools, false))
+	if (ion_system_heap_create_highorder_pools(dev, heap->highorder_pools))
 		goto err_create_highorder_pools;
 #endif
 
