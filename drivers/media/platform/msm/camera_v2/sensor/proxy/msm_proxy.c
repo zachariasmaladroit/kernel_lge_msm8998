@@ -193,9 +193,9 @@ static int32_t msm_proxy_get_subdev_id(struct msm_proxy_ctrl_t *proxy_ctrl,
 									   void *arg)
 {
 	uint32_t *subdev_id = (uint32_t *)arg;
-	pr_err("Enter\n");
+//	pr_err("Enter\n");
 	if (!subdev_id) {
-		pr_err("failed\n");
+		pr_err("failed get_subdev_id\n");
 		return -EINVAL;
 	}
 	if (proxy_ctrl->proxy_device_type == MSM_CAMERA_PLATFORM_DEVICE)
@@ -212,9 +212,9 @@ static int msm_proxy_close(struct v4l2_subdev *sd,
 	struct v4l2_subdev_fh *fh) {
 	int rc = 0;
 	struct msm_proxy_ctrl_t *o_ctrl =  v4l2_get_subdevdata(sd);
-	CDBG("Enter\n");
+//	CDBG("Enter\n");
 	if (!o_ctrl) {
-		pr_err("failed\n");
+		pr_err("failed proxy_close\n");
 		return -EINVAL;
 	}
 	if (o_ctrl->proxy_device_type == MSM_CAMERA_PLATFORM_DEVICE) {
@@ -224,7 +224,7 @@ static int msm_proxy_close(struct v4l2_subdev *sd,
 			pr_err("cci_init failed\n");
 	}
 
-	CDBG("Exit\n");
+//	CDBG("Exit\n");
 	return rc;
 }
 
@@ -342,7 +342,7 @@ int16_t OffsetCalibration(void)
 	//int32_t OffsetCalibrationDataMicroMeter;
 
 #ifdef COMPATIBILITY_CUT_1_0_CUT_1_1
-	pr_err("OffsetCalibration start!\n");
+//	pr_err("OffsetCalibration start!\n");
 
     if (moduleVersion == 1) // cut 1.1
 	{
@@ -351,12 +351,12 @@ int16_t OffsetCalibration(void)
 		offsetComp = offsetComp - st_offset;
 
 		if ((offsetComp < 31000) && (offsetComp > (-63000)) && (Status == VL53L0_ERROR_NONE) ) {
-			pr_err("OffsetCalibration: spec in!\n");
+//			pr_err("OffsetCalibration: spec in!\n");
 		} else {
 			VL53L0_RestoreOffset(Dev, st_offset);
-			pr_err("OffsetCalibration: spec out!\n");
+//			pr_err("OffsetCalibration: spec out!\n");
 		}
-		pr_err("offsetComp:%d OffsetCalibrationDataMicroMeter: %d!\n",offsetComp, st_offset);
+//		pr_err("offsetComp:%d OffsetCalibrationDataMicroMeter: %d!\n",offsetComp, st_offset);
     }
 	else if(moduleVersion == 0) //cut1.0
 	{
@@ -367,7 +367,7 @@ int16_t OffsetCalibration(void)
 	}
 	offset = offsetComp/1000;
 
-	pr_err("OffsetCalibration end!\n");
+//	pr_err("OffsetCalibration end!\n");
 	return offset;
 #else
 	//VL53L0_GetOffsetCalibrationDataMicroMeter(Dev, &OffsetCalibrationDataMicroMeter);
@@ -375,12 +375,12 @@ int16_t OffsetCalibration(void)
 	offsetComp = offsetComp - st_offset;
 
 	if ((offsetComp < 31000) && (offsetComp > (-63000)) && (Status == VL53L0_ERROR_NONE) ) {
-		pr_err("OffsetCalibration: spec in!\n");
+//		pr_err("OffsetCalibration: spec in!\n");
 	} else {
 		VL53L0_RestoreOffset(Dev, st_offset);
-		pr_err("OffsetCalibration: spec out!\n");
+//		pr_err("OffsetCalibration: spec out!\n");
 	}
-	pr_err("offsetComp:%d OffsetCalibrationDataMicroMeter: %d!\n",offsetComp, st_offset);
+//	pr_err("offsetComp:%d OffsetCalibrationDataMicroMeter: %d!\n",offsetComp, st_offset);
 #endif
 
 
@@ -394,7 +394,7 @@ int16_t OffsetCalibration(void)
 	uint16_t statusCode = 0;
 	uint16_t distance = 0;
 
-	pr_err("OffsetCalibration start!\n");
+//	pr_err("OffsetCalibration start!\n");
 
 	proxy_i2c_write(SYSRANGE__PART_TO_PART_RANGE_OFFSET, 0, 1);
 	proxy_i2c_write(SYSRANGE__CROSSTALK_COMPENSATION_RATE, 0, 1);
@@ -419,7 +419,7 @@ int16_t OffsetCalibration(void)
 	measuredDistance = measuredDistance / 10;
 	measuredOffset = (realDistance - measuredDistance) / 3;
 
-	pr_err("OffsetCalibration end!\n");
+//	pr_err("OffsetCalibration end!\n");
 
 	return measuredOffset;
 #endif
@@ -643,16 +643,16 @@ static void get_proxy(struct work_struct *work)
 /* LGE_CHANGE_S, for initialization time reduce(spad calibration), 2016-02-11, seonyung.kim@lge.com */
 				VL53L0_PerformRefCalibration(Dev, &VhvSettings,&PhaseCal);
 				VL53L0_PerformRefSpadManagement(Dev,  &count, &isApertureSpads);
-				pr_err("perform ref calibration= %d, %d, %d, %d to eeprom\n", VhvSettings, PhaseCal, count, isApertureSpads);
+//				pr_err("perform ref calibration= %d, %d, %d, %d to eeprom\n", VhvSettings, PhaseCal, count, isApertureSpads);
 
  			 	offset = OffsetCalibration();
 				count_sep1 = count >> 16;
 				count_sep2 = 0xFFFF & count;
-				pr_err("VL53L0 count:%d, count_sep1:%d, count_sep2:%d\n",count, count_sep1, count_sep2);
+//				pr_err("VL53L0 count:%d, count_sep1:%d, count_sep2:%d\n",count, count_sep1, count_sep2);
 
 /* LGE_CHANGE_E, for initialization time reduce(spad calibration), 2016-02-13, seonyung.kim@lge.com */
 				//VL53L0_PerformRefSpadManagement(Dev,&refSpadCount,&isApertureSpads);
-				pr_err("write offset = %x to eeprom\n", offset);
+//				pr_err("write offset = %x to eeprom\n", offset);
 
 				proxy_i2c_e2p_read(0xBE0, &moduleId, 1);
 
@@ -663,7 +663,7 @@ static void get_proxy(struct work_struct *work)
 #endif
 					//if ((moduleId == 0x00) || (moduleId == 0x01) || (moduleId == 0x02)) {
 
-						pr_err("VL53L0 VhvSettings:%d, PhaseCal:%d, isApertureSpads:%d\n",VhvSettings, PhaseCal, isApertureSpads);
+//						pr_err("VL53L0 VhvSettings:%d, PhaseCal:%d, isApertureSpads:%d\n",VhvSettings, PhaseCal, isApertureSpads);
 						proxy_i2c_e2p_read(IT_EEP_REG, &finVal, 2);
 						calCount = finVal >> 8;
 
@@ -682,8 +682,8 @@ static void get_proxy(struct work_struct *work)
 						proxy_i2c_e2p_write(IT_EEP_REG+8, isApertureSpads, 1);	//0x808
 						msleep(1);
 
-						pr_err("KSY read inot cal count = %x to eeprom\n", finVal);
-						pr_err("KSY read inot offset = %x to eeprom\n", offset);
+//						pr_err("KSY read inot cal count = %x to eeprom\n", finVal);
+//						pr_err("KSY read inot offset = %x to eeprom\n", offset);
 					//}
 
 					proxy_struct->proxy_stat.cal_count = calCount;
@@ -713,11 +713,11 @@ static void get_proxy(struct work_struct *work)
 		if (proxy_struct->exit_workqueue)
 			break;
 	}
-	pr_err("end workqueue!\n");
+//	pr_err("end workqueue!\n");
 }
 int16_t stop_proxy(void)
 {
-	pr_err("stop_proxy!\n");
+//	pr_err("stop_proxy!\n");
 	if (msm_proxy_t.exit_workqueue == 0) {
 		if (msm_proxy_t.wq_init_success) {
 			msm_proxy_t.exit_workqueue = 1;
@@ -725,65 +725,65 @@ int16_t stop_proxy(void)
 			msm_proxy_t.wq_init_success = 0;  //LGE_UPDATE
 			msm_proxy_t.work_thread = NULL;
 			msm_proxy_t.check_init_finish = 0;
-			pr_err("destroy_workqueue!\n");
+//			pr_err("destroy_workqueue!\n");
 		}
 	}
 	return 0;
 }
 int16_t pause_proxy(void)
 {
-	pr_err("pause_proxy!\n");
+//	pr_err("pause_proxy!\n");
 	msm_proxy_t.pause_workqueue = 1;
-	pr_err("pause_workqueue = %d\n", msm_proxy_t.pause_workqueue);
+//	pr_err("pause_workqueue = %d\n", msm_proxy_t.pause_workqueue);
 	return 0;
 }
 int16_t restart_proxy(void)
 {
-	pr_err("restart_proxy!\n");
+//	pr_err("restart_proxy!\n");
 	msm_proxy_t.pause_workqueue = 0;
-	pr_err("pause_workqueue = %d\n", msm_proxy_t.pause_workqueue);
+//	pr_err("pause_workqueue = %d\n", msm_proxy_t.pause_workqueue);
 	return 0;
 }
 uint16_t msm_proxy_thread_start(void)
 {
-	pr_err("msm_proxy_thread_start\n");
+//	pr_err("msm_proxy_thread_start\n");
 
 	if (msm_proxy_t.exit_workqueue) {
 		msm_proxy_t.exit_workqueue = 0;
 		msm_proxy_t.work_thread = create_singlethread_workqueue("my_work_thread");
 		if (!msm_proxy_t.work_thread) {
-			pr_err("creating work_thread fail!\n");
+//			pr_err("creating work_thread fail!\n");
 			return 1;
 		}
 
 		msm_proxy_t.wq_init_success = 1;
 
 		INIT_WORK(&msm_proxy_t.proxy_work, get_proxy);
-		pr_err("INIT_WORK done!\n");
+//		pr_err("INIT_WORK done!\n");
 
 		queue_work(msm_proxy_t.work_thread, &msm_proxy_t.proxy_work);
-		pr_err("queue_work done!\n");
+//		pr_err("queue_work done!\n");
 	}
 	return 0;
 }
 uint16_t msm_proxy_thread_end(void)
 {
 	uint16_t ret = 0;
-	pr_err("msm_proxy_thread_end\n");
+//	pr_err("msm_proxy_thread_end\n");
 	ret = stop_proxy();
 	return ret;
 }
 uint16_t msm_proxy_thread_pause(void)
 {
 	uint16_t ret = 0;
-	pr_err("msm_proxy_thread_pause\n");
+//	pr_err("msm_proxy_thread_pause\n");
 	ret = pause_proxy();
 	return ret;
 }
 uint16_t msm_proxy_thread_restart(void)
 {
 	uint16_t ret = 0;
-	pr_err("msm_proxy_thread_restart\n");
+//	pr_err("msm_proxy_thread_restart\n");
 	msm_proxy_t.i2c_fail_cnt = 0;
 	ret = restart_proxy();
 	return ret;
@@ -791,7 +791,7 @@ uint16_t msm_proxy_thread_restart(void)
 uint16_t msm_proxy_cal(void)
 {
 	uint16_t ret = 0;
-	pr_err("msm_proxy_cal\n");
+//	pr_err("msm_proxy_cal\n");
 	msm_proxy_t.proxy_cal = 1;
 	return ret;
 }
@@ -830,13 +830,13 @@ int32_t msm_init_proxy(void)
 	uint16_t moduleId = 0;
 	uint8_t shiftModuleId = 0;
 
-	pr_err("msm_init_proxy ENTER!\n");
+//	pr_err("msm_init_proxy ENTER!\n");
 
 	proxy_i2c_read(RESULT__RANGE_STATUS, &proxyStatus, 1);
 	proxy_i2c_read(0x290, &proxyFatal, 1);
 
 	if ((proxyStatus & 0x01) && ((proxyStatus >> 4) == 0) && (proxyFatal == 0))
-		pr_err("init proxy alive!\n");
+//		pr_err("init proxy alive!\n");
 
 	else {
 		pr_err("init proxy fail!, no proxy sensor found!\n");
@@ -956,7 +956,7 @@ int32_t msm_init_proxy(void)
 	//readRangeOffset
 	proxy_i2c_e2p_read(0xBE0, &moduleId, 2);
 	shiftModuleId = moduleId >> 8;
-	pr_err("KSY module ID : %d\n", shiftModuleId);
+//	pr_err("KSY module ID : %d\n", shiftModuleId);
 
 	if ((shiftModuleId == 0x00) || (shiftModuleId == 0x01) || (shiftModuleId == 0x02)) {
 		proxy_i2c_e2p_read(IT_EEP_REG, &finVal, 2);
@@ -1576,7 +1576,7 @@ static int msm_proxy_init(struct msm_proxy_ctrl_t *o_ctrl)
 	CDBG("Enter\n");
 
 	if (!o_ctrl) {
-		pr_err("failed\n");
+		pr_err("msm_proxy_init failed\n");
 		return -EINVAL;
 	}
 
@@ -1592,7 +1592,7 @@ static int msm_proxy_init(struct msm_proxy_ctrl_t *o_ctrl)
 			rc = proxy_i2c_read(0xc2, &revision_id, 1);
 
 			if (rc < 0) {
-				pr_err("i2c failed\n");
+				pr_err("msm_proxy i2c failed\n");
 				msleep(1);
 				continue;
 			} else {
@@ -1610,8 +1610,8 @@ static int32_t msm_proxy_config(struct msm_proxy_ctrl_t *proxy_ctrl,
 		(struct msm_proxy_cfg_data *)argp;
 	int32_t rc = 0;
 	mutex_lock(proxy_ctrl->proxy_mutex);
-	CDBG("Enter\n");
-	CDBG("%s type %d\n", __func__, cdata->cfgtype);
+//	CDBG("Enter\n");
+//	CDBG("%s type %d\n", __func__, cdata->cfgtype);
 	switch (cdata->cfgtype) {
       case CFG_PROXY_INIT:
         rc = msm_proxy_init(proxy_ctrl);
@@ -1630,62 +1630,62 @@ static int32_t msm_proxy_config(struct msm_proxy_ctrl_t *proxy_ctrl,
 
         memcpy(&cdata->cfg.set_info,&proxy_stat,sizeof(cdata->cfg.set_info));
 #if 0
-        CDBG("%s: Get Proxy data! proxy_val is = %d \n", __func__, proxy_stat.proxy_val);
-        CDBG("%s: Get Proxy data! proxy_conv is = %d \n", __func__, proxy_stat.proxy_conv);
-        CDBG("%s: Get Proxy data! proxy_sig is = %d \n", __func__, proxy_stat.proxy_sig);
-        CDBG("%s: Get Proxy data! proxy_amb is = %d \n", __func__, proxy_stat.proxy_amb);
-        CDBG("%s: Get Proxy data! proxy_raw is = %d \n", __func__, proxy_stat.proxy_raw);
-        CDBG("%s: Get Proxy data! cal_count is = %d \n", __func__, proxy_stat.cal_count);
-        CDBG("%s: Get Proxy data! cal_done is = %d \n", __func__, proxy_stat.cal_done);
-        CDBG("%s: Get Proxy data! Range is = %d \n", __func__, read_proxy_data);
+//        CDBG("%s: Get Proxy data! proxy_val is = %d \n", __func__, proxy_stat.proxy_val);
+//        CDBG("%s: Get Proxy data! proxy_conv is = %d \n", __func__, proxy_stat.proxy_conv);
+//        CDBG("%s: Get Proxy data! proxy_sig is = %d \n", __func__, proxy_stat.proxy_sig);
+//        CDBG("%s: Get Proxy data! proxy_amb is = %d \n", __func__, proxy_stat.proxy_amb);
+//        CDBG("%s: Get Proxy data! proxy_raw is = %d \n", __func__, proxy_stat.proxy_raw);
+//        CDBG("%s: Get Proxy data! cal_count is = %d \n", __func__, proxy_stat.cal_count);
+//        CDBG("%s: Get Proxy data! cal_done is = %d \n", __func__, proxy_stat.cal_done);
+//        CDBG("%s: Get Proxy data! Range is = %d \n", __func__, read_proxy_data);
 #endif
         }
         break;
       case CFG_PROXY_THREAD_ON:{
         uint16_t ret = 0;
-        CDBG("%s: CFG_PROXY_THREAD_ON \n", __func__);
+//        CDBG("%s: CFG_PROXY_THREAD_ON \n", __func__);
         ret = msm_proxy_thread_start();
         }
         break;
       case CFG_PROXY_THREAD_OFF:{
         uint16_t ret = 0;
-        CDBG("%s: CFG_PROXY_THREAD_OFF \n", __func__);
+//        CDBG("%s: CFG_PROXY_THREAD_OFF \n", __func__);
         ret = msm_proxy_thread_end();
         }
         break;
       case CFG_PROXY_THREAD_PAUSE:{
         uint16_t ret = 0;
-        CDBG("%s: CFG_PROXY_THREAD_PAUSE \n", __func__);
+//        CDBG("%s: CFG_PROXY_THREAD_PAUSE \n", __func__);
         ret = msm_proxy_thread_pause();
         }
         break;
       case CFG_PROXY_THREAD_RESTART:{
         uint16_t ret = 0;
-        CDBG("%s: CFG_PROXY_THREAD_RESTART \n", __func__);
+//        CDBG("%s: CFG_PROXY_THREAD_RESTART \n", __func__);
         ret = msm_proxy_thread_restart();
         }
         break;
       case CFG_PROXY_CAL:{
         uint16_t ret = 0;
-        CDBG("%s: CFG_PROXY_CAL \n", __func__);
+//        CDBG("%s: CFG_PROXY_CAL \n", __func__);
         ret = msm_proxy_cal();
         }
         break;
       case CFG_PROXY_POWERUP:
         rc = msm_proxy_power_up(proxy_ctrl);
         if (rc < 0)
-          pr_err("Failed proxy power up%d\n", rc);
+//          pr_err("Failed proxy power up%d\n", rc);
         break;
       case CFG_PROXY_POWERDOWN:
 		rc = msm_proxy_power_down(proxy_ctrl);
 	if (rc < 0)
-		pr_err("msm_proxy_power_down failed %d\n", rc);
+//		pr_err("msm_proxy_power_down failed %d\n", rc);
         break;
 	default:
 		break;
 	}
 	mutex_unlock(proxy_ctrl->proxy_mutex);
-	CDBG("Exit\n");
+//	CDBG("Exit\n");
 	return rc;
 }
 
@@ -1693,8 +1693,8 @@ static long msm_proxy_subdev_ioctl(struct v4l2_subdev *sd, unsigned int cmd, voi
 {
 	struct msm_proxy_ctrl_t *a_ctrl = v4l2_get_subdevdata(sd);
 	void __user *argp = (void __user *)arg;
-	CDBG("Enter\n");
-	CDBG("%s:%d a_ctrl %p argp %p\n", __func__, __LINE__, a_ctrl, argp);
+//	CDBG("msm_proxy_subdev_ioctl Enter\n");
+//	CDBG("%s:%d a_ctrl %p argp %p\n", __func__, __LINE__, a_ctrl, argp);
 	switch (cmd) {
 	case VIDIOC_MSM_SENSOR_GET_SUBDEV_ID:
 		return msm_proxy_get_subdev_id(a_ctrl, argp);
@@ -1717,7 +1717,7 @@ static long msm_proxy_subdev_do_ioctl(
 	struct msm_proxy_cfg_data proxy_data;
 	void __user *parg = (void __user *)arg;
 
-	CDBG("Enter\n");
+//	CDBG("msm_proxy_subdev_do_ioctl Enter\n");
 	switch (cmd) {
 	case VIDIOC_MSM_PROXY_CFG32:
 		cmd = VIDIOC_MSM_PROXY_CFG;
@@ -1753,7 +1753,7 @@ static int32_t msm_proxy_power(struct v4l2_subdev *sd, int on)
 {
 	int rc = 0;
 	struct msm_proxy_ctrl_t *proxy_ctrl = v4l2_get_subdevdata(sd);
-	CDBG("Enter\n");
+//	CDBG("msm_proxy_power Enter\n");
 	mutex_lock(proxy_ctrl->proxy_mutex);
   if (on)
 		rc = msm_proxy_power_up(proxy_ctrl);
@@ -1761,7 +1761,7 @@ static int32_t msm_proxy_power(struct v4l2_subdev *sd, int on)
 	  rc = msm_proxy_power_down(proxy_ctrl);
 	}
 	mutex_unlock(proxy_ctrl->proxy_mutex);
-	CDBG("Exit\n");
+//	CDBG("msm_proxy_power Exit\n");
 	return rc;
 }
 
@@ -1779,7 +1779,7 @@ static int32_t msm_proxy_i2c_probe(struct i2c_client *client,
 {
 	int rc = 0;
 	struct msm_proxy_ctrl_t *proxy_ctrl_t = NULL;
-	pr_err("Enter\n");
+	pr_err("msm_proxy_i2c_probe Enter\n");
 
 	if (client == NULL) {
 		pr_err("msm_ois_i2c_probe: client is null\n");
@@ -1798,10 +1798,10 @@ static int32_t msm_proxy_i2c_probe(struct i2c_client *client,
 		goto probe_failure;
 	}
 
-	CDBG("client = 0x%p\n", client);
+//	CDBG("client = 0x%p\n", client);
 	rc = of_property_read_u32(client->dev.of_node, "cell-index",
 		&proxy_ctrl_t->subdev_id);
-	CDBG("cell-index %d, rc %d\n", proxy_ctrl_t->subdev_id, rc);
+//	CDBG("cell-index %d, rc %d\n", proxy_ctrl_t->subdev_id, rc);
 	if (rc < 0) {
 		pr_err("failed rc %d\n", rc);
 		kfree(proxy_ctrl_t);
@@ -1832,8 +1832,8 @@ static int32_t msm_proxy_i2c_probe(struct i2c_client *client,
 	msm_sd_register(&proxy_ctrl_t->msm_sd);
 	proxy_ctrl_t->proxy_state = PROXY_POWER_DOWN;
 
-	CDBG("succeeded\n");
-	pr_err("Exit\n");
+//	CDBG("succeeded\n");
+//	pr_err("Exit\n");
 
 probe_failure:
 	kfree(proxy_ctrl_t);
@@ -1863,16 +1863,16 @@ static int32_t msm_proxy_platform_probe(struct platform_device *pdev)
 	#endif
 #endif
 
-	CDBG("Enter\n");
+//	CDBG("Enter\n");
 
 	if (!pdev->dev.of_node) {
-		CDBG("of_node NULL : %d\n", EINVAL);
+//		CDBG("of_node NULL : %d\n", EINVAL);
 		return -EINVAL;
 	}
 
 	rc = of_property_read_u32((&pdev->dev)->of_node, "cell-index",
 							  &pdev->id);
-	CDBG("cell-index %d, rc %d\n", pdev->id, rc);
+//	CDBG("cell-index %d, rc %d\n", pdev->id, rc);
 	if (rc < 0) {
 		pr_err("failed rc %d\n", rc);
 		return rc;
@@ -1880,7 +1880,7 @@ static int32_t msm_proxy_platform_probe(struct platform_device *pdev)
 
 	rc = of_property_read_u32((&pdev->dev)->of_node, "qcom,cci-master",
 							  &msm_proxy_t.cci_master);
-	CDBG("qcom,cci-master %d, rc %d\n", msm_proxy_t.cci_master, rc);
+//	CDBG("qcom,cci-master %d, rc %d\n", msm_proxy_t.cci_master, rc);
 	if (rc < 0) {
 		pr_err("failed rc %d\n", rc);
 		return rc;
