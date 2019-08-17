@@ -765,9 +765,6 @@ const char * const vmstat_text[] = {
 	"nr_anon_transparent_hugepages",
 	"nr_free_cma",
 	"nr_swapcache",
-#ifdef CONFIG_MIGRATE_HIGHORDER
-	"nr_free_highorder",
-#endif
 	"nr_indirectly_reclaimable",
 
 	/* enum writeback_stat_item counters */
