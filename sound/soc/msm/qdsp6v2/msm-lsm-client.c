@@ -103,12 +103,12 @@ static int msm_lsm_queue_lab_buffer(struct lsm_priv *prtd, int i)
 	struct snd_soc_pcm_runtime *rtd;
 
 	if (!prtd || !prtd->lsm_client) {
-		pr_err("%s: Invalid params prtd %pK lsm client %pK\n",
+		pr_debug("%s: Invalid params prtd %pK lsm client %pK\n",
 			__func__, prtd, ((!prtd) ? NULL : prtd->lsm_client));
 		return -EINVAL;
 	}
 	if (!prtd->substream || !prtd->substream->private_data) {
-		pr_err("%s: Invalid %s\n", __func__,
+		pr_debug("%s: Invalid %s\n", __func__,
 			(!prtd->substream) ? "substream" : "private_data");
 		return -EINVAL;
 	}
@@ -145,13 +145,13 @@ static int lsm_lab_buffer_sanity(struct lsm_priv *prtd,
 	struct snd_soc_pcm_runtime *rtd;
 
 	if (!prtd || !read_done || !index) {
-		pr_err("%s: Invalid params prtd %pK read_done %pK index %pK\n",
+		pr_debug("%s: Invalid params prtd %pK read_done %pK index %pK\n",
 			__func__, prtd, read_done, index);
 		return -EINVAL;
 	}
 
 	if (!prtd->substream || !prtd->substream->private_data) {
-		pr_err("%s: Invalid %s\n", __func__,
+		pr_debug("%s: Invalid %s\n", __func__,
 			(!prtd->substream) ? "substream" : "private_data");
 		return -EINVAL;
 	}
@@ -209,7 +209,7 @@ static void lsm_event_handler(uint32_t opcode, uint32_t token,
 	uint32_t event_ts_msw = 0;
 
 	if (!substream || !substream->private_data) {
-		pr_err("%s: Invalid %s\n", __func__,
+		pr_debug("%s: Invalid %s\n", __func__,
 			(!substream) ? "substream" : "private_data");
 		return;
 	}
@@ -370,17 +370,17 @@ static int msm_lsm_lab_buffer_alloc(struct lsm_priv *lsm, int alloc)
 	int ret = 0;
 	struct snd_dma_buffer *dma_buf = NULL;
 	if (!lsm) {
-		pr_err("%s: Invalid param lsm %pK\n", __func__, lsm);
+		pr_debug("%s: Invalid param lsm %pK\n", __func__, lsm);
 		return -EINVAL;
 	}
 	if (alloc) {
 		if (!lsm->substream) {
-			pr_err("%s: substream is NULL\n", __func__);
+			pr_debug("%s: substream is NULL\n", __func__);
 			return -EINVAL;
 		}
 		ret = q6lsm_lab_buffer_alloc(lsm->lsm_client, alloc);
 		if (ret) {
-			pr_err("%s: alloc lab buffer failed ret %d\n",
+			pr_debug("%s: alloc lab buffer failed ret %d\n",
 				__func__, ret);
 			goto exit;
 		}
@@ -396,7 +396,7 @@ static int msm_lsm_lab_buffer_alloc(struct lsm_priv *lsm, int alloc)
 	} else {
 		ret = q6lsm_lab_buffer_alloc(lsm->lsm_client, alloc);
 		if (ret)
-			pr_err("%s: free lab buffer failed ret %d\n",
+			pr_debug("%s: free lab buffer failed ret %d\n",
 				__func__, ret);
 		kfree(lsm->lsm_client->lab_buffer);
 		lsm->lsm_client->lab_buffer = NULL;
@@ -421,7 +421,7 @@ static int msm_lsm_get_conf_levels(struct lsm_client *client,
 		kzalloc((sizeof(uint8_t) * client->num_confidence_levels),
 			 GFP_KERNEL);
 	if (!client->confidence_levels) {
-		pr_err("%s: No memory for confidence\n"
+		pr_debug("%s: No memory for confidence\n"
 			"levels num of level from user = %d\n",
 			__func__, client->num_confidence_levels);
 			rc = -ENOMEM;
@@ -431,7 +431,7 @@ static int msm_lsm_get_conf_levels(struct lsm_client *client,
 	if (copy_from_user(client->confidence_levels,
 			   conf_levels_ptr,
 			   client->num_confidence_levels)) {
-		pr_err("%s: copy from user failed, size = %d\n",
+		pr_debug("%s: copy from user failed, size = %d\n",
 		       __func__, client->num_confidence_levels);
 		rc = -EFAULT;
 		goto copy_err;
@@ -800,7 +800,7 @@ static int msm_lsm_process_params(struct snd_pcm_substream *substream,
 			break;
 		}
 		if (rc) {
-			pr_err("%s: set_param fail for param_type %d\n",
+			pr_debug("%s: set_param fail for param_type %d\n",
 				__func__, p_info->param_type);
 			return rc;
 		}
@@ -827,7 +827,7 @@ static int msm_lsm_ioctl_shared(struct snd_pcm_substream *substream,
 	uint8_t *confidence_level = NULL;
 
 	if (!substream || !substream->private_data) {
-		pr_err("%s: Invalid %s\n", __func__,
+		pr_debug("%s: Invalid %s\n", __func__,
 			(!substream) ? "substream" : "private_data");
 		return -EINVAL;
 	}
@@ -1311,7 +1311,7 @@ static int msm_lsm_ioctl_compat(struct snd_pcm_substream *substream,
 		return -ENXIO;
 
 	if (!substream || !substream->private_data) {
-		pr_err("%s: Invalid %s\n", __func__,
+		pr_debug("%s: Invalid %s\n", __func__,
 			(!substream) ? "substream" : "private_data");
 		return -EINVAL;
 	}
@@ -1334,7 +1334,7 @@ static int msm_lsm_ioctl_compat(struct snd_pcm_substream *substream,
 
 		if (userarg32.payload_size >
 		    LISTEN_MAX_STATUS_PAYLOAD_SIZE) {
-			pr_err("%s: payload_size %d is invalid, max allowed = %d\n",
+			pr_debug("%s: payload_size %d is invalid, max allowed = %d\n",
 				__func__, userarg32.payload_size,
 				LISTEN_MAX_STATUS_PAYLOAD_SIZE);
 			err = -EINVAL;
@@ -1402,7 +1402,7 @@ static int msm_lsm_ioctl_compat(struct snd_pcm_substream *substream,
 
 		if (userarg32.payload_size >
 		    LISTEN_MAX_STATUS_PAYLOAD_SIZE) {
-			pr_err("%s: payload_size %d is invalid, max allowed = %d\n",
+			pr_debug("%s: payload_size %d is invalid, max allowed = %d\n",
 				__func__, userarg32.payload_size,
 				LISTEN_MAX_STATUS_PAYLOAD_SIZE);
 			err = -EINVAL;
@@ -1681,7 +1681,7 @@ static int msm_lsm_ioctl(struct snd_pcm_substream *substream,
 	struct lsm_priv *prtd;
 
 	if (!substream || !substream->private_data) {
-		pr_err("%s: Invalid %s\n", __func__,
+		pr_debug("%s: Invalid %s\n", __func__,
 			(!substream) ? "substream" : "private_data");
 		return -EINVAL;
 	}
@@ -1837,7 +1837,7 @@ static int msm_lsm_ioctl(struct snd_pcm_substream *substream,
 
 		if (userarg.payload_size >
 		    LISTEN_MAX_STATUS_PAYLOAD_SIZE) {
-			pr_err("%s: payload_size %d is invalid, max allowed = %d\n",
+			pr_debug("%s: payload_size %d is invalid, max allowed = %d\n",
 				__func__, userarg.payload_size,
 				LISTEN_MAX_STATUS_PAYLOAD_SIZE);
 			err = -EINVAL;
@@ -1901,7 +1901,7 @@ static int msm_lsm_ioctl(struct snd_pcm_substream *substream,
 
 		if (userarg.payload_size >
 		    LISTEN_MAX_STATUS_PAYLOAD_SIZE) {
-			pr_err("%s: payload_size %d is invalid, max allowed = %d\n",
+			pr_debug("%s: payload_size %d is invalid, max allowed = %d\n",
 				__func__, userarg.payload_size,
 				LISTEN_MAX_STATUS_PAYLOAD_SIZE);
 			err = -EINVAL;
@@ -1960,7 +1960,7 @@ static int msm_lsm_open(struct snd_pcm_substream *substream)
 	pr_debug("%s\n", __func__);
 	prtd = kzalloc(sizeof(struct lsm_priv), GFP_KERNEL);
 	if (!prtd) {
-		pr_err("%s: Failed to allocate memory for lsm_priv\n",
+		pr_debug("%s: Failed to allocate memory for lsm_priv\n",
 		       __func__);
 		return -ENOMEM;
 	}
@@ -2006,7 +2006,7 @@ static int msm_lsm_open(struct snd_pcm_substream *substream)
 	prtd->lsm_client = q6lsm_client_alloc(
 				(lsm_app_cb)lsm_event_handler, prtd);
 	if (!prtd->lsm_client) {
-		pr_err("%s: Could not allocate memory\n", __func__);
+		pr_debug("%s: Could not allocate memory\n", __func__);
 		kfree(prtd);
 		runtime->private_data = NULL;
 		return -ENOMEM;
@@ -2028,7 +2028,7 @@ static int msm_lsm_prepare(struct snd_pcm_substream *substream)
 	int ret = 0;
 
 	if (!substream->private_data) {
-		pr_err("%s: Invalid private_data", __func__);
+		pr_debug("%s: Invalid private_data", __func__);
 		return -EINVAL;
 	}
 
@@ -2074,11 +2074,11 @@ static int msm_lsm_close(struct snd_pcm_substream *substream)
 	int ret = 0;
 
 	if (!substream->private_data) {
-		pr_err("%s: Invalid private_data", __func__);
+		pr_debug("%s: Invalid private_data", __func__);
 		return -EINVAL;
 	}
 	if (!prtd || !prtd->lsm_client) {
-		pr_err("%s: No LSM session active\n", __func__);
+		pr_debug("%s: No LSM session active\n", __func__);
 		return -EINVAL;
 	}
 	rtd = substream->private_data;
@@ -2140,7 +2140,7 @@ static int msm_lsm_hw_params(struct snd_pcm_substream *substream,
 	struct snd_soc_pcm_runtime *rtd;
 
 	if (!substream->private_data) {
-		pr_err("%s: Invalid private_data", __func__);
+		pr_debug("%s: Invalid private_data", __func__);
 		return -EINVAL;
 	}
 	rtd = substream->private_data;
@@ -2193,7 +2193,7 @@ static snd_pcm_uframes_t msm_lsm_pcm_pointer(
 	struct snd_soc_pcm_runtime *rtd;
 
 	if (!substream->private_data) {
-		pr_err("%s: Invalid private_data", __func__);
+		pr_debug("%s: Invalid private_data", __func__);
 		return -EINVAL;
 	}
 	rtd = substream->private_data;
@@ -2221,7 +2221,7 @@ static int msm_lsm_pcm_copy(struct snd_pcm_substream *substream, int ch,
 	struct snd_soc_pcm_runtime *rtd;
 
 	if (!substream->private_data) {
-		pr_err("%s: Invalid private_data", __func__);
+		pr_debug("%s: Invalid private_data", __func__);
 		return -EINVAL;
 	}
 	rtd = substream->private_data;
@@ -2296,7 +2296,7 @@ static int msm_lsm_app_type_cfg_ctl_put(struct snd_kcontrol *kcontrol,
 	ret = msm_pcm_routing_reg_stream_app_type_cfg(fe_id, session_type,
 						      be_id, &cfg_data);
 	if (ret < 0)
-		pr_err("%s: msm_pcm_routing_reg_stream_app_type_cfg failed returned %d\n",
+		pr_debug("%s: msm_pcm_routing_reg_stream_app_type_cfg failed returned %d\n",
 			__func__, ret);
 
 	return 0;
@@ -2314,7 +2314,7 @@ static int msm_lsm_app_type_cfg_ctl_get(struct snd_kcontrol *kcontrol,
 	ret = msm_pcm_routing_get_stream_app_type_cfg(fe_id, session_type,
 						      &be_id, &cfg_data);
 	if (ret < 0) {
-		pr_err("%s: msm_pcm_routing_get_stream_app_type_cfg failed returned %d\n",
+		pr_debug("%s: msm_pcm_routing_get_stream_app_type_cfg failed returned %d\n",
 			__func__, ret);
 		goto done;
 	}
@@ -2347,7 +2347,7 @@ static int msm_lsm_add_app_type_controls(struct snd_soc_pcm_runtime *rtd)
 				NULL, 1, ctl_len, rtd->dai_link->be_id,
 				&app_type_info);
 	if (ret < 0) {
-		pr_err("%s: Listen app type cntrl add failed: %d\n",
+		pr_debug("%s: Listen app type cntrl add failed: %d\n",
 			__func__, ret);
 		return ret;
 	}
@@ -2365,7 +2365,7 @@ static int msm_lsm_add_controls(struct snd_soc_pcm_runtime *rtd)
 
 	ret = msm_lsm_add_app_type_controls(rtd);
 	if (ret)
-		pr_err("%s, add  app type controls failed:%d\n", __func__, ret);
+		pr_debug("%s, add  app type controls failed:%d\n", __func__, ret);
 
 	return ret;
 }
@@ -2391,7 +2391,7 @@ static int msm_asoc_lsm_new(struct snd_soc_pcm_runtime *rtd)
 
 	ret = msm_lsm_add_controls(rtd);
 	if (ret)
-		pr_err("%s, kctl add failed:%d\n", __func__, ret);
+		pr_debug("%s, kctl add failed:%d\n", __func__, ret);
 
 	return ret;
 }
