@@ -56,11 +56,7 @@ static int highorder_to_index(unsigned int order)
 #endif
 
 #ifndef CONFIG_ALLOC_BUFFERS_IN_4K_CHUNKS
-#if defined(CONFIG_IOMMU_IO_PGTABLE_ARMV7S)
-static const unsigned int orders[] = {8, 4, 0};
-#else
-static const unsigned int orders[] = {9, 4, 0};
-#endif
+static const unsigned int orders[] = {9, 8, 4, 0};
 #else
 static const unsigned int orders[] = {0};
 #endif
