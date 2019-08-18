@@ -226,7 +226,7 @@ int32_t msm_camera_spi_tx_read(struct msm_camera_i2c_client *client,
 		msleep(client->spi_client->retry_delay);
 	}
 	if (rc < 0) {
-		pr_err("%s: failed %d\n", __func__, rc);
+		pr_err_ratelimited("%s: failed %d\n", __func__, rc);
 		goto out;
 	}
 	if (data && num_byte && !rx)
@@ -254,7 +254,7 @@ int32_t msm_camera_spi_read(struct msm_camera_i2c_client *client,
 			&client->spi_client->cmd_tbl.read, addr, &temp[0],
 			data_type, NULL, NULL);
 	if (rc < 0) {
-		pr_err("%s: failed %d\n", __func__, rc);
+		pr_err_ratelimited("%s: failed %d\n", __func__, rc);
 		return rc;
 	}
 
@@ -311,7 +311,7 @@ static int32_t msm_camera_spi_read_status_reg(
 		&client->spi_client->cmd_tbl.read_status;
 
 	if (rs->addr_len != 0) {
-		pr_err("%s: not implemented yet\n", __func__);
+		pr_err_ratelimited("%s: not implemented yet\n", __func__);
 		return -EINVAL;
 	}
 	return msm_camera_spi_tx_helper(client, rs, 0, status, 1, NULL, NULL);
@@ -325,7 +325,7 @@ static int32_t msm_camera_spi_device_busy(struct msm_camera_i2c_client *client,
 
 	rc = msm_camera_spi_read_status_reg(client,  &st);
 	if (rc < 0) {
-		pr_err("%s: failed to read status reg\n", __func__);
+		pr_err_ratelimited("%s: failed to read status reg\n", __func__);
 		return rc;
 	}
 	*busy = st & client->spi_client->busy_mask;
@@ -349,7 +349,7 @@ static int32_t msm_camera_spi_wait(struct msm_camera_i2c_client *client,
 		SPIDBG("%s: op 0x%x wait\n", __func__, inst->opcode);
 	}
 	if (i > inst->delay_count) {
-		pr_err("%s: op %x timed out\n", __func__, inst->opcode);
+		pr_err_ratelimited("%s: op %x timed out\n", __func__, inst->opcode);
 		return -ETIMEDOUT;
 	}
 	SPIDBG("%s: op %x finished\n", __func__, inst->opcode);
@@ -366,12 +366,12 @@ static int32_t msm_camera_spi_write_enable(
 	if (we->opcode == 0)
 		return 0;
 	if (we->addr_len != 0) {
-		pr_err("%s: not implemented yet\n", __func__);
+		pr_err_ratelimited("%s: not implemented yet\n", __func__);
 		return -EINVAL;
 	}
 	rc = msm_camera_spi_tx_helper(client, we, 0, NULL, 0, NULL, NULL);
 	if (rc < 0)
-		pr_err("%s: write enable failed\n", __func__);
+		pr_err_ratelimited("%s: write enable failed\n", __func__);
 	return rc;
 }
 
@@ -393,12 +393,12 @@ int32_t msm_camera_spi_erase(struct msm_camera_i2c_client *client,
 		rc = msm_camera_spi_tx_helper(client, se, cur, NULL, 0,
 			NULL, NULL);
 		if (rc < 0) {
-			pr_err("%s: erase failed\n", __func__);
+			pr_err_ratelimited("%s: erase failed\n", __func__);
 			return rc;
 		}
 		rc = msm_camera_spi_wait(client, se);
 		if (rc < 0) {
-			pr_err("%s: erase timedout\n", __func__);
+			pr_err_ratelimited("%s: erase timedout\n", __func__);
 			return rc;
 		}
 	}
@@ -444,7 +444,7 @@ static int32_t msm_camera_spi_page_program(struct msm_camera_i2c_client *client,
 		retries--;
 	}
 	if (rc < 0) {
-		pr_err("%s: failed %d\n", __func__, rc);
+		pr_err_ratelimited("%s: failed %d\n", __func__, rc);
 		return rc;
 	}
 	rc = msm_camera_spi_wait(client, pg);
@@ -497,10 +497,10 @@ int32_t msm_camera_spi_write_seq(struct msm_camera_i2c_client *client,
 	}
 	goto OUT;
 NOMEM:
-	pr_err("%s: memory allocation failed\n", __func__);
+	pr_err_ratelimited("%s: memory allocation failed\n", __func__);
 	return -ENOMEM;
 ERROR:
-	pr_err("%s: error write\n", __func__);
+	pr_err_ratelimited("%s: error write\n", __func__);
 OUT:
 	kfree(tx);
 	return rc;
@@ -546,10 +546,10 @@ int32_t msm_camera_spi_write(struct msm_camera_i2c_client *client,
 FREEBUF:
 	kfree(buf);
 NOMEM:
-	pr_err("%s: memory allocation failed\n", __func__);
+	pr_err_ratelimited("%s: memory allocation failed\n", __func__);
 	return -ENOMEM;
 ERROR:
-	pr_err("%s: error write\n", __func__);
+	pr_err_ratelimited("%s: error write\n", __func__);
 OUT:
 	kfree(tx);
 	kfree(buf);
@@ -622,11 +622,11 @@ static int32_t msm_camera_spi_send_burst(struct msm_camera_i2c_client *client,
 	uint32_t len;
 
 	if (info->burst_len == 0 || info->chunk_size == 0) {
-		pr_err("%s:%d Invalid argument\n", __func__, __LINE__);
+		pr_err_ratelimited("%s:%d Invalid argument\n", __func__, __LINE__);
 		return rc;
 	}
 	if (info->burst_start + info->burst_len > reg_size) {
-		pr_err("%s too big burst size, index=%d, size=%d\n", __func__,
+		pr_err_ratelimited("%s too big burst size, index=%d, size=%d\n", __func__,
 			info->burst_start, info->burst_len);
 		return rc;
 	}
@@ -638,7 +638,7 @@ static int32_t msm_camera_spi_send_burst(struct msm_camera_i2c_client *client,
 	SPIDBG("buffer allocation size = %d\n", len);
 	ctx = kmalloc(len, GFP_KERNEL | GFP_DMA);
 	if (!ctx) {
-		pr_err("%s %d memory alloc fail!\n", __func__, __LINE__);
+		pr_err_ratelimited("%s %d memory alloc fail!\n", __func__, __LINE__);
 		return rc;
 	}
 	ctx[0] = pg->opcode;
@@ -655,7 +655,7 @@ static int32_t msm_camera_spi_send_burst(struct msm_camera_i2c_client *client,
 				(void *) ctx, NULL,
 				info->chunk_size * data_type + header_len);
 		if (rc < 0) {
-			pr_err("%s %d spi sending error = %d!!\n",
+			pr_err_ratelimited("%s %d spi sending error = %d!!\n",
 				__func__, __LINE__, rc);
 			goto fail;
 		}
@@ -673,7 +673,7 @@ static int32_t msm_camera_spi_send_burst(struct msm_camera_i2c_client *client,
 					(void *)ctx, NULL,
 					residue*data_type+header_len);
 		if (rc < 0) {
-			pr_err("%s %d spi sending error = %d!!\n", __func__,
+			pr_err_ratelimited("%s %d spi sending error = %d!!\n", __func__,
 				__LINE__, rc);
 			goto fail;
 		}
@@ -698,11 +698,11 @@ static int32_t msm_camera_spi_send_burst(struct msm_camera_i2c_client *client,
 
 	if (info->burst_len == 0 || info->burst_len == 0
 		|| info->chunk_size == 0) {
-		pr_err("%s %d Invalid argument\n", __func__, __LINE__);
+		pr_err_ratelimited("%s %d Invalid argument\n", __func__, __LINE__);
 		return rc;
 	}
 	if (info->burst_start + info->burst_len > reg_size) {
-		pr_err("%s too big burst size, index=%d, size=%d\n", __func__,
+		pr_err_ratelimited("%s too big burst size, index=%d, size=%d\n", __func__,
 		info->burst_start, info->burst_len);
 		return rc;
 	}
@@ -730,7 +730,7 @@ static int32_t msm_camera_spi_send_burst(struct msm_camera_i2c_client *client,
 			(void *)&tx_buf, NULL,
 			info->chunk_size * data_type+header_len);
 		if (rc < 0) {
-			pr_err("%s %d spi sending error = %d!!\n", __func__,
+			pr_err_ratelimited("%s %d spi sending error = %d!!\n", __func__,
 				__LINE__, rc);
 			goto fail;
 		}
@@ -748,7 +748,7 @@ static int32_t msm_camera_spi_send_burst(struct msm_camera_i2c_client *client,
 					(void *)&tx_buf, NULL,
 					residue * data_type+header_len);
 		if (rc < 0) {
-			pr_err("%s %d spi sending error = %d!!\n", __func__,
+			pr_err_ratelimited("%s %d spi sending error = %d!!\n", __func__,
 				__LINE__, rc);
 			goto fail;
 		}
@@ -769,12 +769,12 @@ int32_t msm_camera_spi_write_burst(struct msm_camera_i2c_client *client,
 
 	SPIDBG(" %s: start\n", __func__);
 	if (buf_len <= 0) {
-		pr_err("%s Invalid parameter, buf_len = %d\n",
+		pr_err_ratelimited("%s Invalid parameter, buf_len = %d\n",
 			__func__, buf_len);
 		return rc;
 	}
 	if (reg_size <= 0 || reg_setting == NULL) {
-		pr_err("%s Invalid parameter, array_size = %d\n",
+		pr_err_ratelimited("%s Invalid parameter, array_size = %d\n",
 			__func__, reg_size);
 		return rc;
 	}
@@ -799,7 +799,7 @@ int32_t msm_camera_spi_write_burst(struct msm_camera_i2c_client *client,
 			rc = msm_camera_spi_send_burst(client, reg_setting,
 				reg_size, &burst_info, data_type);
 			if (rc < 0) {
-				pr_err("[%s::%d][spi_sync Error::%d]\n",
+				pr_err_ratelimited("[%s::%d][spi_sync Error::%d]\n",
 					__func__, __LINE__, rc);
 				return rc;
 			}
@@ -829,7 +829,7 @@ int32_t msm_camera_spi_read_burst(struct msm_camera_i2c_client *client,
 	SPIDBG("%s: start\n", __func__);
 
 	if (buffer == NULL || read_byte == 0 || len == 0) {
-		pr_err("%s %d Invalid parameters!!\n", __func__, __LINE__);
+		pr_err_ratelimited("%s %d Invalid parameters!!\n", __func__, __LINE__);
 		return rc;
 	}
 
@@ -847,7 +847,7 @@ int32_t msm_camera_spi_read_burst(struct msm_camera_i2c_client *client,
 	rc = msm_camera_spi_txfr_read(client->spi_client->spi_master,
 		&tx_buf[0], r, len, read_byte);
 	if (rc < 0)
-		pr_err("[%s::%d][spi_sync Error::%d]\n", __func__,
+		pr_err_ratelimited("[%s::%d][spi_sync Error::%d]\n", __func__,
 			__LINE__, rc);
 
 	kfree(tx_buf);

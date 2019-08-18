@@ -41,7 +41,7 @@ static int msm_sensor_wait_for_probe_done(struct msm_sensor_init_t *s_init)
 	rc = wait_event_timeout(s_init->state_wait,
 		(s_init->module_init_status == 1), msecs_to_jiffies(tm));
 	if (rc == 0) {
-		pr_err("%s:%d wait timeout\n", __func__, __LINE__);
+		pr_err_ratelimited("%s:%d wait timeout\n", __func__, __LINE__);
 		rc = -1;
 	}
 
@@ -60,7 +60,7 @@ int32_t msm_sensor_driver_cmd(struct msm_sensor_init_t *s_init, void *arg)
 
 	/* Validate input parameters */
 	if (!s_init || !cfg) {
-		pr_err("failed: s_init %pK cfg %pK", s_init, cfg);
+		pr_err_ratelimited("failed: s_init %pK cfg %pK", s_init, cfg);
 		return -EINVAL;
 	}
 
@@ -74,7 +74,7 @@ int32_t msm_sensor_driver_cmd(struct msm_sensor_init_t *s_init, void *arg)
 			cfg->entity_name);
 		mutex_unlock(&s_init->imutex);
 		if (rc < 0)
-			pr_err("%s failed (non-fatal) rc %d", __func__, rc);
+			pr_err_ratelimited("%s failed (non-fatal) rc %d", __func__, rc);
 		break;
 
 	case CFG_SINIT_PROBE_DONE:
@@ -87,12 +87,12 @@ int32_t msm_sensor_driver_cmd(struct msm_sensor_init_t *s_init, void *arg)
 				msleep(1000);
 				val = msm_camera_io_r_mb(
 					base + MMSS_A_VFE_0_SPARE);
-				pr_err("Waiting for signal from LK val = %u\n",
+				pr_err_ratelimited("Waiting for signal from LK val = %u\n",
 					val);
 			}
 			rc = msm_early_cam_disable_clocks();
 			if (rc < 0) {
-				pr_err("Failed to disable early camera :%d\n",
+				pr_err_ratelimited("Failed to disable early camera :%d\n",
 					rc);
 			} else {
 				early_camera_clock_off = true;
@@ -109,7 +109,7 @@ int32_t msm_sensor_driver_cmd(struct msm_sensor_init_t *s_init, void *arg)
 		break;
 
 	default:
-		pr_err("default");
+		pr_err_ratelimited("default");
 		break;
 	}
 

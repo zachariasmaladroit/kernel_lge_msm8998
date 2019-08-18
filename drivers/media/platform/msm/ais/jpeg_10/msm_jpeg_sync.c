@@ -737,7 +737,7 @@ int __msm_jpeg_open(struct msm_jpeg_device *pgmn_dev)
 	rc = cam_config_ahb_clk(NULL, 0, CAM_AHB_CLIENT_JPEG,
 			CAM_AHB_SVS_VOTE);
 	if (rc < 0) {
-		pr_err("%s: failed to vote for AHB\n", __func__);
+		pr_err_ratelimited("%s: failed to vote for AHB\n", __func__);
 		return rc;
 	}
 
@@ -770,7 +770,7 @@ int __msm_jpeg_open(struct msm_jpeg_device *pgmn_dev)
 platform_init_fail:
 	if (cam_config_ahb_clk(NULL, 0, CAM_AHB_CLIENT_JPEG,
 		CAM_AHB_SUSPEND_VOTE) < 0)
-		pr_err("%s: failed to remove vote for AHB\n", __func__);
+		pr_err_ratelimited("%s: failed to remove vote for AHB\n", __func__);
 	return rc;
 }
 
@@ -804,7 +804,7 @@ int __msm_jpeg_release(struct msm_jpeg_device *pgmn_dev)
 
 	if (cam_config_ahb_clk(NULL, 0, CAM_AHB_CLIENT_JPEG,
 		CAM_AHB_SUSPEND_VOTE) < 0)
-		pr_err("%s: failed to remove vote for AHB\n", __func__);
+		pr_err_ratelimited("%s: failed to remove vote for AHB\n", __func__);
 
 	return 0;
 }
@@ -1538,7 +1538,7 @@ int __msm_jpeg_init(struct msm_jpeg_device *pgmn_dev)
 
 	mutex_init(&pgmn_dev->lock);
 
-	pr_err("%s:%d] Jpeg Device id %d", __func__, __LINE__,
+	pr_err_ratelimited("%s:%d] Jpeg Device id %d", __func__, __LINE__,
 		   pgmn_dev->pdev->id);
 	idx = pgmn_dev->pdev->id;
 	pgmn_dev->idx = idx;

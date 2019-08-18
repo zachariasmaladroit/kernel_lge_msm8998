@@ -68,9 +68,9 @@ static int camera_check_event_status(struct v4l2_event *event)
 		(struct msm_v4l2_event_data *)&event->u.data[0];
 
 	if (event_data->status > MSM_CAMERA_ERR_EVT_BASE) {
-		pr_err("%s : event_data status out of bounds\n",
+		pr_err_ratelimited("%s : event_data status out of bounds\n",
 				__func__);
-		pr_err("%s : Line %d event_data->status 0X%x\n",
+		pr_err_ratelimited("%s : Line %d event_data->status 0X%x\n",
 				__func__, __LINE__, event_data->status);
 
 		switch (event_data->status) {
@@ -604,7 +604,7 @@ static int camera_v4l2_vb2_q_init(struct file *filep)
 	q->drv_priv =
 		kzalloc(sizeof(struct msm_v4l2_format_data), GFP_KERNEL);
 	if (!q->drv_priv) {
-		pr_err("%s : memory not available\n", __func__);
+		pr_err_ratelimited("%s : memory not available\n", __func__);
 		return -ENOMEM;
 	}
 	q->lock = kzalloc(sizeof(struct mutex), GFP_KERNEL);
@@ -650,7 +650,7 @@ static int camera_v4l2_open(struct file *filep)
 	mutex_lock(&pvdev->video_drvdata_mutex);
 	rc = camera_v4l2_fh_open(filep);
 	if (rc < 0) {
-		pr_err("%s : camera_v4l2_fh_open failed Line %d rc %d\n",
+		pr_err_ratelimited("%s : camera_v4l2_fh_open failed Line %d rc %d\n",
 				__func__, __LINE__, rc);
 		goto fh_open_fail;
 	}
@@ -660,7 +660,7 @@ static int camera_v4l2_open(struct file *filep)
 	/* every stream has a vb2 queue */
 	rc = camera_v4l2_vb2_q_init(filep);
 	if (rc < 0) {
-		pr_err("%s : vb2 queue init fails Line %d rc %d\n",
+		pr_err_ratelimited("%s : vb2 queue init fails Line %d rc %d\n",
 				__func__, __LINE__, rc);
 		goto vb2_q_fail;
 	}
@@ -674,7 +674,7 @@ static int camera_v4l2_open(struct file *filep)
 		/* create a new session when first opened */
 		rc = msm_create_session(pvdev->vdev->num, pvdev->vdev);
 		if (rc < 0) {
-			pr_err("%s : session creation failed Line %d rc %d\n",
+			pr_err_ratelimited("%s : session creation failed Line %d rc %d\n",
 					__func__, __LINE__, rc);
 			goto session_fail;
 		}
@@ -683,9 +683,9 @@ static int camera_v4l2_open(struct file *filep)
 			find_first_zero_bit((const unsigned long *)&opn_idx,
 				MSM_CAMERA_STREAM_CNT_BITS));
 		if (rc < 0) {
-			pr_err("%s : creation of command_ack queue failed\n",
+			pr_err_ratelimited("%s : creation of command_ack queue failed\n",
 					__func__);
-			pr_err("%s : Line %d rc %d\n", __func__, __LINE__, rc);
+			pr_err_ratelimited("%s : Line %d rc %d\n", __func__, __LINE__, rc);
 			goto command_ack_q_fail;
 		}
 
@@ -694,7 +694,7 @@ static int camera_v4l2_open(struct file *filep)
 				0, -1, &event);
 			rc = msm_post_event(&event, MSM_POST_EVT_TIMEOUT);
 			if (rc < 0) {
-				pr_err("%s : NEW_SESSION event failed,rc %d\n",
+				pr_err_ratelimited("%s : NEW_SESSION event failed,rc %d\n",
 					__func__, rc);
 				goto post_fail;
 			}
@@ -710,7 +710,7 @@ static int camera_v4l2_open(struct file *filep)
 			find_first_zero_bit((const unsigned long *)&opn_idx,
 				MSM_CAMERA_STREAM_CNT_BITS));
 		if (rc < 0) {
-			pr_err("%s : creation of command_ack queue failed Line %d rc %d\n",
+			pr_err_ratelimited("%s : creation of command_ack queue failed Line %d rc %d\n",
 					__func__, __LINE__, rc);
 			goto stream_fail;
 		}
@@ -827,7 +827,7 @@ static long camera_handle_internal_compat_ioctl(struct file *file,
 	rc = msm_copy_camera_private_ioctl_args(arg,
 		&k_ioctl, &tmp_compat_ioctl_ptr);
 	if (rc < 0) {
-		pr_err("Subdev cmd %d failed\n", cmd);
+		pr_err_ratelimited("Subdev cmd %d failed\n", cmd);
 		return rc;
 	}
 	switch (k_ioctl.id) {

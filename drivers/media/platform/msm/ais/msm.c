@@ -295,7 +295,7 @@ void msm_delete_stream(unsigned int session_id, unsigned int stream_id)
 		unsigned long wl_flags;
 
 		if (try_count > 5) {
-			pr_err("%s : not able to delete stream %d\n",
+			pr_err_ratelimited("%s : not able to delete stream %d\n",
 				__func__, __LINE__);
 			break;
 		}
@@ -452,7 +452,7 @@ int msm_create_session(unsigned int session_id, struct video_device *vdev)
 	struct msm_session *session = NULL;
 
 	if (!msm_session_q) {
-		pr_err("%s : session queue not available Line %d\n",
+		pr_err_ratelimited("%s : session queue not available Line %d\n",
 				__func__, __LINE__);
 		return -ENODEV;
 	}
@@ -460,7 +460,7 @@ int msm_create_session(unsigned int session_id, struct video_device *vdev)
 	session = msm_queue_find(msm_session_q, struct msm_session,
 		list, __msm_queue_find_session, &session_id);
 	if (session) {
-		pr_err("%s: Session exist session_id=%d\n",
+		pr_err_ratelimited("%s: Session exist session_id=%d\n",
 				__func__, session_id);
 		return -EINVAL;
 	}
@@ -488,7 +488,7 @@ int msm_create_command_ack_q(unsigned int session_id, unsigned int stream_id)
 	struct msm_command_ack *cmd_ack;
 
 	if (!msm_session_q) {
-		pr_err("%s : Session queue not available Line %d\n",
+		pr_err_ratelimited("%s : Session queue not available Line %d\n",
 				__func__, __LINE__);
 		return -ENODEV;
 	}
@@ -496,7 +496,7 @@ int msm_create_command_ack_q(unsigned int session_id, unsigned int stream_id)
 	session = msm_queue_find(msm_session_q, struct msm_session,
 		list, __msm_queue_find_session, &session_id);
 	if (!session) {
-		pr_err("%s : Session not found Line %d\n",
+		pr_err_ratelimited("%s : Session not found Line %d\n",
 				__func__, __LINE__);
 		return -EINVAL;
 	}
@@ -504,7 +504,7 @@ int msm_create_command_ack_q(unsigned int session_id, unsigned int stream_id)
 	cmd_ack = kzalloc(sizeof(*cmd_ack), GFP_KERNEL);
 	if (!cmd_ack) {
 		mutex_unlock(&session->lock);
-		pr_err("%s : memory not available Line %d\n",
+		pr_err_ratelimited("%s : memory not available Line %d\n",
 				__func__, __LINE__);
 		return -ENOMEM;
 	}
@@ -586,7 +586,7 @@ static inline int __msm_destroy_session_streams(void *d1, void *d2)
 	struct msm_stream *stream = d1;
 	unsigned long flags;
 
-	pr_err("%s: Error: Destroyed list is not empty\n", __func__);
+	pr_err_ratelimited("%s: Error: Destroyed list is not empty\n", __func__);
 	spin_lock_irqsave(&stream->stream_lock, flags);
 	INIT_LIST_HEAD(&stream->queued_list);
 	spin_unlock_irqrestore(&stream->stream_lock, flags);
@@ -660,7 +660,7 @@ int msm_destroy_session(unsigned int session_id)
 		v4l2_subdev_call(buf_mgr_subdev, core, ioctl,
 			MSM_SD_SHUTDOWN, &session_info);
 	} else {
-		pr_err("%s: Buff manger device node is NULL\n", __func__);
+		pr_err_ratelimited("%s: Buff manger device node is NULL\n", __func__);
 	}
 
 	return 0;
@@ -805,10 +805,10 @@ static long msm_private_ioctl(struct file *file, void *fh,
 
 	case MSM_CAM_V4L2_IOCTL_NOTIFY_DEBUG: {
 		if (event_data->status) {
-			pr_err("%s:Notifying subdevs about potential sof freeze\n",
+			pr_err_ratelimited("%s:Notifying subdevs about potential sof freeze\n",
 				__func__);
 		} else {
-			pr_err("%s:Notifying subdevs about sof recover\n",
+			pr_err_ratelimited("%s:Notifying subdevs about sof recover\n",
 				__func__);
 		}
 
@@ -875,9 +875,9 @@ static void msm_print_event_error(struct v4l2_event *event)
 	struct msm_v4l2_event_data *event_data =
 		(struct msm_v4l2_event_data *)&event->u.data[0];
 
-	pr_err("Evt_type=%x Evt_id=%d Evt_cmd=%x\n", event->type,
+	pr_err_ratelimited("Evt_type=%x Evt_id=%d Evt_cmd=%x\n", event->type,
 		event->id, event_data->command);
-	pr_err("Evt_session_id=%d Evt_stream_id=%d Evt_arg=%d\n",
+	pr_err_ratelimited("Evt_session_id=%d Evt_stream_id=%d Evt_arg=%d\n",
 		event_data->session_id, event_data->stream_id,
 		event_data->arg_value);
 }
@@ -903,7 +903,7 @@ int msm_post_event(struct v4l2_event *event, int timeout)
 	spin_lock_irqsave(&msm_eventq_lock, flags);
 	if (!msm_eventq) {
 		spin_unlock_irqrestore(&msm_eventq_lock, flags);
-		pr_err("%s : msm event queue not available Line %d\n",
+		pr_err_ratelimited("%s : msm event queue not available Line %d\n",
 				__func__, __LINE__);
 		return -ENODEV;
 	}
@@ -915,7 +915,7 @@ int msm_post_event(struct v4l2_event *event, int timeout)
 	session = msm_queue_find(msm_session_q, struct msm_session,
 		list, __msm_queue_find_session, &session_id);
 	if (WARN_ON(!session)) {
-		pr_err("%s : session not found Line %d\n",
+		pr_err_ratelimited("%s : session not found Line %d\n",
 				__func__, __LINE__);
 		return -EIO;
 	}
@@ -925,7 +925,7 @@ int msm_post_event(struct v4l2_event *event, int timeout)
 		__msm_queue_find_command_ack_q, &stream_id);
 	if (WARN_ON(!cmd_ack)) {
 		mutex_unlock(&session->lock);
-		pr_err("%s : cmd_ack not found Line %d\n",
+		pr_err_ratelimited("%s : cmd_ack not found Line %d\n",
 				__func__, __LINE__);
 		return -EIO;
 	}
@@ -949,12 +949,12 @@ int msm_post_event(struct v4l2_event *event, int timeout)
 
 	if (list_empty_careful(&cmd_ack->command_q.list)) {
 		if (!rc) {
-			pr_err("%s: Timed out\n", __func__);
+			pr_err_ratelimited("%s: Timed out\n", __func__);
 			msm_print_event_error(event);
 			mutex_unlock(&session->lock);
 			return -ETIMEDOUT;
 		}
-		pr_err("%s: Error: No timeout but list empty!", __func__);
+		pr_err_ratelimited("%s: Error: No timeout but list empty!", __func__);
 		msm_print_event_error(event);
 		mutex_unlock(&session->lock);
 		return -EINVAL;
@@ -964,7 +964,7 @@ int msm_post_event(struct v4l2_event *event, int timeout)
 		struct msm_command, list);
 	if (!cmd) {
 		mutex_unlock(&session->lock);
-		pr_err("%s : cmd dequeue failed Line %d\n",
+		pr_err_ratelimited("%s : cmd dequeue failed Line %d\n",
 				__func__, __LINE__);
 		return -EINVAL;
 	}
@@ -974,11 +974,11 @@ int msm_post_event(struct v4l2_event *event, int timeout)
 	/* compare cmd_ret and event */
 	if (WARN_ON(event->type != cmd->event.type) ||
 			WARN_ON(event->id != cmd->event.id)) {
-		pr_err("%s : Either event type or id didnot match Line %d\n",
+		pr_err_ratelimited("%s : Either event type or id didnot match Line %d\n",
 				__func__, __LINE__);
-		pr_err("%s : event->type %d event->id %d\n", __func__,
+		pr_err_ratelimited("%s : event->type %d event->id %d\n", __func__,
 				event->type, event->id);
-		pr_err("%s : cmd->event.type %d cmd->event.id %d\n", __func__,
+		pr_err_ratelimited("%s : cmd->event.type %d cmd->event.id %d\n", __func__,
 				cmd->event.type, cmd->event.id);
 		rc = -EINVAL;
 	}
@@ -1268,7 +1268,7 @@ static ssize_t write_logsync(struct file *file, const char __user *buf,
 		return -EFAULT;
 
 	if (kstrtoull(lbuf, 0, &seq_num) < 0)
-		pr_err("LOGSYNC (Kernel): Bad or malformed sequence number\n");
+		pr_err_ratelimited("LOGSYNC (Kernel): Bad or malformed sequence number\n");
 	else
 		pr_debug("LOGSYNC (Kernel): seq_num = %llu\n", seq_num);
 
@@ -1380,7 +1380,7 @@ static int msm_probe(struct platform_device *pdev)
 
 	rc = cam_ahb_clk_init(pdev);
 	if (rc < 0) {
-		pr_err("%s: failed to register ahb clocks\n", __func__);
+		pr_err_ratelimited("%s: failed to register ahb clocks\n", __func__);
 		goto v4l2_fail;
 	}
 

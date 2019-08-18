@@ -448,7 +448,7 @@ static int msm_fd_open(struct file *file)
 	ret = cam_config_ahb_clk(NULL, 0, CAM_AHB_CLIENT_FD,
 			CAM_AHB_SVS_VOTE);
 	if (ret < 0) {
-		pr_err("%s: failed to vote for AHB\n", __func__);
+		pr_err_ratelimited("%s: failed to vote for AHB\n", __func__);
 		goto error_ahb_config;
 	}
 
@@ -497,7 +497,7 @@ static int msm_fd_release(struct file *file)
 
 	if (cam_config_ahb_clk(NULL, 0, CAM_AHB_CLIENT_FD,
 		CAM_AHB_SUSPEND_VOTE) < 0)
-		pr_err("%s: failed to remove vote for AHB\n", __func__);
+		pr_err_ratelimited("%s: failed to remove vote for AHB\n", __func__);
 
 	return 0;
 }
