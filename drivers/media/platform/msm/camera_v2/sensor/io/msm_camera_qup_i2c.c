@@ -251,7 +251,7 @@ int32_t msm_camera_qup_i2c_write_seq(struct msm_camera_i2c_client *client,
 		len = 2;
 	}
 	if (num_byte > I2C_SEQ_REG_DATA_MAX) {
-		pr_err("%s: num_byte=%d clamped to max supported %d\n",
+		pr_err_ratelimited("%s: num_byte=%d clamped to max supported %d\n",
 			__func__, num_byte, I2C_SEQ_REG_DATA_MAX);
 		num_byte = I2C_SEQ_REG_DATA_MAX;
 	}
@@ -320,7 +320,7 @@ int32_t msm_camera_qup_i2c_write_seq_table(struct msm_camera_i2c_client *client,
 
 	if ((write_setting->addr_type != MSM_CAMERA_I2C_BYTE_ADDR
 		&& write_setting->addr_type != MSM_CAMERA_I2C_WORD_ADDR)) {
-		pr_err("%s Invalide addr type %d\n", __func__,
+		pr_err_ratelimited("%s Invalide addr type %d\n", __func__,
 			write_setting->addr_type);
 		return rc;
 	}
@@ -330,7 +330,7 @@ int32_t msm_camera_qup_i2c_write_seq_table(struct msm_camera_i2c_client *client,
 	client->addr_type = write_setting->addr_type;
 
 	if (reg_setting->reg_data_size > I2C_SEQ_REG_DATA_MAX) {
-		pr_err("%s: number of bytes %u exceeding the max supported %d\n",
+		pr_err_ratelimited("%s: number of bytes %u exceeding the max supported %d\n",
 		__func__, reg_setting->reg_data_size, I2C_SEQ_REG_DATA_MAX);
 		return rc;
 	}
@@ -404,7 +404,7 @@ static int32_t msm_camera_qup_i2c_compare(
 		data_len = MSM_CAMERA_I2C_WORD_DATA;
 		break;
 	default:
-		pr_err("%s: Unsupport data type: %d\n", __func__, data_type);
+		pr_err_ratelimited("%s: Unsupport data type: %d\n", __func__, data_type);
 		break;
 	}
 
@@ -430,7 +430,7 @@ static int32_t msm_camera_qup_i2c_compare(
 			rc = I2C_COMPARE_MATCH;
 		break;
 	default:
-		pr_err("%s: Unsupport data type: %d\n", __func__, data_type);
+		pr_err_ratelimited("%s: Unsupport data type: %d\n", __func__, data_type);
 		break;
 	}
 
@@ -449,7 +449,7 @@ int32_t msm_camera_qup_i2c_poll(struct msm_camera_i2c_client *client,
 		__func__, addr, data, data_type);
 
 	if (delay_ms > MAX_POLL_DELAY_MS) {
-		pr_err("%s:%d invalid delay = %d max_delay = %d\n",
+		pr_err_ratelimited("%s:%d invalid delay = %d max_delay = %d\n",
 			__func__, __LINE__, delay_ms, MAX_POLL_DELAY_MS);
 		return -EINVAL;
 	}
@@ -458,7 +458,7 @@ int32_t msm_camera_qup_i2c_poll(struct msm_camera_i2c_client *client,
 		rc = msm_camera_qup_i2c_compare(client,
 			addr, data, data_type);
 		if (rc < 0) {
-			pr_err("%s:%d qup_i2c_compare failed rc = %d", __func__,
+			pr_err_ratelimited("%s:%d qup_i2c_compare failed rc = %d", __func__,
 				__LINE__, rc);
 			break;
 		}
@@ -534,7 +534,7 @@ int32_t msm_camera_qup_i2c_write_conf_tbl(
 {
 	int i;
 	int32_t rc = -EFAULT;
-	pr_err("%s, E. ", __func__);
+	pr_err_ratelimited("%s, E. ", __func__);
 	for (i = 0; i < size; i++) {
 		enum msm_camera_i2c_data_type dt;
 		if (reg_conf_tbl->cmd_type == MSM_CAMERA_I2C_CMD_POLL) {
@@ -588,7 +588,7 @@ int32_t msm_camera_qup_i2c_write_conf_tbl(
 					MSM_CAMERA_I2C_BYTE_DATA);
 				break;
 			default:
-				pr_err("%s: Unsupport data type: %d\n",
+				pr_err_ratelimited("%s: Unsupport data type: %d\n",
 					__func__, dt);
 				break;
 			}

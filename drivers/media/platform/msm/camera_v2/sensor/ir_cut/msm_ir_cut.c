@@ -43,11 +43,11 @@ static int32_t msm_ir_cut_get_subdev_id(
 
 	CDBG("Enter\n");
 	if (!subdev_id) {
-		pr_err("failed\n");
+		pr_err_ratelimited("failed\n");
 		return -EINVAL;
 	}
 	if (ir_cut_ctrl->ir_cut_device_type != MSM_CAMERA_PLATFORM_DEVICE) {
-		pr_err("failed\n");
+		pr_err_ratelimited("failed\n");
 		return -EINVAL;
 	}
 
@@ -78,14 +78,14 @@ static int32_t msm_ir_cut_release(
 	int32_t rc = 0;
 
 	if (ir_cut_ctrl->ir_cut_state == MSM_CAMERA_IR_CUT_RELEASE) {
-		pr_err("%s:%d Invalid ir_cut state = %d",
+		pr_err_ratelimited("%s:%d Invalid ir_cut state = %d",
 			__func__, __LINE__, ir_cut_ctrl->ir_cut_state);
 		return 0;
 	}
 
 	rc = ir_cut_ctrl->func_tbl->camera_ir_cut_on(ir_cut_ctrl, NULL);
 	if (rc < 0) {
-		pr_err("%s:%d camera_ir_cut_on failed rc = %d",
+		pr_err_ratelimited("%s:%d camera_ir_cut_on failed rc = %d",
 			__func__, __LINE__, rc);
 		return rc;
 	}
@@ -106,13 +106,13 @@ static int32_t msm_ir_cut_off(struct msm_ir_cut_ctrl_t *ir_cut_ctrl,
 			ir_cut_ctrl->gconf->cam_gpio_req_tbl_size, 1);
 
 		if (rc < 0) {
-			pr_err("ERR:%s:Failed in selecting state: %d\n",
+			pr_err_ratelimited("ERR:%s:Failed in selecting state: %d\n",
 				__func__, rc);
 
 			return rc;
 		}
 	} else {
-		pr_err("%s: No IR CUT GPIOs\n", __func__);
+		pr_err_ratelimited("%s: No IR CUT GPIOs\n", __func__);
 		return 0;
 	}
 
@@ -122,7 +122,7 @@ static int32_t msm_ir_cut_off(struct msm_ir_cut_ctrl_t *ir_cut_ctrl,
 			ir_cut_ctrl->pinctrl_info.gpio_state_active);
 
 		if (rc < 0)
-			pr_err("ERR:%s:%d cannot set pin to active state: %d",
+			pr_err_ratelimited("ERR:%s:%d cannot set pin to active state: %d",
 				__func__, __LINE__, rc);
 	}
 
@@ -152,13 +152,13 @@ static int32_t msm_ir_cut_off(struct msm_ir_cut_ctrl_t *ir_cut_ctrl,
 			ir_cut_ctrl->gconf->cam_gpio_req_tbl_size, 0);
 
 		if (rc < 0) {
-			pr_err("ERR:%s:Failed in selecting state: %d\n",
+			pr_err_ratelimited("ERR:%s:Failed in selecting state: %d\n",
 				__func__, rc);
 
 			return rc;
 		}
 	} else {
-		pr_err("%s: No IR CUT GPIOs\n", __func__);
+		pr_err_ratelimited("%s: No IR CUT GPIOs\n", __func__);
 		return 0;
 	}
 
@@ -180,13 +180,13 @@ static int32_t msm_ir_cut_on(
 			ir_cut_ctrl->gconf->cam_gpio_req_tbl_size, 1);
 
 		if (rc < 0) {
-			pr_err("ERR:%s:Failed in selecting state: %d\n",
+			pr_err_ratelimited("ERR:%s:Failed in selecting state: %d\n",
 				__func__, rc);
 
 			return rc;
 		}
 	} else {
-		pr_err("%s: No IR CUT GPIOs\n", __func__);
+		pr_err_ratelimited("%s: No IR CUT GPIOs\n", __func__);
 		return 0;
 	}
 
@@ -196,7 +196,7 @@ static int32_t msm_ir_cut_on(
 			ir_cut_ctrl->pinctrl_info.gpio_state_active);
 
 		if (rc < 0)
-			pr_err("ERR:%s:%d cannot set pin to active state: %d",
+			pr_err_ratelimited("ERR:%s:%d cannot set pin to active state: %d",
 				__func__, __LINE__, rc);
 	}
 
@@ -226,13 +226,13 @@ static int32_t msm_ir_cut_on(
 			ir_cut_ctrl->gconf->cam_gpio_req_tbl_size, 0);
 
 		if (rc < 0) {
-			pr_err("ERR:%s:Failed in selecting state: %d\n",
+			pr_err_ratelimited("ERR:%s:Failed in selecting state: %d\n",
 				__func__, rc);
 
 			return rc;
 		}
 	} else {
-		pr_err("%s: No IR CUT GPIOs\n", __func__);
+		pr_err_ratelimited("%s: No IR CUT GPIOs\n", __func__);
 		return 0;
 	}
 	CDBG("Exit\n");
@@ -251,7 +251,7 @@ static int32_t msm_ir_cut_handle_init(
 	CDBG("Enter");
 
 	if (ir_cut_ctrl->ir_cut_state == MSM_CAMERA_IR_CUT_INIT) {
-		pr_err("%s:%d Invalid ir_cut state = %d",
+		pr_err_ratelimited("%s:%d Invalid ir_cut state = %d",
 			__func__, __LINE__, ir_cut_ctrl->ir_cut_state);
 		return 0;
 	}
@@ -265,7 +265,7 @@ static int32_t msm_ir_cut_handle_init(
 	}
 
 	if (rc < 0) {
-		pr_err("%s:%d failed invalid ir_cut_driver_type %d\n",
+		pr_err_ratelimited("%s:%d failed invalid ir_cut_driver_type %d\n",
 			__func__, __LINE__, ir_cut_driver_type);
 		return -EINVAL;
 	}
@@ -273,7 +273,7 @@ static int32_t msm_ir_cut_handle_init(
 	rc = ir_cut_ctrl->func_tbl->camera_ir_cut_init(
 			ir_cut_ctrl, ir_cut_data);
 	if (rc < 0) {
-		pr_err("%s:%d camera_ir_cut_init failed rc = %d",
+		pr_err_ratelimited("%s:%d camera_ir_cut_init failed rc = %d",
 			__func__, __LINE__, rc);
 		return rc;
 	}
@@ -335,12 +335,12 @@ static long msm_ir_cut_subdev_ioctl(struct v4l2_subdev *sd,
 	CDBG("Enter\n");
 
 	if (!sd) {
-		pr_err("sd NULL\n");
+		pr_err_ratelimited("sd NULL\n");
 		return -EINVAL;
 	}
 	fctrl = v4l2_get_subdevdata(sd);
 	if (!fctrl) {
-		pr_err("fctrl NULL\n");
+		pr_err_ratelimited("fctrl NULL\n");
 		return -EINVAL;
 	}
 	switch (cmd) {
@@ -352,7 +352,7 @@ static long msm_ir_cut_subdev_ioctl(struct v4l2_subdev *sd,
 		return 0;
 	case MSM_SD_SHUTDOWN:
 		if (!fctrl->func_tbl) {
-			pr_err("fctrl->func_tbl NULL\n");
+			pr_err_ratelimited("fctrl->func_tbl NULL\n");
 			return -EINVAL;
 		} else {
 			return fctrl->func_tbl->camera_ir_cut_release(fctrl);
@@ -380,7 +380,7 @@ static int msm_ir_cut_close(struct v4l2_subdev *sd,
 	CDBG("Enter\n");
 
 	if (!ir_cut_ctrl) {
-		pr_err("%s: failed\n", __func__);
+		pr_err_ratelimited("%s: failed\n", __func__);
 		return -EINVAL;
 	}
 
@@ -413,7 +413,7 @@ static int32_t msm_ir_cut_get_gpio_dt_data(struct device_node *of_node,
 			 kzalloc(sizeof(struct msm_camera_gpio_conf),
 				 GFP_KERNEL);
 		if (!fctrl->power_info.gpio_conf) {
-			pr_err("%s failed %d\n", __func__, __LINE__);
+			pr_err_ratelimited("%s failed %d\n", __func__, __LINE__);
 			rc = -ENOMEM;
 			return rc;
 		}
@@ -426,7 +426,7 @@ static int32_t msm_ir_cut_get_gpio_dt_data(struct device_node *of_node,
 		for (i = 0; i < gpio_array_size; i++) {
 			gpio_array[i] = of_get_gpio(of_node, i);
 			if (((int16_t)gpio_array[i]) < 0) {
-				pr_err("%s failed %d\n", __func__, __LINE__);
+				pr_err_ratelimited("%s failed %d\n", __func__, __LINE__);
 				rc = -EINVAL;
 				goto free_gpio_array;
 			}
@@ -437,7 +437,7 @@ static int32_t msm_ir_cut_get_gpio_dt_data(struct device_node *of_node,
 		rc = msm_camera_get_dt_gpio_req_tbl(of_node, gconf,
 			gpio_array, gpio_array_size);
 		if (rc < 0) {
-			pr_err("%s failed %d\n", __func__, __LINE__);
+			pr_err_ratelimited("%s failed %d\n", __func__, __LINE__);
 			goto free_gpio_array;
 		}
 		kfree(gpio_array);
@@ -463,14 +463,14 @@ static int32_t msm_ir_cut_get_dt_data(struct device_node *of_node,
 	CDBG("called\n");
 
 	if (!of_node) {
-		pr_err("of_node NULL\n");
+		pr_err_ratelimited("of_node NULL\n");
 		return -EINVAL;
 	}
 
 	/* Read the sub device */
 	rc = of_property_read_u32(of_node, "cell-index", &fctrl->pdev->id);
 	if (rc < 0) {
-		pr_err("failed rc %d\n", rc);
+		pr_err_ratelimited("failed rc %d\n", rc);
 		return rc;
 	}
 
@@ -479,7 +479,7 @@ static int32_t msm_ir_cut_get_dt_data(struct device_node *of_node,
 	/* Read the gpio information from device tree */
 	rc = msm_ir_cut_get_gpio_dt_data(of_node, fctrl);
 	if (rc < 0) {
-		pr_err("%s:%d msm_ir_cut_get_gpio_dt_data failed rc %d\n",
+		pr_err_ratelimited("%s:%d msm_ir_cut_get_gpio_dt_data failed rc %d\n",
 			__func__, __LINE__, rc);
 		return rc;
 	}
@@ -529,7 +529,7 @@ static int32_t msm_ir_cut_platform_probe(struct platform_device *pdev)
 
 	CDBG("Enter");
 	if (!pdev->dev.of_node) {
-		pr_err("of_node NULL\n");
+		pr_err_ratelimited("of_node NULL\n");
 		return -EINVAL;
 	}
 
@@ -544,7 +544,7 @@ static int32_t msm_ir_cut_platform_probe(struct platform_device *pdev)
 	rc = msm_ir_cut_get_dt_data(pdev->dev.of_node, ir_cut_ctrl);
 
 	if (rc < 0) {
-		pr_err("%s:%d msm_ir_cut_get_dt_data failed\n",
+		pr_err_ratelimited("%s:%d msm_ir_cut_get_dt_data failed\n",
 			__func__, __LINE__);
 		kfree(ir_cut_ctrl);
 		return -EINVAL;
@@ -554,7 +554,7 @@ static int32_t msm_ir_cut_platform_probe(struct platform_device *pdev)
 		(&pdev->dev)->of_node);
 
 	if ((rc < 0) || (ir_cut_ctrl->gconf == NULL)) {
-		pr_err("%s: No IR CUT GPIOs\n", __func__);
+		pr_err_ratelimited("%s: No IR CUT GPIOs\n", __func__);
 
 		kfree(ir_cut_ctrl);
 		return -EINVAL;
@@ -581,7 +581,7 @@ static int32_t msm_ir_cut_platform_probe(struct platform_device *pdev)
 		&(ir_cut_ctrl->pinctrl_info), &(pdev->dev));
 
 	if (rc < 0) {
-		pr_err("ERR:%s: Error in reading IR CUT pinctrl\n",
+		pr_err_ratelimited("ERR:%s: Error in reading IR CUT pinctrl\n",
 			__func__);
 		ir_cut_ctrl->cam_pinctrl_status = 0;
 	}
@@ -639,7 +639,7 @@ static int __init msm_ir_cut_init_module(void)
 	if (!rc)
 		return rc;
 
-	pr_err("platform probe for ir_cut failed");
+	pr_err_ratelimited("platform probe for ir_cut failed");
 
 	return rc;
 }
