@@ -636,14 +636,14 @@ static int suspend(struct platform_device *pdev, pm_message_t state)
 
 static int resume(struct platform_device *pdev)
 {
-    DbgOutErr(("tspdrv: resume.\n"));
+//    DbgOutErr(("tspdrv: resume.\n"));
 
     return 0;   /* can resume */
 }
 
 static void platform_release(struct device *dev)
 {
-    DbgOutErr(("tspdrv: platform_release.\n"));
+//    DbgOutErr(("tspdrv: platform_release.\n"));
 }
 
 module_init(tspdrv_init);
