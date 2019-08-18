@@ -42,7 +42,7 @@
 
 #undef CCI_DBG
 #ifdef MSM_CCI_DEBUG
-#define CCI_DBG(fmt, args...) pr_err(fmt, ##args)
+#define CCI_DBG(fmt, args...) pr_err_ratelimited(fmt, ##args)
 #else
 #define CCI_DBG(fmt, args...) pr_debug(fmt, ##args)
 #endif
@@ -122,7 +122,7 @@ static int32_t msm_cci_set_clk_param(struct cci_device *cci_dev,
 	enum i2c_freq_mode_t i2c_freq_mode = c_ctrl->cci_info->i2c_freq_mode;
 
 	if ((i2c_freq_mode >= I2C_MAX_MODES) || (i2c_freq_mode < 0)) {
-		pr_err("%s:%d invalid i2c_freq_mode = %d",
+		pr_err_ratelimited("%s:%d invalid i2c_freq_mode = %d",
 			__func__, __LINE__, i2c_freq_mode);
 		return -EINVAL;
 	}
@@ -174,7 +174,7 @@ static void msm_cci_flush_queue(struct cci_device *cci_dev,
 #ifdef CONFIG_MACH_LGE
 	/* LGE_CHANGE, CST, make sure to check cci_state before HALT_REQ*/
 	if (cci_dev->cci_state != CCI_STATE_ENABLED) {
-		pr_err("%s invalid cci state %d\n",
+		pr_err_ratelimited("%s invalid cci state %d\n",
 			__func__, cci_dev->cci_state);
 		return;
 	}
@@ -184,9 +184,9 @@ static void msm_cci_flush_queue(struct cci_device *cci_dev,
 	rc = wait_for_completion_timeout(
 		&cci_dev->cci_master_info[master].reset_complete, CCI_TIMEOUT);
 	if (rc < 0) {
-		pr_err("%s:%d wait failed\n", __func__, __LINE__);
+		pr_err_ratelimited("%s:%d wait failed\n", __func__, __LINE__);
 	} else if (rc == 0) {
-		pr_err("%s:%d wait timeout\n", __func__, __LINE__);
+		pr_err_ratelimited("%s:%d wait timeout\n", __func__, __LINE__);
 
 		/* Set reset pending flag to TRUE */
 		cci_dev->cci_master_info[master].reset_pending = TRUE;
@@ -204,7 +204,7 @@ static void msm_cci_flush_queue(struct cci_device *cci_dev,
 			&cci_dev->cci_master_info[master].reset_complete,
 			CCI_TIMEOUT);
 		if (rc <= 0)
-			pr_err("%s:%d wait failed %d\n", __func__, __LINE__,
+			pr_err_ratelimited("%s:%d wait failed %d\n", __func__, __LINE__,
 				rc);
 	}
 	return;
@@ -253,7 +253,7 @@ static int32_t msm_cci_validate_queue(struct cci_device *cci_dev,
 		rc = wait_for_completion_timeout(&cci_dev->
 			cci_master_info[master].report_q[queue], CCI_TIMEOUT);
 		if (rc <= 0) {
-			pr_err("%s: wait_for_completion_timeout %d\n",
+			pr_err_ratelimited("%s: wait_for_completion_timeout %d\n",
 				 __func__, __LINE__);
 			if (rc == 0)
 				rc = -ETIMEDOUT;
@@ -262,7 +262,7 @@ static int32_t msm_cci_validate_queue(struct cci_device *cci_dev,
 		}
 		rc = cci_dev->cci_master_info[master].status;
 		if (rc < 0)
-			pr_err("%s failed rc %d\n", __func__, rc);
+			pr_err_ratelimited("%s failed rc %d\n", __func__, rc);
 	}
 	return rc;
 }
@@ -276,14 +276,14 @@ static int32_t msm_cci_write_i2c_queue(struct cci_device *cci_dev,
 	uint32_t reg_offset = master * 0x200 + queue * 0x100;
 
 	if (!cci_dev) {
-		pr_err("%s: failed %d", __func__, __LINE__);
+		pr_err_ratelimited("%s: failed %d", __func__, __LINE__);
 		return -EINVAL;
 	}
 
 	CDBG("%s:%d called\n", __func__, __LINE__);
 	rc = msm_cci_validate_queue(cci_dev, 1, master, queue);
 	if (rc < 0) {
-		pr_err("%s: failed %d", __func__, __LINE__);
+		pr_err_ratelimited("%s: failed %d", __func__, __LINE__);
 		return rc;
 	}
 	CDBG("%s CCI_I2C_M0_Q0_LOAD_DATA_ADDR:val 0x%x:0x%x\n",
@@ -301,7 +301,7 @@ static uint32_t msm_cci_wait(struct cci_device *cci_dev,
 	int32_t rc = 0;
 
 	if (!cci_dev) {
-		pr_err("%s: failed %d", __func__, __LINE__);
+		pr_err_ratelimited("%s: failed %d", __func__, __LINE__);
 		return -EINVAL;
 	}
 
@@ -314,7 +314,7 @@ static uint32_t msm_cci_wait(struct cci_device *cci_dev,
 		if (CCI_DUMP_REG)
 			msm_cci_dump_registers(cci_dev, master, queue);
 
-		pr_err("%s: %d wait for queue: %d\n",
+		pr_err_ratelimited("%s: %d wait for queue: %d\n",
 			 __func__, __LINE__, queue);
 		/* LGE, CHANGE, CST, added for further information */
 		msm_cci_dump_registers(cci_dev, master, queue);
@@ -325,7 +325,7 @@ static uint32_t msm_cci_wait(struct cci_device *cci_dev,
 	}
 	rc = cci_dev->cci_master_info[master].status;
 	if (rc < 0) {
-		pr_err("%s: %d failed rc %d\n", __func__, __LINE__, rc);
+		pr_err_ratelimited("%s: %d failed rc %d\n", __func__, __LINE__, rc);
 		return rc;
 	}
 	return 0;
@@ -350,7 +350,7 @@ static int32_t msm_cci_addr_to_num_bytes(
 		retVal = 4;
 		break;
 	default:
-		pr_err("%s: %d failed: %d\n", __func__, __LINE__, addr_type);
+		pr_err_ratelimited("%s: %d failed: %d\n", __func__, __LINE__, addr_type);
 		retVal = 1;
 		break;
 	}
@@ -378,7 +378,7 @@ static int32_t msm_cci_data_to_num_bytes(
 		retVal = 4;
 		break;
 	default:
-		pr_err("%s: %d failed: %d\n", __func__, __LINE__, data_type);
+		pr_err_ratelimited("%s: %d failed: %d\n", __func__, __LINE__, data_type);
 		retVal = 1;
 		break;
 	}
@@ -398,7 +398,7 @@ static int32_t msm_cci_calc_cmd_len(struct cci_device *cci_dev,
 	uint32_t size = cmd_size;
 
 	if (!cci_dev || !c_ctrl) {
-		pr_err("%s: failed %d", __func__, __LINE__);
+		pr_err_ratelimited("%s: failed %d", __func__, __LINE__);
 		return -EINVAL;
 	}
 
@@ -434,7 +434,7 @@ static int32_t msm_cci_calc_cmd_len(struct cci_device *cci_dev,
 	}
 
 	if (len > cci_dev->payload_size) {
-		pr_err("Len error: %d", len);
+		pr_err_ratelimited("Len error: %d", len);
 		return -EINVAL;
 	}
 
@@ -521,7 +521,7 @@ static int32_t msm_cci_process_full_q(struct cci_device *cci_dev,
 					lock_q[queue], flags);
 		rc = msm_cci_wait(cci_dev, master, queue);
 		if (rc < 0) {
-			pr_err("%s: %d failed rc %d\n", __func__, __LINE__, rc);
+			pr_err_ratelimited("%s: %d failed rc %d\n", __func__, __LINE__, rc);
 			return rc;
 		}
 	} else {
@@ -529,7 +529,7 @@ static int32_t msm_cci_process_full_q(struct cci_device *cci_dev,
 						lock_q[queue], flags);
 		rc = msm_cci_wait_report_cmd(cci_dev, master, queue);
 		if (rc < 0) {
-			pr_err("%s: %d failed rc %d\n", __func__, __LINE__, rc);
+			pr_err_ratelimited("%s: %d failed rc %d\n", __func__, __LINE__, rc);
 			return rc;
 		}
 	}
@@ -563,12 +563,12 @@ static int32_t msm_cci_transfer_end(struct cci_device *cci_dev,
 						lock_q[queue], flags);
 		rc = msm_cci_lock_queue(cci_dev, master, queue, 0);
 		if (rc < 0) {
-			pr_err("%s failed line %d\n", __func__, __LINE__);
+			pr_err_ratelimited("%s failed line %d\n", __func__, __LINE__);
 			return rc;
 		}
 		rc = msm_cci_wait_report_cmd(cci_dev, master, queue);
 		if (rc < 0) {
-			pr_err("%s: %d failed rc %d\n", __func__, __LINE__, rc);
+			pr_err_ratelimited("%s: %d failed rc %d\n", __func__, __LINE__, rc);
 			return rc;
 		}
 	} else {
@@ -578,17 +578,17 @@ static int32_t msm_cci_transfer_end(struct cci_device *cci_dev,
 						lock_q[queue], flags);
 		rc = msm_cci_wait(cci_dev, master, queue);
 		if (rc < 0) {
-			pr_err("%s: %d failed rc %d\n", __func__, __LINE__, rc);
+			pr_err_ratelimited("%s: %d failed rc %d\n", __func__, __LINE__, rc);
 			return rc;
 		}
 		rc = msm_cci_lock_queue(cci_dev, master, queue, 0);
 		if (rc < 0) {
-			pr_err("%s failed line %d\n", __func__, __LINE__);
+			pr_err_ratelimited("%s failed line %d\n", __func__, __LINE__);
 			return rc;
 		}
 		rc = msm_cci_wait_report_cmd(cci_dev, master, queue);
 		if (rc < 0) {
-			pr_err("%s: %d failed rc %d\n", __func__, __LINE__, rc);
+			pr_err_ratelimited("%s: %d failed rc %d\n", __func__, __LINE__, rc);
 			return rc;
 		}
 	}
@@ -633,13 +633,13 @@ static int32_t msm_cci_data_queue(struct cci_device *cci_dev,
 	unsigned long flags;
 
 	if (i2c_cmd == NULL) {
-		pr_err("%s:%d Failed line\n", __func__,
+		pr_err_ratelimited("%s:%d Failed line\n", __func__,
 			__LINE__);
 		return -EINVAL;
 	}
 
 	if ((!cmd_size) || (cmd_size > CCI_I2C_MAX_WRITE)) {
-		pr_err("%s:%d failed: invalid cmd_size %d\n",
+		pr_err_ratelimited("%s:%d failed: invalid cmd_size %d\n",
 			__func__, __LINE__, cmd_size);
 		return -EINVAL;
 	}
@@ -648,12 +648,12 @@ static int32_t msm_cci_data_queue(struct cci_device *cci_dev,
 		i2c_msg->addr_type, i2c_msg->data_type, cmd_size);
 
 	if (i2c_msg->addr_type >= MSM_CAMERA_I2C_ADDR_TYPE_MAX) {
-		pr_err("%s:%d failed: invalid addr_type 0x%X\n",
+		pr_err_ratelimited("%s:%d failed: invalid addr_type 0x%X\n",
 			__func__, __LINE__, i2c_msg->addr_type);
 		return -EINVAL;
 	}
 	if (i2c_msg->data_type >= MSM_CAMERA_I2C_DATA_TYPE_MAX) {
-		pr_err("%s:%d failed: invalid data_type 0x%X\n",
+		pr_err_ratelimited("%s:%d failed: invalid data_type 0x%X\n",
 			__func__, __LINE__, i2c_msg->data_type);
 		return -EINVAL;
 	}
@@ -700,7 +700,7 @@ static int32_t msm_cci_data_queue(struct cci_device *cci_dev,
 
 	rc = msm_cci_lock_queue(cci_dev, master, queue, 1);
 	if (rc < 0) {
-		pr_err("%s failed line %d\n", __func__, __LINE__);
+		pr_err_ratelimited("%s failed line %d\n", __func__, __LINE__);
 		return rc;
 	}
 
@@ -709,7 +709,7 @@ static int32_t msm_cci_data_queue(struct cci_device *cci_dev,
 		len = msm_cci_calc_cmd_len(cci_dev, c_ctrl, cmd_size,
 			i2c_cmd, &pack);
 		if (len <= 0) {
-			pr_err("%s failed line %d\n", __func__, __LINE__);
+			pr_err_ratelimited("%s failed line %d\n", __func__, __LINE__);
 			return -EINVAL;
 		}
 
@@ -723,7 +723,7 @@ static int32_t msm_cci_data_queue(struct cci_device *cci_dev,
 				rc = msm_cci_process_full_q(cci_dev,
 					master, queue);
 				if (rc < 0) {
-					pr_err("%s failed line %d\n",
+					pr_err_ratelimited("%s failed line %d\n",
 						__func__, __LINE__);
 					return rc;
 				}
@@ -828,7 +828,7 @@ static int32_t msm_cci_data_queue(struct cci_device *cci_dev,
 
 	rc = msm_cci_transfer_end(cci_dev, master, queue);
 	if (rc < 0) {
-		pr_err("%s: %d failed rc %d\n", __func__, __LINE__, rc);
+		pr_err_ratelimited("%s: %d failed rc %d\n", __func__, __LINE__, rc);
 		return rc;
 	}
 	return rc;
@@ -853,7 +853,7 @@ static int32_t msm_cci_i2c_read(struct v4l2_subdev *sd,
 	read_cfg = &c_ctrl->cfg.cci_i2c_read_cfg;
 
 	if (master >= MASTER_MAX || master < 0) {
-		pr_err("%s:%d Invalid I2C master %d\n",
+		pr_err_ratelimited("%s:%d Invalid I2C master %d\n",
 			__func__, __LINE__, master);
 		return -EINVAL;
 	}
@@ -863,7 +863,7 @@ static int32_t msm_cci_i2c_read(struct v4l2_subdev *sd,
 	/* Set the I2C Frequency */
 	rc = msm_cci_set_clk_param(cci_dev, c_ctrl);
 	if (rc < 0) {
-		pr_err("%s:%d msm_cci_set_clk_param failed rc = %d\n",
+		pr_err_ratelimited("%s:%d msm_cci_set_clk_param failed rc = %d\n",
 			__func__, __LINE__, rc);
 		goto ERROR;
 	}
@@ -877,19 +877,19 @@ static int32_t msm_cci_i2c_read(struct v4l2_subdev *sd,
 		cci_dev->cci_i2c_queue_info[master][queue].max_queue_size - 1,
 		master, queue);
 	if (rc < 0) {
-		pr_err("%s:%d Initial validataion failed rc %d\n", __func__,
+		pr_err_ratelimited("%s:%d Initial validataion failed rc %d\n", __func__,
 			__LINE__, rc);
 		goto ERROR;
 	}
 
 	if (c_ctrl->cci_info->retries > CCI_I2C_READ_MAX_RETRIES) {
-		pr_err("%s:%d More than max retries\n", __func__,
+		pr_err_ratelimited("%s:%d More than max retries\n", __func__,
 			__LINE__);
 		goto ERROR;
 	}
 
 	if (read_cfg->data == NULL) {
-		pr_err("%s:%d Data ptr is NULL\n", __func__,
+		pr_err_ratelimited("%s:%d Data ptr is NULL\n", __func__,
 			__LINE__);
 		goto ERROR;
 	}
@@ -964,7 +964,7 @@ static int32_t msm_cci_i2c_read(struct v4l2_subdev *sd,
 
 		if (rc == 0)
 			rc = -ETIMEDOUT;
-		pr_err("%s: %d wait_for_completion_timeout rc = %d\n",
+		pr_err_ratelimited("%s: %d wait_for_completion_timeout rc = %d\n",
 			 __func__, __LINE__, rc);
 		msm_cci_flush_queue(cci_dev, master);
 		goto ERROR;
@@ -976,7 +976,7 @@ static int32_t msm_cci_i2c_read(struct v4l2_subdev *sd,
 		CCI_I2C_M0_READ_BUF_LEVEL_ADDR + master * 0x100);
 	exp_words = ((read_cfg->num_byte / 4) + 1);
 	if (read_words != exp_words) {
-		pr_err("%s:%d read_words = %d, exp words = %d\n", __func__,
+		pr_err_ratelimited("%s:%d read_words = %d, exp words = %d\n", __func__,
 			__LINE__, read_words, exp_words);
 		memset(read_cfg->data, 0, read_cfg->num_byte);
 		rc = -EINVAL;
@@ -1019,35 +1019,35 @@ static int32_t msm_cci_i2c_read_bytes(struct v4l2_subdev *sd,
 	uint16_t read_bytes = 0;
 
 	if (!sd || !c_ctrl) {
-		pr_err("%s:%d sd %pK c_ctrl %pK\n", __func__,
+		pr_err_ratelimited("%s:%d sd %pK c_ctrl %pK\n", __func__,
 			__LINE__, sd, c_ctrl);
 		return -EINVAL;
 	}
 	if (!c_ctrl->cci_info) {
-		pr_err("%s:%d cci_info NULL\n", __func__, __LINE__);
+		pr_err_ratelimited("%s:%d cci_info NULL\n", __func__, __LINE__);
 		return -EINVAL;
 	}
 	cci_dev = v4l2_get_subdevdata(sd);
 	if (!cci_dev) {
-		pr_err("%s:%d cci_dev NULL\n", __func__, __LINE__);
+		pr_err_ratelimited("%s:%d cci_dev NULL\n", __func__, __LINE__);
 		return -EINVAL;
 	}
 	if (cci_dev->cci_state != CCI_STATE_ENABLED) {
-		pr_err("%s invalid cci state %d\n",
+		pr_err_ratelimited("%s invalid cci state %d\n",
 			__func__, cci_dev->cci_state);
 		return -EINVAL;
 	}
 
 	if (c_ctrl->cci_info->cci_i2c_master >= MASTER_MAX
 			|| c_ctrl->cci_info->cci_i2c_master < 0) {
-		pr_err("%s:%d Invalid I2C master addr\n", __func__, __LINE__);
+		pr_err_ratelimited("%s:%d Invalid I2C master addr\n", __func__, __LINE__);
 		return -EINVAL;
 	}
 
 	master = c_ctrl->cci_info->cci_i2c_master;
 	read_cfg = &c_ctrl->cfg.cci_i2c_read_cfg;
 	if ((!read_cfg->num_byte) || (read_cfg->num_byte > CCI_I2C_MAX_READ)) {
-		pr_err("%s:%d read num bytes 0\n", __func__, __LINE__);
+		pr_err_ratelimited("%s:%d read num bytes 0\n", __func__, __LINE__);
 		rc = -EINVAL;
 		goto ERROR;
 	}
@@ -1060,7 +1060,7 @@ static int32_t msm_cci_i2c_read_bytes(struct v4l2_subdev *sd,
 			read_cfg->num_byte = read_bytes;
 		rc = msm_cci_i2c_read(sd, c_ctrl);
 		if (rc < 0) {
-			pr_err("%s:%d failed rc %d\n", __func__, __LINE__, rc);
+			pr_err_ratelimited("%s:%d failed rc %d\n", __func__, __LINE__, rc);
 			goto ERROR;
 		}
 		if (read_bytes > CCI_READ_MAX) {
@@ -1085,7 +1085,7 @@ static int32_t msm_cci_i2c_write(struct v4l2_subdev *sd,
 
 	cci_dev = v4l2_get_subdevdata(sd);
 	if (cci_dev->cci_state != CCI_STATE_ENABLED) {
-		pr_err("%s invalid cci state %d\n",
+		pr_err_ratelimited("%s invalid cci state %d\n",
 			__func__, cci_dev->cci_state);
 		return -EINVAL;
 	}
@@ -1097,7 +1097,7 @@ static int32_t msm_cci_i2c_write(struct v4l2_subdev *sd,
 	/* Set the I2C Frequency */
 	rc = msm_cci_set_clk_param(cci_dev, c_ctrl);
 	if (rc < 0) {
-		pr_err("%s:%d msm_cci_set_clk_param failed rc = %d\n",
+		pr_err_ratelimited("%s:%d msm_cci_set_clk_param failed rc = %d\n",
 			__func__, __LINE__, rc);
 		return rc;
 	}
@@ -1110,12 +1110,12 @@ static int32_t msm_cci_i2c_write(struct v4l2_subdev *sd,
 		cci_dev->cci_i2c_queue_info[master][queue].max_queue_size-1,
 		master, queue);
 	if (rc < 0) {
-		pr_err("%s:%d Initial validataion failed rc %d\n",
+		pr_err_ratelimited("%s:%d Initial validataion failed rc %d\n",
 		__func__, __LINE__, rc);
 		goto ERROR;
 	}
 	if (c_ctrl->cci_info->retries > CCI_I2C_READ_MAX_RETRIES) {
-		pr_err("%s:%d More than max retries\n", __func__,
+		pr_err_ratelimited("%s:%d More than max retries\n", __func__,
 			__LINE__);
 		goto ERROR;
 	}
@@ -1149,7 +1149,7 @@ static void msm_cci_write_async_helper(struct work_struct *work)
 		&write_async->c_ctrl, write_async->queue, write_async->sync_en);
 	mutex_unlock(&cci_master_info->mutex_q[write_async->queue]);
 	if (rc < 0)
-		pr_err("%s: %d failed\n", __func__, __LINE__);
+		pr_err_ratelimited("%s: %d failed\n", __func__, __LINE__);
 
 	kfree(write_async->c_ctrl.cfg.cci_i2c_write_cfg.reg_setting);
 	kfree(write_async);
@@ -1172,7 +1172,7 @@ static int32_t msm_cci_i2c_write_async(struct v4l2_subdev *sd,
 
 	write_async = kzalloc(sizeof(*write_async), GFP_KERNEL);
 	if (!write_async) {
-		pr_err("%s: %d Couldn't allocate memory\n", __func__, __LINE__);
+		pr_err_ratelimited("%s: %d Couldn't allocate memory\n", __func__, __LINE__);
 		return -ENOMEM;
 	}
 
@@ -1186,7 +1186,7 @@ static int32_t msm_cci_i2c_write_async(struct v4l2_subdev *sd,
 	cci_i2c_write_cfg_w = &write_async->c_ctrl.cfg.cci_i2c_write_cfg;
 
 	if (cci_i2c_write_cfg->size == 0) {
-		pr_err("%s: %d Size = 0\n", __func__, __LINE__);
+		pr_err_ratelimited("%s: %d Size = 0\n", __func__, __LINE__);
 		kfree(write_async);
 		return -EINVAL;
 	}
@@ -1195,7 +1195,7 @@ static int32_t msm_cci_i2c_write_async(struct v4l2_subdev *sd,
 		kzalloc(sizeof(struct msm_camera_i2c_reg_array)*
 		cci_i2c_write_cfg->size, GFP_KERNEL);
 	if (!cci_i2c_write_cfg_w->reg_setting) {
-		pr_err("%s: %d Couldn't allocate memory\n", __func__, __LINE__);
+		pr_err_ratelimited("%s: %d Couldn't allocate memory\n", __func__, __LINE__);
 		kfree(write_async);
 		return -ENOMEM;
 	}
@@ -1223,7 +1223,7 @@ static int32_t msm_cci_pinctrl_init(struct cci_device *cci_dev)
 	cci_pctrl = &cci_dev->cci_pinctrl;
 	cci_pctrl->pinctrl = devm_pinctrl_get(&cci_dev->pdev->dev);
 	if (IS_ERR_OR_NULL(cci_pctrl->pinctrl)) {
-		pr_err("%s:%d devm_pinctrl_get cci_pinctrl failed\n",
+		pr_err_ratelimited("%s:%d devm_pinctrl_get cci_pinctrl failed\n",
 			__func__, __LINE__);
 		return -EINVAL;
 	}
@@ -1231,7 +1231,7 @@ static int32_t msm_cci_pinctrl_init(struct cci_device *cci_dev)
 						cci_pctrl->pinctrl,
 						CCI_PINCTRL_STATE_DEFAULT);
 	if (IS_ERR_OR_NULL(cci_pctrl->gpio_state_active)) {
-		pr_err("%s:%d look up state  for active state failed\n",
+		pr_err_ratelimited("%s:%d look up state  for active state failed\n",
 			__func__, __LINE__);
 		return -EINVAL;
 	}
@@ -1239,7 +1239,7 @@ static int32_t msm_cci_pinctrl_init(struct cci_device *cci_dev)
 						cci_pctrl->pinctrl,
 						CCI_PINCTRL_STATE_SLEEP);
 	if (IS_ERR_OR_NULL(cci_pctrl->gpio_state_suspend)) {
-		pr_err("%s:%d look up state for suspend state failed\n",
+		pr_err_ratelimited("%s:%d look up state for suspend state failed\n",
 			__func__, __LINE__);
 		return -EINVAL;
 	}
@@ -1253,7 +1253,7 @@ static uint32_t msm_cci_cycles_per_ms(unsigned long clk)
 	if (clk)
 		cycles_per_us = ((clk/1000)*256)/1000;
 	else {
-		pr_err("%s:%d, failed: Can use default: %d",
+		pr_err_ratelimited("%s:%d, failed: Can use default: %d",
 			__func__, __LINE__, CYCLES_PER_MICRO_SEC_DEFAULT);
 		cycles_per_us = CYCLES_PER_MICRO_SEC_DEFAULT;
 	}
@@ -1273,7 +1273,7 @@ static uint32_t *msm_cci_get_clk_rates(struct cci_device *cci_dev,
 	struct device_node *of_node = cci_dev->pdev->dev.of_node;
 
 	if ((i2c_freq_mode >= I2C_MAX_MODES) || (i2c_freq_mode < 0)) {
-		pr_err("%s:%d invalid i2c_freq_mode %d\n",
+		pr_err_ratelimited("%s:%d invalid i2c_freq_mode %d\n",
 			__func__, __LINE__, i2c_freq_mode);
 		return NULL;
 	}
@@ -1314,7 +1314,7 @@ static int32_t msm_cci_i2c_set_sync_prms(struct v4l2_subdev *sd,
 
 	cci_dev = v4l2_get_subdevdata(sd);
 	if (!cci_dev || !c_ctrl) {
-		pr_err("%s:%d failed: invalid params %pK %pK\n", __func__,
+		pr_err_ratelimited("%s:%d failed: invalid params %pK %pK\n", __func__,
 			__LINE__, cci_dev, c_ctrl);
 		rc = -EINVAL;
 		return rc;
@@ -1336,7 +1336,7 @@ static int32_t msm_cci_init(struct v4l2_subdev *sd,
 
 	cci_dev = v4l2_get_subdevdata(sd);
 	if (!cci_dev || !c_ctrl) {
-		pr_err("%s:%d failed: invalid params %pK %pK\n", __func__,
+		pr_err_ratelimited("%s:%d failed: invalid params %pK %pK\n", __func__,
 			__LINE__, cci_dev, c_ctrl);
 		rc = -EINVAL;
 		return rc;
@@ -1345,7 +1345,7 @@ static int32_t msm_cci_init(struct v4l2_subdev *sd,
 	rc = cam_config_ahb_clk(NULL, 0, CAM_AHB_CLIENT_CCI,
 			CAM_AHB_SVS_VOTE);
 	if (rc < 0) {
-		pr_err("%s: failed to vote for AHB\n", __func__);
+		pr_err_ratelimited("%s: failed to vote for AHB\n", __func__);
 		return rc;
 	}
 
@@ -1381,7 +1381,7 @@ static int32_t msm_cci_init(struct v4l2_subdev *sd,
 				reset_complete,
 				CCI_TIMEOUT);
 			if (rc <= 0)
-				pr_err("%s:%d wait failed %d\n", __func__,
+				pr_err_ratelimited("%s:%d wait failed %d\n", __func__,
 					__LINE__, rc);
 			mutex_unlock(&cci_dev->cci_master_info[master].
 				mutex_q[SYNC_QUEUE]);
@@ -1397,7 +1397,7 @@ static int32_t msm_cci_init(struct v4l2_subdev *sd,
 #endif
 	ret = msm_cci_pinctrl_init(cci_dev);
 	if (ret < 0) {
-		pr_err("%s:%d Initialization of pinctrl failed\n",
+		pr_err_ratelimited("%s:%d Initialization of pinctrl failed\n",
 				__func__, __LINE__);
 		cci_dev->cci_pinctrl_status = 0;
 	} else {
@@ -1409,7 +1409,7 @@ static int32_t msm_cci_init(struct v4l2_subdev *sd,
 		ret = pinctrl_select_state(cci_dev->cci_pinctrl.pinctrl,
 				cci_dev->cci_pinctrl.gpio_state_active);
 		if (ret)
-			pr_err("%s:%d cannot set pin to active state\n",
+			pr_err_ratelimited("%s:%d cannot set pin to active state\n",
 				__func__, __LINE__);
 	}
 	if (rc < 0) {
@@ -1423,7 +1423,7 @@ static int32_t msm_cci_init(struct v4l2_subdev *sd,
 	rc = msm_camera_config_vreg(&cci_dev->pdev->dev, cci_dev->cci_vreg,
 		cci_dev->regulator_count, NULL, 0, &cci_dev->cci_reg_ptr[0], 1);
 	if (rc < 0) {
-		pr_err("%s:%d cci config_vreg failed\n", __func__, __LINE__);
+		pr_err_ratelimited("%s:%d cci config_vreg failed\n", __func__, __LINE__);
 #ifdef CONFIG_MACH_LGE
 		mutex_unlock(&cci_dev->op_lock);
 #endif
@@ -1433,7 +1433,7 @@ static int32_t msm_cci_init(struct v4l2_subdev *sd,
 	rc = msm_camera_enable_vreg(&cci_dev->pdev->dev, cci_dev->cci_vreg,
 		cci_dev->regulator_count, NULL, 0, &cci_dev->cci_reg_ptr[0], 1);
 	if (rc < 0) {
-		pr_err("%s:%d cci enable_vreg failed\n", __func__, __LINE__);
+		pr_err_ratelimited("%s:%d cci enable_vreg failed\n", __func__, __LINE__);
 #ifdef CONFIG_MACH_LGE
 		mutex_unlock(&cci_dev->op_lock);
 #endif
@@ -1445,7 +1445,7 @@ static int32_t msm_cci_init(struct v4l2_subdev *sd,
 
 	clk_rates = msm_cci_get_clk_rates(cci_dev, c_ctrl);
 	if (!clk_rates) {
-		pr_err("%s: clk enable failed\n", __func__);
+		pr_err_ratelimited("%s: clk enable failed\n", __func__);
 		goto reg_enable_failed;
 	}
 
@@ -1457,7 +1457,7 @@ static int32_t msm_cci_init(struct v4l2_subdev *sd,
 		cci_dev->cci_clk_info, cci_dev->cci_clk,
 		cci_dev->num_clk, true);
 	if (rc < 0) {
-		pr_err("%s: clk enable failed\n", __func__);
+		pr_err_ratelimited("%s: clk enable failed\n", __func__);
 		goto reg_enable_failed;
 	}
 
@@ -1468,7 +1468,7 @@ static int32_t msm_cci_init(struct v4l2_subdev *sd,
 			report_q[i]);
 	rc = msm_camera_enable_irq(cci_dev->irq, true);
 	if (rc < 0)
-		pr_err("%s: irq enable failed\n", __func__);
+		pr_err_ratelimited("%s: irq enable failed\n", __func__);
 	cci_dev->hw_version = msm_camera_io_r_mb(cci_dev->base +
 		CCI_HW_VERSION_ADDR);
 	pr_info("%s:%d: hw_version = 0x%x\n", __func__, __LINE__,
@@ -1518,7 +1518,7 @@ static int32_t msm_cci_init(struct v4l2_subdev *sd,
 		&cci_dev->cci_master_info[MASTER_0].reset_complete,
 		CCI_TIMEOUT);
 	if (rc <= 0) {
-		pr_err("%s: wait_for_completion_timeout %d\n",
+		pr_err_ratelimited("%s: wait_for_completion_timeout %d\n",
 			 __func__, __LINE__);
 		if (rc == 0)
 			rc = -ETIMEDOUT;
@@ -1534,7 +1534,7 @@ static int32_t msm_cci_init(struct v4l2_subdev *sd,
 
 	for (i = 0; i < MASTER_MAX; i++) {
 		if (!cci_dev->write_wq[i]) {
-			pr_err("Failed to flush write wq\n");
+			pr_err_ratelimited("Failed to flush write wq\n");
 			rc = -ENOMEM;
 			goto reset_complete_failed;
 		} else {
@@ -1557,7 +1557,7 @@ clk_enable_failed:
 		ret = pinctrl_select_state(cci_dev->cci_pinctrl.pinctrl,
 				cci_dev->cci_pinctrl.gpio_state_suspend);
 		if (ret)
-			pr_err("%s:%d cannot set pin to suspend state\n",
+			pr_err_ratelimited("%s:%d cannot set pin to suspend state\n",
 				__func__, __LINE__);
 	}
 	msm_camera_request_gpio_table(cci_dev->cci_gpio_tbl,
@@ -1566,7 +1566,7 @@ request_gpio_failed:
 	cci_dev->ref_count--;
 	if (cam_config_ahb_clk(NULL, 0, CAM_AHB_CLIENT_CCI,
 		CAM_AHB_SUSPEND_VOTE) < 0)
-		pr_err("%s: failed to remove vote for AHB\n", __func__);
+		pr_err_ratelimited("%s: failed to remove vote for AHB\n", __func__);
 	return rc;
 }
 
@@ -1577,7 +1577,7 @@ static int32_t msm_cci_release(struct v4l2_subdev *sd)
 
 	cci_dev = v4l2_get_subdevdata(sd);
 	if (!cci_dev->ref_count || cci_dev->cci_state != CCI_STATE_ENABLED) {
-		pr_err("%s invalid ref count %d / cci state %d\n",
+		pr_err_ratelimited("%s invalid ref count %d / cci state %d\n",
 			__func__, cci_dev->ref_count, cci_dev->cci_state);
 		rc = -EINVAL;
 		goto ahb_vote_suspend;
@@ -1601,18 +1601,18 @@ static int32_t msm_cci_release(struct v4l2_subdev *sd)
 	rc = msm_camera_enable_vreg(&cci_dev->pdev->dev, cci_dev->cci_vreg,
 		cci_dev->regulator_count, NULL, 0, &cci_dev->cci_reg_ptr[0], 0);
 	if (rc < 0)
-		pr_err("%s:%d cci disable_vreg failed\n", __func__, __LINE__);
+		pr_err_ratelimited("%s:%d cci disable_vreg failed\n", __func__, __LINE__);
 
 	rc = msm_camera_config_vreg(&cci_dev->pdev->dev, cci_dev->cci_vreg,
 		cci_dev->regulator_count, NULL, 0, &cci_dev->cci_reg_ptr[0], 0);
 	if (rc < 0)
-		pr_err("%s:%d cci unconfig_vreg failed\n", __func__, __LINE__);
+		pr_err_ratelimited("%s:%d cci unconfig_vreg failed\n", __func__, __LINE__);
 
 	if (cci_dev->cci_pinctrl_status) {
 		rc = pinctrl_select_state(cci_dev->cci_pinctrl.pinctrl,
 				cci_dev->cci_pinctrl.gpio_state_suspend);
 		if (rc)
-			pr_err("%s:%d cannot set pin to active state\n",
+			pr_err_ratelimited("%s:%d cannot set pin to active state\n",
 				__func__, __LINE__);
 	}
 	cci_dev->cci_pinctrl_status = 0;
@@ -1631,7 +1631,7 @@ static int32_t msm_cci_release(struct v4l2_subdev *sd)
 ahb_vote_suspend:
 	if (cam_config_ahb_clk(NULL, 0, CAM_AHB_CLIENT_CCI,
 		CAM_AHB_SUSPEND_VOTE) < 0)
-		pr_err("%s: failed to remove vote for AHB\n", __func__);
+		pr_err_ratelimited("%s: failed to remove vote for AHB\n", __func__);
 	return rc;
 }
 
@@ -1646,21 +1646,21 @@ static int32_t msm_cci_write(struct v4l2_subdev *sd,
 
 	cci_dev = v4l2_get_subdevdata(sd);
 	if (!cci_dev || !c_ctrl) {
-		pr_err("%s:%d failed: invalid params %pK %pK\n", __func__,
+		pr_err_ratelimited("%s:%d failed: invalid params %pK %pK\n", __func__,
 			__LINE__, cci_dev, c_ctrl);
 		rc = -EINVAL;
 		return rc;
 	}
 
 	if (cci_dev->cci_state != CCI_STATE_ENABLED) {
-		pr_err("%s invalid cci state %d\n",
+		pr_err_ratelimited("%s invalid cci state %d\n",
 			__func__, cci_dev->cci_state);
 		return -EINVAL;
 	}
 
 	if (c_ctrl->cci_info->cci_i2c_master >= MASTER_MAX
 			|| c_ctrl->cci_info->cci_i2c_master < 0) {
-		pr_err("%s:%d Invalid I2C master addr\n", __func__, __LINE__);
+		pr_err_ratelimited("%s:%d Invalid I2C master addr\n", __func__, __LINE__);
 		return -EINVAL;
 	}
 	master = c_ctrl->cci_info->cci_i2c_master;
@@ -1870,13 +1870,13 @@ static irqreturn_t msm_cci_irq(int irq_num, void *data)
 			cci_dev->base + CCI_RESET_CMD_ADDR);
 	}
 	if (irq & CCI_IRQ_STATUS_0_I2C_M0_ERROR_BMSK) {
-		pr_err("%s:%d MASTER_0 error 0x%x\n", __func__, __LINE__, irq);
+		pr_err_ratelimited("%s:%d MASTER_0 error 0x%x\n", __func__, __LINE__, irq);
 		cci_dev->cci_master_info[MASTER_0].status = -EINVAL;
 		msm_camera_io_w_mb(CCI_M0_HALT_REQ_RMSK,
 			cci_dev->base + CCI_HALT_REQ_ADDR);
 	}
 	if (irq & CCI_IRQ_STATUS_0_I2C_M1_ERROR_BMSK) {
-		pr_err("%s:%d MASTER_1 error 0x%x\n", __func__, __LINE__, irq);
+		pr_err_ratelimited("%s:%d MASTER_1 error 0x%x\n", __func__, __LINE__, irq);
 		cci_dev->cci_master_info[MASTER_1].status = -EINVAL;
 		msm_camera_io_w_mb(CCI_M1_HALT_REQ_RMSK,
 			cci_dev->base + CCI_HALT_REQ_ADDR);
@@ -1972,14 +1972,14 @@ static int32_t msm_cci_init_gpio_params(struct cci_device *cci_dev)
 	cci_dev->cci_gpio_tbl_size = tbl_size = of_gpio_count(of_node);
 	CDBG("%s gpio count %d\n", __func__, tbl_size);
 	if (!tbl_size) {
-		pr_err("%s:%d gpio count 0\n", __func__, __LINE__);
+		pr_err_ratelimited("%s:%d gpio count 0\n", __func__, __LINE__);
 		return 0;
 	}
 
 	gpio_tbl = cci_dev->cci_gpio_tbl =
 		kzalloc(sizeof(struct gpio) * tbl_size, GFP_KERNEL);
 	if (!gpio_tbl) {
-		pr_err("%s failed %d\n", __func__, __LINE__);
+		pr_err_ratelimited("%s failed %d\n", __func__, __LINE__);
 		return 0;
 	}
 
@@ -1991,7 +1991,7 @@ static int32_t msm_cci_init_gpio_params(struct cci_device *cci_dev)
 
 	val_array = kzalloc(sizeof(uint32_t) * tbl_size, GFP_KERNEL);
 	if (!val_array) {
-		pr_err("%s failed %d\n", __func__, __LINE__);
+		pr_err_ratelimited("%s failed %d\n", __func__, __LINE__);
 		rc = -ENOMEM;
 		goto ERROR1;
 	}
@@ -1999,7 +1999,7 @@ static int32_t msm_cci_init_gpio_params(struct cci_device *cci_dev)
 	rc = of_property_read_u32_array(of_node, "qcom,gpio-tbl-flags",
 		val_array, tbl_size);
 	if (rc < 0) {
-		pr_err("%s failed %d\n", __func__, __LINE__);
+		pr_err_ratelimited("%s failed %d\n", __func__, __LINE__);
 		goto ERROR2;
 	}
 	for (i = 0; i < tbl_size; i++) {
@@ -2014,7 +2014,7 @@ static int32_t msm_cci_init_gpio_params(struct cci_device *cci_dev)
 		CDBG("%s gpio_tbl[%d].label = %s\n", __func__, i,
 			gpio_tbl[i].label);
 		if (rc < 0) {
-			pr_err("%s failed %d\n", __func__, __LINE__);
+			pr_err_ratelimited("%s failed %d\n", __func__, __LINE__);
 			goto ERROR2;
 		}
 	}
@@ -2165,7 +2165,7 @@ static int msm_cci_probe(struct platform_device *pdev)
 	CDBG("%s: pdev %pK device id = %d\n", __func__, pdev, pdev->id);
 	new_cci_dev = kzalloc(sizeof(struct cci_device), GFP_KERNEL);
 	if (!new_cci_dev) {
-		pr_err("%s: no enough memory\n", __func__);
+		pr_err_ratelimited("%s: no enough memory\n", __func__);
 		return -ENOMEM;
 	}
 	v4l2_subdev_init(&new_cci_dev->msm_sd.sd, &msm_cci_subdev_ops);
@@ -2184,7 +2184,7 @@ static int msm_cci_probe(struct platform_device *pdev)
 		&new_cci_dev->cci_clk_rates, &new_cci_dev->num_clk_cases,
 		&new_cci_dev->num_clk);
 	if (rc < 0) {
-		pr_err("%s: msm_cci_get_clk_info() failed", __func__);
+		pr_err_ratelimited("%s: msm_cci_get_clk_info() failed", __func__);
 		kfree(new_cci_dev);
 		return -EFAULT;
 	}
@@ -2192,13 +2192,13 @@ static int msm_cci_probe(struct platform_device *pdev)
 	new_cci_dev->ref_count = 0;
 	new_cci_dev->base = msm_camera_get_reg_base(pdev, "cci", true);
 	if (!new_cci_dev->base) {
-		pr_err("%s: no mem resource?\n", __func__);
+		pr_err_ratelimited("%s: no mem resource?\n", __func__);
 		rc = -ENODEV;
 		goto cci_no_resource;
 	}
 	new_cci_dev->irq = msm_camera_get_irq(pdev, "cci");
 	if (!new_cci_dev->irq) {
-		pr_err("%s: no irq resource?\n", __func__);
+		pr_err_ratelimited("%s: no irq resource?\n", __func__);
 		rc = -ENODEV;
 		goto cci_no_resource;
 	}
@@ -2209,7 +2209,7 @@ static int msm_cci_probe(struct platform_device *pdev)
 	rc = msm_camera_register_irq(pdev, new_cci_dev->irq,
 		msm_cci_irq, IRQF_TRIGGER_RISING, "cci", new_cci_dev);
 	if (rc < 0) {
-		pr_err("%s: irq request fail\n", __func__);
+		pr_err_ratelimited("%s: irq request fail\n", __func__);
 		rc = -EBUSY;
 		goto cci_release_mem;
 	}
@@ -2225,14 +2225,14 @@ static int msm_cci_probe(struct platform_device *pdev)
 	rc = msm_camera_get_dt_vreg_data(new_cci_dev->pdev->dev.of_node,
 		&(new_cci_dev->cci_vreg), &(new_cci_dev->regulator_count));
 	if (rc < 0) {
-		pr_err("%s: msm_camera_get_dt_vreg_data fail\n", __func__);
+		pr_err_ratelimited("%s: msm_camera_get_dt_vreg_data fail\n", __func__);
 		rc = -EFAULT;
 		goto cci_release_mem;
 	}
 
 	if ((new_cci_dev->regulator_count < 0) ||
 		(new_cci_dev->regulator_count > MAX_REGULATOR)) {
-		pr_err("%s: invalid reg count = %d, max is %d\n", __func__,
+		pr_err_ratelimited("%s: invalid reg count = %d, max is %d\n", __func__,
 			new_cci_dev->regulator_count, MAX_REGULATOR);
 		rc = -EFAULT;
 		goto cci_invalid_vreg_data;
@@ -2240,14 +2240,14 @@ static int msm_cci_probe(struct platform_device *pdev)
 
 	rc = of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
 	if (rc)
-		pr_err("%s: failed to add child nodes, rc=%d\n", __func__, rc);
+		pr_err_ratelimited("%s: failed to add child nodes, rc=%d\n", __func__, rc);
 	new_cci_dev->cci_state = CCI_STATE_DISABLED;
 	g_cci_subdev = &new_cci_dev->msm_sd.sd;
 	for (i = 0; i < MASTER_MAX; i++) {
 		new_cci_dev->write_wq[i] = create_singlethread_workqueue(
 								"msm_cci_wq");
 		if (!new_cci_dev->write_wq[i])
-			pr_err("Failed to create write wq\n");
+			pr_err_ratelimited("Failed to create write wq\n");
 	}
 	CDBG("%s cci subdev %pK\n", __func__, &new_cci_dev->msm_sd.sd);
 	CDBG("%s line %d\n", __func__, __LINE__);
