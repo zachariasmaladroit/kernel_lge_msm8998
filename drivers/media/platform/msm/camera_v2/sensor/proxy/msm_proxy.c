@@ -193,9 +193,9 @@ static int32_t msm_proxy_get_subdev_id(struct msm_proxy_ctrl_t *proxy_ctrl,
 									   void *arg)
 {
 	uint32_t *subdev_id = (uint32_t *)arg;
-//	pr_err("Enter\n");
+//	pr_err_ratelimited("Enter\n");
 	if (!subdev_id) {
-		pr_err("failed get_subdev_id\n");
+		pr_err_ratelimited("failed get_subdev_id\n");
 		return -EINVAL;
 	}
 	if (proxy_ctrl->proxy_device_type == MSM_CAMERA_PLATFORM_DEVICE)
@@ -214,14 +214,14 @@ static int msm_proxy_close(struct v4l2_subdev *sd,
 	struct msm_proxy_ctrl_t *o_ctrl =  v4l2_get_subdevdata(sd);
 //	CDBG("Enter\n");
 	if (!o_ctrl) {
-		pr_err("failed proxy_close\n");
+		pr_err_ratelimited("failed proxy_close\n");
 		return -EINVAL;
 	}
 	if (o_ctrl->proxy_device_type == MSM_CAMERA_PLATFORM_DEVICE) {
 		rc = o_ctrl->i2c_client.i2c_func_tbl->i2c_util(
 			&o_ctrl->i2c_client, MSM_CCI_RELEASE);
 		if (rc < 0)
-			pr_err("cci_init failed\n");
+			pr_err_ratelimited("cci_init failed\n");
 	}
 
 //	CDBG("Exit\n");
@@ -342,7 +342,7 @@ int16_t OffsetCalibration(void)
 	//int32_t OffsetCalibrationDataMicroMeter;
 
 #ifdef COMPATIBILITY_CUT_1_0_CUT_1_1
-//	pr_err("OffsetCalibration start!\n");
+//	pr_err_ratelimited("OffsetCalibration start!\n");
 
     if (moduleVersion == 1) // cut 1.1
 	{
@@ -351,12 +351,12 @@ int16_t OffsetCalibration(void)
 		offsetComp = offsetComp - st_offset;
 
 		if ((offsetComp < 31000) && (offsetComp > (-63000)) && (Status == VL53L0_ERROR_NONE) ) {
-//			pr_err("OffsetCalibration: spec in!\n");
+//			pr_err_ratelimited("OffsetCalibration: spec in!\n");
 		} else {
 			VL53L0_RestoreOffset(Dev, st_offset);
-//			pr_err("OffsetCalibration: spec out!\n");
+//			pr_err_ratelimited("OffsetCalibration: spec out!\n");
 		}
-//		pr_err("offsetComp:%d OffsetCalibrationDataMicroMeter: %d!\n",offsetComp, st_offset);
+//		pr_err_ratelimited("offsetComp:%d OffsetCalibrationDataMicroMeter: %d!\n",offsetComp, st_offset);
     }
 	else if(moduleVersion == 0) //cut1.0
 	{
@@ -367,7 +367,7 @@ int16_t OffsetCalibration(void)
 	}
 	offset = offsetComp/1000;
 
-//	pr_err("OffsetCalibration end!\n");
+//	pr_err_ratelimited("OffsetCalibration end!\n");
 	return offset;
 #else
 	//VL53L0_GetOffsetCalibrationDataMicroMeter(Dev, &OffsetCalibrationDataMicroMeter);
@@ -375,12 +375,12 @@ int16_t OffsetCalibration(void)
 	offsetComp = offsetComp - st_offset;
 
 	if ((offsetComp < 31000) && (offsetComp > (-63000)) && (Status == VL53L0_ERROR_NONE) ) {
-//		pr_err("OffsetCalibration: spec in!\n");
+//		pr_err_ratelimited("OffsetCalibration: spec in!\n");
 	} else {
 		VL53L0_RestoreOffset(Dev, st_offset);
-//		pr_err("OffsetCalibration: spec out!\n");
+//		pr_err_ratelimited("OffsetCalibration: spec out!\n");
 	}
-//	pr_err("offsetComp:%d OffsetCalibrationDataMicroMeter: %d!\n",offsetComp, st_offset);
+//	pr_err_ratelimited("offsetComp:%d OffsetCalibrationDataMicroMeter: %d!\n",offsetComp, st_offset);
 #endif
 
 
@@ -394,7 +394,7 @@ int16_t OffsetCalibration(void)
 	uint16_t statusCode = 0;
 	uint16_t distance = 0;
 
-//	pr_err("OffsetCalibration start!\n");
+//	pr_err_ratelimited("OffsetCalibration start!\n");
 
 	proxy_i2c_write(SYSRANGE__PART_TO_PART_RANGE_OFFSET, 0, 1);
 	proxy_i2c_write(SYSRANGE__CROSSTALK_COMPENSATION_RATE, 0, 1);
@@ -419,7 +419,7 @@ int16_t OffsetCalibration(void)
 	measuredDistance = measuredDistance / 10;
 	measuredOffset = (realDistance - measuredDistance) / 3;
 
-//	pr_err("OffsetCalibration end!\n");
+//	pr_err_ratelimited("OffsetCalibration end!\n");
 
 	return measuredOffset;
 #endif
@@ -451,7 +451,7 @@ uint16_t proxy_get_from_sensor_EwokAPI(void)
 #else
 	VL53L0_PerformSingleRangingMeasurement(Dev, &RangeData);
 #endif
-	//pr_err("get_proxy %d error: %d! status: %d\n", RangeData.RangeMilliMeter, RangeData.RangeStatus, api_err);
+	//pr_err_ratelimited("get_proxy %d error: %d! status: %d\n", RangeData.RangeMilliMeter, RangeData.RangeStatus, api_err);
 
 	if( RangeData.RangeStatus != 0 )
 	{
@@ -643,16 +643,16 @@ static void get_proxy(struct work_struct *work)
 /* LGE_CHANGE_S, for initialization time reduce(spad calibration), 2016-02-11, seonyung.kim@lge.com */
 				VL53L0_PerformRefCalibration(Dev, &VhvSettings,&PhaseCal);
 				VL53L0_PerformRefSpadManagement(Dev,  &count, &isApertureSpads);
-//				pr_err("perform ref calibration= %d, %d, %d, %d to eeprom\n", VhvSettings, PhaseCal, count, isApertureSpads);
+//				pr_err_ratelimited("perform ref calibration= %d, %d, %d, %d to eeprom\n", VhvSettings, PhaseCal, count, isApertureSpads);
 
  			 	offset = OffsetCalibration();
 				count_sep1 = count >> 16;
 				count_sep2 = 0xFFFF & count;
-//				pr_err("VL53L0 count:%d, count_sep1:%d, count_sep2:%d\n",count, count_sep1, count_sep2);
+//				pr_err_ratelimited("VL53L0 count:%d, count_sep1:%d, count_sep2:%d\n",count, count_sep1, count_sep2);
 
 /* LGE_CHANGE_E, for initialization time reduce(spad calibration), 2016-02-13, seonyung.kim@lge.com */
 				//VL53L0_PerformRefSpadManagement(Dev,&refSpadCount,&isApertureSpads);
-//				pr_err("write offset = %x to eeprom\n", offset);
+//				pr_err_ratelimited("write offset = %x to eeprom\n", offset);
 
 				proxy_i2c_e2p_read(0xBE0, &moduleId, 1);
 
@@ -663,7 +663,7 @@ static void get_proxy(struct work_struct *work)
 #endif
 					//if ((moduleId == 0x00) || (moduleId == 0x01) || (moduleId == 0x02)) {
 
-//						pr_err("VL53L0 VhvSettings:%d, PhaseCal:%d, isApertureSpads:%d\n",VhvSettings, PhaseCal, isApertureSpads);
+//						pr_err_ratelimited("VL53L0 VhvSettings:%d, PhaseCal:%d, isApertureSpads:%d\n",VhvSettings, PhaseCal, isApertureSpads);
 						proxy_i2c_e2p_read(IT_EEP_REG, &finVal, 2);
 						calCount = finVal >> 8;
 
@@ -682,8 +682,8 @@ static void get_proxy(struct work_struct *work)
 						proxy_i2c_e2p_write(IT_EEP_REG+8, isApertureSpads, 1);	//0x808
 						msleep(1);
 
-//						pr_err("KSY read inot cal count = %x to eeprom\n", finVal);
-//						pr_err("KSY read inot offset = %x to eeprom\n", offset);
+//						pr_err_ratelimited("KSY read inot cal count = %x to eeprom\n", finVal);
+//						pr_err_ratelimited("KSY read inot offset = %x to eeprom\n", offset);
 					//}
 
 					proxy_struct->proxy_stat.cal_count = calCount;
@@ -706,18 +706,18 @@ static void get_proxy(struct work_struct *work)
 #endif
 		}
 		if (proxy_struct->i2c_fail_cnt >= proxy_struct->max_i2c_fail_thres) {
-			pr_err("proxy workqueue force end due to i2c fail!\n");
+			pr_err_ratelimited("proxy workqueue force end due to i2c fail!\n");
 			break;
 		}
 		msleep(53);
 		if (proxy_struct->exit_workqueue)
 			break;
 	}
-//	pr_err("end workqueue!\n");
+//	pr_err_ratelimited("end workqueue!\n");
 }
 int16_t stop_proxy(void)
 {
-//	pr_err("stop_proxy!\n");
+//	pr_err_ratelimited("stop_proxy!\n");
 	if (msm_proxy_t.exit_workqueue == 0) {
 		if (msm_proxy_t.wq_init_success) {
 			msm_proxy_t.exit_workqueue = 1;
@@ -725,65 +725,65 @@ int16_t stop_proxy(void)
 			msm_proxy_t.wq_init_success = 0;  //LGE_UPDATE
 			msm_proxy_t.work_thread = NULL;
 			msm_proxy_t.check_init_finish = 0;
-//			pr_err("destroy_workqueue!\n");
+//			pr_err_ratelimited("destroy_workqueue!\n");
 		}
 	}
 	return 0;
 }
 int16_t pause_proxy(void)
 {
-//	pr_err("pause_proxy!\n");
+//	pr_err_ratelimited("pause_proxy!\n");
 	msm_proxy_t.pause_workqueue = 1;
-//	pr_err("pause_workqueue = %d\n", msm_proxy_t.pause_workqueue);
+//	pr_err_ratelimited("pause_workqueue = %d\n", msm_proxy_t.pause_workqueue);
 	return 0;
 }
 int16_t restart_proxy(void)
 {
-//	pr_err("restart_proxy!\n");
+//	pr_err_ratelimited("restart_proxy!\n");
 	msm_proxy_t.pause_workqueue = 0;
-//	pr_err("pause_workqueue = %d\n", msm_proxy_t.pause_workqueue);
+//	pr_err_ratelimited("pause_workqueue = %d\n", msm_proxy_t.pause_workqueue);
 	return 0;
 }
 uint16_t msm_proxy_thread_start(void)
 {
-//	pr_err("msm_proxy_thread_start\n");
+//	pr_err_ratelimited("msm_proxy_thread_start\n");
 
 	if (msm_proxy_t.exit_workqueue) {
 		msm_proxy_t.exit_workqueue = 0;
 		msm_proxy_t.work_thread = create_singlethread_workqueue("my_work_thread");
 		if (!msm_proxy_t.work_thread) {
-//			pr_err("creating work_thread fail!\n");
+//			pr_err_ratelimited("creating work_thread fail!\n");
 			return 1;
 		}
 
 		msm_proxy_t.wq_init_success = 1;
 
 		INIT_WORK(&msm_proxy_t.proxy_work, get_proxy);
-//		pr_err("INIT_WORK done!\n");
+//		pr_err_ratelimited("INIT_WORK done!\n");
 
 		queue_work(msm_proxy_t.work_thread, &msm_proxy_t.proxy_work);
-//		pr_err("queue_work done!\n");
+//		pr_err_ratelimited("queue_work done!\n");
 	}
 	return 0;
 }
 uint16_t msm_proxy_thread_end(void)
 {
 	uint16_t ret = 0;
-//	pr_err("msm_proxy_thread_end\n");
+//	pr_err_ratelimited("msm_proxy_thread_end\n");
 	ret = stop_proxy();
 	return ret;
 }
 uint16_t msm_proxy_thread_pause(void)
 {
 	uint16_t ret = 0;
-//	pr_err("msm_proxy_thread_pause\n");
+//	pr_err_ratelimited("msm_proxy_thread_pause\n");
 	ret = pause_proxy();
 	return ret;
 }
 uint16_t msm_proxy_thread_restart(void)
 {
 	uint16_t ret = 0;
-//	pr_err("msm_proxy_thread_restart\n");
+//	pr_err_ratelimited("msm_proxy_thread_restart\n");
 	msm_proxy_t.i2c_fail_cnt = 0;
 	ret = restart_proxy();
 	return ret;
@@ -791,7 +791,7 @@ uint16_t msm_proxy_thread_restart(void)
 uint16_t msm_proxy_cal(void)
 {
 	uint16_t ret = 0;
-//	pr_err("msm_proxy_cal\n");
+//	pr_err_ratelimited("msm_proxy_cal\n");
 	msm_proxy_t.proxy_cal = 1;
 	return ret;
 }
@@ -830,24 +830,24 @@ int32_t msm_init_proxy(void)
 	uint16_t moduleId = 0;
 	uint8_t shiftModuleId = 0;
 
-//	pr_err("msm_init_proxy ENTER!\n");
+//	pr_err_ratelimited("msm_init_proxy ENTER!\n");
 
 	proxy_i2c_read(RESULT__RANGE_STATUS, &proxyStatus, 1);
 	proxy_i2c_read(0x290, &proxyFatal, 1);
 
 	if ((proxyStatus & 0x01) && ((proxyStatus >> 4) == 0) && (proxyFatal == 0))
-//		pr_err("init proxy alive!\n");
+//		pr_err_ratelimited("init proxy alive!\n");
 
 	else {
-		pr_err("init proxy fail!, no proxy sensor found!\n");
+		pr_err_ratelimited("init proxy fail!, no proxy sensor found!\n");
 		return -1;
 	}
 
 	proxy_i2c_read(IDENTIFICATION__MODEL_ID, &modelID, 1);
 	proxy_i2c_read(IDENTIFICATION__REVISION_ID, &revID, 1);
-	pr_err("Model ID : 0x%X, REVISION ID : 0x%X\n", modelID, revID);   //if revID == 2;(not calibrated), revID == 3 (calibrated)
+	pr_err_ratelimited("Model ID : 0x%X, REVISION ID : 0x%X\n", modelID, revID);   //if revID == 2;(not calibrated), revID == 3 (calibrated)
 	if (revID != REVISION_CALIBRATED) {
-		pr_err("not calibrated!\n");
+		pr_err_ratelimited("not calibrated!\n");
 		//return -1;
 	}
 
@@ -956,7 +956,7 @@ int32_t msm_init_proxy(void)
 	//readRangeOffset
 	proxy_i2c_e2p_read(0xBE0, &moduleId, 2);
 	shiftModuleId = moduleId >> 8;
-//	pr_err("KSY module ID : %d\n", shiftModuleId);
+//	pr_err_ratelimited("KSY module ID : %d\n", shiftModuleId);
 
 	if ((shiftModuleId == 0x00) || (shiftModuleId == 0x01) || (shiftModuleId == 0x02)) {
 		proxy_i2c_e2p_read(IT_EEP_REG, &finVal, 2);
@@ -972,7 +972,7 @@ int32_t msm_init_proxy(void)
 			offsetByte = 0;
 		}
 		msm_proxy_t.proxy_stat.cal_count = calCount;
-		pr_err("inot read offset = %d from eeprom\n", offsetByte);
+		pr_err_ratelimited("inot read offset = %d from eeprom\n", offsetByte);
 		proxy_i2c_write(SYSRANGE__PART_TO_PART_RANGE_OFFSET, offsetByte, 1);
 
 	}
@@ -1520,7 +1520,7 @@ static int32_t msm_proxy_vreg_control(struct msm_proxy_ctrl_t *o_ctrl,
 		return 0;
 
 	if (cnt >= MSM_PROXY_MAX_VREGS) {
-		pr_err("%s failed %d cnt %d\n", __func__, __LINE__, cnt);
+		pr_err_ratelimited("%s failed %d cnt %d\n", __func__, __LINE__, cnt);
 		return -EINVAL;
 	}
 
@@ -1540,7 +1540,7 @@ static int32_t msm_proxy_power_up(struct msm_proxy_ctrl_t *o_ctrl)
 
 	rc = msm_proxy_vreg_control(o_ctrl, 1);
 	if (rc < 0) {
-		pr_err("%s failed %d\n", __func__, __LINE__);
+		pr_err_ratelimited("%s failed %d\n", __func__, __LINE__);
 		return rc;
 	}
 	o_ctrl->proxy_state = PROXY_POWER_UP;
@@ -1556,7 +1556,7 @@ static int32_t msm_proxy_power_down(struct msm_proxy_ctrl_t *o_ctrl)
 
     rc = msm_proxy_vreg_control(o_ctrl, 0);
 		if (rc < 0) {
-			pr_err("%s failed %d\n", __func__, __LINE__);
+			pr_err_ratelimited("%s failed %d\n", __func__, __LINE__);
 			return rc;
 		}
 
@@ -1576,7 +1576,7 @@ static int msm_proxy_init(struct msm_proxy_ctrl_t *o_ctrl)
 	CDBG("Enter\n");
 
 	if (!o_ctrl) {
-		pr_err("msm_proxy_init failed\n");
+		pr_err_ratelimited("msm_proxy_init failed\n");
 		return -EINVAL;
 	}
 
@@ -1584,7 +1584,7 @@ static int msm_proxy_init(struct msm_proxy_ctrl_t *o_ctrl)
 		rc = o_ctrl->i2c_client.i2c_func_tbl->i2c_util(
 			&o_ctrl->i2c_client, MSM_CCI_INIT);
 		if (rc < 0)
-			pr_err("cci_init failed\n");
+			pr_err_ratelimited("cci_init failed\n");
 
 		msm_proxy_t.check_init_finish = 0;
 
@@ -1592,7 +1592,7 @@ static int msm_proxy_init(struct msm_proxy_ctrl_t *o_ctrl)
 			rc = proxy_i2c_read(0xc2, &revision_id, 1);
 
 			if (rc < 0) {
-				pr_err("msm_proxy i2c failed\n");
+				pr_err_ratelimited("msm_proxy i2c failed\n");
 				msleep(1);
 				continue;
 			} else {
@@ -1616,11 +1616,11 @@ static int32_t msm_proxy_config(struct msm_proxy_ctrl_t *proxy_ctrl,
       case CFG_PROXY_INIT:
         rc = msm_proxy_init(proxy_ctrl);
 		if (rc < 0)
-			    pr_err("msm_proxy_init failed %d\n", rc);
+			    pr_err_ratelimited("msm_proxy_init failed %d\n", rc);
         break;
       case CFG_PROXY_ON:{
         rc = msm_init_proxy();
-        pr_err("%s: Proxy is on! error_code = %d  \n", __func__, rc);
+        pr_err_ratelimited("%s: Proxy is on! error_code = %d  \n", __func__, rc);
         break;
       }
       case CFG_GET_PROXY:{
@@ -1674,12 +1674,12 @@ static int32_t msm_proxy_config(struct msm_proxy_ctrl_t *proxy_ctrl,
       case CFG_PROXY_POWERUP:
         rc = msm_proxy_power_up(proxy_ctrl);
         if (rc < 0)
-//          pr_err("Failed proxy power up%d\n", rc);
+//          pr_err_ratelimited("Failed proxy power up%d\n", rc);
         break;
       case CFG_PROXY_POWERDOWN:
 		rc = msm_proxy_power_down(proxy_ctrl);
 	if (rc < 0)
-//		pr_err("msm_proxy_power_down failed %d\n", rc);
+//		pr_err_ratelimited("msm_proxy_power_down failed %d\n", rc);
         break;
 	default:
 		break;
@@ -1779,22 +1779,22 @@ static int32_t msm_proxy_i2c_probe(struct i2c_client *client,
 {
 	int rc = 0;
 	struct msm_proxy_ctrl_t *proxy_ctrl_t = NULL;
-	pr_err("msm_proxy_i2c_probe Enter\n");
+	pr_err_ratelimited("msm_proxy_i2c_probe Enter\n");
 
 	if (client == NULL) {
-		pr_err("msm_ois_i2c_probe: client is null\n");
+		pr_err_ratelimited("msm_ois_i2c_probe: client is null\n");
 		return -EINVAL;
 	}
 
 	proxy_ctrl_t = kzalloc(sizeof(struct msm_proxy_ctrl_t),
 		GFP_KERNEL);
 	if (!proxy_ctrl_t) {
-		pr_err("%s:%d failed no memory\n", __func__, __LINE__);
+		pr_err_ratelimited("%s:%d failed no memory\n", __func__, __LINE__);
 		return -ENOMEM;
 	}
 
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
-		pr_err("i2c_check_functionality failed\n");
+		pr_err_ratelimited("i2c_check_functionality failed\n");
 		goto probe_failure;
 	}
 
@@ -1803,7 +1803,7 @@ static int32_t msm_proxy_i2c_probe(struct i2c_client *client,
 		&proxy_ctrl_t->subdev_id);
 //	CDBG("cell-index %d, rc %d\n", proxy_ctrl_t->subdev_id, rc);
 	if (rc < 0) {
-		pr_err("failed rc %d\n", rc);
+		pr_err_ratelimited("failed rc %d\n", rc);
 		kfree(proxy_ctrl_t);
 		return rc;
 	}
@@ -1833,7 +1833,7 @@ static int32_t msm_proxy_i2c_probe(struct i2c_client *client,
 	proxy_ctrl_t->proxy_state = PROXY_POWER_DOWN;
 
 //	CDBG("succeeded\n");
-//	pr_err("Exit\n");
+//	pr_err_ratelimited("Exit\n");
 
 probe_failure:
 	kfree(proxy_ctrl_t);
@@ -1874,7 +1874,7 @@ static int32_t msm_proxy_platform_probe(struct platform_device *pdev)
 							  &pdev->id);
 //	CDBG("cell-index %d, rc %d\n", pdev->id, rc);
 	if (rc < 0) {
-		pr_err("failed rc %d\n", rc);
+		pr_err_ratelimited("failed rc %d\n", rc);
 		return rc;
 	}
 
@@ -1882,7 +1882,7 @@ static int32_t msm_proxy_platform_probe(struct platform_device *pdev)
 							  &msm_proxy_t.cci_master);
 //	CDBG("qcom,cci-master %d, rc %d\n", msm_proxy_t.cci_master, rc);
 	if (rc < 0) {
-		pr_err("failed rc %d\n", rc);
+		pr_err_ratelimited("failed rc %d\n", rc);
 		return rc;
 	}
 
@@ -1894,7 +1894,7 @@ static int32_t msm_proxy_platform_probe(struct platform_device *pdev)
 	msm_proxy_t.i2c_client.cci_client = kzalloc(sizeof(
 											struct msm_camera_cci_client), GFP_KERNEL);
 	if (!msm_proxy_t.i2c_client.cci_client) {
-		pr_err("failed no memory\n");
+		pr_err_ratelimited("failed no memory\n");
 		return -ENOMEM;
 	}
 
@@ -1916,7 +1916,7 @@ static int32_t msm_proxy_platform_probe(struct platform_device *pdev)
 		struct msm_camera_cci_client), GFP_KERNEL);
 	if (!msm_proxy_t.i2c_eeprom_client.cci_client) {
 		kfree(msm_proxy_t.vreg_cfg.cam_vreg);
-		pr_err("failed no memory\n");
+		pr_err_ratelimited("failed no memory\n");
 		return -ENOMEM;
 	}
 
@@ -2045,7 +2045,7 @@ int msm_init_proxy_EwokAPI(void)
 	uint8_t PhaseCal_8 = 0;  //0x807
 	uint8_t isApertureSpads_8 = 0;	//0x808
 
-	pr_err("msm_init_proxy_EwokAPI(): Starting...\n");
+	pr_err_ratelimited("msm_init_proxy_EwokAPI(): Starting...\n");
 	msm_proxy_t.check_init_finish = 1;  //Init start
 	msm_proxy_t.proxy_stat.cal_done = 0;
 #ifdef COMPATIBILITY_CUT_1_0_CUT_1_1
@@ -2123,7 +2123,7 @@ int msm_init_proxy_EwokAPI(void)
 					Status = VL53L0_StaticInit(Dev); // Device Initialization
 					/*
 					//VL53L0_PerformRefSpadManagement(Dev,&refSpadCount,&isApertureSpads);
-					//pr_err("spad calibration : %d, %d\n", refSpadCount, isApertureSpads);
+					//pr_err_ratelimited("spad calibration : %d, %d\n", refSpadCount, isApertureSpads);
 					refSpadCount =13;
 					isApertureSpads = 1;
 					VL53L0_SetReferenceSpads(Dev,refSpadCount,isApertureSpads);
@@ -2133,18 +2133,18 @@ int msm_init_proxy_EwokAPI(void)
 					proxy_i2c_e2p_read(IT_EEP_REG+2, &count_sep1, 2);
 					proxy_i2c_e2p_read(IT_EEP_REG+4, &count_sep2, 2);
 					count = (count_sep1 << 16) | (0xFFFF & count_sep2);
-					pr_err("VL53L0 count:%d, count_sep1:%d, count_sep2:%d\n",count, count_sep1, count_sep2);
+					pr_err_ratelimited("VL53L0 count:%d, count_sep1:%d, count_sep2:%d\n",count, count_sep1, count_sep2);
 
 					proxy_i2c_e2p_read(IT_EEP_REG+6, &VhvSettings, 1);
 					proxy_i2c_e2p_read(IT_EEP_REG+7, &PhaseCal, 1);
 					proxy_i2c_e2p_read(IT_EEP_REG+8, &isApertureSpads, 1);
-					pr_err("VL53L0 VhvSettings:%d, PhaseCal:%d, isApertureSpads:%d\n",VhvSettings, PhaseCal, isApertureSpads);
+					pr_err_ratelimited("VL53L0 VhvSettings:%d, PhaseCal:%d, isApertureSpads:%d\n",VhvSettings, PhaseCal, isApertureSpads);
 					if(VhvSettings == 255 /* EEPROM default value */
 						|| (count == 0 || VhvSettings == 0 || PhaseCal == 0)) { /* If one of three values has 0 value it means wrong state. It needs re-calibration */
 						VL53L0_PerformRefCalibration(Dev, &VhvSettings_8,&PhaseCal_8);
 						VL53L0_PerformRefSpadManagement(Dev,  &count, &isApertureSpads_8);
-						pr_err("VL53L0 count:%d, count_sep1:%d, count_sep2:%d(not calibrated!!)\n",count, count_sep1, count_sep2);
-						pr_err("VL53L0 VhvSettings:%d, PhaseCal:%d, isApertureSpads:%d(not calibrated!!)\n",VhvSettings_8, PhaseCal_8, isApertureSpads_8);
+						pr_err_ratelimited("VL53L0 count:%d, count_sep1:%d, count_sep2:%d(not calibrated!!)\n",count, count_sep1, count_sep2);
+						pr_err_ratelimited("VL53L0 VhvSettings:%d, PhaseCal:%d, isApertureSpads:%d(not calibrated!!)\n",VhvSettings_8, PhaseCal_8, isApertureSpads_8);
 					}
 					else {
 
@@ -2221,11 +2221,11 @@ int msm_init_proxy_EwokAPI(void)
 			e2p_offset = 0;
 		}
 		msm_proxy_t.proxy_stat.cal_count = calCount;
-		pr_err("read offset = %d from eeprom\n", e2p_offset);
+		pr_err_ratelimited("read offset = %d from eeprom\n", e2p_offset);
 		VL53L0_GetOffsetCalibrationDataMicroMeter(Dev,&st_offset);
 		sensor_offset = (int8_t)((st_offset/1000) + e2p_offset);
 		VL53L0_SetOffsetCalibrationDataMicroMeter(Dev,(int32_t)(sensor_offset*1000));
-		pr_err("e2p_offset = %d, st_offset = %d, sensor_offset = %d\n", e2p_offset, st_offset, sensor_offset);
+		pr_err_ratelimited("e2p_offset = %d, st_offset = %d, sensor_offset = %d\n", e2p_offset, st_offset, sensor_offset);
 	}
 	else if(moduleVersion == 0)
 	{
@@ -2247,7 +2247,7 @@ int msm_init_proxy_EwokAPI(void)
 				e2p_offset = 0;
 			}
 			msm_proxy_t.proxy_stat.cal_count = calCount;
-			pr_err("read offset = %d from eeprom\n", e2p_offset);
+			pr_err_ratelimited("read offset = %d from eeprom\n", e2p_offset);
 			VL53L010_GetOffsetCalibrationDataMicroMeter(Dev,&st_offset);
 			sensor_offset = (int8_t)((st_offset/1000) + e2p_offset);
 			VL53L010_SetOffsetCalibrationDataMicroMeter(Dev,(int32_t)(sensor_offset*1000));
@@ -2272,7 +2272,7 @@ int msm_init_proxy_EwokAPI(void)
 				e2p_offset = 0;
 			}
 			msm_proxy_t.proxy_stat.cal_count = calCount;
-			pr_err("read offset = %d from eeprom\n", e2p_offset);
+			pr_err_ratelimited("read offset = %d from eeprom\n", e2p_offset);
 			VL53L0_GetOffsetCalibrationDataMicroMeter(Dev,&st_offset);
 			sensor_offset = (int8_t)((st_offset/1000) + e2p_offset);
 			VL53L0_SetOffsetCalibrationDataMicroMeter(Dev,(int32_t)(sensor_offset*1000));
@@ -2358,11 +2358,11 @@ int msm_init_proxy_EwokAPI(void)
 				proxy_i2c_e2p_read(0x814, &module_name_1, 1);
 				proxy_i2c_e2p_read(0x815, &module_name_2, 2);
 
-				pr_err("%s, module_name_1 = 0x%x, module_name_2 = 0x%x\n", __func__, module_name_1, module_name_2);
+				pr_err_ratelimited("%s, module_name_1 = 0x%x, module_name_2 = 0x%x\n", __func__, module_name_1, module_name_2);
 
 				if (module_name_1 == 0x45 && module_name_2 == 0x7a02)
 				{
-					pr_err("%s, S5K2P7", __func__);
+					pr_err_ratelimited("%s, S5K2P7", __func__);
 					if (Status == VL53L0_ERROR_NONE) {
 						Status = VL53L0_SetVcselPulsePeriod(Dev,
 							 VL53L0_VCSEL_PERIOD_PRE_RANGE, 18);
@@ -2527,12 +2527,12 @@ int msm_init_proxy_EwokAPI(void)
 
 	if (Status != VL53L0_ERROR_NONE)
 	{
-		pr_err("msm_init_proxy_EwokAPI(): VL53L0_GetMeasurementDataReady() failed! %d %d\n", Status, msm_proxy_t.check_init_finish);
+		pr_err_ratelimited("msm_init_proxy_EwokAPI(): VL53L0_GetMeasurementDataReady() failed! %d %d\n", Status, msm_proxy_t.check_init_finish);
 		return -1;
 	} else
 		msm_proxy_t.check_init_finish = 2; // Init Complete
 
-	pr_err("msm_init_proxy_EwokAPI(): End!\n");
+	pr_err_ratelimited("msm_init_proxy_EwokAPI(): End!\n");
 	return 0;
 }
 #endif
@@ -2558,7 +2558,7 @@ int msm_init_proxy_BBearAPI(void)
 	uint16_t module_id = 0;
 	uint8_t shift_module_id = 0;
 
-	pr_err("msm_init_proxy_BBearAPI() ENTER!\n");
+	pr_err_ratelimited("msm_init_proxy_BBearAPI() ENTER!\n");
 
 
 	//Dev = SLAVE_ADDRESS;
@@ -2573,16 +2573,16 @@ int msm_init_proxy_BBearAPI(void)
 	//VL53LO_Error ret = VL53LO_GetRangeStatus(Dev, &proxy_status);
 /*	if(ret != 0)
 	{
-		pr_err("msm_init_proxy(), VL53LO_GetRangeStatus() fail!\n");
+		pr_err_ratelimited("msm_init_proxy(), VL53LO_GetRangeStatus() fail!\n");
 		return -1;
 	}*/
 	if((proxy_status & 0x01) && ((proxy_status>>3) == 0))
 	{
-		pr_err("init proxy alive!\n");
+		pr_err_ratelimited("init proxy alive!\n");
 	}
 	else
 	{
-		pr_err("init proxy fail!, no proxy sensor found!\n");
+		pr_err_ratelimited("init proxy fail!, no proxy sensor found!\n");
 		return -1;
 	}
 
@@ -2592,10 +2592,10 @@ int msm_init_proxy_BBearAPI(void)
 	VL6180x_RdWord(Dev, IDENTIFICATION__REVISION_ID, &revID);
 
 	//revID = revID >> 4;
-	pr_err("Model ID : 0x%X, REVISION ID : 0x%X\n", modelID, revID);   //if revID == 2;(not calibrated), revID == 3 (calibrated)
+	pr_err_ratelimited("Model ID : 0x%X, REVISION ID : 0x%X\n", modelID, revID);   //if revID == 2;(not calibrated), revID == 3 (calibrated)
 	if(revID != REVISION_CALIBRATED)
 	{
-		pr_err("not calibrated!\n");
+		pr_err_ratelimited("not calibrated!\n");
 		//return -1;
 	}
 
@@ -2634,7 +2634,7 @@ int msm_init_proxy_BBearAPI(void)
 	//readRangeOffset
 	proxy_i2c_e2p_read(0xBE0, &module_id, 2);
 	shift_module_id = module_id >> 8;
-	pr_err("KSY module ID : %d\n", shift_module_id);
+	pr_err_ratelimited("KSY module ID : %d\n", shift_module_id);
 
 	if((shift_module_id == 0x00) || (shift_module_id == 0x01) || (shift_module_id == 0x02))  // It module
 	{
@@ -2652,7 +2652,7 @@ int msm_init_proxy_BBearAPI(void)
 		}
 		//	offsetByte -= 255;
 		msm_proxy_t.proxy_stat.cal_count = cal_count;
-		pr_err("inot read offset = %d from eeprom\n", offsetByte);
+		pr_err_ratelimited("inot read offset = %d from eeprom\n", offsetByte);
 
 		VL6180x_WrByte(Dev, SYSRANGE__PART_TO_PART_RANGE_OFFSET, offsetByte);
 	}

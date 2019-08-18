@@ -559,7 +559,7 @@ static int msm_jpegdma_open(struct file *file)
 	ret = cam_config_ahb_clk(NULL, 0, CAM_AHB_CLIENT_JPEG,
 			CAM_AHB_SVS_VOTE);
 	if (ret < 0) {
-		pr_err("%s: failed to vote for AHB\n", __func__);
+		pr_err_ratelimited("%s: failed to vote for AHB\n", __func__);
 		goto ahb_vote_fail;
 	}
 	init_completion(&ctx->completion);
@@ -598,7 +598,7 @@ static int msm_jpegdma_release(struct file *file)
 
 	if (cam_config_ahb_clk(NULL, 0, CAM_AHB_CLIENT_JPEG,
 		CAM_AHB_SUSPEND_VOTE) < 0)
-		pr_err("%s: failed to remove vote for AHB\n", __func__);
+		pr_err_ratelimited("%s: failed to remove vote for AHB\n", __func__);
 
 	return 0;
 }
@@ -1366,7 +1366,7 @@ static int jpegdma_probe(struct platform_device *pdev)
 		jpegdma->bus_client = CAM_BUS_CLIENT_JPEG_DMA;
 		break;
 	default:
-		pr_err("%s: invalid cell id :%d\n",
+		pr_err_ratelimited("%s: invalid cell id :%d\n",
 			__func__, pdev->id);
 		goto error_reg_bus;
 	}
@@ -1375,7 +1375,7 @@ static int jpegdma_probe(struct platform_device *pdev)
 	ret = msm_camera_register_bus_client(pdev,
 			jpegdma->bus_client);
 	if (ret < 0) {
-		pr_err("Fail to register bus client\n");
+		pr_err_ratelimited("Fail to register bus client\n");
 		ret = -EINVAL;
 		goto error_reg_bus;
 	}
