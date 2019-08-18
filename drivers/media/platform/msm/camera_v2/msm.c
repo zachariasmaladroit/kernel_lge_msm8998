@@ -1051,7 +1051,7 @@ int msm_post_event(struct v4l2_event *event, int timeout)
 				msm_print_event_error(event);
 				mutex_unlock(&session->lock);
 				BUG_ON(unlikely(BIT_ISSET(msm_debug, LGE_DEBUG_PANIC_ON_TIMEOUT)));
-				dump_stack();
+//				dump_stack();
 				/* msm_shutdown_imaging_server(vdev); */
 				return -ETIMEDOUT;
 			} else {
