@@ -3685,7 +3685,7 @@ static int msm_snd_enable_codec_ext_clk(struct snd_soc_codec *codec,
 	else if (!strcmp(dev_name(codec->dev), "tavil_codec"))
 		ret = tavil_cdc_mclk_enable(codec, enable);
 	else {
-		dev_err(codec->dev, "%s: unknown codec to enable ext clk\n",
+		dev_err_ratelimited(codec->dev, "%s: unknown codec to enable ext clk\n",
 			__func__);
 		ret = -EINVAL;
 	}
@@ -3700,7 +3700,7 @@ static int msm_snd_enable_codec_ext_tx_clk(struct snd_soc_codec *codec,
 	if (!strcmp(dev_name(codec->dev), "tasha_codec"))
 		ret = tasha_cdc_mclk_tx_enable(codec, enable, dapm);
 	else {
-		dev_err(codec->dev, "%s: unknown codec to enable ext clk\n",
+		dev_err_ratelimited(codec->dev, "%s: unknown codec to enable ext clk\n",
 			__func__);
 		ret = -EINVAL;
 	}
@@ -4242,7 +4242,7 @@ static int msm_afe_set_config(struct snd_soc_codec *codec)
 	void *config_data = NULL;
 
 	if (!msm_codec_fn.get_afe_config_fn) {
-		dev_err(codec->dev, "%s: codec get afe config not init'ed\n",
+		dev_err_ratelimited(codec->dev, "%s: codec get afe config not init'ed\n",
 			__func__);
 		return -EINVAL;
 	}
@@ -4252,7 +4252,7 @@ static int msm_afe_set_config(struct snd_soc_codec *codec)
 	if (config_data) {
 		ret = afe_set_config(AFE_CDC_REGISTERS_CONFIG, config_data, 0);
 		if (ret) {
-			dev_err(codec->dev,
+			dev_err_ratelimited(codec->dev,
 				"%s: Failed to set codec registers config %d\n",
 				__func__, ret);
 			return ret;
@@ -4265,7 +4265,7 @@ static int msm_afe_set_config(struct snd_soc_codec *codec)
 		ret = afe_set_config(AFE_CDC_REGISTER_PAGE_CONFIG, config_data,
 				    0);
 		if (ret)
-			dev_err(codec->dev,
+			dev_err_ratelimited(codec->dev,
 				"%s: Failed to set cdc register page config\n",
 				__func__);
 	}
@@ -4275,7 +4275,7 @@ static int msm_afe_set_config(struct snd_soc_codec *codec)
 	if (config_data) {
 		ret = afe_set_config(AFE_SLIMBUS_SLAVE_CONFIG, config_data, 0);
 		if (ret) {
-			dev_err(codec->dev,
+			dev_err_ratelimited(codec->dev,
 				"%s: Failed to set slimbus slave config %d\n",
 				__func__, ret);
 			return ret;
@@ -4366,7 +4366,7 @@ static int msm8998_notifier_service_cb(struct notifier_block *this,
 		card = platform_get_drvdata(spdev);
 		rtd = snd_soc_get_pcm_runtime(card, be_dl_name);
 		if (!rtd) {
-			dev_err(card->dev,
+			dev_err_ratelimited(card->dev,
 				"%s: snd_soc_get_pcm_runtime for %s failed!\n",
 				__func__, be_dl_name);
 			ret = -EINVAL;
@@ -4376,7 +4376,7 @@ static int msm8998_notifier_service_cb(struct notifier_block *this,
 
 		ret = msm_adsp_power_up_config(codec);
 		if (ret < 0) {
-			dev_err(card->dev,
+			dev_err_ratelimited(card->dev,
 				"%s: msm_adsp_power_up_config failed ret = %d!\n",
 				__func__, ret);
 			goto done;
@@ -4917,7 +4917,7 @@ static int msm_wcn_hw_params(struct snd_pcm_substream *substream,
 	ret = snd_soc_dai_get_channel_map(codec_dai,
 				 &tx_ch_cnt, tx_ch, &rx_ch_cnt, rx_ch);
 	if (ret) {
-		dev_err(rtd->dev,
+		dev_err_ratelimited(rtd->dev,
 			"%s: failed to get BTFM codec chan map\n, err:%d\n",
 			__func__, ret);
 		goto exit;
@@ -4929,7 +4929,7 @@ static int msm_wcn_hw_params(struct snd_pcm_substream *substream,
 	ret = snd_soc_dai_set_channel_map(cpu_dai,
 					  tx_ch_cnt, tx_ch, rx_ch_cnt, rx_ch);
 	if (ret)
-		dev_err(rtd->dev, "%s: failed to set cpu chan map, err:%d\n",
+		dev_err_ratelimited(rtd->dev, "%s: failed to set cpu chan map, err:%d\n",
 			__func__, ret);
 
 exit:
@@ -4950,7 +4950,7 @@ static int msm_aux_pcm_snd_startup(struct snd_pcm_substream *substream)
 
 	if (index < PRIM_AUX_PCM || index > QUAT_AUX_PCM) {
 		ret = -EINVAL;
-		dev_err(rtd->card->dev,
+		dev_err_ratelimited(rtd->card->dev,
 			"%s: CPU DAI id (%d) out of range\n",
 			__func__, cpu_dai->id);
 		goto done;
@@ -4964,7 +4964,7 @@ static int msm_aux_pcm_snd_startup(struct snd_pcm_substream *substream)
 				mi2s_auxpcm_conf[index].pcm_i2s_sel_vt_addr);
 			mutex_unlock(&mi2s_auxpcm_conf[index].lock);
 		} else {
-			dev_err(rtd->card->dev,
+			dev_err_ratelimited(rtd->card->dev,
 				"%s lpaif_tert_muxsel_virt_addr is NULL\n",
 				__func__);
 			ret = -EINVAL;
@@ -4991,7 +4991,7 @@ static void msm_aux_pcm_snd_shutdown(struct snd_pcm_substream *substream)
 		rtd->cpu_dai->name, rtd->cpu_dai->id);
 
 	if (index < PRIM_AUX_PCM || index > QUAT_AUX_PCM) {
-		dev_err(rtd->card->dev,
+		dev_err_ratelimited(rtd->card->dev,
 			"%s: CPU DAI id (%d) out of range\n",
 			__func__, rtd->cpu_dai->id);
 		return;
@@ -5005,7 +5005,7 @@ static void msm_aux_pcm_snd_shutdown(struct snd_pcm_substream *substream)
 				mi2s_auxpcm_conf[index].pcm_i2s_sel_vt_addr);
 			mutex_unlock(&mi2s_auxpcm_conf[index].lock);
 		} else {
-			dev_err(rtd->card->dev,
+			dev_err_ratelimited(rtd->card->dev,
 				"%s lpaif_tert_muxsel_virt_addr is NULL\n",
 				__func__);
 		}
@@ -5096,7 +5096,7 @@ static int msm_mi2s_set_sclk(struct snd_pcm_substream *substream, bool enable)
 
 	port_id = msm_get_port_id(rtd->dai_link->be_id);
 	if (IS_ERR_VALUE(port_id)) {
-		dev_err(rtd->card->dev, "%s: Invalid port_id\n", __func__);
+		dev_err_ratelimited(rtd->card->dev, "%s: Invalid port_id\n", __func__);
 		ret = port_id;
 		goto done;
 	}
@@ -5111,7 +5111,7 @@ static int msm_mi2s_set_sclk(struct snd_pcm_substream *substream, bool enable)
 	ret = afe_set_lpass_clock_v2(port_id,
 				     &mi2s_clk[index]);
 	if (ret < 0) {
-		dev_err(rtd->card->dev,
+		dev_err_ratelimited(rtd->card->dev,
 			"%s: afe lpass clock failed for port 0x%x , err:%d\n",
 			__func__, port_id, ret);
 		goto done;
@@ -6331,7 +6331,7 @@ static int msm_mi2s_snd_startup(struct snd_pcm_substream *substream)
 
 	if (index < PRIM_MI2S || index > QUAT_MI2S) {
 		ret = -EINVAL;
-		dev_err(rtd->card->dev,
+		dev_err_ratelimited(rtd->card->dev,
 			"%s: CPU DAI id (%d) out of range\n",
 			__func__, cpu_dai->id);
 		goto done;
@@ -6359,7 +6359,7 @@ static int msm_mi2s_snd_startup(struct snd_pcm_substream *substream)
 		}
 		ret = msm_mi2s_set_sclk(substream, true);
 		if (IS_ERR_VALUE(ret)) {
-			dev_err(rtd->card->dev,
+			dev_err_ratelimited(rtd->card->dev,
 				"%s: afe lpass clock failed to enable MI2S clock, err:%d\n",
 				__func__, ret);
 			goto clean_up;
@@ -6370,7 +6370,7 @@ static int msm_mi2s_snd_startup(struct snd_pcm_substream *substream)
 				mi2s_auxpcm_conf[index].pcm_i2s_sel_vt_addr);
 			mutex_unlock(&mi2s_auxpcm_conf[index].lock);
 		} else {
-			dev_err(rtd->card->dev,
+			dev_err_ratelimited(rtd->card->dev,
 				"%s lpaif_muxsel_virt_addr is NULL for dai %d\n",
 				__func__, index);
 			ret = -EINVAL;
@@ -8589,7 +8589,7 @@ static int msm_snd_card_late_probe(struct snd_soc_card *card)
 
 	rtd = snd_soc_get_pcm_runtime(card, be_dl_name);
 	if (!rtd) {
-		dev_err(card->dev,
+		dev_err_ratelimited(card->dev,
 			"%s: snd_soc_get_pcm_runtime for %s failed!\n",
 			__func__, be_dl_name);
 		ret = -EINVAL;
@@ -8604,7 +8604,7 @@ static int msm_snd_card_late_probe(struct snd_soc_card *card)
 	wcd_mbhc_cfg.calibration = mbhc_calibration;
 	ret = tasha_mbhc_hs_detect(rtd->codec, &wcd_mbhc_cfg);
 	if (ret) {
-		dev_err(card->dev, "%s: mbhc hs detect failed, err:%d\n",
+		dev_err_ratelimited(card->dev, "%s: mbhc hs detect failed, err:%d\n",
 			__func__, ret);
 		goto err_hs_detect;
 	}
@@ -8626,7 +8626,7 @@ static int msm_snd_card_tavil_late_probe(struct snd_soc_card *card)
 
 	rtd = snd_soc_get_pcm_runtime(card, be_dl_name);
 	if (!rtd) {
-		dev_err(card->dev,
+		dev_err_ratelimited(card->dev,
 			"%s: snd_soc_get_pcm_runtime for %s failed!\n",
 			__func__, be_dl_name);
 		ret = -EINVAL;
@@ -8641,7 +8641,7 @@ static int msm_snd_card_tavil_late_probe(struct snd_soc_card *card)
 	wcd_mbhc_cfg.calibration = mbhc_calibration;
 	ret = tavil_mbhc_hs_detect(rtd->codec, &wcd_mbhc_cfg);
 	if (ret) {
-		dev_err(card->dev, "%s: mbhc hs detect failed, err:%d\n",
+		dev_err_ratelimited(card->dev, "%s: mbhc hs detect failed, err:%d\n",
 			__func__, ret);
 		goto err_hs_detect;
 	}
@@ -8761,7 +8761,7 @@ static int msm_prepare_us_euro(struct snd_soc_card *card)
 			pdata->us_euro_gpio);
 		ret = gpio_request(pdata->us_euro_gpio, "TASHA_CODEC_US_EURO");
 		if (ret) {
-			dev_err(card->dev,
+			dev_err_ratelimited(card->dev,
 				"%s: Failed to request codec US/EURO gpio %d error %d\n",
 				__func__, pdata->us_euro_gpio, ret);
 		}
@@ -8779,7 +8779,7 @@ static int msm_audrx_stub_init(struct snd_soc_pcm_runtime *rtd)
 	ret = snd_soc_add_codec_controls(codec, msm_snd_controls,
 					 ARRAY_SIZE(msm_snd_controls));
 	if (ret < 0) {
-		dev_err(codec->dev, "%s: add_codec_controls failed, err%d\n",
+		dev_err_ratelimited(codec->dev, "%s: add_codec_controls failed, err%d\n",
 			__func__, ret);
 		return ret;
 	}
@@ -8912,7 +8912,7 @@ static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev)
 
 	match = of_match_node(msm8998_asoc_machine_of_match, dev->of_node);
 	if (!match) {
-		dev_err(dev, "%s: No DT match found for sound card\n",
+		dev_err_ratelimited(dev, "%s: No DT match found for sound card\n",
 			__func__);
 		return NULL;
 	}
@@ -9109,7 +9109,7 @@ static int msm_wsa881x_init(struct snd_soc_component *component)
 			snd_soc_dapm_ignore_suspend(dapm, "SpkrRight SPKR");
 		}
 	} else {
-		dev_err(codec->dev, "%s: wrong codec name %s\n", __func__,
+		dev_err_ratelimited(codec->dev, "%s: wrong codec name %s\n", __func__,
 			codec->component.name);
 		ret = -EINVAL;
 		goto err_codec;
@@ -9160,7 +9160,7 @@ static int msm_init_wsa_dev(struct platform_device *pdev,
 			 __func__);
 		goto err_dt;
 	} else if (wsa_dev_cnt <= 0) {
-		dev_err(&pdev->dev,
+		dev_err_ratelimited(&pdev->dev,
 			"%s: Error reading wsa device from DT. wsa_dev_cnt = %d\n",
 			__func__, wsa_dev_cnt);
 		ret = -EINVAL;
@@ -9183,7 +9183,7 @@ static int msm_init_wsa_dev(struct platform_device *pdev,
 	ret = of_property_count_strings(pdev->dev.of_node,
 					"qcom,wsa-aux-dev-prefix");
 	if (ret != wsa_dev_cnt) {
-		dev_err(&pdev->dev,
+		dev_err_ratelimited(&pdev->dev,
 			"%s: expecting %d wsa prefix. Defined only %d in DT\n",
 			__func__, wsa_dev_cnt, ret);
 		ret = -EINVAL;
@@ -9213,7 +9213,7 @@ static int msm_init_wsa_dev(struct platform_device *pdev,
 					    "qcom,wsa-devs", i);
 		if (unlikely(!wsa_of_node)) {
 			/* we should not be here */
-			dev_err(&pdev->dev,
+			dev_err_ratelimited(&pdev->dev,
 				"%s: wsa dev node is not present\n",
 				__func__);
 			ret = -EINVAL;
@@ -9273,7 +9273,7 @@ static int msm_init_wsa_dev(struct platform_device *pdev,
 						    wsa881x_dev_info[i].index,
 						    wsa_auxdev_name_prefix);
 		if (ret) {
-			dev_err(&pdev->dev,
+			dev_err_ratelimited(&pdev->dev,
 				"%s: failed to read wsa aux dev prefix, ret = %d\n",
 				__func__, ret);
 			ret = -EINVAL;
@@ -9382,7 +9382,7 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 	int ret;
 
 	if (!pdev->dev.of_node) {
-		dev_err(&pdev->dev, "No platform supplied from device tree\n");
+		dev_err_ratelimited(&pdev->dev, "No platform supplied from device tree\n");
 		return -EINVAL;
 	}
 
@@ -9393,7 +9393,7 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 
 	card = populate_snd_card_dailinks(&pdev->dev);
 	if (!card) {
-		dev_err(&pdev->dev, "%s: Card uninitialized\n", __func__);
+		dev_err_ratelimited(&pdev->dev, "%s: Card uninitialized\n", __func__);
 		ret = -EINVAL;
 		goto err;
 	}
@@ -9403,14 +9403,14 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 
 	ret = snd_soc_of_parse_card_name(card, "qcom,model");
 	if (ret) {
-		dev_err(&pdev->dev, "parse card name failed, err:%d\n",
+		dev_err_ratelimited(&pdev->dev, "parse card name failed, err:%d\n",
 			ret);
 		goto err;
 	}
 
 	ret = snd_soc_of_parse_audio_routing(card, "qcom,audio-routing");
 	if (ret) {
-		dev_err(&pdev->dev, "parse audio routing failed, err:%d\n",
+		dev_err_ratelimited(&pdev->dev, "parse audio routing failed, err:%d\n",
 			ret);
 		goto err;
 	}
@@ -9418,7 +9418,7 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 	match = of_match_node(msm8998_asoc_machine_of_match,
 			pdev->dev.of_node);
 	if (!match) {
-		dev_err(&pdev->dev, "%s: no matched codec is found.\n",
+		dev_err_ratelimited(&pdev->dev, "%s: no matched codec is found.\n",
 			__func__);
 		goto err;
 	}
@@ -9431,7 +9431,7 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 	ret = of_property_read_u32(pdev->dev.of_node,
 			mclk_freq_prop_name, &pdata->mclk_freq);
 	if (ret) {
-		dev_err(&pdev->dev,
+		dev_err_ratelimited(&pdev->dev,
 			"Looking up %s property in node %s failed, err%d\n",
 			mclk_freq_prop_name,
 			pdev->dev.of_node->full_name, ret);
@@ -9439,7 +9439,7 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 	}
 
 	if (pdata->mclk_freq != CODEC_EXT_CLK_RATE) {
-		dev_err(&pdev->dev, "unsupported mclk freq %u\n",
+		dev_err_ratelimited(&pdev->dev, "unsupported mclk freq %u\n",
 			pdata->mclk_freq);
 		ret = -EINVAL;
 		goto err;
@@ -9464,7 +9464,7 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 			ret = -EINVAL;
 		goto err;
 	} else if (ret) {
-		dev_err(&pdev->dev, "snd_soc_register_card failed (%d)\n",
+		dev_err_ratelimited(&pdev->dev, "snd_soc_register_card failed (%d)\n",
 			ret);
 		goto err;
 	}
@@ -9621,7 +9621,7 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 	gpio_set_value(pdata->sabre_amp_dpb, 1);
 
 	sabre_state = SABRE_STATE_AMP;
-	dev_err(&pdev->dev, "%s, exit\n", __func__);
+	dev_err_ratelimited(&pdev->dev, "%s, exit\n", __func__);
 #endif /* sabre amp */
 
 	return 0;
