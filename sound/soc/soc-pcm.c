@@ -534,7 +534,7 @@ static int soc_pcm_open(struct snd_pcm_substream *substream)
 	if (rtd->dai_link->ops && rtd->dai_link->ops->startup) {
 		ret = rtd->dai_link->ops->startup(substream);
 		if (ret < 0) {
-			pr_err("ASoC: %s startup failed: %d\n",
+			pr_err_ratelimited("ASoC: %s startup failed: %d\n",
 			       rtd->dai_link->name, ret);
 			goto machine_err;
 		}
@@ -834,7 +834,7 @@ static int soc_pcm_prepare(struct snd_pcm_substream *substream)
 
 out:
 	if (ret < 0 && substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		pr_err("%s: Issue stop stream for codec_dai due to op failure %d = ret\n",
+		pr_err_ratelimited("%s: Issue stop stream for codec_dai due to op failure %d = ret\n",
 		__func__, ret);
 		snd_soc_dapm_stream_event(rtd,
 		SNDRV_PCM_STREAM_PLAYBACK,
