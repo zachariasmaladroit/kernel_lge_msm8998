@@ -71,9 +71,9 @@ static void msm_cci_dump_registers(struct cci_device *cci_dev,
 	uint32_t i = 0;
 	uint32_t reg_offset = 0;
 
-//#ifdef CONFIG_MACH_LGE
-//	dump_stack();	/* LGE_CHANGE, CST, print out backtrace in case of read/write timeout */
-//#endif
+#ifdef CONFIG_MACH_LGE
+	dump_stack();	/* LGE_CHANGE, CST, print out backtrace in case of read/write timeout */
+#endif
 
 	/* CCI Top Registers */
 	CCI_DBG(" **** %s : %d CCI TOP Registers ****\n", __func__, __LINE__);
