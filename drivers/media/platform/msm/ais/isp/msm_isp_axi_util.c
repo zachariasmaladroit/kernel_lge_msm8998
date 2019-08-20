@@ -1106,11 +1106,9 @@ void msm_isp_calculate_bandwidth(
 	int bpp = 0;
 
 	if (stream_info->stream_src < RDI_INTF_0) {
-		stream_info->max_width = max(stream_info->max_width,
-			axi_data->src_info[VFE_PIX_0].width);
 		stream_info->bandwidth =
-			(axi_data->src_info[VFE_PIX_0].pixel_clock *
-			axi_data->src_info[VFE_PIX_0].width) /
+			(axi_data->src_info[VFE_PIX_0].pixel_clock /
+			axi_data->src_info[VFE_PIX_0].width) *
 			stream_info->max_width;
 		stream_info->bandwidth = (unsigned long)stream_info->bandwidth *
 			stream_info->format_factor / ISP_Q2;
@@ -2274,7 +2272,8 @@ int msm_isp_update_stream_bandwidth(struct vfe_device *vfe_dev,
 
 	total_bandwidth = total_pix_bandwidth + total_rdi_bandwidth;
 		rc = msm_isp_update_bandwidth(ISP_VFE0 + vfe_dev->pdev->id,
-			total_bandwidth, total_bandwidth);
+			(total_bandwidth + vfe_dev->hw_info->min_ab),
+			(total_bandwidth + vfe_dev->hw_info->min_ib));
 	if (rc < 0)
 		pr_err("%s: update failed\n", __func__);
 
