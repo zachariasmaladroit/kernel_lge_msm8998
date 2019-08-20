@@ -25,7 +25,7 @@
 //#define __DEBUG
 #undef CDBG
 #ifdef __DEBUG
-#define CDBG(fmt, args...) pr_err_ratelimited(fmt, ##args)
+#define CDBG(fmt, args...) pr_err(fmt, ##args)
 #else
 #define CDBG(fmt, args...) pr_debug(fmt, ##args)
 
@@ -197,7 +197,7 @@ void msm_camera_io_dump(void __iomem *addr, int size, int enable)
 			used = snprintf(line_str + offset,
 				sizeof(line_str) - offset, "0x%04tX: ", p);
 			if (offset + used >= sizeof(line_str)) {
-				pr_err_ratelimited("%s\n", line_str);
+				pr_err("%s\n", line_str);
 				offset = 0;
 				line_str[0] = '\0';
 			} else {
@@ -209,20 +209,20 @@ void msm_camera_io_dump(void __iomem *addr, int size, int enable)
 		used = snprintf(line_str + offset,
 			sizeof(line_str) - offset, "%08x ", data);
 		if (offset + used >= sizeof(line_str)) {
-			pr_err_ratelimited("%s\n", line_str);
+			pr_err("%s\n", line_str);
 			offset = 0;
 			line_str[0] = '\0';
 		} else {
 			offset += used;
 		}
 		if ((i + 1) % 4 == 0) {
-			pr_err_ratelimited("%s\n", line_str);
+			pr_err("%s\n", line_str);
 			line_str[0] = '\0';
 			offset = 0;
 		}
 	}
 	if (line_str[0] != '\0')
-		pr_err_ratelimited("%s\n", line_str);
+		pr_err("%s\n", line_str);
 }
 
 void msm_camera_io_dump_wstring_base(void __iomem *addr,
@@ -236,7 +236,7 @@ void msm_camera_io_dump_wstring_base(void __iomem *addr,
 		(size/u));
 
 	if (!addr || (size <= 0) || !dump_data) {
-		pr_err_ratelimited("%s: addr=%pK data=%pK size=%d\n", __func__,
+		pr_err("%s: addr=%pK data=%pK size=%d\n", __func__,
 			addr, dump_data, size);
 		return;
 	}
@@ -280,13 +280,13 @@ int msm_cam_clk_sel_src(struct device *dev, struct msm_cam_clk_info *clk_info,
 		if (clk_src_info[i].clk_name) {
 			mux_clk = clk_get(dev, clk_info[i].clk_name);
 			if (IS_ERR(mux_clk)) {
-				pr_err_ratelimited("%s get failed\n",
+				pr_err("%s get failed\n",
 					 clk_info[i].clk_name);
 				continue;
 			}
 			src_clk = clk_get(dev, clk_src_info[i].clk_name);
 			if (IS_ERR(src_clk)) {
-				pr_err_ratelimited("%s get failed\n",
+				pr_err("%s get failed\n",
 					clk_src_info[i].clk_name);
 				continue;
 			}
@@ -308,7 +308,7 @@ int msm_cam_clk_enable(struct device *dev, struct msm_cam_clk_info *clk_info,
 			CDBG("%s enable %s\n", __func__, clk_info[i].clk_name);
 			clk_ptr[i] = clk_get(dev, clk_info[i].clk_name);
 			if (IS_ERR(clk_ptr[i])) {
-				pr_err_ratelimited("%s get failed\n", clk_info[i].clk_name);
+				pr_err("%s get failed\n", clk_info[i].clk_name);
 				rc = PTR_ERR(clk_ptr[i]);
 				goto cam_clk_get_err;
 			}
@@ -316,14 +316,14 @@ int msm_cam_clk_enable(struct device *dev, struct msm_cam_clk_info *clk_info,
 				clk_rate = clk_round_rate(clk_ptr[i],
 					clk_info[i].clk_rate);
 				if (clk_rate < 0) {
-					pr_err_ratelimited("%s round failed\n",
+					pr_err("%s round failed\n",
 						   clk_info[i].clk_name);
 					goto cam_clk_set_err;
 				}
 				rc = clk_set_rate(clk_ptr[i],
 					clk_rate);
 				if (rc < 0) {
-					pr_err_ratelimited("%s set failed\n",
+					pr_err("%s set failed\n",
 						clk_info[i].clk_name);
 					goto cam_clk_set_err;
 				}
@@ -334,14 +334,14 @@ int msm_cam_clk_enable(struct device *dev, struct msm_cam_clk_info *clk_info,
 					clk_rate =
 						  clk_round_rate(clk_ptr[i], 0);
 					if (clk_rate < 0) {
-						pr_err_ratelimited("%s round rate failed\n",
+						pr_err("%s round rate failed\n",
 							  clk_info[i].clk_name);
 						goto cam_clk_set_err;
 					}
 					rc = clk_set_rate(clk_ptr[i],
 								clk_rate);
 					if (rc < 0) {
-						pr_err_ratelimited("%s set rate failed\n",
+						pr_err("%s set rate failed\n",
 							  clk_info[i].clk_name);
 						goto cam_clk_set_err;
 					}
@@ -349,14 +349,14 @@ int msm_cam_clk_enable(struct device *dev, struct msm_cam_clk_info *clk_info,
 			}
 			rc = clk_prepare(clk_ptr[i]);
 			if (rc < 0) {
-				pr_err_ratelimited("%s prepare failed\n",
+				pr_err("%s prepare failed\n",
 					   clk_info[i].clk_name);
 				goto cam_clk_prepare_err;
 			}
 
 			rc = clk_enable(clk_ptr[i]);
 			if (rc < 0) {
-				pr_err_ratelimited("%s enable failed\n",
+				pr_err("%s enable failed\n",
 					   clk_info[i].clk_name);
 				goto cam_clk_enable_err;
 			}
@@ -408,12 +408,12 @@ int msm_camera_config_vreg(struct device *dev, struct camera_vreg_t *cam_vreg,
 	struct camera_vreg_t *curr_vreg;
 
 	if (num_vreg_seq > num_vreg) {
-		pr_err_ratelimited("%s:%d vreg sequence invalid\n", __func__, __LINE__);
+		pr_err("%s:%d vreg sequence invalid\n", __func__, __LINE__);
 		return -EINVAL;
 	}
 
 	if (cam_vreg == NULL) {
-		pr_err_ratelimited("%s:%d cam_vreg sequence invalid\n", __func__, __LINE__);
+		pr_err("%s:%d cam_vreg sequence invalid\n", __func__, __LINE__);
 		return -EINVAL;
 	}
 
@@ -432,7 +432,7 @@ int msm_camera_config_vreg(struct device *dev, struct camera_vreg_t *cam_vreg,
 			reg_ptr[j] = regulator_get(dev,
 				curr_vreg->reg_name);
 			if (IS_ERR_OR_NULL(reg_ptr[j])) {
-				pr_err_ratelimited("%s: %s get failed\n",
+				pr_err("%s: %s get failed\n",
 					 __func__,
 					 curr_vreg->reg_name);
 				reg_ptr[j] = NULL;
@@ -444,7 +444,7 @@ int msm_camera_config_vreg(struct device *dev, struct camera_vreg_t *cam_vreg,
 					curr_vreg->min_voltage,
 					curr_vreg->max_voltage);
 				if (rc < 0) {
-					pr_err_ratelimited("%s: %s set voltage failed\n",
+					pr_err("%s: %s set voltage failed\n",
 						__func__,
 						curr_vreg->reg_name);
 					goto vreg_set_voltage_fail;
@@ -455,7 +455,7 @@ int msm_camera_config_vreg(struct device *dev, struct camera_vreg_t *cam_vreg,
 						curr_vreg->op_mode);
 					rc = 0;
 					if (rc < 0) {
-						pr_err_ratelimited(
+						pr_err(
 						"%s:%s set optimum mode fail\n",
 						__func__,
 						curr_vreg->reg_name);
@@ -524,7 +524,7 @@ int msm_camera_enable_vreg(struct device *dev, struct camera_vreg_t *cam_vreg,
 	int i = 0, j = 0, rc = 0;
 
 	if (num_vreg_seq > num_vreg) {
-		pr_err_ratelimited("%s:%d vreg sequence invalid\n", __func__, __LINE__);
+		pr_err("%s:%d vreg sequence invalid\n", __func__, __LINE__);
 		return -EINVAL;
 	}
 	if (!num_vreg_seq)
@@ -539,13 +539,13 @@ int msm_camera_enable_vreg(struct device *dev, struct camera_vreg_t *cam_vreg,
 			} else
 				j = i;
 			if (IS_ERR_OR_NULL(reg_ptr[j])) {
-				pr_err_ratelimited("%s: %s null regulator\n",
+				pr_err("%s: %s null regulator\n",
 					__func__, cam_vreg[j].reg_name);
 				goto disable_vreg;
 			}
 			rc = regulator_enable(reg_ptr[j]);
 			if (rc < 0) {
-				pr_err_ratelimited("%s: %s enable failed\n",
+				pr_err("%s: %s enable failed\n",
 					__func__, cam_vreg[j].reg_name);
 				goto disable_vreg;
 			}
@@ -600,7 +600,7 @@ void msm_camera_bus_scale_cfg(uint32_t bus_perf_client,
 	int rc = 0;
 
 	if (!bus_perf_client) {
-		pr_err_ratelimited("%s: Bus Client NOT Registered!!!\n", __func__);
+		pr_err("%s: Bus Client NOT Registered!!!\n", __func__);
 		return;
 	}
 	switch (perf_setting) {
@@ -626,7 +626,7 @@ void msm_camera_bus_scale_cfg(uint32_t bus_perf_client,
 	case S_DEFAULT:
 		break;
 	default:
-		pr_err_ratelimited("%s: INVALID CASE\n", __func__);
+		pr_err("%s: INVALID CASE\n", __func__);
 	}
 }
 
@@ -659,19 +659,19 @@ int msm_camera_config_single_vreg(struct device *dev,
 	const char *vreg_name = NULL;
 
 	if (!dev || !cam_vreg || !reg_ptr) {
-		pr_err_ratelimited("%s: get failed NULL parameter\n", __func__);
+		pr_err("%s: get failed NULL parameter\n", __func__);
 		goto vreg_get_fail;
 	}
 	if (cam_vreg->type == VREG_TYPE_CUSTOM) {
 		if (cam_vreg->custom_vreg_name == NULL) {
-			pr_err_ratelimited("%s : can't find sub reg name",
+			pr_err("%s : can't find sub reg name",
 				__func__);
 			goto vreg_get_fail;
 		}
 		vreg_name = cam_vreg->custom_vreg_name;
 	} else {
 		if (cam_vreg->reg_name == NULL) {
-			pr_err_ratelimited("%s : can't find reg name", __func__);
+			pr_err("%s : can't find reg name", __func__);
 			goto vreg_get_fail;
 		}
 		vreg_name = cam_vreg->reg_name;
@@ -681,7 +681,7 @@ int msm_camera_config_single_vreg(struct device *dev,
 		CDBG("%s enable %s\n", __func__, vreg_name);
 		*reg_ptr = regulator_get(dev, vreg_name);
 		if (IS_ERR(*reg_ptr)) {
-			pr_err_ratelimited("%s: %s get failed\n", __func__, vreg_name);
+			pr_err("%s: %s get failed\n", __func__, vreg_name);
 			*reg_ptr = NULL;
 			goto vreg_get_fail;
 		}
@@ -693,7 +693,7 @@ int msm_camera_config_single_vreg(struct device *dev,
 				*reg_ptr, cam_vreg->min_voltage,
 				cam_vreg->max_voltage);
 			if (rc < 0) {
-				pr_err_ratelimited("%s: %s set voltage failed\n",
+				pr_err("%s: %s set voltage failed\n",
 					__func__, vreg_name);
 				goto vreg_set_voltage_fail;
 			}
@@ -701,7 +701,7 @@ int msm_camera_config_single_vreg(struct device *dev,
 				rc = regulator_set_load(*reg_ptr,
 					cam_vreg->op_mode);
 				if (rc < 0) {
-					pr_err_ratelimited(
+					pr_err(
 					"%s: %s set optimum mode failed\n",
 					__func__, vreg_name);
 					goto vreg_set_opt_mode_fail;
@@ -710,7 +710,7 @@ int msm_camera_config_single_vreg(struct device *dev,
 		}
 		rc = regulator_enable(*reg_ptr);
 		if (rc < 0) {
-			pr_err_ratelimited("%s: %s regulator_enable failed\n", __func__,
+			pr_err("%s: %s regulator_enable failed\n", __func__,
 				vreg_name);
 			goto vreg_unconfig;
 		}
@@ -728,7 +728,7 @@ int msm_camera_config_single_vreg(struct device *dev,
 			regulator_put(*reg_ptr);
 			*reg_ptr = NULL;
 		} else {
-			pr_err_ratelimited("%s can't disable %s\n", __func__, vreg_name);
+			pr_err("%s can't disable %s\n", __func__, vreg_name);
 		}
 	}
 	return 0;
@@ -755,7 +755,7 @@ int msm_camera_request_gpio_table(struct gpio *gpio_tbl, uint8_t size,
 	int rc = 0, i = 0, err = 0;
 
 	if (!gpio_tbl || !size) {
-		pr_err_ratelimited("%s:%d invalid gpio_tbl %pK / size %d\n", __func__,
+		pr_err("%s:%d invalid gpio_tbl %pK / size %d\n", __func__,
 			__LINE__, gpio_tbl, size);
 		return -EINVAL;
 	}
@@ -773,7 +773,7 @@ int msm_camera_request_gpio_table(struct gpio *gpio_tbl, uint8_t size,
 				* apply new gpios, outout a error message
 				* for driver bringup debug
 				*/
-				pr_err_ratelimited("%s:%d gpio %d:%s request fails\n",
+				pr_err("%s:%d gpio %d:%s request fails\n",
 					__func__, __LINE__,
 					gpio_tbl[i].gpio, gpio_tbl[i].label);
 			}
@@ -799,7 +799,7 @@ int msm_camera_get_dt_reg_settings(struct device_node *of_node,
 	unsigned int cnt;
 
 	if (!of_node || !dt_prop_name || !size || !reg_s) {
-		pr_err_ratelimited("%s: Error invalid args %pK:%pK:%pK:%pK\n",
+		pr_err("%s: Error invalid args %pK:%pK:%pK:%pK\n",
 			__func__, size, reg_s, of_node, dt_prop_name);
 		return -EINVAL;
 	}
@@ -809,7 +809,7 @@ int msm_camera_get_dt_reg_settings(struct device_node *of_node,
 	}
 
 	if (!cnt || (cnt % 8)) {
-		pr_err_ratelimited("%s: Error invalid number of entries cnt=%d\n",
+		pr_err("%s: Error invalid number of entries cnt=%d\n",
 			__func__, cnt);
 		return -EINVAL;
 	}
@@ -824,14 +824,14 @@ int msm_camera_get_dt_reg_settings(struct device_node *of_node,
 				*reg_s,
 				cnt);
 		if (ret < 0) {
-			pr_err_ratelimited("%s: No dt reg info read for %s ret=%d\n",
+			pr_err("%s: No dt reg info read for %s ret=%d\n",
 				__func__, dt_prop_name, ret);
 			kfree(*reg_s);
 			return -ENOENT;
 		}
 		*size = cnt;
 	} else {
-		pr_err_ratelimited("%s: Error invalid entries\n", __func__);
+		pr_err("%s: Error invalid entries\n", __func__);
 		return -EINVAL;
 	}
 
@@ -858,13 +858,13 @@ int msm_camera_hw_write_dt_reg_settings(void __iomem *base,
 	int32_t rc = 0;
 
 	if (!reg_s || !base || !size) {
-		pr_err_ratelimited("%s: Error invalid args\n", __func__);
+		pr_err("%s: Error invalid args\n", __func__);
 		return -EINVAL;
 	}
 	rc = msm_camera_io_w_reg_block((const u32 *) reg_s,
 		base, size);
 	if (rc < 0)
-		pr_err_ratelimited("%s: Failed dt reg setting write\n", __func__);
+		pr_err("%s: Failed dt reg setting write\n", __func__);
 	return rc;
 }
 

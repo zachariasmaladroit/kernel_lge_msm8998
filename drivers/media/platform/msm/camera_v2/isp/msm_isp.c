@@ -529,12 +529,12 @@ static int vfe_set_common_data(struct platform_device *pdev)
 
 	sd = (struct v4l2_subdev *)platform_get_drvdata(pdev);
 	if (!sd) {
-		pr_err_ratelimited("%s: Error! Cannot find subdev\n", __func__);
+		pr_err("%s: Error! Cannot find subdev\n", __func__);
 		return -EPERM;
 	}
 	vfe_dev = (struct vfe_device *)v4l2_get_subdevdata(sd);
 	if (!vfe_dev) {
-		pr_err_ratelimited("%s: Error! Cannot find vfe_dev\n", __func__);
+		pr_err("%s: Error! Cannot find vfe_dev\n", __func__);
 		return -EPERM;
 	}
 
@@ -587,13 +587,13 @@ static int vfe_probe(struct platform_device *pdev)
 		snprintf(name, sizeof(name), "qcom,vfe%d", i);
 		node = of_find_node_by_name(NULL, name);
 		if (!node) {
-			pr_err_ratelimited("%s: Error! Cannot find node in dtsi %s\n",
+			pr_err("%s: Error! Cannot find node in dtsi %s\n",
 				__func__, name);
 			break;
 		}
 		new_dev = of_find_device_by_node(node);
 		if (!new_dev) {
-			pr_err_ratelimited("%s: Failed to find device on bus %s\n",
+			pr_err("%s: Failed to find device on bus %s\n",
 				__func__, node->name);
 			break;
 		}
@@ -618,27 +618,27 @@ int vfe_hw_probe(struct platform_device *pdev)
 	   This is not used in chargerlogo,
 	   so we block probing this device when chargerlogo boot */
 	if (lge_get_boot_mode() == LGE_BOOT_MODE_CHARGERLOGO) {
-		pr_err_ratelimited("%s: failed\n", __func__);
+		pr_err("%s: failed\n", __func__);
 		return -ENODEV;
 	}
 #endif
 
 	vfe_dev = kzalloc(sizeof(struct vfe_device), GFP_KERNEL);
 	if (!vfe_dev) {
-		pr_err_ratelimited("%s: no enough memory\n", __func__);
+		pr_err("%s: no enough memory\n", __func__);
 		rc = -ENOMEM;
 		goto end;
 	}
 	vfe_dev->stats = kzalloc(sizeof(struct msm_isp_statistics), GFP_KERNEL);
 	if (!vfe_dev->stats) {
-		pr_err_ratelimited("%s: no enough memory\n", __func__);
+		pr_err("%s: no enough memory\n", __func__);
 		rc = -ENOMEM;
 		goto probe_fail1;
 	}
 
 	vfe_dev->ub_info = kzalloc(sizeof(struct msm_isp_ub_info), GFP_KERNEL);
 	if (!vfe_dev->ub_info) {
-		pr_err_ratelimited("%s: no enough memory\n", __func__);
+		pr_err("%s: no enough memory\n", __func__);
 		rc = -ENOMEM;
 		goto probe_fail2;
 	}
@@ -650,7 +650,7 @@ int vfe_hw_probe(struct platform_device *pdev)
 		match_dev = of_match_device(pdev->dev.driver->of_match_table,
 			&pdev->dev);
 		if (!match_dev) {
-			pr_err_ratelimited("%s: No vfe hardware info\n", __func__);
+			pr_err("%s: No vfe hardware info\n", __func__);
 			rc = -EINVAL;
 			goto probe_fail3;
 		}
@@ -668,7 +668,7 @@ int vfe_hw_probe(struct platform_device *pdev)
 	}
 
 	if (!vfe_dev->hw_info) {
-		pr_err_ratelimited("%s: No vfe hardware info\n", __func__);
+		pr_err("%s: No vfe hardware info\n", __func__);
 		rc = -EINVAL;
 		goto probe_fail3;
 	}
@@ -678,7 +678,7 @@ int vfe_hw_probe(struct platform_device *pdev)
 
 	rc = vfe_dev->hw_info->vfe_ops.platform_ops.get_platform_data(vfe_dev);
 	if (rc < 0) {
-		pr_err_ratelimited("%s: failed to get platform resources\n", __func__);
+		pr_err("%s: failed to get platform resources\n", __func__);
 		rc = -ENOMEM;
 		goto probe_fail3;
 	}
@@ -707,7 +707,7 @@ int vfe_hw_probe(struct platform_device *pdev)
 	vfe_dev->subdev.close_seq = MSM_SD_CLOSE_1ST_CATEGORY | 0x2;
 	rc = msm_sd_register(&vfe_dev->subdev);
 	if (rc != 0) {
-		pr_err_ratelimited("%s: msm_sd_register error = %d\n", __func__, rc);
+		pr_err("%s: msm_sd_register error = %d\n", __func__, rc);
 		goto probe_fail3;
 	}
 	msm_cam_copy_v4l2_subdev_fops(&msm_isp_v4l2_fops);
@@ -727,7 +727,7 @@ int vfe_hw_probe(struct platform_device *pdev)
 		&vfe_vb2_ops, &pdev->dev,
 		vfe_dev->hw_info->axi_hw_info->scratch_buf_range);
 	if (rc < 0) {
-		pr_err_ratelimited("%s: Unable to create buffer manager\n", __func__);
+		pr_err("%s: Unable to create buffer manager\n", __func__);
 		rc = -EINVAL;
 		goto probe_fail3;
 	}
@@ -737,7 +737,7 @@ int vfe_hw_probe(struct platform_device *pdev)
 	/*Allocate a page in kernel and map it to camera user process*/
 	vfe_dev->isp_page = (struct isp_proc *)get_zeroed_page(GFP_KERNEL);
 	if (vfe_dev->isp_page == NULL) {
-		pr_err_ratelimited("%s: no enough memory\n", __func__);
+		pr_err("%s: no enough memory\n", __func__);
 		rc = -ENOMEM;
 		goto probe_fail3;
 	}

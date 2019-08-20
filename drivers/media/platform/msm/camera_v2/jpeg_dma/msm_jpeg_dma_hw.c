@@ -1322,7 +1322,7 @@ void msm_jpegdma_hw_release_mem_resources(struct msm_jpegdma_device *dma)
 			reserve_mem_flag = false;
 			break;
 		default:
-			pr_err_ratelimited("%s: Invalid device : %d\n", __func__, i);
+			pr_err("%s: Invalid device : %d\n", __func__, i);
 			return;
 		}
 		/* release the device address */
@@ -1359,7 +1359,7 @@ int msm_jpegdma_hw_get_mem_resources(struct platform_device *pdev,
 			reserve_mem_flag = false;
 			break;
 		default:
-			pr_err_ratelimited("%s: Invalid device : %d\n", __func__, i);
+			pr_err("%s: Invalid device : %d\n", __func__, i);
 			return -EINVAL;
 		}
 		/* get the device address base */

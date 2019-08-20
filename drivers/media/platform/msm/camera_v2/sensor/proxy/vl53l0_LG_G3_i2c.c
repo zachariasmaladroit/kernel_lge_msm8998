@@ -53,7 +53,7 @@ VL53L0_Error  VL53L0_I2CWrite(VL53L0_DEV dev, uint8_t  *buff, uint8_t len)
 
 	// increment buffer past the index byte
 	buff++;
-	//pr_err_ratelimited("proxy_i2c_write_seq(), index = 0x%X, data = %d", index,buff[0]);
+	//pr_err("proxy_i2c_write_seq(), index = 0x%X, data = %d", index,buff[0]);
 	Status = proxy_i2c_write_seq( index,buff,len-1 );
 
 	return Status;
@@ -73,7 +73,7 @@ VL53L0_Error VL53L0_I2CRead(VL53L0_DEV dev, uint8_t *buff, uint8_t len)
 
 	Status = proxy_i2c_read_seq( index, (uint8_t *)buff, len );
 
-    //pr_err_ratelimited("VL53L0_I2CRead = %d, index = %d, len = %d", (uint8_t) *buff,index,len );
+    //pr_err("VL53L0_I2CRead = %d, index = %d, len = %d", (uint8_t) *buff,index,len );
 
 	return Status;
 }

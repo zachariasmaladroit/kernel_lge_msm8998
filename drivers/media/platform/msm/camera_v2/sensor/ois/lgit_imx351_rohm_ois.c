@@ -149,7 +149,7 @@ static int lgit_imx351_rohm_ois_poll_ready(int limit)
 	while ((ois_status != 0x01) && (read_byte < limit)) {
 		rc = RegReadA(OIS_READ_STATUS_ADDR, &ois_status); /* polling status ready */
 		if (rc < 0) {
-			pr_err_ratelimited("%s:%d, OIS_I2C_ERROR\n", __func__, __LINE__);
+			pr_err("%s:%d, OIS_I2C_ERROR\n", __func__, __LINE__);
 			return OIS_INIT_I2C_ERROR;
 		}
 		usleep_range(5* 1000, 5* 1000 + 10); /* wait 5ms */
@@ -160,7 +160,7 @@ static int lgit_imx351_rohm_ois_poll_ready(int limit)
 		return OIS_SUCCESS;
 	}
 	else {
-		pr_err_ratelimited("%s:%d, OIS_TIMEOUT_ERROR\n", __func__, __LINE__);
+		pr_err("%s:%d, OIS_TIMEOUT_ERROR\n", __func__, __LINE__);
 		return OIS_INIT_TIMEOUT;
 	}
 }
@@ -172,12 +172,12 @@ int lgit_imx351_rohm_ois_bin_download(struct ois_i2c_bin_list bin_list)
 
 	int32_t read_value_32t;
 
-	pr_err_ratelimited("%s:%d Enter\n", __func__, __LINE__);
+	pr_err("%s:%d Enter\n", __func__, __LINE__);
 
 	/* check OIS ic is alive */
 	rc = lgit_imx351_rohm_ois_poll_ready(LIMIT_STATUS_POLLING);
 	if (rc < 0) {
-		pr_err_ratelimited("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
+		pr_err("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
 		return rc;
 	}
 
@@ -193,7 +193,7 @@ int lgit_imx351_rohm_ois_bin_download(struct ois_i2c_bin_list bin_list)
 #endif
 
 	if (rc < 0) {
-		pr_err_ratelimited("%s:%d, OIS_I2C_ERROR\n", __func__, __LINE__);
+		pr_err("%s:%d, OIS_I2C_ERROR\n", __func__, __LINE__);
 		rc = OIS_INIT_I2C_ERROR;
 		return rc;
 	}
@@ -201,27 +201,27 @@ int lgit_imx351_rohm_ois_bin_download(struct ois_i2c_bin_list bin_list)
 	/* OIS program downloading */
 	rc = ois_i2c_load_and_write_bin_list(bin_list);
 	if (rc < 0) {
-		pr_err_ratelimited("%s:%d, OIS_BIN_DOWNLOAD_FAIL\n", __func__, __LINE__);
+		pr_err("%s:%d, OIS_BIN_DOWNLOAD_FAIL\n", __func__, __LINE__);
 		return rc;
 	}
 #if 1
 	/* Check sum value!*/
 	RamRead32A(OIS_CHECK_SUM_ADDR, &read_value_32t);
 	if (read_value_32t != bin_list.checksum) {
-		pr_err_ratelimited("%s:%d, saved sum = 0x%x, read sum = 0x%x\n",
+		pr_err("%s:%d, saved sum = 0x%x, read sum = 0x%x\n",
 			__func__, __LINE__, bin_list.checksum, read_value_32t);
 		rc = OIS_INIT_CHECKSUM_ERROR;
 		return rc;
 	}
 #else
 	RamRead32A(OIS_CHECK_SUM_ADDR, &read_value_32t);
-	pr_err_ratelimited("%s:%d, saved sum = 0x%x, read sum = 0x%x\n",
+	pr_err("%s:%d, saved sum = 0x%x, read sum = 0x%x\n",
 				__func__, __LINE__, bin_list.checksum, read_value_32t);
 #endif
 	/* If Change EEPROM MAP, change below */
 	rc = ois_i2c_load_and_write_e2prom_data(E2P_FIRST_ADDR, E2P_DATA_BYTE_FIRST, CTL_END_ADDR_FOR_FIRST_E2P_DL);
 	if (rc < 0) {
-		pr_err_ratelimited("%s:%d ois_i2c_load_and_write_e2prom_data failed (rc: %d)\n", __func__, __LINE__, rc);
+		pr_err("%s:%d ois_i2c_load_and_write_e2prom_data failed (rc: %d)\n", __func__, __LINE__, rc);
 		return rc;
 	}
 	/* Send command ois complete dl */
@@ -230,11 +230,11 @@ int lgit_imx351_rohm_ois_bin_download(struct ois_i2c_bin_list bin_list)
 	/* Read ois status */
 	rc = lgit_imx351_rohm_ois_poll_ready(LIMIT_STATUS_POLLING);
 	if (rc < 0) {
-		pr_err_ratelimited("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
+		pr_err("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
 		return rc;
 	}
 
-	pr_err_ratelimited("%s:%d End\n", __func__, __LINE__);
+	pr_err("%s:%d End\n", __func__, __LINE__);
 
 	return rc;
 
@@ -245,7 +245,7 @@ int lgit_imx351_rohm_ois_init_cmd(int limit)
 	int rc = 0;
 	uint8_t ois_status = 0;
 
-	pr_err_ratelimited("%s:%d Enter\n", __func__, __LINE__);
+	pr_err("%s:%d Enter\n", __func__, __LINE__);
 
 	RegReadA(0x6020, &ois_status);
 	CDBG("%s:%d, 0x6020 status : 0x%d\n", __func__, __LINE__, ois_status);
@@ -265,7 +265,7 @@ int lgit_imx351_rohm_ois_init_cmd(int limit)
 
 	//do rc check after VCM Init for AF
 	if (rc < 0) {
-		pr_err_ratelimited("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
+		pr_err("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
 		return rc;
 	}
 
@@ -276,14 +276,14 @@ int lgit_imx351_rohm_ois_init_cmd(int limit)
 
 	rc = lgit_imx351_rohm_ois_poll_ready(LIMIT_STATUS_POLLING);
 	if (rc < 0) {
-		pr_err_ratelimited("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
+		pr_err("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
 		return rc;
 	}
 
 	RegReadA(0x6023, &ois_status);
 	CDBG("%s 2. 0x6023 0x%x \n", __func__, ois_status);
 
-	pr_err_ratelimited("%s:%d End\n", __func__, __LINE__);
+	pr_err("%s:%d End\n", __func__, __LINE__);
 	return OIS_SUCCESS;
 }
 
@@ -297,11 +297,11 @@ int32_t lgit_imx351_rohm_ois_mode(struct msm_ois_ctrl_t *o_ctrl,
 	int rc = 0;
 
 	if (copy_from_user(&mode, (void *)set_info->setting, sizeof(uint8_t))) {
-		pr_err_ratelimited("%s:%d failed\n", __func__, __LINE__);
+		pr_err("%s:%d failed\n", __func__, __LINE__);
 		rc = -EFAULT;
 		return rc;
 	}
-	pr_err_ratelimited("%s:Enter input mode : %d, current mode : %d \n", __func__, mode, cur_mode);
+	pr_err("%s:Enter input mode : %d, current mode : %d \n", __func__, mode, cur_mode);
 
 	if (cur_mode == mode)
 		return OIS_SUCCESS;
@@ -311,7 +311,7 @@ int32_t lgit_imx351_rohm_ois_mode(struct msm_ois_ctrl_t *o_ctrl,
 
 		rc = lgit_imx351_rohm_ois_poll_ready(LIMIT_STATUS_POLLING);
 		if (rc < 0) {
-			pr_err_ratelimited("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
+			pr_err("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
 			return rc;
 		}
 	}
@@ -320,7 +320,7 @@ int32_t lgit_imx351_rohm_ois_mode(struct msm_ois_ctrl_t *o_ctrl,
 	case OIS_MODE_PREVIEW_CAPTURE:
 	case OIS_MODE_CAPTURE:
 	case OIS_MODE_VIDEO:
-		pr_err_ratelimited("%s:input mode : %d, current mode : %d \n", __func__, mode, cur_mode);
+		pr_err("%s:input mode : %d, current mode : %d \n", __func__, mode, cur_mode);
 		//RegWriteA(0x6021, 0x03);
 		RegWriteA(0x6021, 0x63); // New STILL Mode for improving drift issue
 		usleep_range(10 * 1000, 10 * 1000 + 10); // 20151127 Rohm_LeeDJ_delay 10ms
@@ -328,36 +328,36 @@ int32_t lgit_imx351_rohm_ois_mode(struct msm_ois_ctrl_t *o_ctrl,
 		break;
 #if 0 //change, ROHM 12S F/W has issue at 0x61
 	case OIS_MODE_VIDEO:
-		pr_err_ratelimited("%s:%d, %d video\n", __func__, mode, cur_mode);
+		pr_err("%s:%d, %d video\n", __func__, mode, cur_mode);
 		RegWriteA(0x6021, 0x61);
 		usleep_range(10 * 1000, 10 * 1000 + 10); // 20151127 Rohm_LeeDJ_delay 10ms
 		RegWriteA(0x6020, 0x02);
 		break;
 #endif
 	case OIS_MODE_CENTERING_ONLY:
-		pr_err_ratelimited("%s:%d, %d centering_only\n", __func__, mode, cur_mode);
+		pr_err("%s:%d, %d centering_only\n", __func__, mode, cur_mode);
 		RegWriteA(0x6020, 0x01);
 		usleep_range(10 * 1000, 10 * 1000 + 10); // 20151127 Rohm_LeeDJ_delay 10ms
 		rc = lgit_imx351_rohm_ois_poll_ready(LIMIT_STATUS_POLLING);
 		if (rc < 0) {
-			pr_err_ratelimited("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
+			pr_err("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
 			return rc;
 		}
 		break;
 	case OIS_MODE_CENTERING_OFF:
-		pr_err_ratelimited("%s:%d, %d centering_off\n", __func__, mode, cur_mode);
+		pr_err("%s:%d, %d centering_off\n", __func__, mode, cur_mode);
 		RegWriteA(0x6020, 0x00); /* lens centering off */
 		usleep_range(10 * 1000, 10 * 1000 + 10); // 20151127 Rohm_LeeDJ_delay 10ms
 		rc = lgit_imx351_rohm_ois_poll_ready(LIMIT_STATUS_POLLING);
 		if (rc < 0) {
-			pr_err_ratelimited("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
+			pr_err("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
 			return rc;
 		}
 		break;
 	}
 
 	lgit_ois_func_tbl.ois_cur_mode = mode;
-	pr_err_ratelimited("%s:%d End\n", __func__, __LINE__);
+	pr_err("%s:%d End\n", __func__, __LINE__);
 
 	return OIS_SUCCESS;
 }
@@ -368,7 +368,7 @@ int lgit_imx351_rohm_ois_calibration(int ver)
 	uint8_t ois_status = 0;
 	int rc = 0;
 
-	pr_err_ratelimited("%s: lgit_ois_calibration start\n", __func__);
+	pr_err("%s: lgit_ois_calibration start\n", __func__);
 	/* Gyro Zero Calibration Starts. */
 	//20151127 Rohm_LeeDJ
 	/* Read ois status */
@@ -382,7 +382,7 @@ int lgit_imx351_rohm_ois_calibration(int ver)
 
 	rc = lgit_imx351_rohm_ois_poll_ready(LIMIT_STATUS_POLLING);
 	if (rc < 0) {
-		pr_err_ratelimited("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
+		pr_err("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
 		return rc;
 	}
 
@@ -396,7 +396,7 @@ int lgit_imx351_rohm_ois_calibration(int ver)
 
 	rc = lgit_imx351_rohm_ois_poll_ready(LIMIT_STATUS_POLLING);
 	if (rc < 0) {
-		pr_err_ratelimited("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
+		pr_err("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
 		return rc;
 	}
 
@@ -405,7 +405,7 @@ int lgit_imx351_rohm_ois_calibration(int ver)
 
 	rc = lgit_imx351_rohm_ois_poll_ready(LIMIT_STATUS_POLLING);
 	if (rc < 0) {
-		pr_err_ratelimited("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
+		pr_err("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
 		return rc;
 	}
 
@@ -415,7 +415,7 @@ int lgit_imx351_rohm_ois_calibration(int ver)
 #if 0
 	rc = lgit_imx351_rohm_ois_poll_ready(LIMIT_STATUS_POLLING);
 	if (rc < 0) {
-		pr_err_ratelimited("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
+		pr_err("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
 		return rc;
 	}
 #endif
@@ -425,7 +425,7 @@ int lgit_imx351_rohm_ois_calibration(int ver)
 
 	rc = lgit_imx351_rohm_ois_poll_ready(LIMIT_STATUS_POLLING);
 	if (rc < 0) {
-		pr_err_ratelimited("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
+		pr_err("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
 		return rc;
 	}
 
@@ -436,7 +436,7 @@ int lgit_imx351_rohm_ois_calibration(int ver)
 #if 0
 	rc = lgit_imx351_rohm_ois_poll_ready(LIMIT_STATUS_POLLING);
 	if (rc < 0) {
-		pr_err_ratelimited("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
+		pr_err("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
 		return rc;
 	}
 #endif
@@ -458,11 +458,11 @@ int lgit_imx351_rohm_ois_calibration(int ver)
 	RegWriteA(0x6023, 0x00); //added rohm 0926 LeeDJ
 
 	/* Gyro Zero Calibration Ends. */
-	pr_err_ratelimited("%s gyro_offset_value_x %d gyro_offset_value_y %d\n", __func__, gyro_offset_value_x, gyro_offset_value_y);
+	pr_err("%s gyro_offset_value_x %d gyro_offset_value_y %d\n", __func__, gyro_offset_value_x, gyro_offset_value_y);
 	g_gyro_offset_value_x = gyro_offset_value_x;
 	g_gyro_offset_value_y = gyro_offset_value_y;
 
-	pr_err_ratelimited("%s: lgit_ois_calibration end\n", __func__);
+	pr_err("%s: lgit_ois_calibration end\n", __func__);
 	return OIS_SUCCESS;
 }
 
@@ -473,10 +473,10 @@ int32_t lgit_imx351_init_set_rohm_ois(struct msm_ois_ctrl_t *o_ctrl,
 	uint16_t ver = 0;
 	pwm_prev_mode = -1;
 
-	pr_err_ratelimited("%s:%d Enter, %s\n", __func__, __LINE__, LAST_UPDATE);
+	pr_err("%s:%d Enter, %s\n", __func__, __LINE__, LAST_UPDATE);
 
 	if (copy_from_user(&ver, (void *)set_info->setting, sizeof(uint16_t))) {
-		pr_err_ratelimited("%s:%d failed\n", __func__, __LINE__);
+		pr_err("%s:%d failed\n", __func__, __LINE__);
 		rc = -EFAULT;
 		return rc;
 	}
@@ -487,25 +487,25 @@ int32_t lgit_imx351_init_set_rohm_ois(struct msm_ois_ctrl_t *o_ctrl,
 
 	switch (cal_ver) {
 		case 0xA9E9:
-			pr_err_ratelimited("[CHECK] %s: JOAN_0616_LGIT_OLAF_ACTUATOR_FIRMWARE_VER_0_BIN_DATA, 0s\n", __func__);
+			pr_err("[CHECK] %s: JOAN_0616_LGIT_OLAF_ACTUATOR_FIRMWARE_VER_0_BIN_DATA, 0s\n", __func__);
 			rc = lgit_imx351_rohm_ois_bin_download(JOAN_0616_LGIT_OLAF_ACTUATOR_FIRMWARE_VER_0_BIN_DATA);
 			break;
 		case 0x0101:
-			pr_err_ratelimited("[CHECK] %s: JOAN_0630_LGIT_OLAF_ACTUATOR_FIRMWARE_VER_3_BIN_DATA, 1M_3S\n", __func__);
+			pr_err("[CHECK] %s: JOAN_0630_LGIT_OLAF_ACTUATOR_FIRMWARE_VER_3_BIN_DATA, 1M_3S\n", __func__);
 			rc = lgit_imx351_rohm_ois_bin_download(JOAN_0630_LGIT_OLAF_ACTUATOR_FIRMWARE_VER_3_BIN_DATA);
 			break;
 		case 0x0301:
-			pr_err_ratelimited("[CHECK] %s: JOAN_0719_LGIT_OLAF_ACTUATOR_FIRMWARE_VER_5_BIN_DATA, 3M_5S\n", __func__);
+			pr_err("[CHECK] %s: JOAN_0719_LGIT_OLAF_ACTUATOR_FIRMWARE_VER_5_BIN_DATA, 3M_5S\n", __func__);
 			rc = lgit_imx351_rohm_ois_bin_download(JOAN_0719_LGIT_OLAF_ACTUATOR_FIRMWARE_VER_5_BIN_DATA);
 			break;
 		default:
-			pr_err_ratelimited("[CHECK] %s: Apply Default : No Download BIN_DATA cal_ver:0x%x\n", __func__, cal_ver);
+			pr_err("[CHECK] %s: Apply Default : No Download BIN_DATA cal_ver:0x%x\n", __func__, cal_ver);
 			rc = -EFAULT;
 			break;
 	}
 
 	if (rc < 0)	{
-		pr_err_ratelimited("%s: init fail\n", __func__);
+		pr_err("%s: init fail\n", __func__);
 		return rc;
 	}
 
@@ -526,13 +526,13 @@ int32_t lgit_imx351_init_set_rohm_ois(struct msm_ois_ctrl_t *o_ctrl,
 
 		rc = lgit_imx351_rohm_ois_poll_ready(LIMIT_STATUS_POLLING);
 		if (rc < 0) {
-			pr_err_ratelimited("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
+			pr_err("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
 			return rc;
 		}
 		break;
 	}
 	lgit_ois_func_tbl.ois_cur_mode = OIS_MODE_CENTERING_ONLY;
-	pr_err_ratelimited("%s:%d End\n", __func__, __LINE__);
+	pr_err("%s:%d End\n", __func__, __LINE__);
 	return rc;
 
 }
@@ -540,14 +540,14 @@ int32_t	lgit_imx351_rohm_ois_on(struct msm_ois_ctrl_t *o_ctrl,
 					 struct msm_ois_set_info_t *set_info)
 {
 	int32_t rc = OIS_SUCCESS;
-	pr_err_ratelimited("%s:%d Enter\n", __func__, __LINE__);
+	pr_err("%s:%d Enter\n", __func__, __LINE__);
 #if 0
 	RegWriteA(0x6020, 0x01);
 	RegWriteA(0x6021, 0x79); /* LGIT STILL & PAN ON MODE */
 	RegWriteA(0x613F, 0x01);
 	RegWriteA(0x6020, 0x02); /* OIS ON */
 #endif
-	pr_err_ratelimited("%s:%d End\n", __func__, __LINE__);
+	pr_err("%s:%d End\n", __func__, __LINE__);
 	return rc;
 }
 
@@ -577,18 +577,18 @@ int32_t	lgit_imx351_rohm_ois_off(struct msm_ois_ctrl_t *o_ctrl,
 {
 	int rc = OIS_SUCCESS;
 
-	pr_err_ratelimited("%s:%d Enter\n", __func__, __LINE__);
+	pr_err("%s:%d Enter\n", __func__, __LINE__);
 
 	RegWriteA(0x6020, 0x01);
 	rc = lgit_imx351_rohm_ois_poll_ready(LIMIT_STATUS_POLLING);
 	if (rc < 0) {
-		pr_err_ratelimited("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
+		pr_err("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
 		return rc;
 	}
 
 	RegWriteA(0x6020, 0x00); //Standby Mode
 	vcm_check = 0;
-	pr_err_ratelimited("%s:%d End\n", __func__, __LINE__);
+	pr_err("%s:%d End\n", __func__, __LINE__);
 	return rc;
 }
 
@@ -628,7 +628,7 @@ int32_t lgit_imx351_rohm_ois_stat(struct msm_ois_ctrl_t *o_ctrl,
 	RegWriteA(0x6060, 0x00);
 	rc = lgit_imx351_rohm_ois_poll_ready(LIMIT_STATUS_POLLING);
 	if (rc < 0) {
-		pr_err_ratelimited("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
+		pr_err("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
 		return rc;
 	}
 
@@ -638,7 +638,7 @@ int32_t lgit_imx351_rohm_ois_stat(struct msm_ois_ctrl_t *o_ctrl,
 	RegWriteA(0x6060, 0x01);
 	rc = lgit_imx351_rohm_ois_poll_ready(LIMIT_STATUS_POLLING);
 	if (rc < 0) {
-		pr_err_ratelimited("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
+		pr_err("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
 		return rc;
 	}
 
@@ -652,31 +652,31 @@ int32_t lgit_imx351_rohm_ois_stat(struct msm_ois_ctrl_t *o_ctrl,
 
 	ptr_dest = (uint8_t *)set_info->ois_info;
 	if (copy_to_user(ptr_dest, &ois_stat, sizeof(ois_stat))) {
-		pr_err_ratelimited("%s:%d failed copy_to_user result\n", __func__, __LINE__);
+		pr_err("%s:%d failed copy_to_user result\n", __func__, __LINE__);
 	}
 
-	pr_err_ratelimited("%s val_hall_x : (%d), val_gyro_x : (0x%x), g_gyro_offset_value_x (%d)\n",
+	pr_err("%s val_hall_x : (%d), val_gyro_x : (0x%x), g_gyro_offset_value_x (%d)\n",
 		__func__, val_hall_x, val_gyro_x, g_gyro_offset_value_x);
-	pr_err_ratelimited("%s val_hall_y : (%d), val_gyro_y : (0x%x), g_gyro_offset_value_y (%d)\n",
+	pr_err("%s val_hall_y : (%d), val_gyro_y : (0x%x), g_gyro_offset_value_y (%d)\n",
 		__func__, val_hall_y, val_gyro_y, g_gyro_offset_value_y);
 
 
 	if (abs(val_gyro_x) > (5 * GYRO_SCALE_FACTOR) ||
 		abs(val_gyro_y) > (5 * GYRO_SCALE_FACTOR)) {
-		pr_err_ratelimited("Gyro Offset X is FAIL!!! (%d)\n", val_gyro_x);
-		pr_err_ratelimited("Gyro Offset Y is FAIL!!! (%d)\n", val_gyro_y);
+		pr_err("Gyro Offset X is FAIL!!! (%d)\n", val_gyro_x);
+		pr_err("Gyro Offset Y is FAIL!!! (%d)\n", val_gyro_y);
 		ois_stat.is_stable = 0;
 	}
 
 	/* Hall Spec. Out? */
 	if (val_hall_x > spec_hall_x_upper || val_hall_x < spec_hall_x_lower) {
-		pr_err_ratelimited("val_hall_x is FAIL!!! (%d) 0x%x\n", val_hall_x,
+		pr_err("val_hall_x is FAIL!!! (%d) 0x%x\n", val_hall_x,
 			 val_hall_x);
 		ois_stat.is_stable = 0;
 	}
 
 	if (val_hall_y > spec_hall_y_upper || val_hall_y < spec_hall_y_lower) {
-		pr_err_ratelimited("val_hall_y is FAIL!!! (%d) 0x%x\n", val_hall_y,
+		pr_err("val_hall_y is FAIL!!! (%d) 0x%x\n", val_hall_y,
 			 val_hall_y);
 		ois_stat.is_stable = 0;
 	}
@@ -694,7 +694,7 @@ int32_t lgit_imx351_rohm_ois_move_lens(struct msm_ois_ctrl_t *o_ctrl,
 	int32_t rc = OIS_SUCCESS;
 	int16_t offset[2];
 	if (copy_from_user(&offset[0], (void *)set_info->setting, sizeof(int16_t) * 2)) {
-		pr_err_ratelimited("%s:%d failed\n", __func__, __LINE__);
+		pr_err("%s:%d failed\n", __func__, __LINE__);
 		rc = -EFAULT;
 		return rc;
 	}
@@ -707,7 +707,7 @@ int32_t lgit_imx351_rohm_ois_move_lens(struct msm_ois_ctrl_t *o_ctrl,
 			hally =  offset[1] * GYRO_GAIN_LGIT / HALL_SCALE_FACTOR;
 			break;
 		default:
-			pr_err_ratelimited("[CHECK] %s: OIS NOT SUPPORTED\n", __func__);
+			pr_err("[CHECK] %s: OIS NOT SUPPORTED\n", __func__);
 			rc = OIS_FAIL;
 			break;
 	}
@@ -718,12 +718,12 @@ int32_t lgit_imx351_rohm_ois_move_lens(struct msm_ois_ctrl_t *o_ctrl,
 		RegWriteA(0x6020, 0x01);
 		rc = lgit_imx351_rohm_ois_poll_ready(LIMIT_STATUS_POLLING);
 		if (rc < 0) {
-			pr_err_ratelimited("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
+			pr_err("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
 			return rc;
 		}
 	}
 
-	pr_err_ratelimited("%s target : %d(0x%x), %d(0x%x)\n", __func__,
+	pr_err("%s target : %d(0x%x), %d(0x%x)\n", __func__,
 		   hallx, hallx, hally, hally);
 
 	RegWriteA(0x6026, 0xFF & hallx); /* target x position input */ //Changed rohm 0926 LeeDJ
@@ -734,7 +734,7 @@ int32_t lgit_imx351_rohm_ois_move_lens(struct msm_ois_ctrl_t *o_ctrl,
 	usleep_range(100000, 100010); //added rohm 0926 LeeDJ
 	rc = lgit_imx351_rohm_ois_poll_ready(LIMIT_STATUS_POLLING);
 	if (rc < 0) {
-		pr_err_ratelimited("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
+		pr_err("%s:%d, OIS_POLLING_ERROR\n", __func__, __LINE__);
 		return rc;
 	}
 
@@ -745,7 +745,7 @@ int32_t lgit_imx351_rohm_ois_move_lens(struct msm_ois_ctrl_t *o_ctrl,
 	if (result == 0x03)
 		return  OIS_SUCCESS;
 
-	pr_err_ratelimited("%s move fail : 0x%x\n", __func__, result);
+	pr_err("%s move fail : 0x%x\n", __func__, result);
 	return OIS_FAIL;
 }
 
@@ -756,7 +756,7 @@ int32_t lgit_imx351_rohm_ois_pwm_mode(struct msm_ois_ctrl_t *o_ctrl,
 {
 	uint8_t mode = 0;
 	if (copy_from_user(&mode, (void *)set_info->setting, sizeof(uint8_t))) {
-	        pr_err_ratelimited("%s:%d failed to get mode\n", __func__, __LINE__);
+	        pr_err("%s:%d failed to get mode\n", __func__, __LINE__);
 	        return OIS_FAIL;
 	}
 	if (pwm_prev_mode != mode) {
@@ -765,7 +765,7 @@ int32_t lgit_imx351_rohm_ois_pwm_mode(struct msm_ois_ctrl_t *o_ctrl,
 			switch (mode) {
 				case OIS_IMG_SENSOR_REG_A:
 					/* RES_0(Reg_A1) Full-resolution 16M (4656x3492), 30fps */
-					pr_err_ratelimited("%s OIS_IMG_SENSOR_REG_A(Res 0)_h4\n", __func__);
+					pr_err("%s OIS_IMG_SENSOR_REG_A(Res 0)_h4\n", __func__);
 					RegWriteA(0x60D0, 0x00);
 					RegWriteA(0x60D4, 0x07);
 					RegWriteA(0x60D1, 0x01);
@@ -777,7 +777,7 @@ int32_t lgit_imx351_rohm_ois_pwm_mode(struct msm_ois_ctrl_t *o_ctrl,
 					break;
 				case OIS_IMG_SENSOR_REG_B:
 					/* RES_1(Reg_A2) 16:9 Full-resolution (4656x2620), 30fps 4MHz*/
-					pr_err_ratelimited("%s OIS_IMG_SENSOR_REG_B(Res 1)_h4\n", __func__);
+					pr_err("%s OIS_IMG_SENSOR_REG_B(Res 1)_h4\n", __func__);
 					RegWriteA(0x60D0, 0x00);
 					RegWriteA(0x60D4, 0x07);
 					RegWriteA(0x60D1, 0x01);
@@ -789,7 +789,7 @@ int32_t lgit_imx351_rohm_ois_pwm_mode(struct msm_ois_ctrl_t *o_ctrl,
 					break;
 				case OIS_IMG_SENSOR_REG_C:
 					/* RES_2(Reg_A10) Bin(HV 2/2)_30fps_2328x1744*/
-					pr_err_ratelimited("%s OIS_IMG_SENSOR_REG_C(Res 2)_h2\n", __func__);
+					pr_err("%s OIS_IMG_SENSOR_REG_C(Res 2)_h2\n", __func__);
 					RegWriteA(0x60D0, 0x00);
 					RegWriteA(0x60D4, 0x07);
 					RegWriteA(0x60D1, 0x01);
@@ -801,7 +801,7 @@ int32_t lgit_imx351_rohm_ois_pwm_mode(struct msm_ois_ctrl_t *o_ctrl,
 					break;
 				case OIS_IMG_SENSOR_REG_D:
 					/* RES_3(Reg_A11) Bin(HV 2/2)_30fps_2328x1312*/
-					pr_err_ratelimited("%s OIS_IMG_SENSOR_REG_D(Res 3)_h2\n", __func__);
+					pr_err("%s OIS_IMG_SENSOR_REG_D(Res 3)_h2\n", __func__);
 					RegWriteA(0x60D0, 0x00);
 					RegWriteA(0x60D4, 0x07);
 					RegWriteA(0x60D1, 0x01);
@@ -813,7 +813,7 @@ int32_t lgit_imx351_rohm_ois_pwm_mode(struct msm_ois_ctrl_t *o_ctrl,
 					break;
 				case OIS_IMG_SENSOR_REG_E:
 					/* RES_4(Reg_B1) Bin(HV 1/2)_60fps_2328x1312*/
-					pr_err_ratelimited("%s OIS_IMG_SENSOR_REG_E(Res 4)_h2\n", __func__);
+					pr_err("%s OIS_IMG_SENSOR_REG_E(Res 4)_h2\n", __func__);
 					RegWriteA(0x60D0, 0x00);
 					RegWriteA(0x60D4, 0x07);
 					RegWriteA(0x60D1, 0x02);
@@ -825,7 +825,7 @@ int32_t lgit_imx351_rohm_ois_pwm_mode(struct msm_ois_ctrl_t *o_ctrl,
 					break;
 				case OIS_IMG_SENSOR_REG_F:
 					/* RES_5(Reg_B2) Bin(HV 1/2)_120fps_2328x1312*/
-					pr_err_ratelimited("%s OIS_IMG_SENSOR_REG_F(Res 5)_h2\n", __func__);
+					pr_err("%s OIS_IMG_SENSOR_REG_F(Res 5)_h2\n", __func__);
 					RegWriteA(0x60D0, 0x00);
 					RegWriteA(0x60D4, 0x07);
 					RegWriteA(0x60D1, 0x02);
@@ -837,7 +837,7 @@ int32_t lgit_imx351_rohm_ois_pwm_mode(struct msm_ois_ctrl_t *o_ctrl,
 					break;
 				case OIS_IMG_SENSOR_REG_G:
 					/* RES_6(Reg_A7_1) Bin(HV 2/2)_240fps_2020x1136_LowRate */
-					pr_err_ratelimited("%s OIS_IMG_SENSOR_REG_G(Res 6)_h4\n", __func__);
+					pr_err("%s OIS_IMG_SENSOR_REG_G(Res 6)_h4\n", __func__);
 					RegWriteA(0x60D0, 0x00);
 					RegWriteA(0x60D4, 0x07);
 					RegWriteA(0x60D1, 0x03);
@@ -849,7 +849,7 @@ int32_t lgit_imx351_rohm_ois_pwm_mode(struct msm_ois_ctrl_t *o_ctrl,
 					break;
 				case OIS_IMG_SENSOR_REG_H:
 					/* RES_7(Reg_A2_HDR) Full_30fps_Cropped_4656x2620_HDR (Cinema)*/
-					pr_err_ratelimited("%s OIS_IMG_SENSOR_REG_H(Res 7)_h4\n", __func__);
+					pr_err("%s OIS_IMG_SENSOR_REG_H(Res 7)_h4\n", __func__);
 					RegWriteA(0x60D0, 0x00);
 					RegWriteA(0x60D4, 0x07);
 					RegWriteA(0x60D1, 0x01);
@@ -861,7 +861,7 @@ int32_t lgit_imx351_rohm_ois_pwm_mode(struct msm_ois_ctrl_t *o_ctrl,
 					break;
 				case OIS_IMG_SENSOR_REG_I:
 					/* RES_8(Reg_A10) Bin(HV 2/2)_30fps_2328x1744*/
-					pr_err_ratelimited("%s OIS_IMG_SENSOR_REG_I(Res 8)_h2\n", __func__);
+					pr_err("%s OIS_IMG_SENSOR_REG_I(Res 8)_h2\n", __func__);
 					RegWriteA(0x60D0, 0x00);
 					RegWriteA(0x60D4, 0x07);
 					RegWriteA(0x60D1, 0x01);
@@ -873,7 +873,7 @@ int32_t lgit_imx351_rohm_ois_pwm_mode(struct msm_ois_ctrl_t *o_ctrl,
 					break;
 				case OIS_IMG_SENSOR_REG_J:
 					/* RES_9(Reg_A11) Bin(HV 2/2)_30fps_2328x1312*/
-					pr_err_ratelimited("%s OIS_IMG_SENSOR_REG_J(Res 9)_h2\n", __func__);
+					pr_err("%s OIS_IMG_SENSOR_REG_J(Res 9)_h2\n", __func__);
 					RegWriteA(0x60D0, 0x00);
 					RegWriteA(0x60D4, 0x07);
 					RegWriteA(0x60D1, 0x01);
@@ -884,14 +884,14 @@ int32_t lgit_imx351_rohm_ois_pwm_mode(struct msm_ois_ctrl_t *o_ctrl,
 					RegWriteA(0x60D0, 0x01);
 					break;
 				default:
-					pr_err_ratelimited("%s:not support %d, cal_ver = 0x%x \n", __func__, mode, cal_ver);
+					pr_err("%s:not support %d, cal_ver = 0x%x \n", __func__, mode, cal_ver);
 					break;
 					}
 			} else {
 			switch (mode) {
 				case OIS_IMG_SENSOR_REG_A:
 					/* RES_0(Reg_A1) Full-resolution 16M (4656x3492), 30fps */
-					pr_err_ratelimited("%s OIS_IMG_SENSOR_REG_A(Res 0)_h3\n", __func__);
+					pr_err("%s OIS_IMG_SENSOR_REG_A(Res 0)_h3\n", __func__);
 					RegWriteA(0x60D0, 0x00);
 					RegWriteA(0x60D4, 0x07);
 					RegWriteA(0x60D1, 0x01);
@@ -903,7 +903,7 @@ int32_t lgit_imx351_rohm_ois_pwm_mode(struct msm_ois_ctrl_t *o_ctrl,
 					break;
 				case OIS_IMG_SENSOR_REG_B:
 					/* RES_1(Reg_A2) 16:9 Full-resolution (4656x2620), 30fps 4MHz*/
-					pr_err_ratelimited("%s OIS_IMG_SENSOR_REG_B(Res 1)_h4\n", __func__);
+					pr_err("%s OIS_IMG_SENSOR_REG_B(Res 1)_h4\n", __func__);
 					RegWriteA(0x60D0, 0x00);
 					RegWriteA(0x60D4, 0x07);
 					RegWriteA(0x60D1, 0x01);
@@ -915,7 +915,7 @@ int32_t lgit_imx351_rohm_ois_pwm_mode(struct msm_ois_ctrl_t *o_ctrl,
 					break;
 				case OIS_IMG_SENSOR_REG_C:
 					/* RES_2(Reg_A10) Bin(HV 2/2)_30fps_2328x1744*/
-					pr_err_ratelimited("%s OIS_IMG_SENSOR_REG_C(Res 2)_h3\n", __func__);
+					pr_err("%s OIS_IMG_SENSOR_REG_C(Res 2)_h3\n", __func__);
 					RegWriteA(0x60D0, 0x00);
 					RegWriteA(0x60D4, 0x07);
 					RegWriteA(0x60D1, 0x01);
@@ -927,7 +927,7 @@ int32_t lgit_imx351_rohm_ois_pwm_mode(struct msm_ois_ctrl_t *o_ctrl,
 					break;
 				case OIS_IMG_SENSOR_REG_D:
 					/* RES_3(Reg_A11) Bin(HV 2/2)_30fps_2328x1312*/
-					pr_err_ratelimited("%s OIS_IMG_SENSOR_REG_D(Res 3)_h3\n", __func__);
+					pr_err("%s OIS_IMG_SENSOR_REG_D(Res 3)_h3\n", __func__);
 					RegWriteA(0x60D0, 0x00);
 					RegWriteA(0x60D4, 0x07);
 					RegWriteA(0x60D1, 0x01);
@@ -939,7 +939,7 @@ int32_t lgit_imx351_rohm_ois_pwm_mode(struct msm_ois_ctrl_t *o_ctrl,
 					break;
 				case OIS_IMG_SENSOR_REG_E:
 					/* RES_4(Reg_B1) Bin(HV 1/2)_60fps_2328x1312*/
-					pr_err_ratelimited("%s OIS_IMG_SENSOR_REG_E(Res 4)_h3\n", __func__);
+					pr_err("%s OIS_IMG_SENSOR_REG_E(Res 4)_h3\n", __func__);
 					RegWriteA(0x60D0, 0x00);
 					RegWriteA(0x60D4, 0x07);
 					RegWriteA(0x60D1, 0x02);
@@ -951,7 +951,7 @@ int32_t lgit_imx351_rohm_ois_pwm_mode(struct msm_ois_ctrl_t *o_ctrl,
 					break;
 				case OIS_IMG_SENSOR_REG_F:
 					/* RES_5(Reg_B2) Bin(HV 1/2)_120fps_2328x1312*/
-					pr_err_ratelimited("%s OIS_IMG_SENSOR_REG_F(Res 5)_h3\n", __func__);
+					pr_err("%s OIS_IMG_SENSOR_REG_F(Res 5)_h3\n", __func__);
 					RegWriteA(0x60D0, 0x00);
 					RegWriteA(0x60D4, 0x07);
 					RegWriteA(0x60D1, 0x02);
@@ -963,7 +963,7 @@ int32_t lgit_imx351_rohm_ois_pwm_mode(struct msm_ois_ctrl_t *o_ctrl,
 					break;
 				case OIS_IMG_SENSOR_REG_G:
 					/* RES_6(Reg_A7_1) Bin(HV 2/2)_240fps_2020x1136_LowRate */
-					pr_err_ratelimited("%s OIS_IMG_SENSOR_REG_G(Res 6)_h3\n", __func__);
+					pr_err("%s OIS_IMG_SENSOR_REG_G(Res 6)_h3\n", __func__);
 					RegWriteA(0x60D0, 0x00);
 					RegWriteA(0x60D4, 0x07);
 					RegWriteA(0x60D1, 0x03);
@@ -975,7 +975,7 @@ int32_t lgit_imx351_rohm_ois_pwm_mode(struct msm_ois_ctrl_t *o_ctrl,
 					break;
 				case OIS_IMG_SENSOR_REG_H:
 					/* RES_7(Reg_A2_HDR) Full_30fps_Cropped_4656x2620_HDR (Cinema)*/
-					pr_err_ratelimited("%s OIS_IMG_SENSOR_REG_H(Res 7)_h3\n", __func__);
+					pr_err("%s OIS_IMG_SENSOR_REG_H(Res 7)_h3\n", __func__);
 					RegWriteA(0x60D0, 0x00);
 					RegWriteA(0x60D4, 0x07);
 					RegWriteA(0x60D1, 0x01);
@@ -987,7 +987,7 @@ int32_t lgit_imx351_rohm_ois_pwm_mode(struct msm_ois_ctrl_t *o_ctrl,
 					break;
 				case OIS_IMG_SENSOR_REG_I:
 					/* RES_8(Reg_A10) Bin(HV 2/2)_30fps_2328x1744*/
-					pr_err_ratelimited("%s OIS_IMG_SENSOR_REG_I(Res 8)_h2\n", __func__);
+					pr_err("%s OIS_IMG_SENSOR_REG_I(Res 8)_h2\n", __func__);
 					RegWriteA(0x60D0, 0x00);
 					RegWriteA(0x60D4, 0x07);
 					RegWriteA(0x60D1, 0x01);
@@ -999,7 +999,7 @@ int32_t lgit_imx351_rohm_ois_pwm_mode(struct msm_ois_ctrl_t *o_ctrl,
 					break;
 				case OIS_IMG_SENSOR_REG_J:
 					/* RES_9(Reg_A11) Bin(HV 2/2)_30fps_2328x1312*/
-					pr_err_ratelimited("%s OIS_IMG_SENSOR_REG_J(Res 9)_h2\n", __func__);
+					pr_err("%s OIS_IMG_SENSOR_REG_J(Res 9)_h2\n", __func__);
 					RegWriteA(0x60D0, 0x00);
 					RegWriteA(0x60D4, 0x07);
 					RegWriteA(0x60D1, 0x01);
@@ -1010,7 +1010,7 @@ int32_t lgit_imx351_rohm_ois_pwm_mode(struct msm_ois_ctrl_t *o_ctrl,
 					RegWriteA(0x60D0, 0x01);
 					break;
 				default:
-					pr_err_ratelimited("%s:not support %d\n", __func__, mode);
+					pr_err("%s:not support %d\n", __func__, mode);
 					break;
 					}
 			}

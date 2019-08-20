@@ -44,7 +44,7 @@
 #define CONFIG_MSM_VPE_DBG 0
 
 #if CONFIG_MSM_VPE_DBG
-#define VPE_DBG(fmt, args...) pr_err_ratelimited(fmt, ##args)
+#define VPE_DBG(fmt, args...) pr_err(fmt, ##args)
 #else
 #define VPE_DBG(fmt, args...) pr_debug(fmt, ##args)
 #endif
@@ -148,7 +148,7 @@ static struct msm_vpe_buff_queue_info_t *msm_vpe_get_buff_queue_entry(
 	}
 
 	if (buff_queue_info == NULL) {
-		pr_err_ratelimited("error buffer queue entry for sess:%d strm:%d not found\n",
+		pr_err("error buffer queue entry for sess:%d strm:%d not found\n",
 			session_id, stream_id);
 	}
 	return buff_queue_info;
@@ -192,7 +192,7 @@ static unsigned long msm_vpe_queue_buffer_info(struct vpe_device *vpe_dev,
 
 	list_for_each_entry_safe(buff, save, buff_head, entry) {
 		if (buff->map_info.buff_info.index == buffer_info->index) {
-			pr_err_ratelimited("error buffer index already queued\n");
+			pr_err("error buffer index already queued\n");
 			return -EINVAL;
 		}
 	}
@@ -200,14 +200,14 @@ static unsigned long msm_vpe_queue_buffer_info(struct vpe_device *vpe_dev,
 	buff = kzalloc(
 		sizeof(struct msm_vpe_buffer_map_list_t), GFP_KERNEL);
 	if (!buff) {
-		pr_err_ratelimited("error allocating memory\n");
+		pr_err("error allocating memory\n");
 		return -EINVAL;
 	}
 
 	buff->map_info.buff_info = *buffer_info;
 	buff->map_info.dbuf = dma_buf_get(buffer_info->fd);
 	if (IS_ERR_OR_NULL(buff->map_info.dbuf)) {
-		pr_err_ratelimited("Ion dma get buf failed\n");
+		pr_err("Ion dma get buf failed\n");
 		rc = PTR_ERR(buff->map_info.dbuf);
 		goto err_get;
 	}
@@ -215,7 +215,7 @@ static unsigned long msm_vpe_queue_buffer_info(struct vpe_device *vpe_dev,
 	buff->map_info.attachment = dma_buf_attach(buff->map_info.dbuf,
 		&vpe_dev->pdev->dev);
 	if (IS_ERR_OR_NULL(buff->map_info.attachment)) {
-		pr_err_ratelimited("Ion dma buf attach failed\n");
+		pr_err("Ion dma buf attach failed\n");
 		rc = PTR_ERR(buff->map_info.attachment);
 		goto err_put;
 	}
@@ -224,7 +224,7 @@ static unsigned long msm_vpe_queue_buffer_info(struct vpe_device *vpe_dev,
 		dma_buf_map_attachment(buff->map_info.attachment,
 			DMA_BIDIRECTIONAL);
 	if (IS_ERR_OR_NULL(buff->map_info.table)) {
-		pr_err_ratelimited("DMA buf map attachment failed\n");
+		pr_err("DMA buf map attachment failed\n");
 		rc = PTR_ERR(buff->map_info.table);
 		goto err_detach;
 	}
@@ -232,7 +232,7 @@ static unsigned long msm_vpe_queue_buffer_info(struct vpe_device *vpe_dev,
 		vpe_dev->domain_num, 0, SZ_4K, 0,
 		&buff->map_info.phy_addr,
 		&buff->map_info.len, 0, 0)) {
-		pr_err_ratelimited("%s: cannot map address", __func__);
+		pr_err("%s: cannot map address", __func__);
 		goto err_detachment;
 	}
 
@@ -278,7 +278,7 @@ static unsigned long msm_vpe_fetch_buffer_info(struct vpe_device *vpe_dev,
 	buff_queue_info = msm_vpe_get_buff_queue_entry(vpe_dev, session_id,
 		stream_id);
 	if (buff_queue_info == NULL) {
-		pr_err_ratelimited("error finding buffer queue entry for sessid:%d strmid:%d\n",
+		pr_err("error finding buffer queue entry for sessid:%d strmid:%d\n",
 			session_id, stream_id);
 		return phy_addr;
 	}
@@ -302,7 +302,7 @@ static int32_t msm_vpe_enqueue_buff_info_list(struct vpe_device *vpe_dev,
 			(stream_buff_info->identity >> 16) & 0xFFFF,
 			stream_buff_info->identity & 0xFFFF);
 	if (buff_queue_info == NULL) {
-		pr_err_ratelimited("error finding buffer queue entry for sessid:%d strmid:%d\n",
+		pr_err("error finding buffer queue entry for sessid:%d strmid:%d\n",
 			(stream_buff_info->identity >> 16) & 0xFFFF,
 			stream_buff_info->identity & 0xFFFF);
 		return -EINVAL;
@@ -351,7 +351,7 @@ static int32_t msm_vpe_add_buff_queue_entry(struct vpe_device *vpe_dev,
 			return 0;
 		}
 	}
-	pr_err_ratelimited("buffer queue full. error for sessionid: %d streamid: %d\n",
+	pr_err("buffer queue full. error for sessionid: %d streamid: %d\n",
 		session_id, stream_id);
 	return -EINVAL;
 }
@@ -364,7 +364,7 @@ static int32_t msm_vpe_free_buff_queue_entry(struct vpe_device *vpe_dev,
 	buff_queue_info = msm_vpe_get_buff_queue_entry(vpe_dev, session_id,
 		stream_id);
 	if (buff_queue_info == NULL) {
-		pr_err_ratelimited("error finding buffer queue entry for sessid:%d strmid:%d\n",
+		pr_err("error finding buffer queue entry for sessid:%d strmid:%d\n",
 			session_id, stream_id);
 		return -EINVAL;
 	}
@@ -385,12 +385,12 @@ static int32_t msm_vpe_create_buff_queue(struct vpe_device *vpe_dev,
 		sizeof(struct msm_vpe_buff_queue_info_t) * num_buffq,
 		GFP_KERNEL);
 	if (!buff_queue) {
-		pr_err_ratelimited("Buff queue allocation failure\n");
+		pr_err("Buff queue allocation failure\n");
 		return -ENOMEM;
 	}
 
 	if (vpe_dev->buff_queue) {
-		pr_err_ratelimited("Buff queue not empty\n");
+		pr_err("Buff queue not empty\n");
 		kzfree(buff_queue);
 		return -EINVAL;
 	} else {
@@ -406,7 +406,7 @@ static void msm_vpe_delete_buff_queue(struct vpe_device *vpe_dev)
 
 	for (i = 0; i < vpe_dev->num_buffq; i++) {
 		if (vpe_dev->buff_queue[i].used == 1) {
-			pr_err_ratelimited("Queue not free sessionid: %d, streamid: %d\n",
+			pr_err("Queue not free sessionid: %d, streamid: %d\n",
 				vpe_dev->buff_queue[i].session_id,
 				vpe_dev->buff_queue[i].stream_id);
 			msm_vpe_free_buff_queue_entry(vpe_dev,
@@ -434,7 +434,7 @@ static int vpe_init_mem(struct vpe_device *vpe_dev)
 	vpe_dev->client = msm_ion_client_create("vpe");
 
 	if (!vpe_dev->client) {
-		pr_err_ratelimited("couldn't create ion client\n");
+		pr_err("couldn't create ion client\n");
 		return  -ENODEV;
 	}
 
@@ -515,13 +515,13 @@ static int vpe_init_hardware(struct vpe_device *vpe_dev)
 		vpe_dev->fs_vpe =
 			regulator_get(&vpe_dev->pdev->dev, "vdd");
 		if (IS_ERR(vpe_dev->fs_vpe)) {
-			pr_err_ratelimited("Regulator vpe vdd get failed %ld\n",
+			pr_err("Regulator vpe vdd get failed %ld\n",
 				PTR_ERR(vpe_dev->fs_vpe));
 			vpe_dev->fs_vpe = NULL;
 			rc = -ENODEV;
 			goto fail;
 		} else if (regulator_enable(vpe_dev->fs_vpe)) {
-			pr_err_ratelimited("Regulator vpe vdd enable failed\n");
+			pr_err("Regulator vpe vdd enable failed\n");
 			regulator_put(vpe_dev->fs_vpe);
 			vpe_dev->fs_vpe = NULL;
 			rc = -ENODEV;
@@ -532,7 +532,7 @@ static int vpe_init_hardware(struct vpe_device *vpe_dev)
 	rc = msm_cam_clk_enable(&vpe_dev->pdev->dev, vpe_clk_info,
 				vpe_dev->vpe_clk, ARRAY_SIZE(vpe_clk_info), 1);
 	if (rc < 0) {
-		pr_err_ratelimited("clk enable failed\n");
+		pr_err("clk enable failed\n");
 		goto disable_and_put_regulator;
 	}
 
@@ -540,7 +540,7 @@ static int vpe_init_hardware(struct vpe_device *vpe_dev)
 		resource_size(vpe_dev->mem));
 	if (!vpe_dev->base) {
 		rc = -ENOMEM;
-		pr_err_ratelimited("ioremap failed\n");
+		pr_err("ioremap failed\n");
 		goto disable_and_put_regulator;
 	}
 
@@ -549,7 +549,7 @@ static int vpe_init_hardware(struct vpe_device *vpe_dev)
 				IRQF_TRIGGER_RISING,
 				"vpe", vpe_dev);
 		if (rc < 0) {
-			pr_err_ratelimited("irq request fail! start=%u\n",
+			pr_err("irq request fail! start=%u\n",
 				(uint32_t) vpe_dev->irq->start);
 			rc = -EBUSY;
 			goto unmap_base;
@@ -596,7 +596,7 @@ static int vpe_open_node(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 
 	mutex_lock(&vpe_dev->mutex);
 	if (vpe_dev->vpe_open_cnt == MAX_ACTIVE_VPE_INSTANCE) {
-		pr_err_ratelimited("No free VPE instance\n");
+		pr_err("No free VPE instance\n");
 		rc = -ENODEV;
 		goto err_mutex_unlock;
 	}
@@ -609,7 +609,7 @@ static int vpe_open_node(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 		}
 	}
 	if (i == MAX_ACTIVE_VPE_INSTANCE) {
-		pr_err_ratelimited("No free instance\n");
+		pr_err("No free instance\n");
 		rc = -ENODEV;
 		goto err_mutex_unlock;
 	}
@@ -619,13 +619,13 @@ static int vpe_open_node(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 	if (vpe_dev->vpe_open_cnt == 1) {
 		rc = vpe_init_hardware(vpe_dev);
 		if (rc < 0) {
-			pr_err_ratelimited("%s: Couldn't init vpe hardware\n", __func__);
+			pr_err("%s: Couldn't init vpe hardware\n", __func__);
 			vpe_dev->vpe_open_cnt--;
 			goto err_fixup_sub_list;
 		}
 		rc = vpe_init_mem(vpe_dev);
 		if (rc < 0) {
-			pr_err_ratelimited("%s: Couldn't init mem\n", __func__);
+			pr_err("%s: Couldn't init mem\n", __func__);
 			vpe_dev->vpe_open_cnt--;
 			rc = -ENODEV;
 			goto err_release_hardware;
@@ -664,7 +664,7 @@ static int vpe_close_node(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 		}
 	}
 	if (i == MAX_ACTIVE_VPE_INSTANCE) {
-		pr_err_ratelimited("Invalid close\n");
+		pr_err("Invalid close\n");
 		mutex_unlock(&vpe_dev->mutex);
 		return -ENODEV;
 	}
@@ -693,7 +693,7 @@ static int msm_vpe_buffer_ops(struct vpe_device *vpe_dev,
 	rc = v4l2_subdev_call(vpe_dev->buf_mgr_subdev, core, ioctl,
 		buff_mgr_ops, buff_mgr_info);
 	if (rc < 0)
-		pr_err_ratelimited("%s: line %d rc = %d\n", __func__, __LINE__, rc);
+		pr_err("%s: line %d rc = %d\n", __func__, __LINE__, rc);
 	return rc;
 }
 
@@ -710,7 +710,7 @@ static int msm_vpe_notify_frame_done(struct vpe_device *vpe_dev)
 	if (queue->len > 0) {
 		frame_qcmd = msm_dequeue(queue, list_frame);
 		if (!frame_qcmd) {
-			pr_err_ratelimited("%s: %d frame_qcmd is NULL\n",
+			pr_err("%s: %d frame_qcmd is NULL\n",
 				 __func__ , __LINE__);
 			return -EINVAL;
 		}
@@ -719,7 +719,7 @@ static int msm_vpe_notify_frame_done(struct vpe_device *vpe_dev)
 		kfree(frame_qcmd);
 		event_qcmd = kzalloc(sizeof(struct msm_queue_cmd), GFP_ATOMIC);
 		if (!event_qcmd) {
-			pr_err_ratelimited("%s: Insufficient memory\n", __func__);
+			pr_err("%s: Insufficient memory\n", __func__);
 			return -ENOMEM;
 		}
 		atomic_set(&event_qcmd->on_heap, 1);
@@ -742,7 +742,7 @@ static int msm_vpe_notify_frame_done(struct vpe_device *vpe_dev)
 						VIDIOC_MSM_BUF_MNGR_BUF_DONE,
 						&buff_mgr_info);
 			if (rc < 0) {
-				pr_err_ratelimited("%s: error doing VIDIOC_MSM_BUF_MNGR_BUF_DONE\n",
+				pr_err("%s: error doing VIDIOC_MSM_BUF_MNGR_BUF_DONE\n",
 					__func__);
 				rc = -EINVAL;
 			}
@@ -1060,7 +1060,7 @@ static int vpe_update_scale_coef(struct vpe_device *vpe_dev, uint32_t *p)
 	offset = *p;
 
 	if (offset > VPE_SCALE_COEFF_MAX_N-VPE_SCALE_COEFF_NUM) {
-		pr_err_ratelimited("%s: invalid offset %d passed in", __func__, offset);
+		pr_err("%s: invalid offset %d passed in", __func__, offset);
 		return -EINVAL;
 	}
 
@@ -1165,14 +1165,14 @@ static int msm_vpe_cfg(struct vpe_device *vpe_dev,
 	struct msm_buf_mngr_info buff_mgr_info;
 
 	if (!new_frame) {
-		pr_err_ratelimited("Insufficient memory. return\n");
+		pr_err("Insufficient memory. return\n");
 		return -ENOMEM;
 	}
 
 	rc = copy_from_user(new_frame, (void __user *)ioctl_ptr->ioctl_ptr,
 			sizeof(struct msm_vpe_frame_info_t));
 	if (rc) {
-		pr_err_ratelimited("%s:%d copy from user\n", __func__, __LINE__);
+		pr_err("%s:%d copy from user\n", __func__, __LINE__);
 		rc = -EINVAL;
 		goto err_free_new_frame;
 	}
@@ -1182,7 +1182,7 @@ static int msm_vpe_cfg(struct vpe_device *vpe_dev,
 		((new_frame->identity >> 16) & 0xFFFF),
 		(new_frame->identity & 0xFFFF));
 	if (!in_phyaddr) {
-		pr_err_ratelimited("error gettting input physical address\n");
+		pr_err("error gettting input physical address\n");
 		rc = -EINVAL;
 		goto err_free_new_frame;
 	}
@@ -1196,7 +1196,7 @@ static int msm_vpe_cfg(struct vpe_device *vpe_dev,
 	rc = msm_vpe_buffer_ops(vpe_dev, VIDIOC_MSM_BUF_MNGR_GET_BUF,
 				&buff_mgr_info);
 	if (rc < 0) {
-		pr_err_ratelimited("error getting buffer\n");
+		pr_err("error getting buffer\n");
 		rc = -EINVAL;
 		goto err_free_new_frame;
 	}
@@ -1207,7 +1207,7 @@ static int msm_vpe_cfg(struct vpe_device *vpe_dev,
 		((new_frame->identity >> 16) & 0xFFFF),
 		(new_frame->identity & 0xFFFF));
 	if (!out_phyaddr) {
-		pr_err_ratelimited("error gettting output physical address\n");
+		pr_err("error gettting output physical address\n");
 		rc = -EINVAL;
 		goto err_put_buf;
 	}
@@ -1217,7 +1217,7 @@ static int msm_vpe_cfg(struct vpe_device *vpe_dev,
 
 	frame_qcmd = kzalloc(sizeof(struct msm_queue_cmd), GFP_KERNEL);
 	if (!frame_qcmd) {
-		pr_err_ratelimited("Insufficient memory. return\n");
+		pr_err("Insufficient memory. return\n");
 		rc = -ENOMEM;
 		goto err_put_buf;
 	}
@@ -1226,7 +1226,7 @@ static int msm_vpe_cfg(struct vpe_device *vpe_dev,
 	frame_qcmd->command = new_frame;
 	rc = msm_vpe_send_frame_to_hardware(vpe_dev, frame_qcmd);
 	if (rc < 0) {
-		pr_err_ratelimited("error cannot send frame to hardware\n");
+		pr_err("error cannot send frame to hardware\n");
 		rc = -EINVAL;
 		goto err_free_frame_qcmd;
 	}
@@ -1256,7 +1256,7 @@ static long msm_vpe_subdev_ioctl(struct v4l2_subdev *sd,
 		struct msm_vpe_transaction_setup_cfg *cfg;
 		VPE_DBG("VIDIOC_MSM_VPE_TRANSACTION_SETUP\n");
 		if (sizeof(*cfg) != ioctl_ptr->len) {
-			pr_err_ratelimited("%s: size mismatch cmd=%d, len=%zu, expected=%zu",
+			pr_err("%s: size mismatch cmd=%d, len=%zu, expected=%zu",
 				__func__, cmd, ioctl_ptr->len,
 				sizeof(*cfg));
 			rc = -EINVAL;
@@ -1265,7 +1265,7 @@ static long msm_vpe_subdev_ioctl(struct v4l2_subdev *sd,
 
 		cfg = kzalloc(ioctl_ptr->len, GFP_KERNEL);
 		if (!cfg) {
-			pr_err_ratelimited("%s:%d: malloc error\n", __func__, __LINE__);
+			pr_err("%s:%d: malloc error\n", __func__, __LINE__);
 			mutex_unlock(&vpe_dev->mutex);
 			return -EINVAL;
 		}
@@ -1273,7 +1273,7 @@ static long msm_vpe_subdev_ioctl(struct v4l2_subdev *sd,
 		rc = copy_from_user(cfg, (void __user *)ioctl_ptr->ioctl_ptr,
 				ioctl_ptr->len);
 		if (rc) {
-			pr_err_ratelimited("%s:%d copy from user\n", __func__, __LINE__);
+			pr_err("%s:%d copy from user\n", __func__, __LINE__);
 			kfree(cfg);
 			break;
 		}
@@ -1295,14 +1295,14 @@ static long msm_vpe_subdev_ioctl(struct v4l2_subdev *sd,
 
 		if (sizeof(struct msm_vpe_stream_buff_info_t) !=
 			ioctl_ptr->len) {
-			pr_err_ratelimited("%s:%d: invalid length\n", __func__, __LINE__);
+			pr_err("%s:%d: invalid length\n", __func__, __LINE__);
 			mutex_unlock(&vpe_dev->mutex);
 			return -EINVAL;
 		}
 
 		u_stream_buff_info = kzalloc(ioctl_ptr->len, GFP_KERNEL);
 		if (!u_stream_buff_info) {
-			pr_err_ratelimited("%s:%d: malloc error\n", __func__, __LINE__);
+			pr_err("%s:%d: malloc error\n", __func__, __LINE__);
 			mutex_unlock(&vpe_dev->mutex);
 			return -EINVAL;
 		}
@@ -1311,7 +1311,7 @@ static long msm_vpe_subdev_ioctl(struct v4l2_subdev *sd,
 				(void __user *)ioctl_ptr->ioctl_ptr,
 				ioctl_ptr->len) ? -EFAULT : 0);
 		if (rc) {
-			pr_err_ratelimited("%s:%d copy from user\n", __func__, __LINE__);
+			pr_err("%s:%d copy from user\n", __func__, __LINE__);
 			kfree(u_stream_buff_info);
 			mutex_unlock(&vpe_dev->mutex);
 			return -EINVAL;
@@ -1320,7 +1320,7 @@ static long msm_vpe_subdev_ioctl(struct v4l2_subdev *sd,
 		if ((u_stream_buff_info->num_buffs == 0) ||
 			(u_stream_buff_info->num_buffs >
 				MSM_CAMERA_MAX_STREAM_BUF)) {
-			pr_err_ratelimited("%s:%d: Invalid number of buffers\n", __func__,
+			pr_err("%s:%d: Invalid number of buffers\n", __func__,
 				__LINE__);
 			kfree(u_stream_buff_info);
 			mutex_unlock(&vpe_dev->mutex);
@@ -1332,7 +1332,7 @@ static long msm_vpe_subdev_ioctl(struct v4l2_subdev *sd,
 			kzalloc(k_stream_buff_info.num_buffs *
 			sizeof(struct msm_vpe_buffer_info_t), GFP_KERNEL);
 		if (!k_stream_buff_info.buffer_info) {
-			pr_err_ratelimited("%s:%d: malloc error\n", __func__, __LINE__);
+			pr_err("%s:%d: malloc error\n", __func__, __LINE__);
 			kfree(u_stream_buff_info);
 			mutex_unlock(&vpe_dev->mutex);
 			return -EINVAL;
@@ -1344,7 +1344,7 @@ static long msm_vpe_subdev_ioctl(struct v4l2_subdev *sd,
 				sizeof(struct msm_vpe_buffer_info_t)) ?
 				-EFAULT : 0);
 		if (rc) {
-			pr_err_ratelimited("%s:%d copy from user\n", __func__, __LINE__);
+			pr_err("%s:%d copy from user\n", __func__, __LINE__);
 			kfree(k_stream_buff_info.buffer_info);
 			kfree(u_stream_buff_info);
 			mutex_unlock(&vpe_dev->mutex);
@@ -1368,7 +1368,7 @@ static long msm_vpe_subdev_ioctl(struct v4l2_subdev *sd,
 
 		VPE_DBG("VIDIOC_MSM_VPE_DEQUEUE_STREAM_BUFF_INFO\n");
 		if (ioctl_ptr->len != sizeof(uint32_t)) {
-			pr_err_ratelimited("%s:%d Invalid len\n", __func__, __LINE__);
+			pr_err("%s:%d Invalid len\n", __func__, __LINE__);
 			mutex_unlock(&vpe_dev->mutex);
 			return -EINVAL;
 		}
@@ -1377,7 +1377,7 @@ static long msm_vpe_subdev_ioctl(struct v4l2_subdev *sd,
 				(void __user *)ioctl_ptr->ioctl_ptr,
 				ioctl_ptr->len) ? -EFAULT : 0);
 		if (rc) {
-			pr_err_ratelimited("%s:%d copy from user\n", __func__, __LINE__);
+			pr_err("%s:%d copy from user\n", __func__, __LINE__);
 			mutex_unlock(&vpe_dev->mutex);
 			return -EINVAL;
 		}
@@ -1385,7 +1385,7 @@ static long msm_vpe_subdev_ioctl(struct v4l2_subdev *sd,
 		buff_queue_info = msm_vpe_get_buff_queue_entry(vpe_dev,
 			((identity >> 16) & 0xFFFF), (identity & 0xFFFF));
 		if (buff_queue_info == NULL) {
-			pr_err_ratelimited("error finding buffer queue entry for identity:%d\n",
+			pr_err("error finding buffer queue entry for identity:%d\n",
 				identity);
 			mutex_unlock(&vpe_dev->mutex);
 			return -EINVAL;
@@ -1404,7 +1404,7 @@ static long msm_vpe_subdev_ioctl(struct v4l2_subdev *sd,
 		VPE_DBG("VIDIOC_MSM_VPE_GET_EVENTPAYLOAD\n");
 		event_qcmd = msm_dequeue(queue, list_eventdata);
 		if (!event_qcmd) {
-			pr_err_ratelimited("%s: %d event_qcmd is NULL\n",
+			pr_err("%s: %d event_qcmd is NULL\n",
 				__func__ , __LINE__);
 			return -EINVAL;
 		}
@@ -1526,14 +1526,14 @@ static int vpe_probe(struct platform_device *pdev)
 
 	vpe_dev = kzalloc(sizeof(struct vpe_device), GFP_KERNEL);
 	if (!vpe_dev) {
-		pr_err_ratelimited("not enough memory\n");
+		pr_err("not enough memory\n");
 		return -ENOMEM;
 	}
 
 	vpe_dev->vpe_clk = kzalloc(sizeof(struct clk *) *
 				ARRAY_SIZE(vpe_clk_info), GFP_KERNEL);
 	if (!vpe_dev->vpe_clk) {
-		pr_err_ratelimited("not enough memory\n");
+		pr_err("not enough memory\n");
 		rc = -ENOMEM;
 		goto err_free_vpe_dev;
 	}
@@ -1554,7 +1554,7 @@ static int vpe_probe(struct platform_device *pdev)
 	vpe_dev->mem = platform_get_resource_byname(pdev,
 						IORESOURCE_MEM, "vpe");
 	if (!vpe_dev->mem) {
-		pr_err_ratelimited("no mem resource?\n");
+		pr_err("no mem resource?\n");
 		rc = -ENODEV;
 		goto err_free_vpe_clk;
 	}
@@ -1562,14 +1562,14 @@ static int vpe_probe(struct platform_device *pdev)
 	vpe_dev->irq = platform_get_resource_byname(pdev,
 						IORESOURCE_IRQ, "vpe");
 	if (!vpe_dev->irq) {
-		pr_err_ratelimited("%s: no irq resource?\n", __func__);
+		pr_err("%s: no irq resource?\n", __func__);
 		rc = -ENODEV;
 		goto err_release_mem;
 	}
 
 	vpe_dev->domain_num = vpe_register_domain();
 	if (vpe_dev->domain_num < 0) {
-		pr_err_ratelimited("%s: could not register domain\n", __func__);
+		pr_err("%s: could not register domain\n", __func__);
 		rc = -ENODEV;
 		goto err_release_mem;
 	}
@@ -1577,7 +1577,7 @@ static int vpe_probe(struct platform_device *pdev)
 	vpe_dev->domain =
 		msm_get_iommu_domain(vpe_dev->domain_num);
 	if (!vpe_dev->domain) {
-		pr_err_ratelimited("%s: cannot find domain\n", __func__);
+		pr_err("%s: cannot find domain\n", __func__);
 		rc = -ENODEV;
 		goto err_release_mem;
 	}
@@ -1585,7 +1585,7 @@ static int vpe_probe(struct platform_device *pdev)
 	vpe_dev->iommu_ctx_src = msm_iommu_get_ctx("vpe_src");
 	vpe_dev->iommu_ctx_dst = msm_iommu_get_ctx("vpe_dst");
 	if (!vpe_dev->iommu_ctx_src || !vpe_dev->iommu_ctx_dst) {
-		pr_err_ratelimited("%s: cannot get iommu_ctx\n", __func__);
+		pr_err("%s: cannot get iommu_ctx\n", __func__);
 		rc = -ENODEV;
 		goto err_release_mem;
 	}
@@ -1601,7 +1601,7 @@ static int vpe_probe(struct platform_device *pdev)
 	vpe_dev->state = VPE_STATE_BOOT;
 	rc = vpe_init_hardware(vpe_dev);
 	if (rc < 0) {
-		pr_err_ratelimited("%s: Couldn't init vpe hardware\n", __func__);
+		pr_err("%s: Couldn't init vpe hardware\n", __func__);
 		goto err_unregister_sd;
 	}
 	vpe_reset(vpe_dev);
@@ -1610,13 +1610,13 @@ static int vpe_probe(struct platform_device *pdev)
 
 	rc = iommu_attach_device(vpe_dev->domain, vpe_dev->iommu_ctx_src);
 	if (rc < 0) {
-		pr_err_ratelimited("Couldn't attach to vpe_src context bank\n");
+		pr_err("Couldn't attach to vpe_src context bank\n");
 		rc = -ENODEV;
 		goto err_unregister_sd;
 	}
 	rc = iommu_attach_device(vpe_dev->domain, vpe_dev->iommu_ctx_dst);
 	if (rc < 0) {
-		pr_err_ratelimited("Couldn't attach to vpe_dst context bank\n");
+		pr_err("Couldn't attach to vpe_dst context bank\n");
 		rc = -ENODEV;
 		goto err_detach_src;
 	}
@@ -1650,13 +1650,13 @@ static int vpe_device_remove(struct platform_device *dev)
 	struct v4l2_subdev *sd = platform_get_drvdata(dev);
 	struct vpe_device  *vpe_dev;
 	if (!sd) {
-		pr_err_ratelimited("%s: Subdevice is NULL\n", __func__);
+		pr_err("%s: Subdevice is NULL\n", __func__);
 		return 0;
 	}
 
 	vpe_dev = (struct vpe_device *)v4l2_get_subdevdata(sd);
 	if (!vpe_dev) {
-		pr_err_ratelimited("%s: vpe device is NULL\n", __func__);
+		pr_err("%s: vpe device is NULL\n", __func__);
 		return 0;
 	}
 

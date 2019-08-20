@@ -26,7 +26,7 @@ static int msm_vb2_queue_setup(struct vb2_queue *q,
 	data = q->drv_priv;
 
 	if (!data) {
-		pr_err_ratelimited("%s: drv_priv NULL\n", __func__);
+		pr_err("%s: drv_priv NULL\n", __func__);
 		goto done;
 	}
 	if (data->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
@@ -38,7 +38,7 @@ static int msm_vb2_queue_setup(struct vb2_queue *q,
 		for (i = 0; i < data->num_planes; i++)
 			sizes[i] = data->plane_sizes[i];
 	} else {
-		pr_err_ratelimited("%s: Unsupported buf type :%d\n", __func__,
+		pr_err("%s: Unsupported buf type :%d\n", __func__,
 			   data->type);
 		goto done;
 	}
@@ -65,7 +65,7 @@ int msm_vb2_buf_init(struct vb2_buffer *vb)
 
 	stream = msm_get_stream_from_vb2q(vb->vb2_queue);
 	if (!stream) {
-		pr_err_ratelimited("%s: Couldn't find stream\n", __func__);
+		pr_err("%s: Couldn't find stream\n", __func__);
 		read_unlock_irqrestore(&session->stream_rwlock, rl_flags);
 		return -EINVAL;
 	}
@@ -85,7 +85,7 @@ static void msm_vb2_buf_queue(struct vb2_buffer *vb)
 
 	msm_vb2 = container_of(vbuf, struct msm_vb2_buffer, vb2_v4l2_buf);
 	if (!msm_vb2) {
-		pr_err_ratelimited("%s:%d] vb2_buf NULL", __func__, __LINE__);
+		pr_err("%s:%d] vb2_buf NULL", __func__, __LINE__);
 		return;
 	}
 
@@ -97,7 +97,7 @@ static void msm_vb2_buf_queue(struct vb2_buffer *vb)
 
 	stream = msm_get_stream_from_vb2q(vb->vb2_queue);
 	if (!stream) {
-		pr_err_ratelimited("%s:%d] NULL stream", __func__, __LINE__);
+		pr_err("%s:%d] NULL stream", __func__, __LINE__);
 		read_unlock_irqrestore(&session->stream_rwlock, rl_flags);
 		return;
 	}
@@ -119,7 +119,7 @@ static void msm_vb2_buf_finish(struct vb2_buffer *vb)
 
 	msm_vb2 = container_of(vbuf, struct msm_vb2_buffer, vb2_v4l2_buf);
 	if (!msm_vb2) {
-		pr_err_ratelimited("%s:%d] vb2_buf NULL", __func__, __LINE__);
+		pr_err("%s:%d] vb2_buf NULL", __func__, __LINE__);
 		return;
 	}
 
@@ -131,7 +131,7 @@ static void msm_vb2_buf_finish(struct vb2_buffer *vb)
 
 	stream = msm_get_stream_from_vb2q(vb->vb2_queue);
 	if (!stream) {
-		pr_err_ratelimited("%s:%d] NULL stream", __func__, __LINE__);
+		pr_err("%s:%d] NULL stream", __func__, __LINE__);
 		read_unlock_irqrestore(&session->stream_rwlock, rl_flags);
 		return;
 	}
@@ -281,7 +281,7 @@ static struct vb2_v4l2_buffer *msm_vb2_get_buf(int session_id,
 	spin_lock_irqsave(&stream->stream_lock, flags);
 
 	if (!stream->vb2_q) {
-		pr_err_ratelimited("%s: stream q not available\n", __func__);
+		pr_err("%s: stream q not available\n", __func__);
 		goto end;
 	}
 
@@ -329,7 +329,7 @@ static struct vb2_v4l2_buffer *msm_vb2_get_buf_by_idx(int session_id,
 	spin_lock_irqsave(&stream->stream_lock, flags);
 
 	if (!stream->vb2_q) {
-		pr_err_ratelimited("%s: stream q not available\n", __func__);
+		pr_err("%s: stream q not available\n", __func__);
 		goto end;
 	}
 
@@ -380,7 +380,7 @@ static int msm_vb2_put_buf(struct vb2_v4l2_buffer *vb, int session_id,
 				break;
 		}
 		if (vb2_v4l2_buf != vb) {
-			pr_err_ratelimited("VB buffer is INVALID vb=%pK, ses_id=%d, str_id=%d\n",
+			pr_err("VB buffer is INVALID vb=%pK, ses_id=%d, str_id=%d\n",
 					vb, session_id, stream_id);
 			spin_unlock_irqrestore(&stream->stream_lock, flags);
 			read_unlock_irqrestore(&session->stream_rwlock,
@@ -396,7 +396,7 @@ static int msm_vb2_put_buf(struct vb2_v4l2_buffer *vb, int session_id,
 		} else
 			rc = -EINVAL;
 	} else {
-		pr_err_ratelimited(" VB buffer is null for ses_id=%d, str_id=%d\n",
+		pr_err(" VB buffer is null for ses_id=%d, str_id=%d\n",
 			    session_id, stream_id);
 		rc = -EINVAL;
 	}
@@ -436,7 +436,7 @@ static int msm_vb2_buf_done(struct vb2_v4l2_buffer *vb, int session_id,
 				break;
 		}
 		if (vb2_v4l2_buf != vb) {
-			pr_err_ratelimited("VB buffer is INVALID ses_id=%d, str_id=%d, vb=%pK\n",
+			pr_err("VB buffer is INVALID ses_id=%d, str_id=%d, vb=%pK\n",
 				    session_id, stream_id, vb);
 			spin_unlock_irqrestore(&stream->stream_lock, flags);
 			read_unlock_irqrestore(&session->stream_rwlock,
@@ -456,7 +456,7 @@ static int msm_vb2_buf_done(struct vb2_v4l2_buffer *vb, int session_id,
 		} else
 			rc = -EINVAL;
 	} else {
-		pr_err_ratelimited(" VB buffer is NULL for ses_id=%d, str_id=%d\n",
+		pr_err(" VB buffer is NULL for ses_id=%d, str_id=%d\n",
 			    session_id, stream_id);
 		rc = -EINVAL;
 	}
@@ -496,7 +496,7 @@ static int msm_vb2_buf_error(struct vb2_v4l2_buffer *vb, int session_id,
 				break;
 		}
 		if (vb2_v4l2_buf != vb) {
-			pr_err_ratelimited("VB buffer is INVALID ses_id=%d, str_id=%d, vb=%pK\n",
+			pr_err("VB buffer is INVALID ses_id=%d, str_id=%d, vb=%pK\n",
 				    session_id, stream_id, vb);
 			spin_unlock_irqrestore(&stream->stream_lock, flags);
 			read_unlock_irqrestore(&session->stream_rwlock,
@@ -517,7 +517,7 @@ static int msm_vb2_buf_error(struct vb2_v4l2_buffer *vb, int session_id,
 		} else
 			rc = -EINVAL;
 	} else {
-		pr_err_ratelimited(" VB buffer is NULL for ses_id=%d, str_id=%d\n",
+		pr_err(" VB buffer is NULL for ses_id=%d, str_id=%d\n",
 			    session_id, stream_id);
 		rc = -EINVAL;
 	}
@@ -551,7 +551,7 @@ long msm_vb2_return_buf_by_idx(int session_id, unsigned int stream_id,
 	spin_lock_irqsave(&stream->stream_lock, flags);
 
 	if (!stream->vb2_q) {
-		pr_err_ratelimited("%s: stream q not available\n", __func__);
+		pr_err("%s: stream q not available\n", __func__);
 		goto end;
 	}
 
@@ -614,7 +614,7 @@ static int msm_vb2_flush_buf(int session_id, unsigned int stream_id)
 int msm_vb2_request_cb(struct msm_sd_req_vb2_q *req)
 {
 	if (!req) {
-		pr_err_ratelimited("%s: suddev is null\n", __func__);
+		pr_err("%s: suddev is null\n", __func__);
 		return -EINVAL;
 	}
 

@@ -97,7 +97,7 @@ int32_t get_cmd_rsp_buffers(
 	if ((ta_qseecom_handle == NULL) ||
 		(cmd == NULL) || (cmd_len == NULL) ||
 		(rsp == NULL) || (rsp_len == NULL)) {
-		pr_err_ratelimited("%s:%d - Bad parameters\n",
+		pr_err("%s:%d - Bad parameters\n",
 			__func__, __LINE__);
 		return -EINVAL;
 	}
@@ -109,7 +109,7 @@ int32_t get_cmd_rsp_buffers(
 		*rsp_len = QSEECOM_ALIGN(*rsp_len);
 
 	if ((*rsp_len + *cmd_len) > QSEECOM_SBUFF_SIZE) {
-		pr_err_ratelimited("%s:%d - Shared buffer too small to hold cmd=%d and rsp=%d\n",
+		pr_err("%s:%d - Shared buffer too small to hold cmd=%d and rsp=%d\n",
 			__func__, __LINE__,
 			*cmd_len, *rsp_len);
 		return -ENOMEM;
@@ -133,7 +133,7 @@ static int32_t msm_camera_tz_i2c_ta_get_if_version(
 	CDBG("Enter\n");
 	if ((ta_qseecom_handle == NULL) ||
 		(if_version_maj == NULL) || (if_version_min == NULL)) {
-		pr_err_ratelimited("%s:%d - Bad parameters\n",
+		pr_err("%s:%d - Bad parameters\n",
 			__func__, __LINE__);
 		return -EINVAL;
 	}
@@ -150,7 +150,7 @@ static int32_t msm_camera_tz_i2c_ta_get_if_version(
 			(void *)cmd, cmd_len, (void *)rsp, rsp_len);
 
 		if (rc < 0) {
-			pr_err_ratelimited("%s:%d - Unable to get if version info, rc=%d\n",
+			pr_err("%s:%d - Unable to get if version info, rc=%d\n",
 				__func__, __LINE__,
 				rc);
 			return rc;
@@ -287,7 +287,7 @@ int32_t msm_camera_tz_ta_set_mode(uint32_t mode,
 	ktime_t startTime = ktime_get();
 
 	if (ta_qseecom_handle == NULL) {
-		pr_err_ratelimited("%s:%d - Bad parameters\n",
+		pr_err("%s:%d - Bad parameters\n",
 			__func__, __LINE__);
 		return -EINVAL;
 	}
@@ -307,7 +307,7 @@ int32_t msm_camera_tz_ta_set_mode(uint32_t mode,
 			(void *)cmd, cmd_len, (void *)rsp, rsp_len);
 
 		if (rc < 0) {
-			pr_err_ratelimited("%s:%d - Failed: rc=%d\n",
+			pr_err("%s:%d - Failed: rc=%d\n",
 				__func__, __LINE__,
 				rc);
 			msm_camera_tz_unlock();
@@ -343,7 +343,7 @@ uint32_t msm_camera_tz_set_mode(uint32_t mode,
 		rc = msm_camera_tz_unload_ta();
 		break;
 	default:
-		pr_err_ratelimited("%s:%d - Incorrect mode: %d (hw: 0x%08X)\n",
+		pr_err("%s:%d - Incorrect mode: %d (hw: 0x%08X)\n",
 			__func__, __LINE__,
 			mode, hw_block);
 		return -EINVAL;

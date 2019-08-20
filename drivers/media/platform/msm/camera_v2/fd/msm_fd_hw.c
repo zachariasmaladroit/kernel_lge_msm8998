@@ -638,11 +638,11 @@ int32_t msm_fd_hw_set_dt_parms_by_name(struct msm_fd_device *fd,
 	pr_debug("%s:%d E\n", __func__, __LINE__);
 
 	if (!of_get_property(of_node, dt_prop_name, &dt_count)) {
-		pr_err_ratelimited("%s: Error property does not exist\n", __func__);
+		pr_err("%s: Error property does not exist\n", __func__);
 		return -ENOENT;
 	}
 	if (dt_count % (sizeof(int32_t) * MSM_FD_REG_LAST_IDX)) {
-		pr_err_ratelimited("%s: Error invalid entries\n", __func__);
+		pr_err("%s: Error invalid entries\n", __func__);
 		return -EINVAL;
 	}
 	dt_count /= sizeof(int32_t);
@@ -659,7 +659,7 @@ int32_t msm_fd_hw_set_dt_parms_by_name(struct msm_fd_device *fd,
 				dt_reg_settings,
 				dt_count);
 		if (rc < 0) {
-			pr_err_ratelimited("%s: No reg info\n", __func__);
+			pr_err("%s: No reg info\n", __func__);
 			kfree(dt_reg_settings);
 			return -EINVAL;
 		}
@@ -709,7 +709,7 @@ int msm_fd_hw_set_dt_parms(struct msm_fd_device *fd)
 				dt_prop_name[dt_prop_cnt]);
 			rc = 0;
 		} else if (rc < 0) {
-			pr_err_ratelimited("%s: %s params set fail\n", __func__,
+			pr_err("%s: %s params set fail\n", __func__,
 				dt_prop_name[dt_prop_cnt]);
 			return rc;
 		}
@@ -1053,7 +1053,7 @@ int msm_fd_hw_map_buffer(struct msm_fd_mem_pool *pool, int fd,
 			buf->fd, CAM_SMMU_MAP_RW,
 			&buf->addr, &buf->size);
 	if (ret < 0) {
-		pr_err_ratelimited("Error: cannot get phy addr\n");
+		pr_err("Error: cannot get phy addr\n");
 		return -ENOMEM;
 	}
 	return buf->size;

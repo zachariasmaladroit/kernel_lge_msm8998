@@ -44,7 +44,7 @@ int32_t msm_camera_cci_i2c_read(struct msm_camera_i2c_client *client,
 	rc = v4l2_subdev_call(client->cci_client->cci_subdev,
 			core, ioctl, VIDIOC_MSM_CCI_CFG, &cci_ctrl);
 	if (rc < 0) {
-		pr_err_ratelimited("%s: line %d rc = %d\n", __func__, __LINE__, rc);
+		pr_err("%s: line %d rc = %d\n", __func__, __LINE__, rc);
 		return rc;
 	}
 	rc = cci_ctrl.status;
@@ -80,7 +80,7 @@ int32_t msm_camera_cci_i2c_read_seq(struct msm_camera_i2c_client *client,
 
 	buf = kzalloc(num_byte, GFP_KERNEL);
 	if (!buf) {
-		pr_err_ratelimited("%s:%d no memory\n", __func__, __LINE__);
+		pr_err("%s:%d no memory\n", __func__, __LINE__);
 		return -ENOMEM;
 	}
 	cci_ctrl.cmd = MSM_CCI_I2C_READ;
@@ -133,7 +133,7 @@ int32_t msm_camera_cci_i2c_write(struct msm_camera_i2c_client *client,
 	rc = v4l2_subdev_call(client->cci_client->cci_subdev,
 			core, ioctl, VIDIOC_MSM_CCI_CFG, &cci_ctrl);
 	if (rc < 0) {
-		pr_err_ratelimited("%s: line %d rc = %d\n", __func__, __LINE__, rc);
+		pr_err("%s: line %d rc = %d\n", __func__, __LINE__, rc);
 		return rc;
 	}
 	rc = cci_ctrl.status;
@@ -154,7 +154,7 @@ int32_t msm_camera_cci_i2c_write_seq(struct msm_camera_i2c_client *client,
 		return rc;
 
 	if (num_byte > I2C_SEQ_REG_DATA_MAX) {
-		pr_err_ratelimited("%s: num_byte=%d clamped to max supported %d\n",
+		pr_err("%s: num_byte=%d clamped to max supported %d\n",
 			__func__, num_byte, I2C_SEQ_REG_DATA_MAX);
 		return rc;
 	}
@@ -165,7 +165,7 @@ int32_t msm_camera_cci_i2c_write_seq(struct msm_camera_i2c_client *client,
 	reg_conf_tbl = kzalloc(num_byte *
 		(sizeof(struct msm_camera_i2c_reg_array)), GFP_KERNEL);
 	if (!reg_conf_tbl) {
-		pr_err_ratelimited("%s:%d no memory\n", __func__, __LINE__);
+		pr_err("%s:%d no memory\n", __func__, __LINE__);
 		return -ENOMEM;
 	}
 
@@ -217,7 +217,7 @@ static int32_t msm_camera_cci_i2c_write_table_cmd(
 	rc = v4l2_subdev_call(client->cci_client->cci_subdev,
 			core, ioctl, VIDIOC_MSM_CCI_CFG, &cci_ctrl);
 	if (rc < 0) {
-		pr_err_ratelimited("%s: line %d rc = %d\n", __func__, __LINE__, rc);
+		pr_err("%s: line %d rc = %d\n", __func__, __LINE__, rc);
 		return rc;
 	}
 	rc = cci_ctrl.status;
@@ -276,7 +276,7 @@ int32_t msm_camera_cci_i2c_write_seq_table(
 
 	if ((write_setting->addr_type != MSM_CAMERA_I2C_BYTE_ADDR
 		&& write_setting->addr_type != MSM_CAMERA_I2C_WORD_ADDR)) {
-		pr_err_ratelimited("%s Invalide addr type %d\n", __func__,
+		pr_err("%s Invalide addr type %d\n", __func__,
 			write_setting->addr_type);
 		return rc;
 	}
@@ -286,7 +286,7 @@ int32_t msm_camera_cci_i2c_write_seq_table(
 	client->addr_type = write_setting->addr_type;
 
 	if (reg_setting->reg_data_size > I2C_SEQ_REG_DATA_MAX) {
-		pr_err_ratelimited("%s: number of bytes %u exceeding the max supported %d\n",
+		pr_err("%s: number of bytes %u exceeding the max supported %d\n",
 		__func__, reg_setting->reg_data_size, I2C_SEQ_REG_DATA_MAX);
 		return rc;
 	}
@@ -334,7 +334,7 @@ int32_t msm_camera_cci_i2c_write_table_w_microdelay(
 	rc = v4l2_subdev_call(client->cci_client->cci_subdev,
 			core, ioctl, VIDIOC_MSM_CCI_CFG, &cci_ctrl);
 	if (rc < 0) {
-		pr_err_ratelimited("%s: line %d rc = %d\n", __func__, __LINE__, rc);
+		pr_err("%s: line %d rc = %d\n", __func__, __LINE__, rc);
 		return rc;
 	}
 	rc = cci_ctrl.status;
@@ -362,7 +362,7 @@ static int32_t msm_camera_cci_i2c_compare(struct msm_camera_i2c_client *client,
 		data_len = MSM_CAMERA_I2C_WORD_DATA;
 		break;
 	default:
-		pr_err_ratelimited("%s: Unsupport data type: %d\n", __func__, data_type);
+		pr_err("%s: Unsupport data type: %d\n", __func__, data_type);
 		break;
 	}
 
@@ -388,7 +388,7 @@ static int32_t msm_camera_cci_i2c_compare(struct msm_camera_i2c_client *client,
 			rc = I2C_COMPARE_MATCH;
 		break;
 	default:
-		pr_err_ratelimited("%s: Unsupport data type: %d\n", __func__, data_type);
+		pr_err("%s: Unsupport data type: %d\n", __func__, data_type);
 		break;
 	}
 
@@ -407,7 +407,7 @@ int32_t msm_camera_cci_i2c_poll(struct msm_camera_i2c_client *client,
 		__func__, addr, data, data_type);
 
 	if (delay_ms > MAX_POLL_DELAY_MS) {
-		pr_err_ratelimited("%s:%d invalid delay = %d max_delay = %d\n",
+		pr_err("%s:%d invalid delay = %d max_delay = %d\n",
 			__func__, __LINE__, delay_ms, MAX_POLL_DELAY_MS);
 		return -EINVAL;
 	}
@@ -421,11 +421,11 @@ int32_t msm_camera_cci_i2c_poll(struct msm_camera_i2c_client *client,
 
 	/* If rc is 1 then read is successful but poll is failure */
 	if (rc == 1)
-		pr_err_ratelimited("%s:%d poll failed rc=%d(non-fatal)\n",
+		pr_err("%s:%d poll failed rc=%d(non-fatal)\n",
 			__func__, __LINE__, rc);
 
 	if (rc < 0)
-		pr_err_ratelimited("%s:%d poll failed rc=%d\n", __func__, __LINE__, rc);
+		pr_err("%s:%d poll failed rc=%d\n", __func__, __LINE__, rc);
 
 	return rc;
 }
@@ -547,7 +547,7 @@ int32_t msm_camera_cci_i2c_write_conf_tbl(
 					MSM_CAMERA_I2C_BYTE_DATA);
 				break;
 			default:
-				pr_err_ratelimited("%s: Unsupport data type: %d\n",
+				pr_err("%s: Unsupport data type: %d\n",
 					__func__, dt);
 				break;
 			}
@@ -571,7 +571,7 @@ int32_t msm_sensor_cci_i2c_util(struct msm_camera_i2c_client *client,
 	rc = v4l2_subdev_call(client->cci_client->cci_subdev,
 			core, ioctl, VIDIOC_MSM_CCI_CFG, &cci_ctrl);
 	if (rc < 0) {
-		pr_err_ratelimited("%s line %d rc = %d\n", __func__, __LINE__, rc);
+		pr_err("%s line %d rc = %d\n", __func__, __LINE__, rc);
 		return rc;
 	}
 	return cci_ctrl.status;

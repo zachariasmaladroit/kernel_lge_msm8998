@@ -95,7 +95,7 @@ int32_t msm_ois_gyro_calibration(struct msm_ois_ctrl_t *o_ctrl){
 	swap_16bit_data(&g_offset_x);
 	swap_16bit_data(&g_offset_y);
 
-	pr_err_ratelimited("Gyro offset before cal (%d, %d) \n", (int16_t)g_offset_x, (int16_t)g_offset_y);
+	pr_err("Gyro offset before cal (%d, %d) \n", (int16_t)g_offset_x, (int16_t)g_offset_y);
 
 	/* Gyro Calibration Start */
 	msm_camera_cci_i2c_write(&o_ctrl->i2c_client, 0x0014, 0x01, 1); /* GCCTRL GSCEN set */
@@ -136,7 +136,7 @@ int32_t msm_ois_gyro_calibration(struct msm_ois_ctrl_t *o_ctrl){
 			swap_16bit_data(&g_offset_x);
 			swap_16bit_data(&g_offset_y);
 
-			pr_err_ratelimited("Gyro offset SWAP after cal (%d, %d) \n", (int16_t)g_offset_x, (int16_t)g_offset_y);
+			pr_err("Gyro offset SWAP after cal (%d, %d) \n", (int16_t)g_offset_x, (int16_t)g_offset_y);
 		}
 		else
 		{
@@ -146,7 +146,7 @@ int32_t msm_ois_gyro_calibration(struct msm_ois_ctrl_t *o_ctrl){
 
 			swap_16bit_data(&g_offset_x);
 			swap_16bit_data(&g_offset_y);
-			pr_err_ratelimited("Gyro offset normal after cal (%d, %d) \n",(int16_t) g_offset_x, (int16_t)g_offset_y);
+			pr_err("Gyro offset normal after cal (%d, %d) \n",(int16_t) g_offset_x, (int16_t)g_offset_y);
 		}
 	#if 1 // gyro cal data Flash write
 		/* Write Gyro Calibration result to OIS DATA SECTION */
@@ -203,7 +203,7 @@ int32_t msm_ois_gyro_data_check(struct msm_ois_ctrl_t *o_ctrl){
 	swap_16bit_data(&g_offset_x);
 	swap_16bit_data(&g_offset_y);
 
-	pr_err_ratelimited("OIS Gyro offset : (%d , %d) \n", g_offset_x, g_offset_y);
+	pr_err("OIS Gyro offset : (%d , %d) \n", g_offset_x, g_offset_y);
 
 
 	msm_camera_cci_i2c_write(&o_ctrl->i2c_client, 0x0080, 0x01, 1); /* FW update enable*/
@@ -256,7 +256,7 @@ int32_t msm_ois_gyro_data_check(struct msm_ois_ctrl_t *o_ctrl){
 		CDBG("Gyro data %d, (%d, %d), total (%d, %d) \n", i, gyro_x, gyro_y, gyro_total_x, gyro_total_y);
 	}
 
-	pr_err_ratelimited("Average Gyro data (%d, %d) \n", (int32_t) (gyro_total_x /10) , (int32_t) (gyro_total_y / 10));
+	pr_err("Average Gyro data (%d, %d) \n", (int32_t) (gyro_total_x /10) , (int32_t) (gyro_total_y / 10));
 
 	msm_camera_cci_i2c_write(&o_ctrl->i2c_client, 0x0080, 0x00, 1); /* FW update disable*/
 
@@ -327,7 +327,7 @@ int32_t msm_ois_hall_polarity_check(struct msm_ois_ctrl_t *o_ctrl){
 
 	if( (RcvData & 0x0C) == 0x0) /* OISERR register GXZEROERR & GYZEROERR & GCOMERR Bit = 0(No Error) */
 	{
-    	pr_err_ratelimited("%s : hall_polarity_check success! \n",__func__);
+    	pr_err("%s : hall_polarity_check success! \n",__func__);
 		#if 0  //
 		/* Write Gyro Calibration result to OIS DATA SECTION */
 		msm_camera_cci_i2c_write(&o_ctrl->i2c_client, 0x0003, 0x01, 1); /* OISDATAWRITE register(0x0003) 1Byte Send */
@@ -407,7 +407,7 @@ int32_t msm_ois_fw_update(struct msm_ois_ctrl_t *o_ctrl, const char* fw_name)
 
 	if( RcvDataShort != 1 ) /* OISSTS != IDLE */
 	{
-		pr_err_ratelimited("OISSTS != IDLE, RcvDataShort  %d read_cnt %d\n", RcvDataShort, read_cnt);
+		pr_err("OISSTS != IDLE, RcvDataShort  %d read_cnt %d\n", RcvDataShort, read_cnt);
 		return rc;
 	}
 
@@ -432,13 +432,13 @@ int32_t msm_ois_fw_update(struct msm_ois_ctrl_t *o_ctrl, const char* fw_name)
 		(*(ptr + 0x6FF5) == i2c_buf[1]) &&
 		(*(ptr + 0x6FF6) == i2c_buf[2]) &&
 		(*(ptr + 0x6FF7) == i2c_buf[3])){
-		pr_err_ratelimited("Current FW version [ %d ] is the lasest version.\n",  fw_version);
+		pr_err("Current FW version [ %d ] is the lasest version.\n",  fw_version);
 		goto release_firmware;
     }
 
 	rc = msm_camera_cci_i2c_write(&o_ctrl->i2c_client, 0x000C, 0x73, 1); //0x71 : 64 bytes //0x73 : 128 bytes //0x75: 256 bytes
 	if (rc < 0) {
-		pr_err_ratelimited("Failed\n");
+		pr_err("Failed\n");
 		goto release_firmware;
 	}
 
@@ -452,7 +452,7 @@ int32_t msm_ois_fw_update(struct msm_ois_ctrl_t *o_ctrl, const char* fw_name)
 		bytes_in_tx = (total_bytes > 128) ? 128 : total_bytes;
 		rc = o_ctrl->i2c_client.i2c_func_tbl->i2c_write_seq(&o_ctrl->i2c_client, 0x0100, ptr, bytes_in_tx);
 		if (rc < 0) {
-			pr_err_ratelimited("Failed:remaining bytes to be downloaded:%d\n",bytes_in_tx);
+			pr_err("Failed:remaining bytes to be downloaded:%d\n",bytes_in_tx);
 			/* abort download fw and return error*/
 			goto release_firmware;
 		}
@@ -463,7 +463,7 @@ int32_t msm_ois_fw_update(struct msm_ois_ctrl_t *o_ctrl, const char* fw_name)
 	//Err check
 	rc = msm_camera_cci_i2c_read(&o_ctrl->i2c_client, 0x0006, &RcvDataShort,2); //OISSTS
 	if (rc < 0) {
-		pr_err_ratelimited("Failed\n");
+		pr_err("Failed\n");
 		goto release_firmware;
 
 	}
@@ -478,7 +478,7 @@ int32_t msm_ois_fw_update(struct msm_ois_ctrl_t *o_ctrl, const char* fw_name)
 		SendData [3] = 0x80; /* Self Reset Request */
 		rc = msm_camera_cci_i2c_write_seq(&o_ctrl->i2c_client, 0x0008, SendData, 4);
 		if (rc < 0) {
-			pr_err_ratelimited("Failed\n");
+			pr_err("Failed\n");
 			goto release_firmware;
 		}
 
@@ -486,7 +486,7 @@ int32_t msm_ois_fw_update(struct msm_ois_ctrl_t *o_ctrl, const char* fw_name)
 
 		rc = msm_camera_cci_i2c_read(&o_ctrl->i2c_client, 0x0006, &RcvDataShort,2);
 		if (rc < 0) {
-			pr_err_ratelimited("Failed\n");
+			pr_err("Failed\n");
 			goto release_firmware;
 		}
 
@@ -494,10 +494,10 @@ int32_t msm_ois_fw_update(struct msm_ois_ctrl_t *o_ctrl, const char* fw_name)
 			msm_camera_cci_i2c_read_seq(&o_ctrl->i2c_client, 0x00FC, i2c_buf,4);
 			CDBG("NEW FW VERSION %x %x %x %x\n", i2c_buf[0],i2c_buf[1],i2c_buf[2],i2c_buf[3]);
 		}else{
-			pr_err_ratelimited("FW update failed 1 \n");
+			pr_err("FW update failed 1 \n");
 		}
 	}	else {
-			pr_err_ratelimited("FW update failed 2 \n");
+			pr_err("FW update failed 2 \n");
 	}
 	CDBG("Exit!!! \n");
 
@@ -515,11 +515,11 @@ int32_t renesas_set_ois_mode(struct msm_ois_ctrl_t *o_ctrl,
 	int rc = OIS_SUCCESS;
 
 	if (copy_from_user(&mode, (void *)set_info->setting, sizeof(uint8_t))) {
-		pr_err_ratelimited("%s:%d failed\n", __func__, __LINE__);
+		pr_err("%s:%d failed\n", __func__, __LINE__);
 		rc = -EFAULT;
 		return rc;
 	}
-	pr_err_ratelimited("%s:Enter input mode : %d, current mode : %d \n", __func__, mode, cur_mode);
+	pr_err("%s:Enter input mode : %d, current mode : %d \n", __func__, mode, cur_mode);
 
 	set_init_i2c_state(o_ctrl);
 
@@ -530,26 +530,26 @@ int32_t renesas_set_ois_mode(struct msm_ois_ctrl_t *o_ctrl,
 	case OIS_MODE_PREVIEW_CAPTURE:
 	case OIS_MODE_VIDEO:
 	case OIS_MODE_CAPTURE:
-		pr_err_ratelimited("%s:input mode : %d, current mode : %d \n", __func__, mode, cur_mode);
+		pr_err("%s:input mode : %d, current mode : %d \n", __func__, mode, cur_mode);
 		rc = msm_camera_cci_i2c_write(&o_ctrl->i2c_client, 0x0002, 0x00, 1);
 
 		break;
 	case OIS_MODE_CENTERING_ONLY:
-		pr_err_ratelimited("%s:%d, %d centering_only\n", __func__, mode, cur_mode);
+		pr_err("%s:%d, %d centering_only\n", __func__, mode, cur_mode);
 		rc = msm_camera_cci_i2c_write(&o_ctrl->i2c_client, 0x0002, 0x05, 1);
 
 		break;
 	case OIS_MODE_CENTERING_OFF:
-		pr_err_ratelimited("%s:%d, %d centering_off\n", __func__, mode, cur_mode);
+		pr_err("%s:%d, %d centering_off\n", __func__, mode, cur_mode);
 		rc = msm_camera_cci_i2c_write(&o_ctrl->i2c_client, 0x0002, 0x00, 1);
 		
 		break;
 	default:
-		pr_err_ratelimited("%s:%d, %d default!!\n", __func__, mode, cur_mode);
+		pr_err("%s:%d, %d default!!\n", __func__, mode, cur_mode);
 	}
 
 	ois_func_tbl.ois_cur_mode = mode;
-	pr_err_ratelimited("%s:%d rc %d End\n", __func__, __LINE__,rc);
+	pr_err("%s:%d rc %d End\n", __func__, __LINE__,rc);
 
 	return rc;
 }
@@ -558,10 +558,10 @@ int32_t	renesas_ois_off(struct msm_ois_ctrl_t *o_ctrl,
 					  struct msm_ois_set_info_t *set_info)
 {
 	int rc = OIS_SUCCESS;
-	pr_err_ratelimited("%s:%d Enter\n", __func__, __LINE__);
+	pr_err("%s:%d Enter\n", __func__, __LINE__);
 
 	rc = msm_camera_cci_i2c_write(&o_ctrl->i2c_client, 0x0000, 0x00, 1);
-	pr_err_ratelimited("%s:%d End  rc %d \n", __func__, __LINE__,rc);
+	pr_err("%s:%d End  rc %d \n", __func__, __LINE__,rc);
 
 	return rc;
 }
@@ -570,9 +570,9 @@ int32_t	renesas_ois_on(struct msm_ois_ctrl_t *o_ctrl,
 					 struct msm_ois_set_info_t *set_info)
 {
 	int32_t rc = OIS_SUCCESS;
-	pr_err_ratelimited("%s:%d Enter\n", __func__, __LINE__);
+	pr_err("%s:%d Enter\n", __func__, __LINE__);
 
-	pr_err_ratelimited("%s:%d End\n", __func__, __LINE__);
+	pr_err("%s:%d End\n", __func__, __LINE__);
 	return rc;
 }
 
@@ -581,10 +581,10 @@ int32_t renesas_ois_pwm_mode(struct msm_ois_ctrl_t *o_ctrl,
 {
 	uint8_t res_mode = 0;
 	if (copy_from_user(&res_mode, (void *)set_info->setting, sizeof(uint8_t))) {
-	        pr_err_ratelimited("%s:%d failed to get mode\n", __func__, __LINE__);
+	        pr_err("%s:%d failed to get mode\n", __func__, __LINE__);
 	        return OIS_FAIL;
 	}
-	pr_err_ratelimited("%s:%d Enter res mode %d, pwm_prev_mode %d\n", __func__, __LINE__,res_mode, pwm_prev_mode);
+	pr_err("%s:%d Enter res mode %d, pwm_prev_mode %d\n", __func__, __LINE__,res_mode, pwm_prev_mode);
 	if (pwm_prev_mode == res_mode ||
 		(res_mode > 7 || res_mode < 0)) {
 		return OIS_SUCCESS;
@@ -606,7 +606,7 @@ int32_t renesas_ois_pwm_mode(struct msm_ois_ctrl_t *o_ctrl,
 
 	pwm_prev_mode = res_mode;
 
-	pr_err_ratelimited("%s:%d End\n", __func__, __LINE__);
+	pr_err("%s:%d End\n", __func__, __LINE__);
 	return OIS_SUCCESS;
 }
 
@@ -614,12 +614,12 @@ int32_t renesas_init_set_ois(struct msm_ois_ctrl_t *o_ctrl,
 						   struct msm_ois_set_info_t *set_info)
 {
 	int32_t rc = OIS_SUCCESS;
-	pr_err_ratelimited("%s:%d Enter\n", __func__, __LINE__);
+	pr_err("%s:%d Enter\n", __func__, __LINE__);
 	pwm_prev_mode = -1;
 
 	set_init_i2c_state(o_ctrl);
 	
-	pr_err_ratelimited("%s:%d End\n", __func__, __LINE__);
+	pr_err("%s:%d End\n", __func__, __LINE__);
 	return rc;
 }
 
@@ -637,6 +637,6 @@ void msm_renesas_ois_init(struct msm_ois_ctrl_t *o_ctrl){
 	o_ctrl->sid_ois = OIS_SID;
 	o_ctrl->func_tbl = &ois_func_tbl;
 
-	pr_err_ratelimited("%s",__func__);
+	pr_err("%s",__func__);
 	return;
 }

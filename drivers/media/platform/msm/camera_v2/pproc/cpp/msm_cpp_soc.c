@@ -36,7 +36,7 @@ void msm_cpp_fetch_dt_params(struct cpp_device *cpp_dev)
 	struct device_node *of_node = cpp_dev->pdev->dev.of_node;
 
 	if (!of_node) {
-		pr_err_ratelimited("%s: invalid params\n", __func__);
+		pr_err("%s: invalid params\n", __func__);
 		return;
 	}
 
@@ -93,7 +93,7 @@ static int cpp_get_clk_freq_tbl_dt(struct cpp_device *cpp_dev)
 	struct cpp_hw_info *hw_info;
 
 	if (cpp_dev == NULL) {
-		pr_err_ratelimited("Bad parameter\n");
+		pr_err("Bad parameter\n");
 		rc = -EINVAL;
 		goto err;
 	}
@@ -103,14 +103,14 @@ static int cpp_get_clk_freq_tbl_dt(struct cpp_device *cpp_dev)
 	hw_info = &cpp_dev->hw_info;
 
 	if ((hw_info == NULL) || (of_node == NULL)) {
-		pr_err_ratelimited("Invalid hw_info %pK or ofnode %pK\n", hw_info, of_node);
+		pr_err("Invalid hw_info %pK or ofnode %pK\n", hw_info, of_node);
 		rc = -EINVAL;
 		goto err;
 
 	}
 	count = of_property_count_u32_elems(of_node, "qcom,src-clock-rates");
 	if ((count == 0) || (count > MAX_FREQ_TBL)) {
-		pr_err_ratelimited("Clock count is invalid\n");
+		pr_err("Clock count is invalid\n");
 		rc = -EINVAL;
 		goto err;
 	}
@@ -157,7 +157,7 @@ int msm_cpp_set_micro_clk(struct cpp_device *cpp_dev)
 
 	rc = reset_control_assert(cpp_dev->micro_iface_reset);
 	if (rc) {
-		pr_err_ratelimited("%s:micro_iface_reset assert failed\n",
+		pr_err("%s:micro_iface_reset assert failed\n",
 		__func__);
 		return -EINVAL;
 	}
@@ -172,7 +172,7 @@ int msm_cpp_set_micro_clk(struct cpp_device *cpp_dev)
 
 	rc = reset_control_deassert(cpp_dev->micro_iface_reset);
 	if (rc) {
-		pr_err_ratelimited("%s:micro_iface_reset de-assert failed\n", __func__);
+		pr_err("%s:micro_iface_reset de-assert failed\n", __func__);
 		return -EINVAL;
 	}
 
@@ -193,13 +193,13 @@ int msm_update_freq_tbl(struct cpp_device *cpp_dev)
 
 	msm_cpp_core_clk_idx = msm_cpp_get_clock_index(cpp_dev, "cpp_core_clk");
 	if (msm_cpp_core_clk_idx < 0)  {
-		pr_err_ratelimited("%s: fail to get clock index\n", __func__);
+		pr_err("%s: fail to get clock index\n", __func__);
 		rc = msm_cpp_core_clk_idx;
 		return rc;
 	}
 	rc = cpp_get_clk_freq_tbl_dt(cpp_dev);
 	if (rc < 0)  {
-		pr_err_ratelimited("%s: fail to get frequency table\n", __func__);
+		pr_err("%s: fail to get frequency table\n", __func__);
 		return rc;
 	}
 
@@ -213,7 +213,7 @@ long msm_cpp_set_core_clk(struct cpp_device *cpp_dev, long rate, int idx)
 	rc = msm_camera_clk_set_rate(&cpp_dev->pdev->dev,
 		cpp_dev->cpp_clk[idx], rate);
 	if (rc < 0) {
-		pr_err_ratelimited("%s: fail to get frequency table\n", __func__);
+		pr_err("%s: fail to get frequency table\n", __func__);
 		return rc;
 	}
 
@@ -229,7 +229,7 @@ int msm_cpp_read_payload_params_from_dt(struct cpp_device *cpp_dev)
 	int ret = 0;
 
 	if (!pdev || !pdev->dev.of_node) {
-		pr_err_ratelimited("%s: Invalid platform device/node\n", __func__);
+		pr_err("%s: Invalid platform device/node\n", __func__);
 		ret = -ENODEV;
 		goto no_cpp_node;
 	}
@@ -281,7 +281,7 @@ int msm_cpp_read_payload_params_from_dt(struct cpp_device *cpp_dev)
 
 no_binding:
 	if (ret)
-		pr_err_ratelimited("%s: Error reading binding %s, ret %d\n",
+		pr_err("%s: Error reading binding %s, ret %d\n",
 			__func__, key, ret);
 no_cpp_node:
 	return ret;

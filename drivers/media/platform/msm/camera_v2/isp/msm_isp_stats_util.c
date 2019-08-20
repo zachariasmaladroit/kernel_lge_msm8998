@@ -56,7 +56,7 @@ static int msm_isp_composite_stats_irq(struct vfe_device *vfe_dev,
 {
 	/* interrupt recv on same vfe w/o recv on other vfe */
 	if (stream_info->composite_irq[irq] & (1 << vfe_dev->pdev->id)) {
-		pr_err_ratelimited("%s: irq %d out of sync for dual vfe on vfe %d\n",
+		pr_err("%s: irq %d out of sync for dual vfe on vfe %d\n",
 			__func__, irq, vfe_dev->pdev->id);
 		return -EFAULT;
 	}
@@ -84,7 +84,7 @@ static int msm_isp_stats_cfg_ping_pong_address(
 
 	if (stats_idx >= vfe_dev->hw_info->stats_hw_info->num_stats_type ||
 		stats_idx >= MSM_ISP_STATS_MAX) {
-		pr_err_ratelimited("%s Invalid stats index %d", __func__, stats_idx);
+		pr_err("%s Invalid stats index %d", __func__, stats_idx);
 		return -EINVAL;
 	}
 	stats_pingpong_offset = vfe_dev->hw_info->stats_hw_info->
@@ -108,7 +108,7 @@ static int msm_isp_stats_cfg_ping_pong_address(
 	}
 
 	if (buf && buf->num_planes != 1) {
-		pr_err_ratelimited("%s: Invalid buffer\n", __func__);
+		pr_err("%s: Invalid buffer\n", __func__);
 		msm_isp_halt_send_error(vfe_dev, ISP_EVENT_BUF_FATAL_ERROR);
 		rc = -EINVAL;
 		goto buf_error;
@@ -155,7 +155,7 @@ static int32_t msm_isp_stats_buf_divert(struct vfe_device *vfe_dev,
 	unsigned long flags;
 
 	if (!vfe_dev || !ts || !buf_event || !stream_info) {
-		pr_err_ratelimited("%s:%d failed: invalid params %pK %pK %pK %pK\n",
+		pr_err("%s:%d failed: invalid params %pK %pK %pK %pK\n",
 			__func__, __LINE__, vfe_dev, ts, buf_event,
 			stream_info);
 		return -EINVAL;
@@ -287,7 +287,7 @@ static int32_t msm_isp_stats_configure(struct vfe_device *vfe_dev,
 				is_composite ? &comp_stats_type_mask : NULL,
 				pingpong_status);
 		if (rc < 0) {
-			pr_err_ratelimited("%s:%d failed: stats buf divert rc %d\n",
+			pr_err("%s:%d failed: stats buf divert rc %d\n",
 				__func__, __LINE__, rc);
 			result = rc;
 		}
@@ -367,27 +367,27 @@ int msm_isp_stats_create_stream(struct vfe_device *vfe_dev,
 
 	if (!(vfe_dev->hw_info->stats_hw_info->stats_capability_mask &
 		(1 << stream_req_cmd->stats_type))) {
-		pr_err_ratelimited("%s: Stats type not supported\n", __func__);
+		pr_err("%s: Stats type not supported\n", __func__);
 		return rc;
 	}
 
 	if (stream_info->state != STATS_AVAILABLE) {
-		pr_err_ratelimited("%s: Stats already requested\n", __func__);
+		pr_err("%s: Stats already requested\n", __func__);
 		return rc;
 	}
 
 	if (stream_req_cmd->framedrop_pattern >= MAX_SKIP) {
-		pr_err_ratelimited("%s: Invalid framedrop pattern\n", __func__);
+		pr_err("%s: Invalid framedrop pattern\n", __func__);
 		return rc;
 	}
 
 	if (stream_req_cmd->irq_subsample_pattern >= MAX_SKIP) {
-		pr_err_ratelimited("%s: Invalid irq subsample pattern\n", __func__);
+		pr_err("%s: Invalid irq subsample pattern\n", __func__);
 		return rc;
 	}
 	 if (stream_req_cmd->composite_flag >
 		vfe_dev->hw_info->stats_hw_info->num_stats_comp_mask) {
-		pr_err_ratelimited("%s: comp grp %d exceed max %d\n",
+		pr_err("%s: comp grp %d exceed max %d\n",
 			__func__, stream_req_cmd->composite_flag,
 			vfe_dev->hw_info->stats_hw_info->num_stats_comp_mask);
 		return -EINVAL;
@@ -413,7 +413,7 @@ int msm_isp_stats_create_stream(struct vfe_device *vfe_dev,
 		stream_info->framedrop_period = framedrop_period;
 	} else {
 		if (stream_info->vfe_mask & (1 << vfe_dev->pdev->id)) {
-			pr_err_ratelimited("%s: stats %d already requested for vfe %d\n",
+			pr_err("%s: stats %d already requested for vfe %d\n",
 				__func__, stats_idx, vfe_dev->pdev->id);
 			return -EINVAL;
 		}
@@ -438,7 +438,7 @@ int msm_isp_stats_create_stream(struct vfe_device *vfe_dev,
 		if (stream_info->framedrop_period != framedrop_period)
 			rc = -EINVAL;
 		if (rc) {
-			pr_err_ratelimited("%s: Stats stream param mismatch between vfe\n",
+			pr_err("%s: Stats stream param mismatch between vfe\n",
 				__func__);
 			return rc;
 		}
@@ -476,7 +476,7 @@ int msm_isp_request_stats_stream(struct vfe_device *vfe_dev, void *arg)
 		get_stats_idx(stream_req_cmd->stats_type);
 
 	if (stats_idx >= vfe_dev->hw_info->stats_hw_info->num_stats_type) {
-		pr_err_ratelimited("%s Invalid stats index %d", __func__, stats_idx);
+		pr_err("%s Invalid stats index %d", __func__, stats_idx);
 		return -EINVAL;
 	}
 
@@ -484,7 +484,7 @@ int msm_isp_request_stats_stream(struct vfe_device *vfe_dev, void *arg)
 
 	rc = msm_isp_stats_create_stream(vfe_dev, stream_req_cmd, stream_info);
 	if (rc < 0) {
-		pr_err_ratelimited("%s: create stream failed\n", __func__);
+		pr_err("%s: create stream failed\n", __func__);
 		return rc;
 	}
 
@@ -513,7 +513,7 @@ int msm_isp_release_stats_stream(struct vfe_device *vfe_dev, void *arg)
 	int k;
 
 	if (stats_idx >= vfe_dev->hw_info->stats_hw_info->num_stats_type) {
-		pr_err_ratelimited("%s Invalid stats index %d", __func__, stats_idx);
+		pr_err("%s Invalid stats index %d", __func__, stats_idx);
 		return -EINVAL;
 	}
 
@@ -522,14 +522,14 @@ int msm_isp_release_stats_stream(struct vfe_device *vfe_dev, void *arg)
 					vfe_dev, stream_info);
 	if (vfe_idx == -ENOTTY || stream_info->stream_handle[vfe_idx] !=
 			stream_release_cmd->stream_handle) {
-		pr_err_ratelimited("%s: Invalid stream handle %x, expected %x\n",
+		pr_err("%s: Invalid stream handle %x, expected %x\n",
 			__func__, stream_release_cmd->stream_handle,
 			vfe_idx != -ENOTTY ?
 			stream_info->stream_handle[vfe_idx] : 0);
 		return -EINVAL;
 	}
 	if (stream_info->state == STATS_AVAILABLE) {
-		pr_err_ratelimited("%s: stream already release\n", __func__);
+		pr_err("%s: stream already release\n", __func__);
 		return rc;
 	}
 	vfe_dev->hw_info->vfe_ops.stats_ops.clear_wm_reg(vfe_dev, stream_info);
@@ -637,7 +637,7 @@ static int msm_isp_init_stats_ping_pong_reg(
 		stream_info->vfe_dev[0]->buf_mgr, stream_info->session_id,
 		stream_info->stream_id);
 	if (stream_info->bufq_handle == 0) {
-		pr_err_ratelimited("%s: no buf configured for stream: 0x%x\n",
+		pr_err("%s: no buf configured for stream: 0x%x\n",
 			__func__, stream_info->stream_handle[0]);
 		return -EINVAL;
 	}
@@ -645,13 +645,13 @@ static int msm_isp_init_stats_ping_pong_reg(
 	rc = msm_isp_stats_cfg_ping_pong_address(
 		stream_info, VFE_PING_FLAG);
 	if (rc < 0) {
-		pr_err_ratelimited("%s: No free buffer for ping\n", __func__);
+		pr_err("%s: No free buffer for ping\n", __func__);
 		return rc;
 	}
 	rc = msm_isp_stats_cfg_ping_pong_address(
 		stream_info, VFE_PONG_FLAG);
 	if (rc < 0) {
-		pr_err_ratelimited("%s: No free buffer for pong\n", __func__);
+		pr_err("%s: No free buffer for pong\n", __func__);
 		return rc;
 	}
 	return rc;
@@ -803,7 +803,7 @@ static int msm_isp_stats_wait_for_stream_cfg_done(
 		msecs_to_jiffies(VFE_MAX_CFG_TIMEOUT));
 	if (rc <= 0) {
 		rc = rc ? rc : -ETIMEDOUT;
-		pr_err_ratelimited("%s: wait for stats stream %x idx %d state %d active %d config failed %d\n",
+		pr_err("%s: wait for stats stream %x idx %d state %d active %d config failed %d\n",
 			__func__, stream_info->stream_id,
 			STATS_IDX(stream_info->stream_handle[0]),
 			stream_info->state, active, rc);
@@ -839,7 +839,7 @@ static int msm_isp_stats_update_cgc_override(struct vfe_device *vfe_dev,
 	int k;
 
 	if (stream_cfg_cmd->num_streams > MSM_ISP_STATS_MAX) {
-		pr_err_ratelimited("%s invalid num_streams %d\n", __func__,
+		pr_err("%s invalid num_streams %d\n", __func__,
 			stream_cfg_cmd->num_streams);
 		return -EINVAL;
 	}
@@ -848,7 +848,7 @@ static int msm_isp_stats_update_cgc_override(struct vfe_device *vfe_dev,
 		idx = STATS_IDX(stream_cfg_cmd->stream_handle[i]);
 
 		if (idx >= vfe_dev->hw_info->stats_hw_info->num_stats_type) {
-			pr_err_ratelimited("%s Invalid stats index %d", __func__, idx);
+			pr_err("%s Invalid stats index %d", __func__, idx);
 			return -EINVAL;
 		}
 		stream_info =  msm_isp_get_stats_stream_common_data(vfe_dev,
@@ -974,7 +974,7 @@ static int msm_isp_check_stream_cfg_cmd(struct vfe_device *vfe_dev,
 	uint32_t stats_idx[MSM_ISP_STATS_MAX];
 
 	if (stream_cfg_cmd->num_streams > MSM_ISP_STATS_MAX) {
-		pr_err_ratelimited("%s invalid num_streams %d\n", __func__,
+		pr_err("%s invalid num_streams %d\n", __func__,
 			stream_cfg_cmd->num_streams);
 		return -EINVAL;
 	}
@@ -983,7 +983,7 @@ static int msm_isp_check_stream_cfg_cmd(struct vfe_device *vfe_dev,
 		idx = STATS_IDX(stream_cfg_cmd->stream_handle[i]);
 
 		if (idx >= vfe_dev->hw_info->stats_hw_info->num_stats_type) {
-			pr_err_ratelimited("%s Invalid stats index %d", __func__, idx);
+			pr_err("%s Invalid stats index %d", __func__, idx);
 			return -EINVAL;
 		}
 		stream_info = msm_isp_get_stats_stream_common_data(
@@ -992,7 +992,7 @@ static int msm_isp_check_stream_cfg_cmd(struct vfe_device *vfe_dev,
 							stream_info);
 		if (vfe_idx == -ENOTTY || stream_info->stream_handle[vfe_idx] !=
 			stream_cfg_cmd->stream_handle[i]) {
-			pr_err_ratelimited("%s: Invalid stream handle: 0x%x received expected %x\n",
+			pr_err("%s: Invalid stream handle: 0x%x received expected %x\n",
 				__func__, stream_cfg_cmd->stream_handle[i],
 				vfe_idx == -ENOTTY ? 0 :
 				stream_info->stream_handle[vfe_idx]);
@@ -1128,7 +1128,7 @@ static int msm_isp_start_stats_stream(struct vfe_device *vfe_dev_ioctl,
 							stream_info);
 		if (rc < 0) {
 			spin_unlock_irqrestore(&stream_info->lock, flags);
-			pr_err_ratelimited("%s: No buffer for stream%d\n", __func__, idx);
+			pr_err("%s: No buffer for stream%d\n", __func__, idx);
 			mutex_unlock(&vfe_dev_ioctl->buf_mgr->lock);
 			return rc;
 		}
@@ -1255,7 +1255,7 @@ int msm_isp_update_stats_stream(struct vfe_device *vfe_dev, void *arg)
 	int k;
 
 	if (update_cmd->num_streams > MSM_ISP_STATS_MAX) {
-		pr_err_ratelimited("%s: Invalid num_streams %d\n",
+		pr_err("%s: Invalid num_streams %d\n",
 			__func__, update_cmd->num_streams);
 		return -EINVAL;
 	}
@@ -1267,7 +1267,7 @@ int msm_isp_update_stats_stream(struct vfe_device *vfe_dev, void *arg)
 		/*check array reference bounds*/
 		if (STATS_IDX(update_info->stream_handle)
 			>= vfe_dev->hw_info->stats_hw_info->num_stats_type) {
-			pr_err_ratelimited("%s: stats idx %d out of bound!", __func__,
+			pr_err("%s: stats idx %d out of bound!", __func__,
 			STATS_IDX(update_info->stream_handle));
 			return -EINVAL;
 		}
@@ -1282,7 +1282,7 @@ int msm_isp_update_stats_stream(struct vfe_device *vfe_dev, void *arg)
 						stream_info);
 		if (vfe_idx == -ENOTTY || stream_info->stream_handle[vfe_idx] !=
 			update_info->stream_handle) {
-			pr_err_ratelimited("%s: stats stream handle %x %x mismatch!\n",
+			pr_err("%s: stats stream handle %x %x mismatch!\n",
 				__func__, vfe_idx != -ENOTTY ?
 				stream_info->stream_handle[vfe_idx] : 0,
 				update_info->stream_handle);
@@ -1328,7 +1328,7 @@ int msm_isp_update_stats_stream(struct vfe_device *vfe_dev, void *arg)
 		}
 
 		default:
-			pr_err_ratelimited("%s: Invalid update type\n", __func__);
+			pr_err("%s: Invalid update type\n", __func__);
 			return -EINVAL;
 		}
 	}
@@ -1341,7 +1341,7 @@ void msm_isp_stats_disable(struct vfe_device *vfe_dev)
 	unsigned int mask = 0;
 
 	if (!vfe_dev) {
-		pr_err_ratelimited("%s:  error NULL ptr\n", __func__);
+		pr_err("%s:  error NULL ptr\n", __func__);
 		return;
 	}
 
