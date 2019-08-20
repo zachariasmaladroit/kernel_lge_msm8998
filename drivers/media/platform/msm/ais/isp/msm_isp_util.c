@@ -48,12 +48,12 @@ void msm_isp_print_fourcc_error(const char *origin, uint32_t fourcc_format)
 	for (i = 0; i < 4; i++) {
 		text[i] = (char)(((fourcc_format) >> (i * 8)) & 0xFF);
 		if ((text[i] < '0') || (text[i] > 'z')) {
-			pr_err_ratelimited("%s: Invalid output format %d (unprintable)\n",
+			pr_err("%s: Invalid output format %d (unprintable)\n",
 				origin, fourcc_format);
 			return;
 		}
 	}
-	pr_err_ratelimited("%s: Invalid output format %s\n",
+	pr_err("%s: Invalid output format %s\n",
 		origin, text);
 }
 
@@ -96,7 +96,7 @@ int msm_isp_update_bandwidth(enum msm_isp_hw_client client,
 	mutex_lock(&bandwidth_mgr_mutex);
 	if (!isp_bandwidth_mgr.use_count ||
 		!isp_bandwidth_mgr.bus_client) {
-		pr_err_ratelimited("%s:error bandwidth manager inactive use_cnt:%d bus_clnt:%d\n",
+		pr_err("%s:error bandwidth manager inactive use_cnt:%d bus_clnt:%d\n",
 			__func__, isp_bandwidth_mgr.use_count,
 			isp_bandwidth_mgr.bus_client);
 		mutex_unlock(&bandwidth_mgr_mutex);
@@ -113,7 +113,7 @@ int msm_isp_update_bandwidth(enum msm_isp_hw_client client,
 void msm_isp_deinit_bandwidth_mgr(enum msm_isp_hw_client client)
 {
 	if (client >= MAX_ISP_CLIENT) {
-		pr_err_ratelimited("invalid Client id %d", client);
+		pr_err("invalid Client id %d", client);
 		return;
 	}
 	mutex_lock(&bandwidth_mgr_mutex);
@@ -127,7 +127,7 @@ void msm_isp_deinit_bandwidth_mgr(enum msm_isp_hw_client client)
 		}
 
 		if (!isp_bandwidth_mgr.bus_client) {
-			pr_err_ratelimited("%s:%d error: bus client invalid\n",
+			pr_err("%s:%d error: bus client invalid\n",
 				__func__, __LINE__);
 			mutex_unlock(&bandwidth_mgr_mutex);
 			return;
@@ -274,7 +274,7 @@ static inline int msm_isp_subscribe_event_mask(struct v4l2_fh *fh,
 			else
 				rc = v4l2_event_unsubscribe(fh, sub);
 			if (rc != 0) {
-				pr_err_ratelimited("%s: Subs event_type =0x%x failed\n",
+				pr_err("%s: Subs event_type =0x%x failed\n",
 					__func__, sub->type);
 				return rc;
 			}
@@ -290,7 +290,7 @@ static inline int msm_isp_subscribe_event_mask(struct v4l2_fh *fh,
 			else
 				rc = v4l2_event_unsubscribe(fh, sub);
 			if (rc != 0) {
-				pr_err_ratelimited("%s: Subs event_type =0x%x failed\n",
+				pr_err("%s: Subs event_type =0x%x failed\n",
 					__func__, sub->type);
 				return rc;
 			}
@@ -303,7 +303,7 @@ static inline int msm_isp_subscribe_event_mask(struct v4l2_fh *fh,
 		else
 			rc = v4l2_event_unsubscribe(fh, sub);
 		if (rc != 0) {
-			pr_err_ratelimited("%s: Subs event_type =0x%x failed\n",
+			pr_err("%s: Subs event_type =0x%x failed\n",
 				__func__, sub->type);
 			return rc;
 		}
@@ -319,7 +319,7 @@ static inline int msm_isp_process_event_subscription(struct v4l2_fh *fh,
 	u32 evt_id = 0;
 
 	if (evt_mask == ISP_EVENT_SUBS_MASK_NONE) {
-		pr_err_ratelimited("%s: Subs event_type is None=0x%x\n",
+		pr_err("%s: Subs event_type is None=0x%x\n",
 			__func__, evt_mask);
 		return 0;
 	}
@@ -332,7 +332,7 @@ static inline int msm_isp_process_event_subscription(struct v4l2_fh *fh,
 			rc = msm_isp_subscribe_event_mask(fh, sub,
 				evt_mask_index, evt_id, subscribe_flag);
 			if (rc != 0) {
-				pr_err_ratelimited("%s: Subs event index:%d failed\n",
+				pr_err("%s: Subs event index:%d failed\n",
 					__func__, evt_mask_index);
 				return rc;
 			}
@@ -385,7 +385,7 @@ static int msm_isp_start_fetch_engine_multi_pass(struct vfe_device *vfe_dev,
 		stream_info = &vfe_dev->axi_data.stream_info[
 			HANDLE_TO_IDX(fe_cfg->output_stream_id)];
 		if (!stream_info) {
-			pr_err_ratelimited("%s: Couldn't find streamid 0x%X\n", __func__,
+			pr_err("%s: Couldn't find streamid 0x%X\n", __func__,
 				fe_cfg->output_stream_id);
 			return -EINVAL;
 		}
@@ -397,7 +397,7 @@ static int msm_isp_start_fetch_engine_multi_pass(struct vfe_device *vfe_dev,
 			VFE_PING_FLAG, fe_cfg->output_buf_idx);
 		mutex_unlock(&vfe_dev->buf_mgr->lock);
 		if (rc < 0) {
-			pr_err_ratelimited("%s: Fetch engine config failed\n", __func__);
+			pr_err("%s: Fetch engine config failed\n", __func__);
 			return -EINVAL;
 		}
 		for (i = 0; i < stream_info->num_planes; i++) {
@@ -447,7 +447,7 @@ static int msm_isp_cfg_pix(struct vfe_device *vfe_dev,
 	pr_debug("%s: entry\n", __func__);
 
 	if (vfe_dev->axi_data.src_info[VFE_PIX_0].active) {
-		pr_err_ratelimited("%s: pixel path is active\n", __func__);
+		pr_err("%s: pixel path is active\n", __func__);
 		return -EINVAL;
 	}
 
@@ -501,7 +501,7 @@ static int msm_isp_cfg_rdi(struct vfe_device *vfe_dev,
 	int rc = 0;
 
 	if (vfe_dev->axi_data.src_info[input_cfg->input_src].active) {
-		pr_err_ratelimited("%s: RAW%d path is active\n", __func__,
+		pr_err("%s: RAW%d path is active\n", __func__,
 			   input_cfg->input_src - VFE_RAW_0);
 		return -EINVAL;
 	}
@@ -529,7 +529,7 @@ static int msm_isp_cfg_input(struct vfe_device *vfe_dev, void *arg)
 		rc = msm_isp_cfg_rdi(vfe_dev, input_cfg);
 		break;
 	default:
-		pr_err_ratelimited("%s: Invalid input source\n", __func__);
+		pr_err("%s: Invalid input source\n", __func__);
 		rc = -EINVAL;
 	}
 
@@ -537,7 +537,7 @@ static int msm_isp_cfg_input(struct vfe_device *vfe_dev, void *arg)
 	rc = vfe_dev->hw_info->vfe_ops.platform_ops.set_clk_rate(vfe_dev,
 		&pixel_clock);
 	if (rc < 0) {
-		pr_err_ratelimited("%s: clock set rate failed\n", __func__);
+		pr_err("%s: clock set rate failed\n", __func__);
 		return rc;
 	}
 	return rc;
@@ -570,7 +570,7 @@ static int msm_isp_camif_cfg(struct vfe_device *vfe_dev, void *arg)
 	rc = vfe_dev->hw_info->vfe_ops.platform_ops.set_clk_rate(vfe_dev,
 		&pixel_clock);
 	if (rc < 0) {
-		pr_err_ratelimited("%s: clock set rate failed\n", __func__);
+		pr_err("%s: clock set rate failed\n", __func__);
 		return rc;
 	}
 
@@ -618,7 +618,7 @@ static int msm_isp_set_dual_HW_master_slave_mode(
 	unsigned long flags;
 
 	if (!vfe_dev || !arg) {
-		pr_err_ratelimited("%s: Error! Invalid input vfe_dev %pK arg %pK\n",
+		pr_err("%s: Error! Invalid input vfe_dev %pK arg %pK\n",
 			__func__, vfe_dev, arg);
 		return -EINVAL;
 	}
@@ -672,7 +672,7 @@ static int msm_isp_set_dual_HW_master_slave_mode(
 			flags);
 
 		if (j == MS_NUM_SLAVE_MAX) {
-			pr_err_ratelimited("%s: Error! Cannot find free aux resource\n",
+			pr_err("%s: Error! Cannot find free aux resource\n",
 				__func__);
 			return -EBUSY;
 		}
@@ -680,7 +680,7 @@ static int msm_isp_set_dual_HW_master_slave_mode(
 	ISP_DBG("%s: vfe %d num_src %d\n", __func__, vfe_dev->pdev->id,
 		dual_hw_ms_cmd->num_src);
 	if (dual_hw_ms_cmd->num_src > VFE_SRC_MAX) {
-		pr_err_ratelimited("%s: Error! Invalid num_src %d\n", __func__,
+		pr_err("%s: Error! Invalid num_src %d\n", __func__,
 			dual_hw_ms_cmd->num_src);
 		return -EINVAL;
 	}
@@ -690,7 +690,7 @@ static int msm_isp_set_dual_HW_master_slave_mode(
 	 */
 	for (i = 0; i < dual_hw_ms_cmd->num_src; i++) {
 		if (dual_hw_ms_cmd->input_src[i] >= VFE_SRC_MAX) {
-			pr_err_ratelimited("%s: Error! Invalid SRC param %d\n", __func__,
+			pr_err("%s: Error! Invalid SRC param %d\n", __func__,
 				dual_hw_ms_cmd->input_src[i]);
 			return -EINVAL;
 		}
@@ -716,26 +716,26 @@ static int msm_isp_proc_cmd_list_unlocked(struct vfe_device *vfe_dev, void *arg)
 	struct msm_vfe_cfg_cmd_list cmd, cmd_next;
 
 	if (!vfe_dev || !arg) {
-		pr_err_ratelimited("%s:%d failed: vfe_dev %pK arg %pK", __func__, __LINE__,
+		pr_err("%s:%d failed: vfe_dev %pK arg %pK", __func__, __LINE__,
 			vfe_dev, arg);
 		return -EINVAL;
 	}
 
 	rc = msm_isp_proc_cmd(vfe_dev, &proc_cmd->cfg_cmd);
 	if (rc < 0)
-		pr_err_ratelimited("%s:%d failed: rc %d", __func__, __LINE__, rc);
+		pr_err("%s:%d failed: rc %d", __func__, __LINE__, rc);
 
 	cmd = *proc_cmd;
 
 	while (cmd.next) {
 		if (cmd.next_size != sizeof(struct msm_vfe_cfg_cmd_list)) {
-			pr_err_ratelimited("%s:%d failed: next size %u != expected %zu\n",
+			pr_err("%s:%d failed: next size %u != expected %zu\n",
 				__func__, __LINE__, cmd.next_size,
 				sizeof(struct msm_vfe_cfg_cmd_list));
 			break;
 		}
 		if (++count >= MAX_ISP_REG_LIST) {
-			pr_err_ratelimited("%s:%d Error exceeding the max register count:%u\n",
+			pr_err("%s:%d Error exceeding the max register count:%u\n",
 				__func__, __LINE__, count);
 			rc = -EFAULT;
 			break;
@@ -748,7 +748,7 @@ static int msm_isp_proc_cmd_list_unlocked(struct vfe_device *vfe_dev, void *arg)
 
 		rc = msm_isp_proc_cmd(vfe_dev, &cmd_next.cfg_cmd);
 		if (rc < 0)
-			pr_err_ratelimited("%s:%d failed: rc %d", __func__, __LINE__, rc);
+			pr_err("%s:%d failed: rc %d", __func__, __LINE__, rc);
 
 		cmd = cmd_next;
 	}
@@ -793,26 +793,26 @@ static int msm_isp_proc_cmd_list_compat(struct vfe_device *vfe_dev, void *arg)
 	struct msm_vfe_cfg_cmd2 current_cmd;
 
 	if (!vfe_dev || !arg) {
-		pr_err_ratelimited("%s:%d failed: vfe_dev %pK arg %pK", __func__, __LINE__,
+		pr_err("%s:%d failed: vfe_dev %pK arg %pK", __func__, __LINE__,
 			vfe_dev, arg);
 		return -EINVAL;
 	}
 	msm_isp_compat_to_proc_cmd(&current_cmd, &proc_cmd->cfg_cmd);
 	rc = msm_isp_proc_cmd(vfe_dev, &current_cmd);
 	if (rc < 0)
-		pr_err_ratelimited("%s:%d failed: rc %d", __func__, __LINE__, rc);
+		pr_err("%s:%d failed: rc %d", __func__, __LINE__, rc);
 
 	cmd = *proc_cmd;
 
 	while (compat_ptr(cmd.next) != NULL) {
 		if (cmd.next_size != sizeof(struct msm_vfe_cfg_cmd_list_32)) {
-			pr_err_ratelimited("%s:%d failed: next size %u != expected %zu\n",
+			pr_err("%s:%d failed: next size %u != expected %zu\n",
 				__func__, __LINE__, cmd.next_size,
 				sizeof(struct msm_vfe_cfg_cmd_list));
 			break;
 		}
 		if (++count >= MAX_ISP_REG_LIST) {
-			pr_err_ratelimited("%s:%d Error exceeding the max register count:%u\n",
+			pr_err("%s:%d Error exceeding the max register count:%u\n",
 				__func__, __LINE__, count);
 			rc = -EFAULT;
 			break;
@@ -826,7 +826,7 @@ static int msm_isp_proc_cmd_list_compat(struct vfe_device *vfe_dev, void *arg)
 		msm_isp_compat_to_proc_cmd(&current_cmd, &cmd_next.cfg_cmd);
 		rc = msm_isp_proc_cmd(vfe_dev, &current_cmd);
 		if (rc < 0)
-			pr_err_ratelimited("%s:%d failed: rc %d", __func__, __LINE__, rc);
+			pr_err("%s:%d failed: rc %d", __func__, __LINE__, rc);
 
 		cmd = cmd_next;
 	}
@@ -855,10 +855,10 @@ static long msm_isp_ioctl_unlocked(struct v4l2_subdev *sd,
 	struct vfe_device *vfe_dev = v4l2_get_subdevdata(sd);
 
 	if (!vfe_dev || !vfe_dev->vfe_base) {
-		pr_err_ratelimited("%s:%d failed: invalid params %pK\n",
+		pr_err("%s:%d failed: invalid params %pK\n",
 			__func__, __LINE__, vfe_dev);
 		if (vfe_dev)
-			pr_err_ratelimited("%s:%d failed %pK\n", __func__,
+			pr_err("%s:%d failed %pK\n", __func__,
 				__LINE__, vfe_dev->vfe_base);
 		return -EINVAL;
 	}
@@ -897,7 +897,7 @@ static long msm_isp_ioctl_unlocked(struct v4l2_subdev *sd,
 	}
 	case VIDIOC_MSM_ISP_RELEASE_BUFQ: {
 		if (vfe_dev->buf_mgr == NULL) {
-			pr_err_ratelimited("%s: buf mgr NULL! rc = -1\n", __func__);
+			pr_err("%s: buf mgr NULL! rc = -1\n", __func__);
 			rc = -EINVAL;
 			return rc;
 		}
@@ -1082,10 +1082,10 @@ static long msm_isp_ioctl_compat(struct v4l2_subdev *sd,
 	long rc = 0;
 
 	if (!vfe_dev || !vfe_dev->vfe_base) {
-		pr_err_ratelimited("%s:%d failed: invalid params %pK\n",
+		pr_err("%s:%d failed: invalid params %pK\n",
 			__func__, __LINE__, vfe_dev);
 		if (vfe_dev)
-			pr_err_ratelimited("%s:%d failed %pK\n", __func__,
+			pr_err("%s:%d failed %pK\n", __func__,
 				__LINE__, vfe_dev->vfe_base);
 		return -EINVAL;
 	}
@@ -1132,13 +1132,13 @@ static int msm_isp_send_hw_cmd(struct vfe_device *vfe_dev,
 	uint32_t *cfg_data, uint32_t cmd_len)
 {
 	if (!vfe_dev || !reg_cfg_cmd) {
-		pr_err_ratelimited("%s:%d failed: vfe_dev %pK reg_cfg_cmd %pK\n", __func__,
+		pr_err("%s:%d failed: vfe_dev %pK reg_cfg_cmd %pK\n", __func__,
 			__LINE__, vfe_dev, reg_cfg_cmd);
 		return -EINVAL;
 	}
 	if ((reg_cfg_cmd->cmd_type != VFE_CFG_MASK) &&
 		(!cfg_data || !cmd_len)) {
-		pr_err_ratelimited("%s:%d failed: cmd type %d cfg_data %pK cmd_len %d\n",
+		pr_err("%s:%d failed: cmd type %d cfg_data %pK cmd_len %d\n",
 			__func__, __LINE__, reg_cfg_cmd->cmd_type, cfg_data,
 			cmd_len);
 		return -EINVAL;
@@ -1189,14 +1189,14 @@ static int msm_isp_send_hw_cmd(struct vfe_device *vfe_dev,
 				(reg_cfg_cmd->u.dmi_info.hi_tbl_offset -
 				reg_cfg_cmd->u.dmi_info.lo_tbl_offset !=
 				(sizeof(uint32_t)))) {
-				pr_err_ratelimited("%s:%d hi %d lo %d\n",
+				pr_err("%s:%d hi %d lo %d\n",
 					__func__, __LINE__,
 					reg_cfg_cmd->u.dmi_info.hi_tbl_offset,
 					reg_cfg_cmd->u.dmi_info.hi_tbl_offset);
 				return -EINVAL;
 			}
 			if (reg_cfg_cmd->u.dmi_info.len <= sizeof(uint32_t)) {
-				pr_err_ratelimited("%s:%d len %d\n",
+				pr_err("%s:%d len %d\n",
 					__func__, __LINE__,
 					reg_cfg_cmd->u.dmi_info.len);
 				return -EINVAL;
@@ -1208,7 +1208,7 @@ static int msm_isp_send_hw_cmd(struct vfe_device *vfe_dev,
 				((reg_cfg_cmd->u.dmi_info.hi_tbl_offset +
 				reg_cfg_cmd->u.dmi_info.len -
 				sizeof(uint32_t)) > cmd_len)) {
-				pr_err_ratelimited("%s:%d hi_tbl_offset %d len %d cmd %d\n",
+				pr_err("%s:%d hi_tbl_offset %d len %d cmd %d\n",
 					__func__, __LINE__,
 					reg_cfg_cmd->u.dmi_info.hi_tbl_offset,
 					reg_cfg_cmd->u.dmi_info.len, cmd_len);
@@ -1219,7 +1219,7 @@ static int msm_isp_send_hw_cmd(struct vfe_device *vfe_dev,
 			(UINT_MAX - reg_cfg_cmd->u.dmi_info.len)) ||
 			((reg_cfg_cmd->u.dmi_info.lo_tbl_offset +
 			reg_cfg_cmd->u.dmi_info.len) > cmd_len)) {
-			pr_err_ratelimited("%s:%d lo_tbl_offset %d len %d cmd_len %d\n",
+			pr_err("%s:%d lo_tbl_offset %d len %d cmd_len %d\n",
 				__func__, __LINE__,
 				reg_cfg_cmd->u.dmi_info.lo_tbl_offset,
 				reg_cfg_cmd->u.dmi_info.len, cmd_len);
@@ -1260,7 +1260,7 @@ static int msm_isp_send_hw_cmd(struct vfe_device *vfe_dev,
 			reg_cfg_cmd->u.mask_info.reg_offset +
 			sizeof(temp)) ||
 			(reg_cfg_cmd->u.mask_info.reg_offset & 0x3)) {
-			pr_err_ratelimited("%s: VFE_CFG_MASK: Invalid length\n", __func__);
+			pr_err("%s: VFE_CFG_MASK: Invalid length\n", __func__);
 			return -EINVAL;
 		}
 		grab_lock = vfe_dev->hw_info->vfe_ops.core_ops.
@@ -1360,7 +1360,7 @@ static int msm_isp_send_hw_cmd(struct vfe_device *vfe_dev,
 			vfe_dev->axi_data.src_info[VFE_PIX_0].last_updt_frm_id;
 		if (vfe_dev->axi_data.src_info[VFE_PIX_0].frame_id != *cfg_data
 			|| update_id == *cfg_data) {
-			pr_err_ratelimited("%s hw update lock failed acq %d, cur id %u, last id %u\n",
+			pr_err("%s hw update lock failed acq %d, cur id %u, last id %u\n",
 				__func__,
 				*cfg_data,
 				vfe_dev->axi_data.src_info[VFE_PIX_0].frame_id,
@@ -1372,7 +1372,7 @@ static int msm_isp_send_hw_cmd(struct vfe_device *vfe_dev,
 	case VFE_HW_UPDATE_UNLOCK: {
 		if (vfe_dev->axi_data.src_info[VFE_PIX_0].frame_id
 			!= *cfg_data) {
-			pr_err_ratelimited("hw update across frame boundary,begin id %u, end id %d\n",
+			pr_err("hw update across frame boundary,begin id %u, end id %d\n",
 				*cfg_data,
 				vfe_dev->axi_data.src_info[VFE_PIX_0].frame_id);
 		}
@@ -1402,7 +1402,7 @@ static int msm_isp_send_hw_cmd(struct vfe_device *vfe_dev,
 		unsigned long rate;
 
 		if (cmd_len != sizeof(__u32)) {
-			pr_err_ratelimited("%s:%d failed: invalid cmd len %u exp %zu\n",
+			pr_err("%s:%d failed: invalid cmd len %u exp %zu\n",
 				__func__, __LINE__, cmd_len,
 				sizeof(__u32));
 			return -EINVAL;
@@ -1410,7 +1410,7 @@ static int msm_isp_send_hw_cmd(struct vfe_device *vfe_dev,
 		rc = vfe_dev->hw_info->vfe_ops.platform_ops.get_max_clk_rate(
 							vfe_dev, &rate);
 		if (rc < 0) {
-			pr_err_ratelimited("%s:%d failed: rc %d\n", __func__, __LINE__, rc);
+			pr_err("%s:%d failed: rc %d\n", __func__, __LINE__, rc);
 			return -EINVAL;
 		}
 
@@ -1424,7 +1424,7 @@ static int msm_isp_send_hw_cmd(struct vfe_device *vfe_dev,
 		struct msm_isp_clk_rates *user_data =
 			(struct msm_isp_clk_rates *)cfg_data;
 		if (cmd_len != sizeof(struct msm_isp_clk_rates)) {
-			pr_err_ratelimited("%s:%d failed: invalid cmd len %u exp %zu\n",
+			pr_err("%s:%d failed: invalid cmd len %u exp %zu\n",
 				__func__, __LINE__, cmd_len,
 				sizeof(struct msm_isp_clk_rates));
 			return -EINVAL;
@@ -1432,7 +1432,7 @@ static int msm_isp_send_hw_cmd(struct vfe_device *vfe_dev,
 		rc = vfe_dev->hw_info->vfe_ops.platform_ops.get_clk_rates(
 							vfe_dev, &rates);
 		if (rc < 0) {
-			pr_err_ratelimited("%s:%d failed: rc %d\n", __func__, __LINE__, rc);
+			pr_err("%s:%d failed: rc %d\n", __func__, __LINE__, rc);
 			return -EINVAL;
 		}
 		user_data->svs_rate = rates.svs_rate;
@@ -1444,7 +1444,7 @@ static int msm_isp_send_hw_cmd(struct vfe_device *vfe_dev,
 		uint32_t *isp_id = NULL;
 
 		if (cmd_len < sizeof(uint32_t)) {
-			pr_err_ratelimited("%s:%d failed: invalid cmd len %u exp %zu\n",
+			pr_err("%s:%d failed: invalid cmd len %u exp %zu\n",
 				__func__, __LINE__, cmd_len,
 				sizeof(uint32_t));
 			return -EINVAL;
@@ -1459,7 +1459,7 @@ static int msm_isp_send_hw_cmd(struct vfe_device *vfe_dev,
 	case SET_UB_POLICY: {
 
 		if (cmd_len < sizeof(vfe_dev->vfe_ub_policy)) {
-			pr_err_ratelimited("%s:%d failed: invalid cmd len %u exp %zu\n",
+			pr_err("%s:%d failed: invalid cmd len %u exp %zu\n",
 				__func__, __LINE__, cmd_len,
 				sizeof(vfe_dev->vfe_ub_policy));
 			return -EINVAL;
@@ -1480,7 +1480,7 @@ int msm_isp_proc_cmd(struct vfe_device *vfe_dev, void *arg)
 
 	if (!proc_cmd->num_cfg
 		|| proc_cmd->num_cfg > MAX_ISP_CMD_NUM) {
-		pr_err_ratelimited("%s: num_cfg outside allowed range\n",
+		pr_err("%s: num_cfg outside allowed range\n",
 			__func__);
 		return -EINVAL;
 	}
@@ -1501,7 +1501,7 @@ int msm_isp_proc_cmd(struct vfe_device *vfe_dev, void *arg)
 
 	if (proc_cmd->cmd_len > 0) {
 		if (proc_cmd->cmd_len > MAX_ISP_CMD_LEN) {
-			pr_err_ratelimited("%s: cmd_len exceed max allowed\n", __func__);
+			pr_err("%s: cmd_len exceed max allowed\n", __func__);
 			rc = -EINVAL;
 			goto cfg_data_failed;
 		}
@@ -1810,7 +1810,7 @@ int msm_isp_get_bit_per_pixel(uint32_t output_format)
 		/* TD: Add more image format */
 	default:
 		msm_isp_print_fourcc_error(__func__, output_format);
-		pr_err_ratelimited("%s: Invalid output format %x\n",
+		pr_err("%s: Invalid output format %x\n",
 			__func__, output_format);
 		return -EINVAL;
 	}
@@ -1828,7 +1828,7 @@ static int msm_isp_process_iommu_page_fault(struct vfe_device *vfe_dev)
 {
 	int rc = vfe_dev->buf_mgr->pagefault_debug_disable;
 
-	pr_err_ratelimited("%s:%d] VFE%d Handle Page fault! vfe_dev %pK\n", __func__,
+	pr_err("%s:%d] VFE%d Handle Page fault! vfe_dev %pK\n", __func__,
 		__LINE__,  vfe_dev->pdev->id, vfe_dev);
 
 	msm_isp_halt_send_error(vfe_dev, ISP_EVENT_IOMMU_P_FAULT);
@@ -1902,7 +1902,7 @@ void msm_isp_process_overflow_irq(
 		struct msm_isp_event_data error_event;
 
 		if (vfe_dev->reset_pending == 1) {
-			pr_err_ratelimited("%s:%d failed: overflow %x during reset\n",
+			pr_err("%s:%d failed: overflow %x during reset\n",
 				__func__, __LINE__, overflow_mask);
 			/* Clear overflow bits since reset is pending */
 			*irq_status1 &= ~overflow_mask;
@@ -2015,7 +2015,7 @@ irqreturn_t msm_isp_process_irq(int irq_num, void *data)
 		read_irq_status_and_clear(vfe_dev, &irq_status0, &irq_status1);
 
 	if ((irq_status0 == 0) && (irq_status1 == 0)) {
-		pr_err_ratelimited("%s:VFE%d irq_status0 & 1 are both 0\n",
+		pr_err("%s:VFE%d irq_status0 & 1 are both 0\n",
 			__func__, vfe_dev->pdev->id);
 		return IRQ_HANDLED;
 	}
@@ -2193,7 +2193,7 @@ static void msm_vfe_iommu_fault_handler(struct iommu_domain *domain,
 		vfe_dev->page_fault_addr = iova;
 		if (!vfe_dev->buf_mgr || !vfe_dev->buf_mgr->ops ||
 			!vfe_dev->axi_data.num_active_stream) {
-			pr_err_ratelimited("%s:%d buf_mgr %pK active strms %d\n", __func__,
+			pr_err("%s:%d buf_mgr %pK active strms %d\n", __func__,
 				__LINE__, vfe_dev->buf_mgr,
 				vfe_dev->axi_data.num_active_stream);
 			goto end;
@@ -2205,7 +2205,7 @@ static void msm_vfe_iommu_fault_handler(struct iommu_domain *domain,
 				HALT_ENFORCED);
 			msm_isp_process_iommu_page_fault(vfe_dev);
 		} else {
-			pr_err_ratelimited("%s: no handling, vfe open cnt = %d\n",
+			pr_err("%s: no handling, vfe open cnt = %d\n",
 				__func__, vfe_dev->vfe_open_cnt);
 		}
 		mutex_unlock(&vfe_dev->core_mutex);
@@ -2228,7 +2228,7 @@ int msm_isp_open_node(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 
 	if (vfe_dev->common_data == NULL ||
 		vfe_dev->common_data->dual_vfe_res == NULL) {
-		pr_err_ratelimited("%s: Error in probe. No common_data or dual vfe res\n",
+		pr_err("%s: Error in probe. No common_data or dual vfe res\n",
 			__func__);
 		return -EINVAL;
 	}
@@ -2252,7 +2252,7 @@ int msm_isp_open_node(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 	vfe_dev->isp_raw2_debug = 0;
 
 	if (vfe_dev->hw_info->vfe_ops.core_ops.init_hw(vfe_dev) < 0) {
-		pr_err_ratelimited("%s: init hardware failed\n", __func__);
+		pr_err("%s: init hardware failed\n", __func__);
 		vfe_dev->vfe_open_cnt--;
 		mutex_unlock(&vfe_dev->core_mutex);
 		mutex_unlock(&vfe_dev->realtime_mutex);
@@ -2268,7 +2268,7 @@ int msm_isp_open_node(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 	ISP_DBG("%s: HW Version: 0x%x\n", __func__, vfe_dev->vfe_hw_version);
 	rc = vfe_dev->hw_info->vfe_ops.core_ops.reset_hw(vfe_dev, 1, 1);
 	if (rc <= 0) {
-		pr_err_ratelimited("%s: reset timeout\n", __func__);
+		pr_err("%s: reset timeout\n", __func__);
 		vfe_dev->hw_info->vfe_ops.core_ops.release_hw(vfe_dev);
 		vfe_dev->vfe_open_cnt--;
 		mutex_unlock(&vfe_dev->core_mutex);
@@ -2304,7 +2304,7 @@ int msm_isp_open_node(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 	else
 		id = CAM_AHB_CLIENT_VFE1;
 	if (cam_config_ahb_clk(NULL, 0, id, CAM_AHB_SUSPEND_VOTE) < 0)
-		pr_err_ratelimited("%s: failed to remove vote for AHB\n", __func__);
+		pr_err("%s: failed to remove vote for AHB\n", __func__);
 	vfe_dev->hw_info->vfe_ops.platform_ops.enable_clks(vfe_dev, 0);
 	vfe_dev->hw_info->vfe_ops.platform_ops.enable_regulators(vfe_dev, 0);
 
@@ -2321,7 +2321,7 @@ static void msm_isp_end_avtimer(void)
 #else
 static void msm_isp_end_avtimer(void)
 {
-	pr_err_ratelimited("AV Timer is not supported\n");
+	pr_err("AV Timer is not supported\n");
 }
 #endif
 
@@ -2342,12 +2342,12 @@ int msm_isp_close_node(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 	else
 		id = CAM_AHB_CLIENT_VFE1;
 	if (cam_config_ahb_clk(NULL, 0, id, CAM_AHB_SVS_VOTE) < 0)
-		pr_err_ratelimited("%s: failed to vote for AHB\n", __func__);
+		pr_err("%s: failed to vote for AHB\n", __func__);
 	vfe_dev->hw_info->vfe_ops.platform_ops.enable_clks(vfe_dev, 1);
 	vfe_dev->hw_info->vfe_ops.platform_ops.enable_regulators(vfe_dev, 1);
 
 	if (!vfe_dev->vfe_open_cnt) {
-		pr_err_ratelimited("%s invalid state open cnt %d\n", __func__,
+		pr_err("%s invalid state open cnt %d\n", __func__,
 			vfe_dev->vfe_open_cnt);
 		mutex_unlock(&vfe_dev->core_mutex);
 		mutex_unlock(&vfe_dev->realtime_mutex);
@@ -2367,7 +2367,7 @@ int msm_isp_close_node(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 
 	rc = vfe_dev->hw_info->vfe_ops.axi_ops.halt(vfe_dev, 1);
 	if (rc <= 0)
-		pr_err_ratelimited("%s: halt timeout rc=%ld\n", __func__, rc);
+		pr_err("%s: halt timeout rc=%ld\n", __func__, rc);
 
 	vfe_dev->hw_info->vfe_ops.core_ops.
 		update_camif_state(vfe_dev, DISABLE_CAMIF_IMMEDIATELY);
@@ -2450,7 +2450,7 @@ static void msm_isp_dump_irq_debug(void)
 		count = dump_data.first;
 	}
 	for (i = 0; i < count; i++) {
-		pr_err_ratelimited("%s: trace_msm_cam_ping_pong_debug_dump need re-impl\n",
+		pr_err("%s: trace_msm_cam_ping_pong_debug_dump need re-impl\n",
 			__func__);
 		index = (index + 1) % MAX_ISP_PING_PONG_DUMP_SIZE;
 	}
@@ -2468,7 +2468,7 @@ void msm_isp_dump_taskelet_debug(void)
 		count = tasklet_data.first;
 	}
 	for (i = 0; i < count; i++) {
-		pr_err_ratelimited("%s: trace_msm_cam_tasklet_debug_dump need implement\n",
+		pr_err("%s: trace_msm_cam_tasklet_debug_dump need implement\n",
 			__func__);
 		index = (index + 1) % MAX_ISP_PING_PONG_DUMP_SIZE;
 	}

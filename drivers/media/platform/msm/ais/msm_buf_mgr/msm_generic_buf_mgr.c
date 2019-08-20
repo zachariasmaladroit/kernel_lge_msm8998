@@ -34,7 +34,7 @@ static int32_t msm_buf_mngr_hdl_cont_get_buf(struct msm_buf_mngr_device *dev,
 			buf_info->user_buf.buf_cnt = cbuf->paddr->buf_cnt;
 			if (buf_info->user_buf.buf_cnt >
 				MSM_CAMERA_MAX_USER_BUFF_CNT) {
-				pr_err_ratelimited("Invalid cnt%d,%d,%d\n",
+				pr_err("Invalid cnt%d,%d,%d\n",
 					cbuf->paddr->buf_cnt,
 					buf_info->session_id,
 					buf_info->stream_id);
@@ -61,7 +61,7 @@ static int32_t msm_buf_mngr_get_buf(struct msm_buf_mngr_device *dev,
 		kzalloc(sizeof(struct msm_get_bufs), GFP_KERNEL);
 
 	if (!new_entry) {
-		pr_err_ratelimited("%s:No mem\n", __func__);
+		pr_err("%s:No mem\n", __func__);
 		return -ENOMEM;
 	}
 	INIT_LIST_HEAD(&new_entry->entry);
@@ -84,7 +84,7 @@ static int32_t msm_buf_mngr_get_buf(struct msm_buf_mngr_device *dev,
 		if (!list_empty(&dev->cont_qhead)) {
 			rc = msm_buf_mngr_hdl_cont_get_buf(dev, buf_info);
 		} else {
-			pr_err_ratelimited("Nothing mapped in user buf for %d,%d\n",
+			pr_err("Nothing mapped in user buf for %d,%d\n",
 				buf_info->session_id, buf_info->stream_id);
 			rc = -EINVAL;
 		}
@@ -104,7 +104,7 @@ static int32_t msm_buf_mngr_get_buf_by_idx(struct msm_buf_mngr_device *dev,
 		kzalloc(sizeof(struct msm_get_bufs), GFP_KERNEL);
 
 	if (!new_entry) {
-		pr_err_ratelimited("%s:No mem\n", __func__);
+		pr_err("%s:No mem\n", __func__);
 		return -ENOMEM;
 	}
 	if (!buf_info) {
@@ -131,7 +131,7 @@ static int32_t msm_buf_mngr_get_buf_by_idx(struct msm_buf_mngr_device *dev,
 		if (!list_empty(&dev->cont_qhead)) {
 			rc = msm_buf_mngr_hdl_cont_get_buf(dev, buf_info);
 		} else {
-			pr_err_ratelimited("Nothing mapped in user buf for %d,%d\n",
+			pr_err("Nothing mapped in user buf for %d,%d\n",
 				buf_info->session_id, buf_info->stream_id);
 			rc = -EINVAL;
 		}
@@ -216,7 +216,7 @@ static int32_t msm_generic_buf_mngr_flush(
 			ret = buf_mngr_dev->vb2_ops.buf_done(bufs->vb2_v4l2_buf,
 						buf_info->session_id,
 						buf_info->stream_id, 0, &ts, 0);
-			pr_err_ratelimited("Bufs not flushed: str_id = %d buf_index = %d ret = %d\n",
+			pr_err("Bufs not flushed: str_id = %d buf_index = %d ret = %d\n",
 			buf_info->stream_id, bufs->vb2_v4l2_buf->vb2_buf.index,
 			ret);
 			list_del_init(&bufs->entry);
@@ -270,7 +270,7 @@ static void msm_buf_mngr_contq_listdel(struct msm_buf_mngr_device *dev,
 		}
 	}
 	if (cnt != 0)
-		pr_err_ratelimited("Buffers pending cnt = %d\n", cnt);
+		pr_err("Buffers pending cnt = %d\n", cnt);
 }
 
 static void msm_buf_mngr_contq_cleanup(struct msm_buf_mngr_device *dev,
@@ -347,7 +347,7 @@ static int msm_buf_mngr_handle_cont_cmd(struct msm_buf_mngr_device *dev,
 				save, &dev->cont_qhead, entry) {
 				if ((bufs->sessid == cont_cmd->session_id) &&
 				(bufs->strid == cont_cmd->stream_id)) {
-					pr_err_ratelimited("Map exist %d,%d unmap first\n",
+					pr_err("Map exist %d,%d unmap first\n",
 						cont_cmd->session_id,
 						cont_cmd->stream_id);
 					rc = -EINVAL;
@@ -358,27 +358,27 @@ static int msm_buf_mngr_handle_cont_cmd(struct msm_buf_mngr_device *dev,
 		ion_handle = ion_import_dma_buf(dev->ion_client,
 				cont_cmd->cont_fd);
 		if (IS_ERR_OR_NULL(ion_handle)) {
-			pr_err_ratelimited("Failed to create ion handle for fd %d\n",
+			pr_err("Failed to create ion handle for fd %d\n",
 				cont_cmd->cont_fd);
 			rc = -EINVAL;
 			goto end;
 		}
 		if (ion_handle_get_size(dev->ion_client,
 			ion_handle, &size) < 0) {
-			pr_err_ratelimited("Get ion size failed\n");
+			pr_err("Get ion size failed\n");
 			rc = -EINVAL;
 			goto free_ion_handle;
 		}
 		if ((size == 0) || (size <
 			(sizeof(struct msm_camera_user_buf_cont_t) *
 			cont_cmd->cnt))) {
-			pr_err_ratelimited("Invalid or zero size ION buffer %zu\n", size);
+			pr_err("Invalid or zero size ION buffer %zu\n", size);
 			rc = -EINVAL;
 			goto free_ion_handle;
 		}
 		iaddr = ion_map_kernel(dev->ion_client, ion_handle);
 		if (IS_ERR_OR_NULL(iaddr)) {
-			pr_err_ratelimited("Mapping cont buff failed\n");
+			pr_err("Mapping cont buff failed\n");
 			rc = -EINVAL;
 			goto free_ion_handle;
 		}
@@ -386,7 +386,7 @@ static int msm_buf_mngr_handle_cont_cmd(struct msm_buf_mngr_device *dev,
 			temp_addr = iaddr + i;
 			if (temp_addr->buf_cnt >
 				MSM_CAMERA_MAX_USER_BUFF_CNT) {
-				pr_err_ratelimited("%s:Invalid buf_cnt:%d for cont:%d\n",
+				pr_err("%s:Invalid buf_cnt:%d for cont:%d\n",
 					__func__, temp_addr->buf_cnt, i);
 				rc = -EINVAL;
 				goto free_list;
@@ -395,7 +395,7 @@ static int msm_buf_mngr_handle_cont_cmd(struct msm_buf_mngr_device *dev,
 				struct msm_buf_mngr_user_buf_cont_info),
 				GFP_KERNEL);
 			if (!new_entry) {
-				pr_err_ratelimited("%s:No mem\n", __func__);
+				pr_err("%s:No mem\n", __func__);
 				rc = -ENOMEM;
 				goto free_list;
 			}
@@ -415,7 +415,7 @@ static int msm_buf_mngr_handle_cont_cmd(struct msm_buf_mngr_device *dev,
 			msm_buf_mngr_contq_listdel(dev, cont_cmd->session_id,
 				cont_cmd->stream_id, 1, cont_cmd->cnt);
 		} else {
-			pr_err_ratelimited("Nothing mapped for %d,%d\n",
+			pr_err("Nothing mapped for %d,%d\n",
 				cont_cmd->session_id, cont_cmd->stream_id);
 			rc = -EINVAL;
 		}
@@ -444,7 +444,7 @@ static int msm_generic_buf_mngr_open(struct v4l2_subdev *sd,
 	struct msm_buf_mngr_device *buf_mngr_dev = v4l2_get_subdevdata(sd);
 
 	if (!buf_mngr_dev) {
-		pr_err_ratelimited("%s buf manager device NULL\n", __func__);
+		pr_err("%s buf manager device NULL\n", __func__);
 		rc = -ENODEV;
 		return rc;
 	}
@@ -458,7 +458,7 @@ static int msm_generic_buf_mngr_close(struct v4l2_subdev *sd,
 	struct msm_buf_mngr_device *buf_mngr_dev = v4l2_get_subdevdata(sd);
 
 	if (!buf_mngr_dev) {
-		pr_err_ratelimited("%s buf manager device NULL\n", __func__);
+		pr_err("%s buf manager device NULL\n", __func__);
 		rc = -ENODEV;
 		return rc;
 	}
@@ -534,7 +534,7 @@ static long msm_buf_mngr_subdev_ioctl(struct v4l2_subdev *sd,
 	void *argp = arg;
 
 	if (!buf_mngr_dev) {
-		pr_err_ratelimited("%s buf manager device NULL\n", __func__);
+		pr_err("%s buf manager device NULL\n", __func__);
 		rc = -ENOMEM;
 		return rc;
 	}
@@ -664,7 +664,7 @@ static long msm_camera_buf_mgr_internal_compat_ioctl(struct file *file,
 	rc = msm_copy_camera_private_ioctl_args(arg,
 		&k_ioctl, &tmp_compat_ioctl_ptr);
 	if (rc < 0) {
-		pr_err_ratelimited("Subdev cmd %d failed\n", cmd);
+		pr_err("Subdev cmd %d failed\n", cmd);
 		return rc;
 	}
 
@@ -674,24 +674,24 @@ static long msm_camera_buf_mgr_internal_compat_ioctl(struct file *file,
 		struct msm_buf_mngr_info buf_info;
 
 		if (k_ioctl.size != sizeof(struct msm_buf_mngr_info32_t)) {
-			pr_err_ratelimited("Invalid size for id %d with size %d",
+			pr_err("Invalid size for id %d with size %d",
 				k_ioctl.id, k_ioctl.size);
 			return -EINVAL;
 		}
 		if (!tmp_compat_ioctl_ptr) {
-			pr_err_ratelimited("Invalid ptr for id %d", k_ioctl.id);
+			pr_err("Invalid ptr for id %d", k_ioctl.id);
 			return -EINVAL;
 		}
 		k_ioctl.ioctl_ptr = (__u64)&buf_info;
 		rc = msm_camera_buf_mgr_fetch_buf_info(&buf_info32, &buf_info,
 			(unsigned long)tmp_compat_ioctl_ptr);
 		if (rc < 0) {
-			pr_err_ratelimited("Fetch buf info failed for cmd=%d", cmd);
+			pr_err("Fetch buf info failed for cmd=%d", cmd);
 			return rc;
 		}
 		rc = v4l2_subdev_call(sd, core, ioctl, cmd, &k_ioctl);
 		if (rc < 0) {
-			pr_err_ratelimited("Subdev cmd %d failed for id %d", cmd,
+			pr_err("Subdev cmd %d failed for id %d", cmd,
 				k_ioctl.id);
 			return rc;
 		}
@@ -749,7 +749,7 @@ static long msm_bmgr_subdev_fops_compat_ioctl(struct file *file,
 		rc = msm_camera_buf_mgr_fetch_buf_info(&buf_info32, &buf_info,
 			arg);
 		if (rc < 0) {
-			pr_err_ratelimited("Fetch buf info failed for cmd=%d\n", cmd);
+			pr_err("Fetch buf info failed for cmd=%d\n", cmd);
 			return rc;
 		}
 		rc = v4l2_subdev_call(sd, core, ioctl, cmd, &buf_info);
@@ -760,7 +760,7 @@ static long msm_bmgr_subdev_fops_compat_ioctl(struct file *file,
 		rc = msm_camera_buf_mgr_update_buf_info(&buf_info32, &buf_info,
 			arg);
 		if (rc < 0) {
-			pr_err_ratelimited("Update buf info failed for cmd=%d\n", cmd);
+			pr_err("Update buf info failed for cmd=%d\n", cmd);
 			return rc;
 		}
 		}
@@ -858,7 +858,7 @@ static int32_t __init msm_buf_mngr_init(void)
 	msm_buf_mngr_dev->subdev.close_seq = MSM_SD_CLOSE_4TH_CATEGORY;
 	rc = msm_sd_register(&msm_buf_mngr_dev->subdev);
 	if (rc != 0) {
-		pr_err_ratelimited("%s: msm_sd_register error = %d\n", __func__, rc);
+		pr_err("%s: msm_sd_register error = %d\n", __func__, rc);
 		goto end;
 	}
 
@@ -875,7 +875,7 @@ static int32_t __init msm_buf_mngr_init(void)
 	msm_buf_mngr_dev->ion_client =
 		msm_ion_client_create("msm_cam_generic_buf_mgr");
 	if (!msm_buf_mngr_dev->ion_client) {
-		pr_err_ratelimited("%s: Failed to create ion client\n", __func__);
+		pr_err("%s: Failed to create ion client\n", __func__);
 		rc = -EBADFD;
 	}
 

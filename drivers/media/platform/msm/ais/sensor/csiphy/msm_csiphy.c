@@ -474,7 +474,7 @@ static int msm_csiphy_lane_config(struct csiphy_device *csiphy_dev,
 
 	csiphybase = csiphy_dev->base;
 	if (!csiphybase) {
-		pr_err_ratelimited("%s: csiphybase NULL\n", __func__);
+		pr_err("%s: csiphybase NULL\n", __func__);
 		return -EINVAL;
 	}
 
@@ -482,7 +482,7 @@ static int msm_csiphy_lane_config(struct csiphy_device *csiphy_dev,
 	lane_mask = csiphy_dev->lane_mask[csiphy_id];
 	lane_cnt = csiphy_params->lane_cnt;
 	if (csiphy_params->lane_cnt < 1 || csiphy_params->lane_cnt > 4) {
-		pr_err_ratelimited("%s: unsupported lane cnt %d\n",
+		pr_err("%s: unsupported lane cnt %d\n",
 			__func__, csiphy_params->lane_cnt);
 		return rc;
 	}
@@ -494,7 +494,7 @@ static int msm_csiphy_lane_config(struct csiphy_device *csiphy_dev,
 		csiphy_dev->csiphy_clk[csiphy_dev->csiphy_clk_index],
 		clk_rate);
 	if (clk_rate < 0) {
-		pr_err_ratelimited("csiphy_clk_set_rate failed\n");
+		pr_err("csiphy_clk_set_rate failed\n");
 		return -EINVAL;
 	}
 
@@ -543,7 +543,7 @@ static int msm_csiphy_lane_config(struct csiphy_device *csiphy_dev,
 			csiphy_dev->num_irq_registers = 11;
 		}
 		if (rc < 0) {
-			pr_err_ratelimited("%s:%d: Error in setting lane configuration\n",
+			pr_err("%s:%d: Error in setting lane configuration\n",
 				__func__, __LINE__);
 		}
 		return rc;
@@ -614,7 +614,7 @@ static int msm_csiphy_lane_config(struct csiphy_device *csiphy_dev,
 				num_lanes = (lane_cnt - curr_lane)
 					<< NUM_LANES_OFFSET;
 				if (lane_cnt < curr_lane) {
-					pr_err_ratelimited("%s: Lane_cnt is less than curr_lane number\n",
+					pr_err("%s: Lane_cnt is less than curr_lane number\n",
 						__func__);
 					return -EINVAL;
 				}
@@ -756,7 +756,7 @@ static int msm_csiphy_init(struct csiphy_device *csiphy_dev)
 	int rc = 0;
 
 	if (csiphy_dev == NULL) {
-		pr_err_ratelimited("%s: csiphy_dev NULL\n", __func__);
+		pr_err("%s: csiphy_dev NULL\n", __func__);
 		rc = -ENOMEM;
 		return rc;
 	}
@@ -770,7 +770,7 @@ static int msm_csiphy_init(struct csiphy_device *csiphy_dev)
 	CDBG("%s:%d called\n", __func__, __LINE__);
 
 	if (csiphy_dev->csiphy_state == CSIPHY_POWER_UP) {
-		pr_err_ratelimited("%s: csiphy invalid state %d\n", __func__,
+		pr_err("%s: csiphy invalid state %d\n", __func__,
 			csiphy_dev->csiphy_state);
 		rc = -EINVAL;
 		return rc;
@@ -781,7 +781,7 @@ static int msm_csiphy_init(struct csiphy_device *csiphy_dev)
 			CAM_AHB_SVS_VOTE);
 	if (rc < 0) {
 		csiphy_dev->ref_count--;
-		pr_err_ratelimited("%s: failed to vote for AHB\n", __func__);
+		pr_err("%s: failed to vote for AHB\n", __func__);
 		return rc;
 	}
 
@@ -792,7 +792,7 @@ static int msm_csiphy_init(struct csiphy_device *csiphy_dev)
 		csiphy_dev->regulator_count, NULL, 0,
 		&csiphy_dev->csiphy_reg_ptr[0], 1);
 	if (rc < 0) {
-		pr_err_ratelimited("%s:%d csiphy config_vreg failed\n",
+		pr_err("%s:%d csiphy config_vreg failed\n",
 			__func__, __LINE__);
 		goto csiphy_vreg_config_fail;
 	}
@@ -801,7 +801,7 @@ static int msm_csiphy_init(struct csiphy_device *csiphy_dev)
 		csiphy_dev->regulator_count, NULL, 0,
 		&csiphy_dev->csiphy_reg_ptr[0], 1);
 	if (rc < 0) {
-		pr_err_ratelimited("%s:%d csiphy enable_vreg failed\n",
+		pr_err("%s:%d csiphy enable_vreg failed\n",
 			__func__, __LINE__);
 		goto top_vreg_enable_failed;
 	}
@@ -812,7 +812,7 @@ static int msm_csiphy_init(struct csiphy_device *csiphy_dev)
 
 	CDBG("%s:%d called\n", __func__, __LINE__);
 	if (rc < 0) {
-		pr_err_ratelimited("%s: csiphy clk enable failed\n", __func__);
+		pr_err("%s: csiphy clk enable failed\n", __func__);
 		csiphy_dev->ref_count--;
 		goto csiphy_enable_clk_fail;
 	}
@@ -820,7 +820,7 @@ static int msm_csiphy_init(struct csiphy_device *csiphy_dev)
 
 	rc = msm_camera_enable_irq(csiphy_dev->irq, true);
 	if (rc < 0)
-		pr_err_ratelimited("%s: irq enable failed\n", __func__);
+		pr_err("%s: irq enable failed\n", __func__);
 
 	if (csiphy_dev->csiphy_3phase == CSI_3PHASE_HW)
 		msm_csiphy_3ph_reset(csiphy_dev);
@@ -855,7 +855,7 @@ top_vreg_enable_failed:
 csiphy_vreg_config_fail:
 	if (cam_config_ahb_clk(NULL, 0, CAM_AHB_CLIENT_CSIPHY,
 		CAM_AHB_SUSPEND_VOTE) < 0)
-		pr_err_ratelimited("%s: failed to vote for AHB\n", __func__);
+		pr_err("%s: failed to vote for AHB\n", __func__);
 	return rc;
 }
 #else
@@ -865,7 +865,7 @@ static int msm_csiphy_init(struct csiphy_device *csiphy_dev)
 
 	CDBG("CSI_PHY: msm_csiphy_init\n");
 	if (csiphy_dev == NULL) {
-		pr_err_ratelimited("%s: csiphy_dev NULL\n", __func__);
+		pr_err("%s: csiphy_dev NULL\n", __func__);
 		rc = -ENOMEM;
 		return rc;
 	}
@@ -877,7 +877,7 @@ static int msm_csiphy_init(struct csiphy_device *csiphy_dev)
 	}
 
 	if (csiphy_dev->csiphy_state == CSIPHY_POWER_UP) {
-		pr_err_ratelimited("%s: csiphy invalid state %d\n", __func__,
+		pr_err("%s: csiphy invalid state %d\n", __func__,
 			csiphy_dev->csiphy_state);
 		rc = -EINVAL;
 		return rc;
@@ -887,7 +887,7 @@ static int msm_csiphy_init(struct csiphy_device *csiphy_dev)
 			CAM_AHB_SVS_VOTE);
 	if (rc < 0) {
 		csiphy_dev->ref_count--;
-		pr_err_ratelimited("%s: failed to vote for AHB\n", __func__);
+		pr_err("%s: failed to vote for AHB\n", __func__);
 		return rc;
 	}
 
@@ -896,7 +896,7 @@ static int msm_csiphy_init(struct csiphy_device *csiphy_dev)
 		csiphy_dev->regulator_count, NULL, 0,
 		&csiphy_dev->csiphy_reg_ptr[0], 1);
 	if (rc < 0) {
-		pr_err_ratelimited("%s:%d csiphy config_vreg failed\n",
+		pr_err("%s:%d csiphy config_vreg failed\n",
 			__func__, __LINE__);
 		goto csiphy_vreg_config_fail;
 	}
@@ -905,7 +905,7 @@ static int msm_csiphy_init(struct csiphy_device *csiphy_dev)
 		csiphy_dev->regulator_count, NULL, 0,
 		&csiphy_dev->csiphy_reg_ptr[0], 1);
 	if (rc < 0) {
-		pr_err_ratelimited("%s:%d csiphy enable_vreg failed\n",
+		pr_err("%s:%d csiphy enable_vreg failed\n",
 			__func__, __LINE__);
 		goto top_vreg_enable_failed;
 	}
@@ -914,7 +914,7 @@ static int msm_csiphy_init(struct csiphy_device *csiphy_dev)
 		csiphy_dev->csiphy_clk_info, csiphy_dev->csiphy_clk,
 		csiphy_dev->num_clk, true);
 	if (rc < 0) {
-		pr_err_ratelimited("%s: csiphy clk enable failed\n", __func__);
+		pr_err("%s: csiphy clk enable failed\n", __func__);
 		csiphy_dev->ref_count--;
 		goto csiphy_enable_clk_fail;
 	}
@@ -952,7 +952,7 @@ top_vreg_enable_failed:
 csiphy_vreg_config_fail:
 	if (cam_config_ahb_clk(NULL, 0, CAM_AHB_CLIENT_CSIPHY,
 		CAM_AHB_SUSPEND_VOTE) < 0)
-		pr_err_ratelimited("%s: failed to vote for AHB\n", __func__);
+		pr_err("%s: failed to vote for AHB\n", __func__);
 	return rc;
 }
 #endif
@@ -968,12 +968,12 @@ static int msm_csiphy_release(struct csiphy_device *csiphy_dev, void *arg)
 	csi_lane_params = (struct msm_camera_csi_lane_params *)arg;
 
 	if (!csiphy_dev || !csiphy_dev->ref_count) {
-		pr_err_ratelimited("%s csiphy dev NULL / ref_count ZERO\n", __func__);
+		pr_err("%s csiphy dev NULL / ref_count ZERO\n", __func__);
 		return 0;
 	}
 
 	if (csiphy_dev->csiphy_state != CSIPHY_POWER_UP) {
-		pr_err_ratelimited("%s: csiphy invalid state %d\n", __func__,
+		pr_err("%s: csiphy invalid state %d\n", __func__,
 			csiphy_dev->csiphy_state);
 		return -EINVAL;
 	}
@@ -1005,7 +1005,7 @@ static int msm_csiphy_release(struct csiphy_device *csiphy_dev, void *arg)
 			mipi_csiphy_glbl_pwr_cfg_addr);
 	} else {
 		if (!csi_lane_params) {
-			pr_err_ratelimited("%s:%d failed: csi_lane_params %pK\n", __func__,
+			pr_err("%s:%d failed: csi_lane_params %pK\n", __func__,
 				__LINE__, csi_lane_params);
 			return -EINVAL;
 		}
@@ -1070,7 +1070,7 @@ static int msm_csiphy_release(struct csiphy_device *csiphy_dev, void *arg)
 
 	if (cam_config_ahb_clk(NULL, 0, CAM_AHB_CLIENT_CSIPHY,
 		 CAM_AHB_SUSPEND_VOTE) < 0)
-		pr_err_ratelimited("%s: failed to remove vote for AHB\n", __func__);
+		pr_err("%s: failed to remove vote for AHB\n", __func__);
 	return 0;
 }
 #else
@@ -1083,12 +1083,12 @@ static int msm_csiphy_release(struct csiphy_device *csiphy_dev, void *arg)
 	csi_lane_params = (struct msm_camera_csi_lane_params *)arg;
 
 	if (!csiphy_dev || !csiphy_dev->ref_count) {
-		pr_err_ratelimited("%s csiphy dev NULL / ref_count ZERO\n", __func__);
+		pr_err("%s csiphy dev NULL / ref_count ZERO\n", __func__);
 		return 0;
 	}
 
 	if (csiphy_dev->csiphy_state != CSIPHY_POWER_UP) {
-		pr_err_ratelimited("%s: csiphy invalid state %d\n", __func__,
+		pr_err("%s: csiphy invalid state %d\n", __func__,
 			csiphy_dev->csiphy_state);
 		return -EINVAL;
 	}
@@ -1120,7 +1120,7 @@ static int msm_csiphy_release(struct csiphy_device *csiphy_dev, void *arg)
 			mipi_csiphy_glbl_pwr_cfg_addr);
 	} else {
 		if (!csi_lane_params) {
-			pr_err_ratelimited("%s:%d failed: csi_lane_params %pK\n", __func__,
+			pr_err("%s:%d failed: csi_lane_params %pK\n", __func__,
 				__LINE__, csi_lane_params);
 			return -EINVAL;
 		}
@@ -1183,7 +1183,7 @@ static int msm_csiphy_release(struct csiphy_device *csiphy_dev, void *arg)
 
 	if (cam_config_ahb_clk(NULL, 0, CAM_AHB_CLIENT_CSIPHY,
 		 CAM_AHB_SUSPEND_VOTE) < 0)
-		pr_err_ratelimited("%s: failed to remove vote for AHB\n", __func__);
+		pr_err("%s: failed to remove vote for AHB\n", __func__);
 	return 0;
 }
 
@@ -1196,7 +1196,7 @@ static int32_t msm_csiphy_cmd(struct csiphy_device *csiphy_dev, void *arg)
 	struct msm_camera_csi_lane_params csi_lane_params;
 
 	if (!csiphy_dev || !cdata) {
-		pr_err_ratelimited("%s: csiphy_dev NULL\n", __func__);
+		pr_err("%s: csiphy_dev NULL\n", __func__);
 		return -EINVAL;
 	}
 
@@ -1209,7 +1209,7 @@ static int32_t msm_csiphy_cmd(struct csiphy_device *csiphy_dev, void *arg)
 		if (copy_from_user(&csiphy_params,
 			(void __user *)cdata->cfg.csiphy_params,
 			sizeof(struct msm_camera_csiphy_params))) {
-			pr_err_ratelimited("%s: %d failed\n", __func__, __LINE__);
+			pr_err("%s: %d failed\n", __func__, __LINE__);
 			rc = -EFAULT;
 			break;
 		}
@@ -1265,7 +1265,7 @@ static int32_t msm_csiphy_cmd(struct csiphy_device *csiphy_dev, void *arg)
 
 		break;
 	default:
-		pr_err_ratelimited("%s: %d failed\n", __func__, __LINE__);
+		pr_err("%s: %d failed\n", __func__, __LINE__);
 		rc = -ENOIOCTLCMD;
 		break;
 	}
@@ -1278,7 +1278,7 @@ static int32_t msm_csiphy_get_subdev_id(struct csiphy_device *csiphy_dev,
 	uint32_t *subdev_id = (uint32_t *)arg;
 
 	if (!subdev_id) {
-		pr_err_ratelimited("%s:%d failed\n", __func__, __LINE__);
+		pr_err("%s:%d failed\n", __func__, __LINE__);
 		return -EINVAL;
 	}
 	*subdev_id = csiphy_dev->pdev->id;
@@ -1293,7 +1293,7 @@ static long msm_csiphy_subdev_ioctl(struct v4l2_subdev *sd,
 	struct csiphy_device *csiphy_dev = v4l2_get_subdevdata(sd);
 
 	if (!csiphy_dev) {
-		pr_err_ratelimited("%s:%d failed\n", __func__, __LINE__);
+		pr_err("%s:%d failed\n", __func__, __LINE__);
 		return  -EINVAL;
 	}
 	mutex_lock(&csiphy_dev->mutex);
@@ -1385,11 +1385,11 @@ static int msm_csiphy_get_clk_info(struct csiphy_device *csiphy_dev,
 		&csiphy_dev->csiphy_all_clk,
 		&csiphy_dev->num_all_clk);
 	if (rc < 0) {
-		pr_err_ratelimited("%s:%d, failed\n", __func__, __LINE__);
+		pr_err("%s:%d, failed\n", __func__, __LINE__);
 		return rc;
 	}
 	if (csiphy_dev->num_all_clk > CSIPHY_NUM_CLK_MAX) {
-		pr_err_ratelimited("%s: invalid count=%zu, max is %d\n", __func__,
+		pr_err("%s: invalid count=%zu, max is %d\n", __func__,
 			csiphy_dev->num_all_clk, CSIPHY_NUM_CLK_MAX);
 		rc = -EINVAL;
 		goto MAX_CLK_ERROR;
@@ -1531,7 +1531,7 @@ static int csiphy_probe(struct platform_device *pdev)
 		new_csiphy_dev->hw_dts_version = CSIPHY_VERSION_V35;
 		new_csiphy_dev->csiphy_3phase = CSI_3PHASE_HW;
 	} else {
-		pr_err_ratelimited("%s:%d, invalid hw version : 0x%x\n", __func__, __LINE__,
+		pr_err("%s:%d, invalid hw version : 0x%x\n", __func__, __LINE__,
 		new_csiphy_dev->hw_dts_version);
 		rc =  -EINVAL;
 		goto csiphy_no_resource;
@@ -1541,21 +1541,21 @@ static int csiphy_probe(struct platform_device *pdev)
 		&(new_csiphy_dev->csiphy_vreg),
 		&(new_csiphy_dev->regulator_count));
 	if (rc < 0) {
-		pr_err_ratelimited("%s: get vreg data from dtsi fail\n", __func__);
+		pr_err("%s: get vreg data from dtsi fail\n", __func__);
 		rc = -EFAULT;
 		goto csiphy_no_resource;
 	}
 	/* ToDo: Enable 3phase clock for dynamic clock enable/disable */
 	rc = msm_csiphy_get_clk_info(new_csiphy_dev, pdev);
 	if (rc < 0) {
-		pr_err_ratelimited("%s: msm_csiphy_get_clk_info() failed", __func__);
+		pr_err("%s: msm_csiphy_get_clk_info() failed", __func__);
 		rc =  -EFAULT;
 		goto csiphy_no_resource;
 	}
 
 	new_csiphy_dev->base = msm_camera_get_reg_base(pdev, "csiphy", true);
 	if (!new_csiphy_dev->base) {
-		pr_err_ratelimited("%s: no mem resource?\n", __func__);
+		pr_err("%s: no mem resource?\n", __func__);
 		rc = -ENODEV;
 		goto csiphy_no_resource;
 	}
@@ -1564,21 +1564,21 @@ static int csiphy_probe(struct platform_device *pdev)
 		new_csiphy_dev->clk_mux_base = msm_camera_get_reg_base(pdev,
 					"csiphy_clk_mux", true);
 		if (!new_csiphy_dev->clk_mux_base) {
-			pr_err_ratelimited("%s: no mem resource?\n", __func__);
+			pr_err("%s: no mem resource?\n", __func__);
 			rc = -ENODEV;
 			goto csiphy_no_mux_resource;
 		}
 	}
 	new_csiphy_dev->irq = msm_camera_get_irq(pdev, "csiphy");
 	if (!new_csiphy_dev->irq) {
-		pr_err_ratelimited("%s: no irq resource?\n", __func__);
+		pr_err("%s: no irq resource?\n", __func__);
 		rc = -ENODEV;
 		goto csiphy_no_irq_resource;
 	}
 	rc = msm_camera_register_irq(pdev, new_csiphy_dev->irq,
 		msm_csiphy_irq, IRQF_TRIGGER_RISING, "csiphy", new_csiphy_dev);
 	if (rc < 0) {
-		pr_err_ratelimited("%s: irq request fail\n", __func__);
+		pr_err("%s: irq request fail\n", __func__);
 		rc = -EBUSY;
 		goto csiphy_no_irq_resource;
 	}

@@ -44,7 +44,7 @@ static int msm_buf_check_head_sanity(struct msm_isp_bufq *bufq)
 	struct list_head *next = NULL;
 
 	if (!bufq) {
-		pr_err_ratelimited("%s: Error! Invalid bufq\n", __func__);
+		pr_err("%s: Error! Invalid bufq\n", __func__);
 		return -EINVAL;
 	}
 
@@ -52,23 +52,23 @@ static int msm_buf_check_head_sanity(struct msm_isp_bufq *bufq)
 	next = bufq->head.next;
 
 	if (!prev) {
-		pr_err_ratelimited("%s: Error! bufq->head.prev is NULL\n", __func__);
+		pr_err("%s: Error! bufq->head.prev is NULL\n", __func__);
 		return -EINVAL;
 	}
 
 	if (!next) {
-		pr_err_ratelimited("%s: Error! bufq->head.next is NULL\n", __func__);
+		pr_err("%s: Error! bufq->head.next is NULL\n", __func__);
 		return -EINVAL;
 	}
 
 	if (prev->next != &bufq->head) {
-		pr_err_ratelimited("%s: Error! head prev->next is %pK should be %pK\n",
+		pr_err("%s: Error! head prev->next is %pK should be %pK\n",
 			__func__, prev->next, &bufq->head);
 		return -EINVAL;
 	}
 
 	if (next->prev != &bufq->head) {
-		pr_err_ratelimited("%s: Error! head next->prev is %pK should be %pK\n",
+		pr_err("%s: Error! head next->prev is %pK should be %pK\n",
 			__func__, next->prev, &bufq->head);
 		return -EINVAL;
 	}
@@ -105,12 +105,12 @@ static struct msm_isp_buffer *msm_isp_get_buf_ptr(
 
 	bufq = msm_isp_get_bufq(buf_mgr, bufq_handle);
 	if (!bufq) {
-		pr_err_ratelimited("%s: Invalid bufq\n", __func__);
+		pr_err("%s: Invalid bufq\n", __func__);
 		return buf_info;
 	}
 
 	if (bufq->num_bufs <= buf_index) {
-		pr_err_ratelimited("%s: Invalid buf index\n", __func__);
+		pr_err("%s: Invalid buf index\n", __func__);
 		return buf_info;
 	}
 	buf_info = &bufq->bufs[buf_index];
@@ -129,7 +129,7 @@ static uint32_t msm_isp_get_buf_handle(
 		if (buf_mgr->bufq[i].bufq_handle != 0 &&
 			buf_mgr->bufq[i].vfe_id == vfe_id &&
 			buf_mgr->bufq[i].output_id == output_id) {
-			pr_err_ratelimited("%s - existing handle for output_id=%d",
+			pr_err("%s - existing handle for output_id=%d",
 				__func__, output_id);
 			return 0;
 		}
@@ -234,14 +234,14 @@ static void msm_isp_unprepare_v4l2_buf(
 	struct msm_isp_bufq *bufq = NULL;
 
 	if (!buf_mgr || !buf_info) {
-		pr_err_ratelimited("%s: NULL ptr %pK %pK\n", __func__,
+		pr_err("%s: NULL ptr %pK %pK\n", __func__,
 			buf_mgr, buf_info);
 		return;
 	}
 
 	bufq = msm_isp_get_bufq(buf_mgr, buf_info->bufq_handle);
 	if (!bufq) {
-		pr_err_ratelimited("%s: Invalid bufq, output_id %x\n",
+		pr_err("%s: Invalid bufq, output_id %x\n",
 			__func__, output_id);
 		return;
 	}
@@ -312,13 +312,13 @@ static int msm_isp_buf_prepare(struct msm_isp_buf_mgr *buf_mgr,
 	buf_info = msm_isp_get_buf_ptr(buf_mgr,
 		info->handle, info->buf_idx);
 	if (!buf_info) {
-		pr_err_ratelimited("Invalid buffer prepare\n");
+		pr_err("Invalid buffer prepare\n");
 		return rc;
 	}
 
 	bufq = msm_isp_get_bufq(buf_mgr, buf_info->bufq_handle);
 	if (!bufq) {
-		pr_err_ratelimited("%s: Invalid bufq\n",
+		pr_err("%s: Invalid bufq\n",
 			__func__);
 		return rc;
 	}
@@ -331,7 +331,7 @@ static int msm_isp_buf_prepare(struct msm_isp_buf_mgr *buf_mgr,
 	}
 
 	if (buf_info->state != MSM_ISP_BUFFER_STATE_INITIALIZED) {
-		pr_err_ratelimited("%s: Invalid buffer state: %d bufq %x buf-id %d\n",
+		pr_err("%s: Invalid buffer state: %d bufq %x buf-id %d\n",
 			__func__, buf_info->state, bufq->bufq_handle,
 			buf_info->buf_idx);
 		spin_unlock_irqrestore(&bufq->bufq_lock, flags);
@@ -368,14 +368,14 @@ static int msm_isp_buf_unprepare_all(struct msm_isp_buf_mgr *buf_mgr,
 
 	bufq = msm_isp_get_bufq(buf_mgr, buf_handle);
 	if (!bufq) {
-		pr_err_ratelimited("%s: Invalid bufq\n", __func__);
+		pr_err("%s: Invalid bufq\n", __func__);
 		return rc;
 	}
 
 	for (i = 0; i < bufq->num_bufs; i++) {
 		buf_info = msm_isp_get_buf_ptr(buf_mgr, buf_handle, i);
 		if (!buf_info) {
-			pr_err_ratelimited("%s: buf not found\n", __func__);
+			pr_err("%s: buf not found\n", __func__);
 			return rc;
 		}
 		if (buf_info->state == MSM_ISP_BUFFER_STATE_UNUSED ||
@@ -443,13 +443,13 @@ static int msm_isp_get_buf_by_index(struct msm_isp_buf_mgr *buf_mgr,
 
 	bufq = msm_isp_get_bufq(buf_mgr, bufq_handle);
 	if (!bufq) {
-		pr_err_ratelimited("%s: Invalid bufq\n", __func__);
+		pr_err("%s: Invalid bufq\n", __func__);
 		return rc;
 	}
 
 	spin_lock_irqsave(&bufq->bufq_lock, flags);
 	if (buf_index >= bufq->num_bufs) {
-		pr_err_ratelimited("%s: Invalid buf index: %d max: %d\n", __func__,
+		pr_err("%s: Invalid buf index: %d max: %d\n", __func__,
 			buf_index, bufq->num_bufs);
 		spin_unlock_irqrestore(&bufq->bufq_lock, flags);
 		return rc;
@@ -480,13 +480,13 @@ static int msm_isp_buf_unprepare(struct msm_isp_buf_mgr *buf_mgr,
 
 	bufq = msm_isp_get_bufq(buf_mgr, buf_handle);
 	if (!bufq) {
-		pr_err_ratelimited("%s: Invalid bufq\n", __func__);
+		pr_err("%s: Invalid bufq\n", __func__);
 		return -EINVAL;
 	}
 
 	buf_info = msm_isp_get_buf_ptr(buf_mgr, buf_handle, buf_idx);
 	if (!buf_info) {
-		pr_err_ratelimited("%s: buf not found\n", __func__);
+		pr_err("%s: buf not found\n", __func__);
 		return -EINVAL;
 	}
 	if (buf_info->state == MSM_ISP_BUFFER_STATE_UNUSED ||
@@ -568,14 +568,14 @@ static int msm_isp_get_buf(struct msm_isp_buf_mgr *buf_mgr,
 						->vb2_buf.index];
 				(*buf_info)->vb2_v4l2_buf = vb2_v4l2_buf;
 			} else {
-				pr_err_ratelimited("%s: Incorrect buf index %d\n",
+				pr_err("%s: Incorrect buf index %d\n",
 					__func__, vb2_v4l2_buf->vb2_buf.index);
 				rc = -EINVAL;
 			}
 			if ((*buf_info) == NULL) {
 				buf_mgr->vb2_ops->put_buf(vb2_v4l2_buf,
 					bufq->session_id, bufq->stream_id);
-				pr_err_ratelimited("%s: buf index %d not found!\n",
+				pr_err("%s: buf index %d not found!\n",
 					__func__, vb2_v4l2_buf->vb2_buf.index);
 				rc = -EINVAL;
 
@@ -594,7 +594,7 @@ static int msm_isp_get_buf(struct msm_isp_buf_mgr *buf_mgr,
 				list);
 		break;
 	default:
-		pr_err_ratelimited("%s: Incorrect buf source.\n", __func__);
+		pr_err("%s: Incorrect buf source.\n", __func__);
 		rc = -EINVAL;
 		spin_unlock_irqrestore(&bufq->bufq_lock, flags);
 		return rc;
@@ -619,13 +619,13 @@ static int msm_isp_put_buf_unsafe(struct msm_isp_buf_mgr *buf_mgr,
 
 	bufq = msm_isp_get_bufq(buf_mgr, bufq_handle);
 	if (!bufq) {
-		pr_err_ratelimited("%s: Invalid bufq\n", __func__);
+		pr_err("%s: Invalid bufq\n", __func__);
 		return rc;
 	}
 
 	buf_info = msm_isp_get_buf_ptr(buf_mgr, bufq_handle, buf_index);
 	if (!buf_info) {
-		pr_err_ratelimited("%s: buf not found\n", __func__);
+		pr_err("%s: buf not found\n", __func__);
 		return rc;
 	}
 
@@ -678,13 +678,13 @@ static int msm_isp_put_buf(struct msm_isp_buf_mgr *buf_mgr,
 
 	bufq = msm_isp_get_bufq(buf_mgr, bufq_handle);
 	if (!bufq) {
-		pr_err_ratelimited("%s: Invalid bufq\n", __func__);
+		pr_err("%s: Invalid bufq\n", __func__);
 		return rc;
 	}
 
 	buf_info = msm_isp_get_buf_ptr(buf_mgr, bufq_handle, buf_index);
 	if (!buf_info) {
-		pr_err_ratelimited("%s: buf not found\n", __func__);
+		pr_err("%s: buf not found\n", __func__);
 		return rc;
 	}
 
@@ -709,7 +709,7 @@ static int msm_isp_update_put_buf_cnt_unsafe(
 
 	bufq = msm_isp_get_bufq(buf_mgr, bufq_handle);
 	if (!bufq) {
-		pr_err_ratelimited("Invalid bufq\n");
+		pr_err("Invalid bufq\n");
 		return rc;
 	}
 
@@ -718,18 +718,18 @@ static int msm_isp_update_put_buf_cnt_unsafe(
 	if (buf_index >= 0) {
 		buf_info = msm_isp_get_buf_ptr(buf_mgr, bufq_handle, buf_index);
 		if (!buf_info) {
-			pr_err_ratelimited("%s: buf not found\n", __func__);
+			pr_err("%s: buf not found\n", __func__);
 			return -EFAULT;
 		}
 		if (buf_info->state != MSM_ISP_BUFFER_STATE_DEQUEUED) {
-			pr_err_ratelimited(
+			pr_err(
 			"%s: Invalid state, bufq_handle %x output_id %x, state %d\n",
 			__func__, bufq_handle,
 			bufq->output_id, buf_info->state);
 			return -EFAULT;
 		}
 		if (buf_info->pingpong_bit != pingpong_bit) {
-			pr_err_ratelimited("%s: Pingpong bit mismatch\n", __func__);
+			pr_err("%s: Pingpong bit mismatch\n", __func__);
 			return -EFAULT;
 		}
 	}
@@ -772,7 +772,7 @@ static int msm_isp_update_put_buf_cnt(struct msm_isp_buf_mgr *buf_mgr,
 
 	bufq = msm_isp_get_bufq(buf_mgr, bufq_handle);
 	if (!bufq) {
-		pr_err_ratelimited("Invalid bufq\n");
+		pr_err("Invalid bufq\n");
 		return rc;
 	}
 
@@ -780,7 +780,7 @@ static int msm_isp_update_put_buf_cnt(struct msm_isp_buf_mgr *buf_mgr,
 	rc = msm_isp_update_put_buf_cnt_unsafe(buf_mgr, id, bufq_handle,
 		buf_index, tv, frame_id, pingpong_bit);
 	if (-ENOTEMPTY == rc) {
-		pr_err_ratelimited("%s: Error! Uncleared put_buf_mask for pingpong(%d) from vfe %d bufq 0x%x buf_idx %d\n",
+		pr_err("%s: Error! Uncleared put_buf_mask for pingpong(%d) from vfe %d bufq 0x%x buf_idx %d\n",
 			__func__, pingpong_bit, id, bufq_handle, buf_index);
 		msm_isp_dump_ping_pong_mismatch();
 		rc = -EFAULT;
@@ -801,13 +801,13 @@ static int msm_isp_buf_done(struct msm_isp_buf_mgr *buf_mgr,
 
 	bufq = msm_isp_get_bufq(buf_mgr, bufq_handle);
 	if (!bufq) {
-		pr_err_ratelimited("Invalid bufq\n");
+		pr_err("Invalid bufq\n");
 		return -EINVAL;
 	}
 
 	buf_info = msm_isp_get_buf_ptr(buf_mgr, bufq_handle, buf_index);
 	if (!buf_info) {
-		pr_err_ratelimited("%s: buf not found\n", __func__);
+		pr_err("%s: buf not found\n", __func__);
 		return -EINVAL;
 	}
 
@@ -837,7 +837,7 @@ static int msm_isp_buf_done(struct msm_isp_buf_mgr *buf_mgr,
 		rc = msm_isp_put_buf_unsafe(buf_mgr, buf_info->bufq_handle,
 			buf_info->buf_idx);
 		if (rc < 0)
-			pr_err_ratelimited("%s: Buf put failed\n", __func__);
+			pr_err("%s: Buf put failed\n", __func__);
 	}
 	spin_unlock_irqrestore(&bufq->bufq_lock, flags);
 done:
@@ -855,7 +855,7 @@ static int msm_isp_flush_buf(struct msm_isp_buf_mgr *buf_mgr, uint32_t id,
 
 	bufq = msm_isp_get_bufq(buf_mgr, bufq_handle);
 	if (!bufq) {
-		pr_err_ratelimited("Invalid bufq\n");
+		pr_err("Invalid bufq\n");
 		return -EINVAL;
 	}
 
@@ -863,7 +863,7 @@ static int msm_isp_flush_buf(struct msm_isp_buf_mgr *buf_mgr, uint32_t id,
 	for (i = 0; i < bufq->num_bufs; i++) {
 		buf_info = msm_isp_get_buf_ptr(buf_mgr, bufq_handle, i);
 		if (!buf_info) {
-			pr_err_ratelimited("%s: buf not found\n", __func__);
+			pr_err("%s: buf not found\n", __func__);
 			continue;
 		}
 		if ((flush_type == MSM_ISP_BUFFER_FLUSH_DIVERTED) &&
@@ -919,7 +919,7 @@ static int msm_isp_buf_enqueue(struct msm_isp_buf_mgr *buf_mgr,
 
 	bufq = msm_isp_get_bufq(buf_mgr, info->handle);
 	if (!bufq) {
-		pr_err_ratelimited("%s: Invalid bufq, handle 0x%x, stream id %x num_plane %d\n"
+		pr_err("%s: Invalid bufq, handle 0x%x, stream id %x num_plane %d\n"
 			, __func__, info->handle, (info->handle >> 8),
 			info->buffer.num_planes);
 		return -EINVAL;
@@ -935,7 +935,7 @@ static int msm_isp_buf_enqueue(struct msm_isp_buf_mgr *buf_mgr,
 		buf_info = msm_isp_get_buf_ptr(buf_mgr,
 						info->handle, info->buf_idx);
 		if (!buf_info) {
-			pr_err_ratelimited("%s: buf not found\n", __func__);
+			pr_err("%s: buf not found\n", __func__);
 			return -EINVAL;
 		}
 		if (info->dirty_buf) {
@@ -948,7 +948,7 @@ static int msm_isp_buf_enqueue(struct msm_isp_buf_mgr *buf_mgr,
 				info->handle, info->buf_idx);
 		} else {
 			if (BUF_SRC(bufq->flags))
-				pr_err_ratelimited("%s: Invalid native buffer state\n",
+				pr_err("%s: Invalid native buffer state\n",
 					__func__);
 			else {
 				buf_info->buf_debug.put_state[
@@ -965,7 +965,7 @@ static int msm_isp_buf_enqueue(struct msm_isp_buf_mgr *buf_mgr,
 			buf_info = msm_isp_get_buf_ptr(buf_mgr,
 				info->handle, info->buf_idx);
 			if (!buf_info) {
-				pr_err_ratelimited("%s: buf not found\n", __func__);
+				pr_err("%s: buf not found\n", __func__);
 				return -EINVAL;
 			}
 
@@ -976,7 +976,7 @@ static int msm_isp_buf_enqueue(struct msm_isp_buf_mgr *buf_mgr,
 			rc = msm_isp_put_buf(buf_mgr,
 					info->handle, info->buf_idx);
 			if (rc < 0) {
-				pr_err_ratelimited("%s: Buf put failed stream %x\n",
+				pr_err("%s: Buf put failed stream %x\n",
 					__func__, bufq->stream_id);
 				return rc;
 			}
@@ -993,13 +993,13 @@ static int msm_isp_buf_dequeue(struct msm_isp_buf_mgr *buf_mgr,
 
 	buf_info = msm_isp_get_buf_ptr(buf_mgr, info->handle, info->buf_idx);
 	if (!buf_info) {
-		pr_err_ratelimited("Invalid buffer dequeue\n");
+		pr_err("Invalid buffer dequeue\n");
 		return -EINVAL;
 	}
 
 	if (buf_info->state == MSM_ISP_BUFFER_STATE_DEQUEUED ||
 		buf_info->state == MSM_ISP_BUFFER_STATE_DIVERTED) {
-		pr_err_ratelimited("%s: Invalid state %d\n", __func__, buf_info->state);
+		pr_err("%s: Invalid state %d\n", __func__, buf_info->state);
 		return -EINVAL;
 	}
 	msm_isp_buf_unprepare(buf_mgr, info->handle, info->buf_idx);
@@ -1020,7 +1020,7 @@ static int msm_isp_get_bufq_handle(struct msm_isp_buf_mgr *buf_mgr,
 			return buf_mgr->bufq[i].bufq_handle;
 		}
 	}
-	pr_err_ratelimited("%s: No match found 0x%x 0x%x\n", __func__,
+	pr_err("%s: No match found 0x%x 0x%x\n", __func__,
 			vfe_id, output_id);
 	return 0;
 }
@@ -1032,7 +1032,7 @@ static int msm_isp_get_buf_src(struct msm_isp_buf_mgr *buf_mgr,
 
 	bufq = msm_isp_get_bufq(buf_mgr, bufq_handle);
 	if (!bufq) {
-		pr_err_ratelimited("%s: Invalid bufq\n",
+		pr_err("%s: Invalid bufq\n",
 			__func__);
 		return -EINVAL;
 	}
@@ -1050,20 +1050,20 @@ static int msm_isp_request_bufq(struct msm_isp_buf_mgr *buf_mgr,
 	CDBG("%s: E\n", __func__);
 
 	if (!buf_request->num_buf || buf_request->num_buf > VB2_MAX_FRAME) {
-		pr_err_ratelimited("Invalid buffer request\n");
+		pr_err("Invalid buffer request\n");
 		return -EINVAL;
 	}
 
 	buf_request->handle = msm_isp_get_buf_handle(buf_mgr,
 		buf_request->vfe_id, buf_request->output_id);
 	if (!buf_request->handle) {
-		pr_err_ratelimited("%s: Invalid buffer handle\n", __func__);
+		pr_err("%s: Invalid buffer handle\n", __func__);
 		return -EINVAL;
 	}
 
 	bufq = msm_isp_get_bufq(buf_mgr, buf_request->handle);
 	if (!bufq) {
-		pr_err_ratelimited("%s: Invalid bufq output_id %x\n",
+		pr_err("%s: Invalid bufq output_id %x\n",
 			__func__, buf_request->output_id);
 
 		return -EINVAL;
@@ -1109,7 +1109,7 @@ static int msm_isp_release_bufq(struct msm_isp_buf_mgr *buf_mgr,
 
 	bufq = msm_isp_get_bufq(buf_mgr, bufq_handle);
 	if (!bufq) {
-		pr_err_ratelimited("Invalid bufq release\n");
+		pr_err("Invalid bufq release\n");
 		return -EINVAL;
 	}
 
@@ -1161,7 +1161,7 @@ static int msm_isp_buf_put_scratch(struct msm_isp_buf_mgr *buf_mgr)
 	rc = cam_smmu_put_phy_addr_scratch(buf_mgr->iommu_hdl,
 				buf_mgr->scratch_buf_addr);
 	if (rc)
-		pr_err_ratelimited("%s: failed to put scratch buffer to img iommu: %d\n",
+		pr_err("%s: failed to put scratch buffer to img iommu: %d\n",
 			__func__, rc);
 
 
@@ -1195,7 +1195,7 @@ static int msm_isp_buf_get_scratch(struct msm_isp_buf_mgr *buf_mgr)
 				buf_mgr->scratch_buf_range,
 				SZ_4K);
 	if (rc) {
-		pr_err_ratelimited("%s: failed to map scratch buffer to img iommu: %d\n",
+		pr_err("%s: failed to map scratch buffer to img iommu: %d\n",
 			__func__, rc);
 		return rc;
 	}
@@ -1221,7 +1221,7 @@ int msm_isp_smmu_attach(struct msm_isp_buf_mgr *buf_mgr,
 			rc = cam_smmu_ops(buf_mgr->iommu_hdl,
 				CAM_SMMU_ATTACH);
 			if (rc < 0) {
-				pr_err_ratelimited("%s: img smmu attach error, rc :%d\n",
+				pr_err("%s: img smmu attach error, rc :%d\n",
 					__func__, rc);
 			goto err1;
 			}
@@ -1234,7 +1234,7 @@ int msm_isp_smmu_attach(struct msm_isp_buf_mgr *buf_mgr,
 		if (buf_mgr->attach_ref_cnt > 0)
 			buf_mgr->attach_ref_cnt--;
 		else
-			pr_err_ratelimited("%s: Error! Invalid ref_cnt %d\n",
+			pr_err("%s: Error! Invalid ref_cnt %d\n",
 				__func__, buf_mgr->attach_ref_cnt);
 
 		if (buf_mgr->attach_ref_cnt == 0) {
@@ -1242,7 +1242,7 @@ int msm_isp_smmu_attach(struct msm_isp_buf_mgr *buf_mgr,
 			rc |= cam_smmu_ops(buf_mgr->iommu_hdl,
 				CAM_SMMU_DETACH);
 			if (rc < 0) {
-				pr_err_ratelimited("%s: img/stats smmu detach error, rc :%d\n",
+				pr_err("%s: img/stats smmu detach error, rc :%d\n",
 					__func__, rc);
 			}
 		}
@@ -1253,7 +1253,7 @@ int msm_isp_smmu_attach(struct msm_isp_buf_mgr *buf_mgr,
 
 err2:
 	if (cam_smmu_ops(buf_mgr->iommu_hdl, CAM_SMMU_DETACH))
-		pr_err_ratelimited("%s: img smmu detach error\n", __func__);
+		pr_err("%s: img smmu detach error\n", __func__);
 err1:
 	mutex_unlock(&buf_mgr->lock);
 	return rc;
@@ -1280,7 +1280,7 @@ static int msm_isp_init_isp_buf_mgr(struct msm_isp_buf_mgr *buf_mgr,
 
 	rc = cam_smmu_get_handle("vfe", &buf_mgr->iommu_hdl);
 	if (rc < 0) {
-		pr_err_ratelimited("vfe get handle failed\n");
+		pr_err("vfe get handle failed\n");
 		goto get_handle_error;
 	}
 
@@ -1428,25 +1428,25 @@ static int msm_isp_buf_mgr_debug(struct msm_isp_buf_mgr *buf_mgr,
 		spin_unlock_irqrestore(&bufq->bufq_lock, flags);
 	}
 
-	pr_err_ratelimited("%s: ==== SMMU page fault addr %lx ====\n", __func__,
+	pr_err("%s: ==== SMMU page fault addr %lx ====\n", __func__,
 		fault_addr);
-	pr_err_ratelimited("%s: nearby output id %x, frame_id %d\n", __func__,
+	pr_err("%s: nearby output id %x, frame_id %d\n", __func__,
 		debug_output_id, debug_frame_id);
-	pr_err_ratelimited("%s: nearby buf index %d, plane %d, state %d\n", __func__,
+	pr_err("%s: nearby buf index %d, plane %d, state %d\n", __func__,
 		debug_buf_idx, debug_buf_plane, debug_state);
-	pr_err_ratelimited("%s: buf address %pK -- %pK\n", __func__,
+	pr_err("%s: buf address %pK -- %pK\n", __func__,
 		(void *)debug_start_addr, (void *)debug_end_addr);
 
 	if (BUF_DEBUG_FULL) {
 		print_buf = kzalloc(print_buf_size, GFP_ATOMIC);
 		if (!print_buf) {
-			pr_err_ratelimited("%s failed: No memory", __func__);
+			pr_err("%s failed: No memory", __func__);
 			return -ENOMEM;
 		}
 		snprintf(print_buf, print_buf_size, "%s\n", __func__);
 		for (i = 0; i < BUF_MGR_NUM_BUF_Q; i++) {
 			if (i % 2 == 0 && i > 0) {
-				pr_err_ratelimited("%s\n", print_buf);
+				pr_err("%s\n", print_buf);
 				print_buf[0] = 0;
 			}
 			if (buf_mgr->bufq[i].bufq_handle != 0) {
@@ -1482,7 +1482,7 @@ static int msm_isp_buf_mgr_debug(struct msm_isp_buf_mgr *buf_mgr,
 				end_addr = 0;
 			}
 		}
-		pr_err_ratelimited("%s\n", print_buf);
+		pr_err("%s\n", print_buf);
 		kfree(print_buf);
 	}
 	return rc;

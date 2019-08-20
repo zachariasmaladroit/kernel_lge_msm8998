@@ -106,7 +106,7 @@ static int i2c_mux_probe(struct platform_device *pdev)
 	CDBG("%s: device id = %d\n", __func__, pdev->id);
 	mux_device = kzalloc(sizeof(struct i2c_mux_device), GFP_KERNEL);
 	if (!mux_device) {
-		pr_err_ratelimited("%s: no enough memory\n", __func__);
+		pr_err("%s: no enough memory\n", __func__);
 		return -ENOMEM;
 	}
 
@@ -118,13 +118,13 @@ static int i2c_mux_probe(struct platform_device *pdev)
 	mux_device->ctl_base = msm_camera_get_reg_base(pdev,
 		"i2c_mux_ctl", true);
 	if (!mux_device->ctl_base) {
-		pr_err_ratelimited("%s: no mem resource?\n", __func__);
+		pr_err("%s: no mem resource?\n", __func__);
 		rc = -ENODEV;
 		goto ctl_base_failed;
 	}
 	mux_device->rw_base = msm_camera_get_reg_base(pdev, "i2c_mux_rw", true);
 	if (!mux_device->rw_mem) {
-		pr_err_ratelimited("%s: no mem resource?\n", __func__);
+		pr_err("%s: no mem resource?\n", __func__);
 		rc = -ENODEV;
 		goto rw_base_failed;
 	}
@@ -146,13 +146,13 @@ static int i2c_mux_remove(struct platform_device *pdev)
 	struct i2c_mux_device *mux_device;
 
 	if (!sub_dev) {
-		pr_err_ratelimited("%s: sub device is NULL\n", __func__);
+		pr_err("%s: sub device is NULL\n", __func__);
 		return 0;
 	}
 
 	mux_device = (struct mux_device *)v4l2_get_subdevdata(sub_dev);
 	if (!mux_device) {
-		pr_err_ratelimited("%s: sub device is NULL\n", __func__);
+		pr_err("%s: sub device is NULL\n", __func__);
 		return 0;
 	}
 

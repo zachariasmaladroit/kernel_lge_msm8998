@@ -44,7 +44,7 @@ static long msm_ais_hndl_ioctl(struct v4l2_subdev *sd, void *arg)
 		break;
 
 	default:
-		pr_err_ratelimited("invalid cfg_type\n");
+		pr_err("invalid cfg_type\n");
 		rc = -EINVAL;
 	}
 	mutex_unlock(&clk_mngr_dev->cont_mutex);
@@ -61,7 +61,7 @@ static long msm_ais_mngr_subdev_ioctl(struct v4l2_subdev *sd,
 	case VIDIOC_MSM_AIS_CLK_CFG:
 		rc = msm_ais_hndl_ioctl(sd, arg);
 		if (rc)
-			pr_err_ratelimited("msm_ais_mngr_subdev_ioctl failed\n");
+			pr_err("msm_ais_mngr_subdev_ioctl failed\n");
 		break;
 	default:
 		rc = -ENOIOCTLCMD;
@@ -123,7 +123,7 @@ static int32_t __init msm_ais_mngr_init(void)
 	msm_ais_mngr_dev->subdev.close_seq = MSM_SD_CLOSE_4TH_CATEGORY;
 	rc = msm_sd_register(&msm_ais_mngr_dev->subdev);
 	if (rc != 0) {
-		pr_err_ratelimited("msm_sd_register error = %d\n", rc);
+		pr_err("msm_sd_register error = %d\n", rc);
 		kfree(msm_ais_mngr_dev);
 		return rc;
 	}

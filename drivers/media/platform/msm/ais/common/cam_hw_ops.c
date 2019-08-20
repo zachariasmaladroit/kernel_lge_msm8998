@@ -21,7 +21,7 @@
 #include "cam_hw_ops.h"
 
 #ifdef CONFIG_CAM_AHB_DBG
-#define CDBG(fmt, args...) pr_err_ratelimited(fmt, ##args)
+#define CDBG(fmt, args...) pr_err(fmt, ##args)
 #else
 #define CDBG(fmt, args...) pr_debug(fmt, ##args)
 #endif
@@ -68,26 +68,26 @@ int cam_ahb_clk_init(struct platform_device *pdev)
 	struct device_node *of_node;
 
 	if (!pdev) {
-		pr_err_ratelimited("invalid pdev argument\n");
+		pr_err("invalid pdev argument\n");
 		return -EINVAL;
 	}
 
 	of_node = pdev->dev.of_node;
 	data.cnt = of_property_count_strings(of_node, "bus-vectors");
 	if (data.cnt == 0) {
-		pr_err_ratelimited("no vectors strings found in device tree, count=%d",
+		pr_err("no vectors strings found in device tree, count=%d",
 			data.cnt);
 		return 0;
 	}
 
 	cnt = of_property_count_u32_elems(of_node, "qcom,bus-votes");
 	if (cnt == 0) {
-		pr_err_ratelimited("no vector values found in device tree, count=%d", cnt);
+		pr_err("no vector values found in device tree, count=%d", cnt);
 		return 0;
 	}
 
 	if (data.cnt != cnt) {
-		pr_err_ratelimited("vector mismatch num of strings=%u, num of values %d\n",
+		pr_err("vector mismatch num of strings=%u, num of values %d\n",
 			data.cnt, cnt);
 		return -EINVAL;
 	}
@@ -105,7 +105,7 @@ int cam_ahb_clk_init(struct platform_device *pdev)
 				i, &(data.vectors[i].name));
 		CDBG("dbg: names[%d] = %s\n", i, data.vectors[i].name);
 		if (rc < 0) {
-			pr_err_ratelimited("failed\n");
+			pr_err("failed\n");
 			rc = -EINVAL;
 			goto err1;
 		}
@@ -168,14 +168,14 @@ int cam_ahb_clk_init(struct platform_device *pdev)
 	data.ahb_client =
 		msm_bus_scale_register_client(data.pbus_data);
 	if (!data.ahb_client) {
-		pr_err_ratelimited("ahb vote registering failed\n");
+		pr_err("ahb vote registering failed\n");
 		rc = -EINVAL;
 		goto err5;
 	}
 
 	index = get_vector_index("suspend");
 	if (index < 0) {
-		pr_err_ratelimited("svs vector not supported\n");
+		pr_err("svs vector not supported\n");
 		rc = -EINVAL;
 		goto err6;
 	}
@@ -244,7 +244,7 @@ static int cam_consolidate_ahb_vote(enum cam_ahb_clk_client id,
 				data.ahb_clk_state, max);
 		}
 	} else {
-		pr_err_ratelimited("err: no bus vector found\n");
+		pr_err("err: no bus vector found\n");
 		mutex_unlock(&data.lock);
 		return -EINVAL;
 	}
@@ -284,12 +284,12 @@ int cam_config_ahb_clk(struct device *dev, unsigned long freq,
 	int rc = -EINVAL;
 
 	if (id >= CAM_AHB_CLIENT_MAX) {
-		pr_err_ratelimited("err: invalid argument\n");
+		pr_err("err: invalid argument\n");
 		return -EINVAL;
 	}
 
 	if (data.probe_done != TRUE) {
-		pr_err_ratelimited("ahb init is not done yet\n");
+		pr_err("ahb init is not done yet\n");
 		return -EINVAL;
 	}
 
@@ -302,33 +302,33 @@ int cam_config_ahb_clk(struct device *dev, unsigned long freq,
 		break;
 	case CAM_AHB_DYNAMIC_VOTE:
 		if (!dev) {
-			pr_err_ratelimited("device is NULL\n");
+			pr_err("device is NULL\n");
 			return -EINVAL;
 		}
 		opp = dev_pm_opp_find_freq_exact(dev, freq, true);
 		if (IS_ERR(opp)) {
-			pr_err_ratelimited("Error on OPP freq :%ld\n", freq);
+			pr_err("Error on OPP freq :%ld\n", freq);
 			return -EINVAL;
 		}
 		corner = dev_pm_opp_get_voltage(opp);
 		if (corner == 0) {
-			pr_err_ratelimited("Bad voltage corner for OPP freq :%ld\n", freq);
+			pr_err("Bad voltage corner for OPP freq :%ld\n", freq);
 			return -EINVAL;
 		}
 		dyn_vote = cam_ahb_get_voltage_level(corner);
 		if (dyn_vote < 0) {
-			pr_err_ratelimited("Bad vote requested\n");
+			pr_err("Bad vote requested\n");
 			return -EINVAL;
 		}
 		break;
 	default:
-		pr_err_ratelimited("err: invalid vote argument\n");
+		pr_err("err: invalid vote argument\n");
 		return -EINVAL;
 	}
 
 	rc = cam_consolidate_ahb_vote(id, dyn_vote);
 	if (rc < 0) {
-		pr_err_ratelimited("%s: failed to vote for AHB\n", __func__);
+		pr_err("%s: failed to vote for AHB\n", __func__);
 		goto end;
 	}
 
