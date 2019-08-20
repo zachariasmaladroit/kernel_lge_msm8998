@@ -90,17 +90,9 @@ struct msm_sensor_ctrl_t {
 	uint32_t set_mclk_23880000;
 	uint8_t is_csid_tg_mode;
 	uint32_t is_secure;
-	/* Interrupt GPIOs */
-	struct gpio gpio_array[1];
-	/* device status and Flags */
-	int irq;
-	struct msm_sensor_init_t s_init;
-	/* worker to handle interrupts */
-	struct delayed_work irq_delayed_work;
-};
 
-int msm_sensor_send_event(struct msm_sensor_ctrl_t *s_ctrl,
-	uint32_t event_type, struct msm_sensor_event_data *event_data);
+	struct msm_sensor_init_t s_init;
+};
 
 int msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void *argp);
 
