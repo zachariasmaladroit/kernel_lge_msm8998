@@ -23,9 +23,6 @@
 
 #define ISP_STATS_STREAM_BIT  0x80000000
 
-#define INTERLACE_SUPPORT
-#define INTERLACE_OFFSET (1)
-
 struct msm_vfe_cfg_cmd_list;
 
 enum ISP_START_PIXEL_PATTERN {
@@ -736,7 +733,6 @@ struct msm_isp_buf_event {
 	uint32_t handle;
 	uint32_t output_format;
 	int8_t buf_idx;
-	uint8_t field_type;
 };
 struct msm_isp_fetch_eng_event {
 	uint32_t session_id;
