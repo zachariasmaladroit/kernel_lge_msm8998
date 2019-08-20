@@ -296,8 +296,7 @@ static void msm_sensor_stop_stream(struct msm_sensor_ctrl_t *s_ctrl)
 	int32_t rc = 0;
 
 	mutex_lock(s_ctrl->msm_sensor_mutex);
-	if (s_ctrl->sensor_state == MSM_SENSOR_POWER_UP ||
-		s_ctrl->sensor_state == MSM_SENSOR_CCI_UP) {
+	if (s_ctrl->sensor_state == MSM_SENSOR_POWER_UP) {
 		s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_write_table(
 			s_ctrl->sensor_i2c_client, &s_ctrl->stop_setting);
 		kfree(s_ctrl->stop_setting.reg_setting);
@@ -512,8 +511,7 @@ static int msm_sensor_config32(struct msm_sensor_ctrl_t *s_ctrl,
 		if (s_ctrl->is_csid_tg_mode)
 			goto DONE;
 
-		if (s_ctrl->sensor_state != MSM_SENSOR_POWER_UP &&
-			s_ctrl->sensor_state != MSM_SENSOR_CCI_UP) {
+		if (s_ctrl->sensor_state != MSM_SENSOR_POWER_UP) {
 			pr_err("%s:%d failed: invalid state %d\n", __func__,
 				__LINE__, s_ctrl->sensor_state);
 			rc = -EFAULT;
@@ -590,14 +588,6 @@ static int msm_sensor_config32(struct msm_sensor_ctrl_t *s_ctrl,
 		if (s_ctrl->is_csid_tg_mode)
 			goto DONE;
 
-		if (s_ctrl->sensor_state != MSM_SENSOR_POWER_UP &&
-			s_ctrl->sensor_state != MSM_SENSOR_CCI_UP) {
-			pr_err("%s:%d failed: invalid state %d\n", __func__,
-				__LINE__, s_ctrl->sensor_state);
-			rc = -EFAULT;
-			break;
-		}
-
 		read_config_ptr =
 			(struct msm_camera_i2c_read_config *)
 			compat_ptr(cdata->cfg.setting);
@@ -669,14 +659,6 @@ static int msm_sensor_config32(struct msm_sensor_ctrl_t *s_ctrl,
 
 		if (s_ctrl->is_csid_tg_mode)
 			goto DONE;
-
-		if (s_ctrl->sensor_state != MSM_SENSOR_POWER_UP &&
-			s_ctrl->sensor_state != MSM_SENSOR_CCI_UP) {
-			pr_err("%s:%d failed: invalid state %d\n", __func__,
-				__LINE__, s_ctrl->sensor_state);
-			rc = -EFAULT;
-			break;
-		}
 
 		if (copy_from_user(&write_config32,
 				(void __user *)compat_ptr(cdata->cfg.setting),
@@ -784,8 +766,7 @@ static int msm_sensor_config32(struct msm_sensor_ctrl_t *s_ctrl,
 		if (s_ctrl->is_csid_tg_mode)
 			goto DONE;
 
-		if (s_ctrl->sensor_state != MSM_SENSOR_POWER_UP &&
-			s_ctrl->sensor_state != MSM_SENSOR_CCI_UP) {
+		if (s_ctrl->sensor_state != MSM_SENSOR_POWER_UP) {
 			pr_err("%s:%d failed: invalid state %d\n", __func__,
 				__LINE__, s_ctrl->sensor_state);
 			rc = -EFAULT;
@@ -871,7 +852,7 @@ static int msm_sensor_config32(struct msm_sensor_ctrl_t *s_ctrl,
 
 		kfree(s_ctrl->stop_setting.reg_setting);
 		s_ctrl->stop_setting.reg_setting = NULL;
-		if (s_ctrl->sensor_state == MSM_SENSOR_POWER_DOWN) {
+		if (s_ctrl->sensor_state != MSM_SENSOR_POWER_UP) {
 			pr_err("%s:%d failed: invalid state %d\n", __func__,
 				__LINE__, s_ctrl->sensor_state);
 			rc = -EFAULT;
@@ -898,12 +879,6 @@ static int msm_sensor_config32(struct msm_sensor_ctrl_t *s_ctrl,
 		if (s_ctrl->is_csid_tg_mode)
 			goto DONE;
 
-		if (s_ctrl->sensor_state != MSM_SENSOR_CCI_DOWN) {
-			pr_err("%s:%d failed: invalid state %d\n", __func__,
-				__LINE__, s_ctrl->sensor_state);
-			rc = -EFAULT;
-			break;
-		}
 		rc = msm_camera_cci_power_up(s_ctrl->sensor_device_type,
 			s_ctrl->sensor_i2c_client);
 		if (rc < 0) {
@@ -911,21 +886,11 @@ static int msm_sensor_config32(struct msm_sensor_ctrl_t *s_ctrl,
 				__LINE__, rc);
 			break;
 		}
-		s_ctrl->sensor_state = MSM_SENSOR_CCI_UP;
-			CDBG("%s:%d sensor state %d\n", __func__, __LINE__,
-				s_ctrl->sensor_state);
 		break;
 	case CFG_CCI_POWER_DOWN:
 		if (s_ctrl->is_csid_tg_mode)
 			goto DONE;
 
-		if (s_ctrl->sensor_state != MSM_SENSOR_POWER_UP &&
-			s_ctrl->sensor_state != MSM_SENSOR_CCI_UP) {
-			pr_err("%s:%d failed: invalid state %d\n", __func__,
-				__LINE__, s_ctrl->sensor_state);
-			rc = -EFAULT;
-			break;
-		}
 		rc = msm_camera_cci_power_down(s_ctrl->sensor_device_type,
 			s_ctrl->sensor_i2c_client);
 		if (rc < 0) {
@@ -933,9 +898,6 @@ static int msm_sensor_config32(struct msm_sensor_ctrl_t *s_ctrl,
 				__LINE__, rc);
 			break;
 		}
-		s_ctrl->sensor_state = MSM_SENSOR_CCI_DOWN;
-			CDBG("%s:%d sensor state %d\n", __func__, __LINE__,
-				s_ctrl->sensor_state);
 		break;
 	case CFG_SET_STOP_STREAM_SETTING: {
 		struct msm_camera_i2c_reg_setting32 stop_setting32;
@@ -945,14 +907,6 @@ static int msm_sensor_config32(struct msm_sensor_ctrl_t *s_ctrl,
 
 		if (s_ctrl->is_csid_tg_mode)
 			goto DONE;
-
-		if (s_ctrl->sensor_state != MSM_SENSOR_POWER_UP &&
-			s_ctrl->sensor_state != MSM_SENSOR_CCI_UP) {
-			pr_err("%s:%d failed: invalid state %d\n", __func__,
-				__LINE__, s_ctrl->sensor_state);
-			rc = -EFAULT;
-			break;
-		}
 
 		if (copy_from_user(&stop_setting32,
 				(void __user *)compat_ptr((cdata->cfg.setting)),
@@ -1110,8 +1064,7 @@ int msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void *argp)
 		if (s_ctrl->is_csid_tg_mode)
 			goto DONE;
 
-		if (s_ctrl->sensor_state != MSM_SENSOR_POWER_UP &&
-			s_ctrl->sensor_state != MSM_SENSOR_CCI_UP) {
+		if (s_ctrl->sensor_state != MSM_SENSOR_POWER_UP) {
 			pr_err("%s:%d failed: invalid state %d\n", __func__,
 				__LINE__, s_ctrl->sensor_state);
 			rc = -EFAULT;
@@ -1181,14 +1134,6 @@ int msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void *argp)
 		if (s_ctrl->is_csid_tg_mode)
 			goto DONE;
 
-		if (s_ctrl->sensor_state != MSM_SENSOR_POWER_UP &&
-			s_ctrl->sensor_state != MSM_SENSOR_CCI_UP) {
-			pr_err("%s:%d failed: invalid state %d\n", __func__,
-				__LINE__, s_ctrl->sensor_state);
-			rc = -EFAULT;
-			break;
-		}
-
 		read_config_ptr =
 			(struct msm_camera_i2c_read_config *)cdata->cfg.setting;
 		if (copy_from_user(&read_config, (void __user *)read_config_ptr,
@@ -1253,14 +1198,6 @@ int msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void *argp)
 
 		if (s_ctrl->is_csid_tg_mode)
 			goto DONE;
-
-		if (s_ctrl->sensor_state != MSM_SENSOR_POWER_UP &&
-			s_ctrl->sensor_state != MSM_SENSOR_CCI_UP) {
-			pr_err("%s:%d failed: invalid state %d\n", __func__,
-				__LINE__, s_ctrl->sensor_state);
-			rc = -EFAULT;
-			break;
-		}
 
 		if (copy_from_user(&write_config,
 			(void __user *)cdata->cfg.setting,
@@ -1345,8 +1282,7 @@ int msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void *argp)
 		if (s_ctrl->is_csid_tg_mode)
 			goto DONE;
 
-		if (s_ctrl->sensor_state != MSM_SENSOR_POWER_UP &&
-			s_ctrl->sensor_state != MSM_SENSOR_CCI_UP) {
+		if (s_ctrl->sensor_state != MSM_SENSOR_POWER_UP) {
 			pr_err("%s:%d failed: invalid state %d\n", __func__,
 				__LINE__, s_ctrl->sensor_state);
 			rc = -EFAULT;
@@ -1428,7 +1364,7 @@ int msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void *argp)
 
 		kfree(s_ctrl->stop_setting.reg_setting);
 		s_ctrl->stop_setting.reg_setting = NULL;
-		if (s_ctrl->sensor_state == MSM_SENSOR_POWER_DOWN) {
+		if (s_ctrl->sensor_state != MSM_SENSOR_POWER_UP) {
 			pr_err("%s:%d failed: invalid state %d\n", __func__,
 				__LINE__, s_ctrl->sensor_state);
 			rc = -EFAULT;
@@ -1456,12 +1392,6 @@ int msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void *argp)
 		if (s_ctrl->is_csid_tg_mode)
 			goto DONE;
 
-		if (s_ctrl->sensor_state != MSM_SENSOR_CCI_DOWN) {
-			pr_err("%s:%d failed: invalid state %d\n", __func__,
-				__LINE__, s_ctrl->sensor_state);
-			rc = -EFAULT;
-			break;
-		}
 		rc = msm_camera_cci_power_up(s_ctrl->sensor_device_type,
 			s_ctrl->sensor_i2c_client);
 		if (rc < 0) {
@@ -1469,22 +1399,12 @@ int msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void *argp)
 				__LINE__, rc);
 			break;
 		}
-		s_ctrl->sensor_state = MSM_SENSOR_CCI_UP;
-			CDBG("%s:%d sensor state %d\n", __func__, __LINE__,
-				s_ctrl->sensor_state);
 		break;
 
 	case CFG_CCI_POWER_DOWN:
 		if (s_ctrl->is_csid_tg_mode)
 			goto DONE;
 
-		if (s_ctrl->sensor_state != MSM_SENSOR_POWER_UP &&
-			s_ctrl->sensor_state != MSM_SENSOR_CCI_UP) {
-			pr_err("%s:%d failed: invalid state %d\n", __func__,
-				__LINE__, s_ctrl->sensor_state);
-			rc = -EFAULT;
-			break;
-		}
 		rc = msm_camera_cci_power_down(s_ctrl->sensor_device_type,
 			s_ctrl->sensor_i2c_client);
 		if (rc < 0) {
@@ -1492,9 +1412,6 @@ int msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void *argp)
 				__LINE__, rc);
 			break;
 		}
-		s_ctrl->sensor_state = MSM_SENSOR_CCI_DOWN;
-			CDBG("%s:%d sensor state %d\n", __func__, __LINE__,
-				s_ctrl->sensor_state);
 		break;
 
 	case CFG_SET_STOP_STREAM_SETTING: {
@@ -1504,14 +1421,6 @@ int msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void *argp)
 
 		if (s_ctrl->is_csid_tg_mode)
 			goto DONE;
-
-		if (s_ctrl->sensor_state != MSM_SENSOR_POWER_UP &&
-			s_ctrl->sensor_state != MSM_SENSOR_CCI_UP) {
-			pr_err("%s:%d failed: invalid state %d\n", __func__,
-				__LINE__, s_ctrl->sensor_state);
-			rc = -EFAULT;
-			break;
-		}
 
 		if (copy_from_user(stop_setting,
 			(void __user *)cdata->cfg.setting,
@@ -1613,8 +1522,7 @@ static int msm_sensor_power(struct v4l2_subdev *sd, int on)
 	struct msm_sensor_ctrl_t *s_ctrl = get_sctrl(sd);
 
 	mutex_lock(s_ctrl->msm_sensor_mutex);
-	if (!on && (s_ctrl->sensor_state == MSM_SENSOR_POWER_UP ||
-		s_ctrl->sensor_state == MSM_SENSOR_CCI_UP)) {
+	if (!on && s_ctrl->sensor_state == MSM_SENSOR_POWER_UP) {
 		s_ctrl->func_tbl->sensor_power_down(s_ctrl);
 		s_ctrl->sensor_state = MSM_SENSOR_POWER_DOWN;
 	}
