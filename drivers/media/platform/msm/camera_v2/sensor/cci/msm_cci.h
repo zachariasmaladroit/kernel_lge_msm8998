@@ -189,8 +189,6 @@ struct cci_device {
 #ifdef CONFIG_MACH_LGE
 	struct mutex op_lock;
 #endif
-
-	struct mutex *cci_init_mutex;
 };
 
 enum msm_cci_i2c_cmd_type {
