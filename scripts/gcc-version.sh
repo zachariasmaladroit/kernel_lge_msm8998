@@ -14,7 +14,7 @@ if [ "$1" = "-p" ] ; then
 	shift;
 fi
 
-compiler="$1"
+compiler="$*"
 
 if [ ${#compiler} -eq 0 ]; then
 	echo "Error: No compiler specified."
