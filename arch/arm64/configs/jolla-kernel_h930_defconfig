@@ -6042,6 +6042,8 @@ CONFIG_JUMP_LABEL=y
 #
 # FTRACE: needed for success booting (for now)
 # CONFIG_FTRACE is not set
+#
+# CONFIG_STACKTRACE is not set
 
 # iommu debug
 # CONFIG_IOMMU_IO_PGTABLE_FAST_SELFTEST is not set
