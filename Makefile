@@ -397,17 +397,36 @@ KBUILD_CPPFLAGS := -D__KERNEL__
 KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -pipe \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
+		   -Wno-array-bounds -Wno-shift-overflow \
 		   -Wno-format-security \
-		   -march=armv8-a+crypto+crc \
-		   -mcpu=cortex-a73+crypto+crc \
-		   -std=gnu89 $(call cc-option,-fno-PIE) \
-		   -fmodulo-sched -fmodulo-sched-allow-regmoves \
 		   -fdiagnostics-color=always \
+		   -Wno-unused-value -Wno-unused-parameter \
+		   -Wno-missing-field-initializers \
+		   -Wno-strict-prototypes \
+		   -Wno-misleading-indentation \
+		   -Wno-uninitialized \
+		   -fno-delete-null-pointer-checks \
 		   -fivopts \
-		   -fshrink-wrap \
+		   -fvariable-expansion-in-unroller \
+		   -fipa-cp-clone \
+		   -fipa-icf -fipa-ra \
+		   -flra-remat \
+		   -fcode-hoisting -fhoist-adjacent-loads \
+		   -fipa-cp -fipa-bit-cp \
+		   -fipa-vrp \
+		   -fsplit-loops \
+		   -fshrink-wrap -fshrink-wrap-separate \
+		   -floop-interchange -floop-unroll-and-jam \
+		   -ftree-loop-distribution \
 		   -fsplit-paths \
 		   -flive-range-shrinkage \
-		   -foptimize-strlen
+		   -foptimize-strlen \
+		   -march=armv8-a+crypto+crc \
+		   -mcpu=cortex-a73+crypto+crc \
+		   -std=gnu89 $(call cc-option,-fno-PIE)
+
+#		   -freorder-blocks -freorder-blocks-algorithm=stc -freorder-functions -freorder-blocks-and-partition \
+#		   -ftree-loop-distribute-patterns \
 
 
 KBUILD_AFLAGS_KERNEL :=
