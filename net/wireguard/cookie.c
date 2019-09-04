@@ -20,7 +20,7 @@ void wg_cookie_checker_init(struct cookie_checker *checker,
 			    struct wg_device *wg)
 {
 	init_rwsem(&checker->secret_lock);
-	checker->secret_birthdate = ktime_get_boot_fast_ns();
+	checker->secret_birthdate = ktime_get_coarse_boottime_ns();
 	get_random_bytes(checker->secret, NOISE_HASH_LEN);
 	checker->device = wg;
 }
@@ -38,7 +38,7 @@ static void precompute_key(u8 key[NOISE_SYMMETRIC_KEY_LEN],
 	blake2s_init(&blake, NOISE_SYMMETRIC_KEY_LEN);
 	blake2s_update(&blake, label, COOKIE_KEY_LABEL_LEN);
 	blake2s_update(&blake, pubkey, NOISE_PUBLIC_KEY_LEN);
-	blake2s_final(&blake, key, NOISE_SYMMETRIC_KEY_LEN);
+	blake2s_final(&blake, key);
 }
 
 /* Must hold peer->handshake.static_identity->lock */
@@ -96,7 +96,7 @@ static void make_cookie(u8 cookie[COOKIE_LEN], struct sk_buff *skb,
 	if (wg_birthdate_has_expired(checker->secret_birthdate,
 				     COOKIE_SECRET_MAX_AGE)) {
 		down_write(&checker->secret_lock);
-		checker->secret_birthdate = ktime_get_boot_fast_ns();
+		checker->secret_birthdate = ktime_get_coarse_boottime_ns();
 		get_random_bytes(checker->secret, NOISE_HASH_LEN);
 		up_write(&checker->secret_lock);
 	}
@@ -111,7 +111,7 @@ static void make_cookie(u8 cookie[COOKIE_LEN], struct sk_buff *skb,
 		blake2s_update(&state, (u8 *)&ipv6_hdr(skb)->saddr,
 			       sizeof(struct in6_addr));
 	blake2s_update(&state, (u8 *)&udp_hdr(skb)->source, sizeof(__be16));
-	blake2s_final(&state, cookie, COOKIE_LEN);
+	blake2s_final(&state, cookie);
 
 	up_read(&checker->secret_lock);
 }
@@ -202,7 +202,7 @@ void wg_cookie_message_consume(struct message_handshake_cookie *src,
 	u8 cookie[COOKIE_LEN];
 	bool ret;
 
-	if (unlikely(!wg_index_hashtable_lookup(&wg->index_hashtable,
+	if (unlikely(!wg_index_hashtable_lookup(wg->index_hashtable,
 						INDEX_HASHTABLE_HANDSHAKE |
 						INDEX_HASHTABLE_KEYPAIR,
 						src->receiver_index, &peer)))
@@ -222,7 +222,7 @@ void wg_cookie_message_consume(struct message_handshake_cookie *src,
 	if (ret) {
 		down_write(&peer->latest_cookie.lock);
 		memcpy(peer->latest_cookie.cookie, cookie, COOKIE_LEN);
-		peer->latest_cookie.birthdate = ktime_get_boot_fast_ns();
+		peer->latest_cookie.birthdate = ktime_get_coarse_boottime_ns();
 		peer->latest_cookie.is_valid = true;
 		peer->latest_cookie.have_sent_mac1 = false;
 		up_write(&peer->latest_cookie.lock);

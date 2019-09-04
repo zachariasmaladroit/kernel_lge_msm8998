@@ -113,7 +113,9 @@ del_if() {
 }
 
 add_addr() {
-	cmd ip address add "$1" dev "$INTERFACE"
+	local proto=-4
+	[[ $1 == *:* ]] && proto=-6
+	cmd ip $proto address add "$1" dev "$INTERFACE"
 }
 
 set_mtu_up() {
@@ -157,14 +159,16 @@ unset_dns() {
 }
 
 add_route() {
+	local proto=-4
+	[[ $1 == *:* ]] && proto=-6
 	[[ $TABLE != off ]] || return 0
 
 	if [[ -n $TABLE && $TABLE != auto ]]; then
-		cmd ip route add "$1" dev "$INTERFACE" table "$TABLE"
+		cmd ip $proto route add "$1" dev "$INTERFACE" table "$TABLE"
 	elif [[ $1 == */0 ]]; then
 		add_default "$1"
 	else
-		[[ $(ip route get "$1" 2>/dev/null) == *dev\ $INTERFACE\ * ]] || cmd ip route add "$1" dev "$INTERFACE"
+		[[ -n $(ip $proto route show dev "$INTERFACE" match "$1" 2>/dev/null) ]] || cmd ip $proto route add "$1" dev "$INTERFACE"
 	fi
 }
 
@@ -247,7 +251,7 @@ execute_hooks() {
 
 cmd_usage() {
 	cat >&2 <<-_EOF
-	Usage: $PROGRAM [ up | down | save ] [ CONFIG_FILE | INTERFACE ]
+	Usage: $PROGRAM [ up | down | save | strip ] [ CONFIG_FILE | INTERFACE ]
 
 	  CONFIG_FILE is a configuration file, whose filename is the interface name
 	  followed by \`.conf'. Otherwise, INTERFACE is an interface name, with
@@ -305,6 +309,10 @@ cmd_save() {
 	save_config
 }
 
+cmd_strip() {
+	echo "$WG_CONFIG"
+}
+
 # ~~ function override insertion point ~~
 
 if [[ $# -eq 1 && ( $1 == --help || $1 == -h || $1 == help ) ]]; then
@@ -321,6 +329,10 @@ elif [[ $# -eq 2 && $1 == save ]]; then
 	auto_su
 	parse_options "$2"
 	cmd_save
+elif [[ $# -eq 2 && $1 == strip ]]; then
+	auto_su
+	parse_options "$2"
+	cmd_strip
 else
 	cmd_usage
 	exit 1
