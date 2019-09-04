@@ -51,6 +51,15 @@ LIBMNL_LDLIBS := $(shell $(PKG_CONFIG) --libs libmnl 2>/dev/null || echo -lmnl)
 CFLAGS += $(LIBMNL_CFLAGS)
 LDLIBS += $(LIBMNL_LDLIBS)
 endif
+ifeq ($(PLATFORM),haiku)
+LDLIBS += -lnetwork -lbsd
+endif
+ifeq ($(PLATFORM),windows)
+CC := x86_64-w64-mingw32-gcc
+CFLAGS += -Iwincompat/include -include wincompat/compat.h
+LDLIBS += -lws2_32
+wg: wincompat/libc.o wincompat/init.o
+endif
 
 ifneq ($(V),1)
 BUILT_IN_LINK.o := $(LINK.o)
@@ -89,6 +98,6 @@ install: wg
 help:
 	@cat INSTALL
 
-.PHONY: clean install check help
+.PHONY: clean install help
 
 -include *.d

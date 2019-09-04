@@ -94,7 +94,7 @@ static int wg_pm_notification(struct notifier_block *nb, unsigned long action,
 		mutex_unlock(&wg->device_update_lock);
 	}
 	rtnl_unlock();
-	rcu_barrier_bh();
+	rcu_barrier();
 	return 0;
 }
 
@@ -113,7 +113,7 @@ static int wg_stop(struct net_device *dev)
 		wg_noise_handshake_clear(&peer->handshake);
 		wg_noise_keypairs_clear(&peer->keypairs);
 		atomic64_set(&peer->last_sent_handshake,
-			     ktime_get_boot_fast_ns() -
+			     ktime_get_coarse_boottime_ns() -
 				     (u64)(REKEY_TIMEOUT + 1) * NSEC_PER_SEC);
 	}
 	mutex_unlock(&wg->device_update_lock);
@@ -162,7 +162,7 @@ static netdev_tx_t wg_xmit(struct sk_buff *skb, struct net_device *dev)
 
 	__skb_queue_head_init(&packets);
 	if (!skb_is_gso(skb)) {
-		skb->next = NULL;
+		skb_mark_not_on_list(skb);
 	} else {
 		struct sk_buff *segs = skb_gso_segment(skb, 0);
 
@@ -175,7 +175,7 @@ static netdev_tx_t wg_xmit(struct sk_buff *skb, struct net_device *dev)
 	}
 	do {
 		next = skb->next;
-		skb->next = skb->prev = NULL;
+		skb_mark_not_on_list(skb);
 
 		skb = skb_share_check(skb, GFP_ATOMIC);
 		if (unlikely(!skb))
@@ -237,7 +237,6 @@ static void wg_destruct(struct net_device *dev)
 	mutex_lock(&wg->device_update_lock);
 	wg->incoming_port = 0;
 	wg_socket_reinit(wg, NULL, NULL);
-	wg_allowedips_free(&wg->peer_allowedips, &wg->device_update_lock);
 	/* The final references are cleared in the below calls to destroy_workqueue. */
 	wg_peer_remove_all(wg);
 	destroy_workqueue(wg->handshake_receive_wq);
@@ -245,7 +244,7 @@ static void wg_destruct(struct net_device *dev)
 	destroy_workqueue(wg->packet_crypt_wq);
 	wg_packet_queue_free(&wg->decrypt_queue, true);
 	wg_packet_queue_free(&wg->encrypt_queue, true);
-	rcu_barrier_bh(); /* Wait for all the peers to be actually freed. */
+	rcu_barrier(); /* Wait for all the peers to be actually freed. */
 	wg_ratelimiter_uninit();
 	memzero_explicit(&wg->static_identity, sizeof(wg->static_identity));
 	skb_queue_purge(&wg->incoming_handshakes);
@@ -253,6 +252,8 @@ static void wg_destruct(struct net_device *dev)
 	free_percpu(wg->incoming_handshakes_worker);
 	if (wg->have_creating_net_ref)
 		put_net(wg->creating_net);
+	kvfree(wg->index_hashtable);
+	kvfree(wg->peer_hashtable);
 	mutex_unlock(&wg->device_update_lock);
 
 	pr_debug("%s: Interface deleted\n", dev->name);
@@ -309,19 +310,25 @@ static int wg_newlink(struct net *src_net, struct net_device *dev,
 	mutex_init(&wg->socket_update_lock);
 	mutex_init(&wg->device_update_lock);
 	skb_queue_head_init(&wg->incoming_handshakes);
-	wg_pubkey_hashtable_init(&wg->peer_hashtable);
-	wg_index_hashtable_init(&wg->index_hashtable);
 	wg_allowedips_init(&wg->peer_allowedips);
 	wg_cookie_checker_init(&wg->cookie_checker, wg);
 	INIT_LIST_HEAD(&wg->peer_list);
 	wg->device_update_gen = 1;
 
-	dev->tstats = netdev_alloc_pcpu_stats(struct pcpu_sw_netstats);
-	if (!dev->tstats)
+	wg->peer_hashtable = wg_pubkey_hashtable_alloc();
+	if (!wg->peer_hashtable)
 		return ret;
 
+	wg->index_hashtable = wg_index_hashtable_alloc();
+	if (!wg->index_hashtable)
+		goto err_free_peer_hashtable;
+
+	dev->tstats = netdev_alloc_pcpu_stats(struct pcpu_sw_netstats);
+	if (!dev->tstats)
+		goto err_free_index_hashtable;
+
 	wg->incoming_handshakes_worker =
-		wg_packet_alloc_percpu_multicore_worker(
+		wg_packet_percpu_multicore_worker_alloc(
 				wg_packet_handshake_receive_worker, wg);
 	if (!wg->incoming_handshakes_worker)
 		goto err_free_tstats;
@@ -385,6 +392,10 @@ err_free_incoming_handshakes:
 	free_percpu(wg->incoming_handshakes_worker);
 err_free_tstats:
 	free_percpu(dev->tstats);
+err_free_index_hashtable:
+	kvfree(wg->index_hashtable);
+err_free_peer_hashtable:
+	kvfree(wg->peer_hashtable);
 	return ret;
 }
 
@@ -457,5 +468,5 @@ void wg_device_uninit(void)
 #ifdef CONFIG_PM_SLEEP
 	unregister_pm_notifier(&pm_notifier);
 #endif
-	rcu_barrier_bh();
+	rcu_barrier();
 }
