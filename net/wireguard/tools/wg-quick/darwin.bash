@@ -47,7 +47,8 @@ parse_options() {
 	CONFIG_FILE="$1"
 	if [[ $CONFIG_FILE =~ ^[a-zA-Z0-9_=+.-]{1,15}$ ]]; then
 		for path in "${CONFIG_SEARCH_PATHS[@]}"; do
-			[[ -e $path/$CONFIG_FILE.conf ]] && { CONFIG_FILE="$path/$CONFIG_FILE.conf"; break; }
+			CONFIG_FILE="$path/$1.conf"
+			[[ -e $CONFIG_FILE ]] && break
 		done
 	fi
 	[[ -e $CONFIG_FILE ]] || die "\`$CONFIG_FILE' does not exist"
@@ -78,6 +79,17 @@ parse_options() {
 		WG_CONFIG+="$line"$'\n'
 	done < "$CONFIG_FILE"
 	shopt -u nocasematch
+}
+
+detect_launchd() {
+	unset LAUNCHED_BY_LAUNCHD
+	local line
+	while read -r line; do
+		if [[ $line =~ ^\s*domain\ =\  ]]; then
+			LAUNCHED_BY_LAUNCHD=1
+			break
+		fi
+	done < <(launchctl procinfo $$ 2>/dev/null)
 }
 
 read_bool() {
@@ -307,7 +319,8 @@ monitor_daemon() {
 			set_dns
 			sleep 2 && kill -ALRM $pid 2>/dev/null &
 		fi
-	done < <(route -n monitor)) & disown
+	done < <(route -n monitor)) &
+	[[ -n $LAUNCHED_BY_LAUNCHD ]] || disown
 }
 
 add_route() {
@@ -385,7 +398,7 @@ execute_hooks() {
 
 cmd_usage() {
 	cat >&2 <<-_EOF
-	Usage: $PROGRAM [ up | down | save ] [ CONFIG_FILE | INTERFACE ]
+	Usage: $PROGRAM [ up | down | save | strip ] [ CONFIG_FILE | INTERFACE ]
 
 	  CONFIG_FILE is a configuration file, whose filename is the interface name
 	  followed by \`.conf'. Otherwise, INTERFACE is an interface name, with
@@ -452,12 +465,17 @@ cmd_save() {
 	save_config
 }
 
+cmd_strip() {
+	echo "$WG_CONFIG"
+}
+
 # ~~ function override insertion point ~~
 
 if [[ $# -eq 1 && ( $1 == --help || $1 == -h || $1 == help ) ]]; then
 	cmd_usage
 elif [[ $# -eq 2 && $1 == up ]]; then
 	auto_su
+	detect_launchd
 	parse_options "$2"
 	cmd_up
 elif [[ $# -eq 2 && $1 == down ]]; then
@@ -468,9 +486,15 @@ elif [[ $# -eq 2 && $1 == save ]]; then
 	auto_su
 	parse_options "$2"
 	cmd_save
+elif [[ $# -eq 2 && $1 == strip ]]; then
+	auto_su
+	parse_options "$2"
+	cmd_strip
 else
 	cmd_usage
 	exit 1
 fi
+
+[[ -n $LAUNCHED_BY_LAUNCHD ]] && wait
 
 exit 0
