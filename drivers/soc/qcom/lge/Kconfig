@@ -240,6 +240,13 @@ config LGE_DM_VERITY_RECOVERY
 	  Sometimes, dm-bufio has invalid data. If data is corrupted,
 	  try to recover data.
 
+config LGE_MSM8998_ENABLE_SYSTEM_AS_ROOT
+	bool "Enables using the system partition as rootfs"
+	depends on MACH_LGE
+	help
+	  Enables using system as rootfs for system-as-root enabled
+	  generic images
+
 endmenu
 
 menu "LGE QFPROM Values"
