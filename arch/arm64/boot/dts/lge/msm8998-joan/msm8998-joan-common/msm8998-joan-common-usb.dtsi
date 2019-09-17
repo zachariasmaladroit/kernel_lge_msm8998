@@ -22,7 +22,7 @@
 	/* Sequence of parameters :
 	   - IMP_CTRL1, TUNE1, TUNE2, TUNE4  */
 	qcom,qusb-phy-tune = <0x8c 0xff 0x0c 0x04>;
-	qcom,qusb-phy-tune-host = <0x8c 0x05 0x0c 0x05>;
+	qcom,qusb-phy-tune-host = <0x8c 0xa5 0x0f 0x05>;
 };
 
 &ssphy {

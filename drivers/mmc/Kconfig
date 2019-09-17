@@ -36,7 +36,7 @@ config LGE_MMC_CLK_SCALE_DISABLE
 
 config LGE_TRAY_EVENT
     bool "Show SD Card Detect pin status"
-    depends on MACH_LGE && LGE_SHOW_SDCARD_DETECT_PIN_STATUS
+    depends on MACH_LGE
     default y
     help
         Support the uevent for SD Card TRAY status.

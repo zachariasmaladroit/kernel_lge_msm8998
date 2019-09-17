@@ -6124,8 +6124,8 @@ irqreturn_t smblib_handle_batt_qipma_on(int irq, void *data)
 	if (!pval.intval && (bool)(stat & BAT_6_RT_STS_BIT)) {
 		chg->qipma_on_status++;
 		smblib_dbg(chg, PR_INTERRUPT, "idtp9223 qi_pma_on pin value=%d[%d]\n",
-                           stat, chg->qipma_on_status);
-        }
+				stat, chg->qipma_on_status);
+	}
 
 	return IRQ_HANDLED;
 }

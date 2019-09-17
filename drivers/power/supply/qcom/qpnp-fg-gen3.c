@@ -4569,6 +4569,9 @@ static int fg_hw_init(struct fg_chip *chip)
 {
 	int rc;
 	u8 buf[4], val;
+#ifdef CONFIG_LGE_PM
+	u8 battery_missing_detect = 1;
+#endif
 
 	fg_encode(chip->sp, FG_SRAM_CUTOFF_VOLT, chip->dt.cutoff_volt_mv, buf);
 	rc = fg_sram_write(chip, chip->sp[FG_SRAM_CUTOFF_VOLT].addr_word,
@@ -4840,6 +4843,14 @@ static int fg_hw_init(struct fg_chip *chip)
 			return rc;
 		}
 	}
+
+#ifdef CONFIG_LGE_PM
+	rc = fg_write(chip, BATT_INFO_BATT_MISS_CFG(chip),
+			&battery_missing_detect, 1);
+	if (rc < 0) {
+		pr_err("Error in writing BATT_INFO_BATT_MISS_CFG\n");
+	}
+#endif
 
 	if (chip->dt.ki_coeff_hi_chg != -EINVAL) {
 		fg_encode(chip->sp, FG_SRAM_KI_COEFF_HI_CHG,

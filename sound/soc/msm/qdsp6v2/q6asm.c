@@ -8509,135 +8509,73 @@ fail_cmd:
 #ifdef CONFIG_SND_LGE_MQA
 int q6asm_set_lgmqa_param_properties(struct audio_client *ac, long *val)
 {
-        struct asm_lgmqa_param_all lgmqa_paramAll;
-        int sz = 0;
-        int rc  = 0;
-
+	struct asm_lgmqa_param_all lgmqa_paramAll;
+	struct param_hdr_v3 param_info;
+	int rc  = 0;
+	
         if (!ac || ac->apr == NULL) {
                 pr_err("%s: APR handle NULL\n", __func__);
                 rc = -EINVAL;
                 goto fail_cmd;
         }
 
-        sz = sizeof(struct asm_lgmqa_param_all);
-        q6asm_add_hdr_async(ac, &lgmqa_paramAll.hdr, sz, TRUE);
-        atomic_set(&ac->cmd_state_pp, -1);
+        memset(&lgmqa_paramAll, 0, sizeof(lgmqa_paramAll));
+        memset(&param_info, 0, sizeof(param_info));
 
-        lgmqa_paramAll.hdr.opcode = ASM_STREAM_CMD_SET_PP_PARAMS_V2;
-        lgmqa_paramAll.param.data_payload_addr_lsw = 0;
-        lgmqa_paramAll.param.data_payload_addr_msw = 0;
-
-        lgmqa_paramAll.param.mem_map_handle = 0;
-        lgmqa_paramAll.param.data_payload_size = sizeof(lgmqa_paramAll) -
-                                sizeof(lgmqa_paramAll.hdr) - sizeof(lgmqa_paramAll.param);
-
-        lgmqa_paramAll.data.module_id = AUDPROC_MODULE_ID_LGMQA;
-        lgmqa_paramAll.data.param_id = AUDPROC_PARAM_ID_LGMQA_PROPERTIES;
-        lgmqa_paramAll.data.param_size = lgmqa_paramAll.param.data_payload_size - sizeof(lgmqa_paramAll.data);
-        lgmqa_paramAll.data.reserved = 0;
-
-        pr_err("#### %s in Kernel use array: %ld, %ld, %ld, %ld",__func__,val[0],val[1],val[2],val[3]);
+        param_info.module_id = AUDPROC_MODULE_ID_LGMQA;
+        param_info.instance_id = INSTANCE_ID_0;
+        param_info.param_id = AUDPROC_PARAM_ID_LGMQA_PROPERTIES;
+        param_info.param_size = sizeof(lgmqa_paramAll);
+        
         lgmqa_paramAll.powermode = *val++;
-
         lgmqa_paramAll.multiplerate = *val++;
         lgmqa_paramAll.outputmode = *val++;
+        
+        pr_debug("%s:send packet ALL powerMode[%d], multipleRate[%d], outputMode[%d]\n",__func__,lgmqa_paramAll.powermode,lgmqa_paramAll.multiplerate,lgmqa_paramAll.outputmode);
 
-        pr_err("%s:send packet ALL powerMode[%d], multipleRate[%d], outputMode[%d]\n",__func__,lgmqa_paramAll.powermode,lgmqa_paramAll.multiplerate,lgmqa_paramAll.outputmode);
-
-
-        rc = apr_send_pkt(ac->apr, (uint32_t *) &lgmqa_paramAll);
-        if (rc < 0) {
-                pr_err("%s: set-params send failed paramid[0x%x]\n", __func__,
-                                                lgmqa_paramAll.data.param_id);
-                rc = -EINVAL;
-                goto fail_cmd;
-        }
-
-        rc = wait_event_timeout(ac->cmd_wait,
-                        (atomic_read(&ac->cmd_state_pp) >= 0), 5*HZ);
-
-        if (!rc) {
-                pr_err("%s: timeout, set-params paramid[0x%x]\n", __func__,
-                                                lgmqa_paramAll.data.param_id);
-                rc = -ETIMEDOUT;
-                goto fail_cmd;
-        }
-        if (atomic_read(&ac->cmd_state_pp) > 0) {
-                pr_err("%s: DSP returned error[%s] set-params paramid[0x%x]\n",
-                                __func__, adsp_err_get_err_str(
-                                atomic_read(&ac->cmd_state_pp)),
-                                lgmqa_paramAll.data.param_id);
-                rc = adsp_err_get_lnx_err_code(
-                                atomic_read(&ac->cmd_state_pp));
-                goto fail_cmd;
-        }
-        rc = 0;
+        rc = q6asm_pack_and_set_pp_param_in_band(ac, param_info, (u8 *) &lgmqa_paramAll);
+        if (rc)
+		        pr_err("%s: set-params send failed paramid[0x%x] rc %d\n",
+		           __func__, param_info.param_id, rc);
 fail_cmd:
         return rc;
 }
+
 int q6asm_set_lgmqa_param_one(struct audio_client *ac, int cmd, int val)
 {
-        struct asm_lgmqa_param_one lgmqa_param;
-        int sz = 0;
-        int rc  = 0;
-
+	struct asm_lgmqa_param_one lgmqa_param;
+	struct param_hdr_v3 param_info;
+	int rc  = 0;
+	
         if (!ac || ac->apr == NULL) {
                 pr_err("%s: APR handle NULL\n", __func__);
                 rc = -EINVAL;
                 goto fail_cmd;
         }
+        
 
-        sz = sizeof(struct asm_lgmqa_param_one);
-        q6asm_add_hdr_async(ac, &lgmqa_param.hdr, sz, TRUE);
-        atomic_set(&ac->cmd_state_pp, -1);
+        memset(&lgmqa_param, 0, sizeof(lgmqa_param));
+        memset(&param_info, 0, sizeof(param_info));
 
-        lgmqa_param.hdr.opcode = ASM_STREAM_CMD_SET_PP_PARAMS_V2;
-        lgmqa_param.param.data_payload_addr_lsw = 0;
-        lgmqa_param.param.data_payload_addr_msw = 0;
-
-        lgmqa_param.param.mem_map_handle = 0;
-        lgmqa_param.param.data_payload_size = sizeof(lgmqa_param) -
-                                sizeof(lgmqa_param.hdr) - sizeof(lgmqa_param.param);
-
-        lgmqa_param.data.module_id = AUDPROC_MODULE_ID_LGMQA;
-        lgmqa_param.data.param_id = cmd;
-        lgmqa_param.data.param_size = lgmqa_param.param.data_payload_size - sizeof(lgmqa_param.data);
-        lgmqa_param.data.reserved = 0;
+        param_info.module_id = AUDPROC_MODULE_ID_LGMQA;
+        param_info.instance_id = INSTANCE_ID_0;
+        param_info.param_id = cmd;
+        param_info.param_size = sizeof(lgmqa_param);
+        
         lgmqa_param.msg = val;
+        
+        pr_debug("%s:send packet param_id[0x%x], val[%d]\n",__func__,param_info.param_id,lgmqa_param.msg);
 
-
-        pr_err("%s:send packet\n",__func__);
-        rc = apr_send_pkt(ac->apr, (uint32_t *) &lgmqa_param);
-        if (rc < 0) {
-                pr_err("%s: set-params send failed paramid[0x%x]\n", __func__,
-                                                lgmqa_param.data.param_id);
-                rc = -EINVAL;
-                goto fail_cmd;
-        }
-
-        rc = wait_event_timeout(ac->cmd_wait,
-                        (atomic_read(&ac->cmd_state_pp) >= 0), 5*HZ);
-
-        if (!rc) {
-                pr_err("%s: timeout, set-params paramid[0x%x]\n", __func__,
-                                                lgmqa_param.data.param_id);
-                rc = -ETIMEDOUT;
-                goto fail_cmd;
-        }
-        if (atomic_read(&ac->cmd_state_pp) > 0) {
-                pr_err("%s: DSP returned error[%s] set-params paramid[0x%x]\n",
-                                __func__, adsp_err_get_err_str(
-                                atomic_read(&ac->cmd_state_pp)),
-                                lgmqa_param.data.param_id);
-                rc = adsp_err_get_lnx_err_code(
-                                atomic_read(&ac->cmd_state_pp));
-                goto fail_cmd;
-        }
-        rc = 0;
+        rc = q6asm_pack_and_set_pp_param_in_band(ac, param_info, (u8 *) &lgmqa_param);
+        if (rc)
+		        pr_err("%s: set-params send failed paramid[0x%x] rc %d\n",
+		           __func__, param_info.param_id, rc);
 fail_cmd:
         return rc;
 }
-#endif
+
+EXPORT_SYMBOL(q6asm_set_lgmqa_param_one);
+#endif //CONFIG_SND_LGE_MQA
 
 #ifdef CONFIG_SND_LGE_DTS
 int q6asm_set_lge_dts_param(struct audio_client *ac, int param_id, int val)

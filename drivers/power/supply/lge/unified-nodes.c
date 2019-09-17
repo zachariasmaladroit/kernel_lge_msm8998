@@ -1,5 +1,6 @@
 #define pr_fmt(fmt) "UNINODE: %s: " fmt, __func__
 #define pr_uninode(fmt, ...) pr_err(fmt, ##__VA_ARGS__)
+#define pr_dbg_uninode(fmt, ...) pr_debug(fmt, ##__VA_ARGS__)
 
 #define UNIFIED_NODES_DEVICE	"lge-unified-nodes"
 #define UNIFIED_NODES_DISABLED	-1000000
@@ -248,7 +249,7 @@ static ssize_t charging_restriction_show(struct device* dev, struct device_attri
 				if (!strcmp(restriction->name, "LCD"))
 					ret = (restriction->limit == VOTE_TOTALLY_RELEASED) ?
 						-1 : restriction->limit;
-				pr_uninode("voting Name=%s, Value=%d\n", restriction->name,
+				pr_dbg_uninode("voting Name=%s, Value=%d\n", restriction->name,
 					(restriction->limit == VOTE_TOTALLY_RELEASED ? -1 : restriction->limit));
 			}
 		}

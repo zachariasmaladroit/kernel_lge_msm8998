@@ -4824,7 +4824,7 @@ static int __mdss_fb_copy_destscaler_data(struct fb_info *info,
 	}
 
 	mdata = mfd_to_mdata(mfd);
-	if (!mdata) {
+	if (!mdata || !mdata->scaler_off) {
 		pr_err("mdata is NULL or not initialized\n");
 		ret = -EINVAL;
 		goto err;

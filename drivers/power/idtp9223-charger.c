@@ -21,8 +21,8 @@ do {							\
 
 #define pr_assert(exp)					\
 do {							\
-	if ((idtp9223_debug & ASSERT) && !(exp)) {	\
-		pr_idt(ASSERT, "Assertion failed\n");	\
+	if ((idtp9223_debug & IDT_ASSERT) && !(exp)) {	\
+		pr_idt(IDT_ASSERT, "Assertion failed\n");	\
 		dump_stack();				\
 	}						\
 } while (0)
@@ -43,6 +43,10 @@ do {							\
 #include <linux/bitops.h>
 #include <linux/regmap.h>
 #include <linux/regulator/consumer.h>
+#include <linux/pmic-voter.h>
+#ifdef CONFIG_LGE_PM_VENEER_PSY
+#include "supply/lge/veneer-primitives.h"
+#endif
 
 #define IDTP9223_NAME_COMPATIBLE	"idt,p9223-charger"
 #define IDTP9223_NAME_DRIVER		"idtp9223-charger"
@@ -60,6 +64,8 @@ do {							\
 #define REG_NEW_ADDR_VOUT	0x3C
 #define REG_NEW_ADDR_OPMODE	0x4C
 #define REG_NEW_ADDR_COMMAND	0x4E
+#define REG_NEW_ADDR_TXID	0xC2
+#define REG_NEW_ADDR_GAIN	0xCF
 
 // For EPT register
 #define EPT_BY_EOC			1
@@ -85,14 +91,14 @@ do {							\
 #define CHG_CURRENT_MAX		900000
 
 enum idtp9223_print {
-	ASSERT = BIT(0),
-	ERROR = BIT(1),
-	INTERRUPT = BIT(2),
-	MONITOR = BIT(3),
-	REGISTER = BIT(4),
-	RETURN = BIT(5),
-	UPDATE = BIT(6),
-	VERBOSE = BIT(7),
+	IDT_ASSERT = BIT(0),
+	IDT_ERROR = BIT(1),
+	IDT_INTERRUPT = BIT(2),
+	IDT_MONITOR = BIT(3),
+	IDT_REGISTER = BIT(4),
+	IDT_RETURN = BIT(5),
+	IDT_UPDATE = BIT(6),
+	IDT_VERBOSE = BIT(7),
 };
 
 enum idtp9223_opmode {
@@ -121,6 +127,7 @@ struct idtp9223_chip {
 	struct delayed_work		wlc_set_current;
 	struct delayed_work		wlc_check_online;
 	struct delayed_work		wlc_set_fake_online;
+	struct delayed_work		wlc_timer_maxinput;
 	struct work_struct		wlc_dc_update;
 	struct work_struct		wlc_batt_update;
 	struct work_struct		wlc_usb_update;
@@ -188,7 +195,7 @@ static inline const char* idtp9223_modename(enum idtp9223_opmode modetype) {
 	}
 }
 
-static int idtp9223_debug = ERROR | INTERRUPT | MONITOR | REGISTER | UPDATE;
+static int idtp9223_debug = IDT_ERROR | IDT_INTERRUPT | IDT_MONITOR | IDT_REGISTER | IDT_UPDATE;
 
 static int idtp9223_reg_read(struct i2c_client* client, u16 reg, u8 *val);
 static int idtp9223_reg_write(struct i2c_client* client, u16 reg, u8 val);
@@ -198,6 +205,7 @@ static bool idtp9223_is_online(struct idtp9223_chip *chip);
 static bool idtp9223_is_enabled(struct idtp9223_chip *chip);
 static bool idtp9223_is_full(struct idtp9223_chip *chip);
 static void idtp9223_set_online(struct work_struct* work);
+static bool idtp9223_set_maxinput(struct idtp9223_chip* chip, bool enable);
 
 static bool psy_set_voltage(struct idtp9223_chip *chip, bool is_lower);
 static bool psy_set_enable(struct idtp9223_chip *chip, bool enable);
@@ -302,11 +310,11 @@ static void idtp9223_reg_dump(struct idtp9223_chip *chip) {
 		for (i=0; i<sizeof(idtp9223_regs)/sizeof(idtp9223_regs[0]); i++) {
 			val = -1;
 			idtp9223_reg_read(chip->wlc_client, idtp9223_regs[i], &val);
-			pr_idt(REGISTER, "%02x : %02x\n", idtp9223_regs[i], val);
+			pr_idt(IDT_REGISTER, "%02x : %02x\n", idtp9223_regs[i], val);
 		}
 	}
 	else
-		pr_idt(VERBOSE, "idtp9223 is off\n");
+		pr_idt(IDT_VERBOSE, "idtp9223 is off\n");
 }
 
 static unsigned int sysfs_i2c_register = -1;
@@ -334,13 +342,13 @@ static ssize_t sysfs_i2c_store(struct device* dev,
 	u8 value = -1;
 	if (sscanf(buf, "0x%04x-0x%02x", &sysfs_i2c_register, (unsigned int*)&value) == 2) {
 		if (idtp9223_reg_write(chip->wlc_client, sysfs_i2c_register, value))
-			pr_idt(ERROR, "I2C write fail for 0x%04x\n", sysfs_i2c_register);
+			pr_idt(IDT_ERROR, "I2C write fail for 0x%04x\n", sysfs_i2c_register);
 	}
 	else if (sscanf(buf, "0x%04x", &sysfs_i2c_register) == 1) {
-		pr_idt(ERROR, "I2C address 0x%04x is stored\n", sysfs_i2c_register);
+		pr_idt(IDT_ERROR, "I2C address 0x%04x is stored\n", sysfs_i2c_register);
 	}
 	else {
-		pr_idt(ERROR, "Usage : echo 0x%%04x-0x%%02x\n > register");
+		pr_idt(IDT_ERROR, "Usage : echo 0x%%04x-0x%%02x\n > register");
 	}
 
 	return size;
@@ -378,7 +386,7 @@ fake_end:
 	power_supply_changed(chip->wlc_psy);
 
 fake_log:
-	pr_idt(UPDATE, "idtp9223_set_fake_online [%d/%d]\n", chip->status_fake_online, qipma_on_status);
+	pr_idt(IDT_UPDATE, "idtp9223_set_fake_online [%d/%d]\n", chip->status_fake_online, qipma_on_status);
 }
 
 static void idtp9223_set_current(struct work_struct *work) {
@@ -389,7 +397,7 @@ static void idtp9223_set_current(struct work_struct *work) {
 
 	if (idtp9223_is_online(chip)) {
 		value.intval = chip->wlc_chg_current;
-		pr_idt(UPDATE, "set thermal current = %duA\n", value.intval);
+		pr_idt(IDT_UPDATE, "set thermal current = %duA\n", value.intval);
 		power_supply_set_property(chip->dc_psy,
 					  POWER_SUPPLY_PROP_CURRENT_MAX,
 					  &value);
@@ -453,7 +461,7 @@ static bool idtp9223_is_online(struct idtp9223_chip *chip) {
 	bool status = chip->status_online;
 
 	if (!chip->dc_psy) {
-		pr_idt(ERROR, "Couldn't get dc_psy!\n");
+		pr_idt(IDT_ERROR, "Couldn't get dc_psy!\n");
 	} else {
 		chip->dc_psy->desc->get_property(chip->dc_psy,
 				POWER_SUPPLY_PROP_QIPMA_ON, &pval);
@@ -490,12 +498,13 @@ static bool idtp9223_is_full(struct idtp9223_chip *chip) {
 		return status;
 	}
 	else {
-		pr_idt(VERBOSE, "idtp9223 is off now\n");
+		pr_idt(IDT_VERBOSE, "idtp9223 is off now\n");
 		pr_assert(status==false); // The status should be false on offline
 		return false;
 	}
 }
 
+#define UNVOTING_TIMER_MS	5000
 static void idtp9223_set_online(struct work_struct* work) {
 	struct idtp9223_chip *chip = container_of(work, struct idtp9223_chip,
 			wlc_set_online.work);
@@ -504,7 +513,7 @@ static void idtp9223_set_online(struct work_struct* work) {
 	extern void touch_notify_wireless(u32 type);
 
 	if (!chip->wlc_client) {
-		pr_idt(ERROR, "wlc client is NULL!\n");
+		pr_idt(IDT_ERROR, "wlc client is NULL!\n");
 		return;
 	}
 
@@ -513,7 +522,7 @@ static void idtp9223_set_online(struct work_struct* work) {
 		union power_supply_propval pval2 = {0,};
 
 		chip->dc_psy->desc->get_property(chip->dc_psy, POWER_SUPPLY_PROP_PRESENT, &pval2);
-		pr_idt(UPDATE, "status_online(%d) set_online(%d) dc_present(%d)\n",
+		pr_idt(IDT_UPDATE, "status_online(%d) set_online(%d) dc_present(%d)\n",
 				chip->status_online, pval.intval, pval2.intval);
 		if (pval2.intval)
 			return;
@@ -529,22 +538,22 @@ static void idtp9223_set_online(struct work_struct* work) {
 		#define REG_ADDR_FIRMWARE_LO 0x06
 		#define REG_ADDR_FIRMWARE_HI 0x07
 		rc = idtp9223_reg_read(chip->wlc_client, REG_ADDR_FIRMWARE_HI, &value);
-		pr_idt(REGISTER, "REG_ADDR_FIRMWARE_HI :%02x\n", value);
+		pr_idt(IDT_REGISTER, "REG_ADDR_FIRMWARE_HI :%02x\n", value);
 		rc = idtp9223_reg_read(chip->wlc_client, REG_ADDR_FIRMWARE_LO, &value);
-		pr_idt(REGISTER, "REG_ADDR_FIRMWARE_LO :%02x\n", value);
+		pr_idt(IDT_REGISTER, "REG_ADDR_FIRMWARE_LO :%02x\n", value);
 		if (rc < 0) {
-			pr_idt(REGISTER, "fail so return ...\n");
+			pr_idt(IDT_REGISTER, "fail so return ...\n");
 			return;
 		}
 
 		if (value >= 0x20) {
-			pr_idt(REGISTER, "Firmware Version : WPC20(%02x)\n", value);
+			pr_idt(IDT_REGISTER, "Firmware Version : WPC20(%02x)\n", value);
 			firm_ver = WPC20;
 		} else if (value >= 0x09) {
-			pr_idt(REGISTER, "Firmware Version : NEW(%02x)\n", value);
+			pr_idt(IDT_REGISTER, "Firmware Version : NEW(%02x)\n", value);
 			firm_ver = NEW;
 		} else {
-			pr_idt(REGISTER, "Firmware Version : OLD(%02x)\n", value);
+			pr_idt(IDT_REGISTER, "Firmware Version : OLD(%02x)\n", value);
 			firm_ver = OLD;
 		}
 
@@ -563,7 +572,7 @@ static void idtp9223_set_online(struct work_struct* work) {
 		} else if (value & FLAG_PMA) {
 			chip->status_opmode = PMA;
 #ifdef CONFIG_IDTP9223_CHARGER_WPC_ONLY
-			pr_idt(REGISTER, "operating mode = FLAG_PMA : set EPT signal...\n");
+			pr_idt(IDT_REGISTER, "operating mode = FLAG_PMA : set EPT signal...\n");
 			idtp9223_reg_write(chip->wlc_client, chip->REG_ADDR_EPT, EPT_BY_EOC);
 			idtp9223_reg_write(chip->wlc_client, chip->REG_ADDR_COMMAND, SEND_EPT);
 			return;
@@ -574,14 +583,24 @@ static void idtp9223_set_online(struct work_struct* work) {
 
 		current_pm = (value & POWER_MODE);
 
-		pr_idt(REGISTER, "TX mode = %s(%02x) & Power mode = %s(%d)\n",
+		pr_idt(IDT_REGISTER, "TX mode = %s(%02x) & Power mode = %s(%d)\n",
 				idtp9223_modename(chip->status_opmode), value,
 				current_pm ? "Extended Profile Mode" : "Basic Power Mode", current_pm);
+
+		if (firm_ver == WPC20) {
+			idtp9223_reg_read(chip->wlc_client, REG_NEW_ADDR_TXID, &value);
+			if (value == 0x5d) {
+				idtp9223_reg_write(chip->wlc_client, REG_NEW_ADDR_GAIN, 0x64);
+				idtp9223_set_maxinput(chip, true);
+				schedule_delayed_work(&chip->wlc_timer_maxinput,
+						round_jiffies_relative(msecs_to_jiffies(UNVOTING_TIMER_MS)));
+			}
+		}
 
 		if (chip->fod_num && !current_pm && firm_ver == WPC20) {
 			int i;
 			for (i = 0; i < chip->fod_num; i++) {
-				pr_idt(REGISTER, "Set [%d] FOD register %02x to %02x\n", i,
+				pr_idt(IDT_REGISTER, "Set [%d] FOD register %02x to %02x\n", i,
 						chip->fod_status[i].fod_register,
 						chip->fod_status[i].fod_value);
 				idtp9223_reg_write(chip->wlc_client,
@@ -599,11 +618,11 @@ static void idtp9223_set_online(struct work_struct* work) {
 		if (firm_ver != WPC20) {
 			// Set Vout to 5.5V by default
 			idtp9223_reg_read(chip->wlc_client, chip->REG_ADDR_VOUT, &value);
-			pr_idt(REGISTER, "Default Vout = %02x\n", value);
+			pr_idt(IDT_REGISTER, "Default Vout = %02x\n", value);
 			idtp9223_reg_write(chip->wlc_client, chip->REG_ADDR_VOUT, VOUT_V55);
 		}
 		idtp9223_reg_read(chip->wlc_client, chip->REG_ADDR_VOUT, &value);
-		pr_idt(REGISTER, "Current Vout = %02x\n", value);
+		pr_idt(IDT_REGISTER, "Current Vout = %02x\n", value);
 
 		chip->status_fastchg = ((value > (u8)VOUT_V55) && current_pm) ? 1 : 0;
 		schedule_delayed_work(&chip->wlc_set_current, msecs_to_jiffies(5000));
@@ -613,9 +632,12 @@ static void idtp9223_set_online(struct work_struct* work) {
 
 		touch_notify_wireless(1);
 	} else {
-		pr_idt(REGISTER, "fake check start.....\n");
+		pr_idt(IDT_REGISTER, "fake check start.....\n");
 		chip->status_fake_online = 1;
 		schedule_delayed_work(&chip->wlc_set_fake_online, msecs_to_jiffies(1000));
+
+		cancel_delayed_work(&chip->wlc_timer_maxinput);
+		idtp9223_set_maxinput(chip, false);
 
 		chip->status_opmode = UNKNOWN;
 		chip->status_full = false;
@@ -639,17 +661,26 @@ static void idtp9223_check_online(struct work_struct* work) {
 	if (chip->status_online) {
 		chip->dc_psy->desc->get_property(chip->dc_psy, POWER_SUPPLY_PROP_QIPMA_ON, &pval);
 		if (!pval.intval) {
-			pr_idt(REGISTER, "Check online again!\n");
+			pr_idt(IDT_REGISTER, "Check online again!\n");
 			schedule_delayed_work(&chip->wlc_set_online, msecs_to_jiffies(0));
 		}
 	}
+}
+
+static bool idtp9223_set_maxinput(struct idtp9223_chip* chip, bool enable) {
+#ifdef CONFIG_LGE_PM_VENEER_PSY
+	/* At this time, Releasing IBAT/IDC via VENEER system */
+	veneer_voter_passover(VOTER_TYPE_IBAT, VOTE_TOTALLY_RELEASED, enable);
+	veneer_voter_passover(VOTER_TYPE_IDC, VOTE_TOTALLY_RELEASED, enable);
+#endif
+	return true;
 }
 
 static bool psy_set_voltage(struct idtp9223_chip* chip, bool is_lower) {
 	u8 value = -1;
 
 	if (!idtp9223_is_online(chip)) {
-		pr_idt(VERBOSE, "idtp9223 is off now\n");
+		pr_idt(IDT_VERBOSE, "idtp9223 is off now\n");
 		return false;
 	}
 
@@ -657,12 +688,12 @@ static bool psy_set_voltage(struct idtp9223_chip* chip, bool is_lower) {
 		idtp9223_reg_read(chip->wlc_client, chip->REG_ADDR_VOUT, &value);
 		if (is_lower) {
 			if (value > (u8)VOUT_V55) {
-				pr_idt(REGISTER, "Set voltage to 5.5V\n");
+				pr_idt(IDT_REGISTER, "Set voltage to 5.5V\n");
 				idtp9223_reg_write(chip->wlc_client, chip->REG_ADDR_VOUT, VOUT_V55);
 			}
 		} else {
 			if (value <= (u8)VOUT_V55) {
-				pr_idt(REGISTER, "Set voltage to 9V\n");
+				pr_idt(IDT_REGISTER, "Set voltage to 9V\n");
 				idtp9223_reg_write(chip->wlc_client, chip->REG_ADDR_VOUT, VOUT_V90);
 			}
 		}
@@ -680,7 +711,7 @@ static bool psy_set_enable(struct idtp9223_chip* chip, bool enable) {
 				POWER_SUPPLY_PROP_TYPEC_MODE, &value);
 		if (rc >= 0) {
 			if (value.intval != POWER_SUPPLY_TYPEC_NONE) {
-				pr_idt(REGISTER, "OTG connection set! MODE:%d/EN:%d\n",
+				pr_idt(IDT_REGISTER, "OTG connection set! MODE:%d/EN:%d\n",
 						value.intval, enable);
 				enable &= !value.intval;
 			}
@@ -688,11 +719,11 @@ static bool psy_set_enable(struct idtp9223_chip* chip, bool enable) {
 	}
 
 	if (idtp9223_is_enabled(chip) == enable) {
-		pr_idt(VERBOSE, "status_enabled is already set to %d\n", enable);
+		pr_idt(IDT_VERBOSE, "status_enabled is already set to %d\n", enable);
 		return false;
 	}
 
-	pr_idt(UPDATE, "psy_set_enable status = %d\n", enable);
+	pr_idt(IDT_UPDATE, "psy_set_enable status = %d\n", enable);
 	gpiod_set_value(gpio_to_desc(chip->gpio_disabling), !enable);
 	chip->status_enabled = enable;
 
@@ -704,12 +735,12 @@ static bool psy_set_enable(struct idtp9223_chip* chip, bool enable) {
 
 static bool psy_set_full(struct idtp9223_chip* chip, bool full) {
 	if (idtp9223_is_full(chip) == full) {
-		pr_idt(VERBOSE, "status full is already set to %d\n", full);
+		pr_idt(IDT_VERBOSE, "status full is already set to %d\n", full);
 		return false;
 	}
 
 	if (!idtp9223_is_online(chip)) {
-		pr_idt(VERBOSE, "idtp9223 is off now\n");
+		pr_idt(IDT_VERBOSE, "idtp9223 is off now\n");
 		return false;
 	}
 
@@ -718,7 +749,7 @@ static bool psy_set_full(struct idtp9223_chip* chip, bool full) {
 		chip->batt_psy->desc->get_property(chip->batt_psy,
 				POWER_SUPPLY_PROP_CAPACITY, &value);
 		if (value.intval != 100) {
-			pr_idt(ERROR, "Skip to send EoC at DECCUR state by OTP\n");
+			pr_idt(IDT_ERROR, "Skip to send EoC at DECCUR state by OTP\n");
 			return false;
 		}
 
@@ -727,15 +758,15 @@ static bool psy_set_full(struct idtp9223_chip* chip, bool full) {
 			/* CS100 is special signal for some TX pads */
 			idtp9223_reg_write(chip->wlc_client, chip->REG_ADDR_CHGSTAT, 100);
 			idtp9223_reg_write(chip->wlc_client, chip->REG_ADDR_COMMAND, SEND_CHGSTAT);
-			pr_idt(UPDATE, "Sending CS100 to WPC pads for EoC\n");
+			pr_idt(IDT_UPDATE, "Sending CS100 to WPC pads for EoC\n");
 			break;
 		case PMA:
 			idtp9223_reg_write(chip->wlc_client, chip->REG_ADDR_EPT, EPT_BY_EOC);
 			idtp9223_reg_write(chip->wlc_client, chip->REG_ADDR_COMMAND, SEND_EPT);
-			pr_idt(UPDATE, "Sending EPT to PMA pads for EoC\n");
+			pr_idt(IDT_UPDATE, "Sending EPT to PMA pads for EoC\n");
 			break;
 		default:
-			pr_idt(ERROR, "Is IDTP online really?\n");
+			pr_idt(IDT_ERROR, "Is IDTP online really?\n");
 			break;
 		}
 	}
@@ -776,16 +807,16 @@ static bool psy_set_temperature(struct idtp9223_chip* chip, int temperature) {
 		if (idtp9223_is_online(chip) &&
 			chip->status_temperature > chip->configure_overheat) {
 
-			pr_idt(MONITOR, "If the system is about to shutdown, "
+			pr_idt(IDT_MONITOR, "If the system is about to shutdown, "
 				"Turn off with EPT_BY_OVERTEMP\n");
 			if (!idtp9223_reg_write(chip->wlc_client, chip->REG_ADDR_EPT, EPT_BY_OVERTEMP) &&
 				!idtp9223_reg_write(chip->wlc_client, chip->REG_ADDR_COMMAND, SEND_EPT)) {
-				pr_idt(MONITOR, "System will be turned off by overheat, "
+				pr_idt(IDT_MONITOR, "System will be turned off by overheat, "
 					"wait for 500msecs to settle TX\n");
 				msleep(500);
 			}
 			else
-				pr_idt(ERROR, "Failed to turning off by EPT_BY_OVERTEMP\n");
+				pr_idt(IDT_ERROR, "Failed to turning off by EPT_BY_OVERTEMP\n");
 		}
 	}
 
@@ -803,15 +834,15 @@ static int psy_property_set(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_CHARGING_ENABLED:
 		if (psy_set_enable(chip, val->intval))
-			pr_idt(RETURN, "set POWER_SUPPLY_PROP_CHARGING_ENABLED : %d\n", val->intval);
+			pr_idt(IDT_RETURN, "set POWER_SUPPLY_PROP_CHARGING_ENABLED : %d\n", val->intval);
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_DONE:
 		if (psy_set_full(chip, val->intval))
-			pr_idt(RETURN, "set POWER_SUPPLY_PROP_CHARGE_DONE : %d\n", val->intval);
+			pr_idt(IDT_RETURN, "set POWER_SUPPLY_PROP_CHARGE_DONE : %d\n", val->intval);
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
 		if (psy_set_voltage(chip, (bool)val->intval))
-			pr_idt(RETURN, "set POWER_SUPPLY_PROP_VOLTAGE_MAX : %d\n", val->intval);
+			pr_idt(IDT_RETURN, "set POWER_SUPPLY_PROP_VOLTAGE_MAX : %d\n", val->intval);
 		break;
 	default:
 		break;
@@ -831,24 +862,24 @@ static int psy_property_get(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_PRESENT:
 	case POWER_SUPPLY_PROP_ONLINE:
 		val->intval = idtp9223_is_fake_online(chip);
-		pr_idt(RETURN, "get POWER_SUPPLY_PROP_ONLINE : %d(%d/%d)\n",
+		pr_idt(IDT_RETURN, "get POWER_SUPPLY_PROP_ONLINE : %d(%d/%d)\n",
 				val->intval, chip->status_online, chip->status_fake_online);
 		break;
 	case POWER_SUPPLY_PROP_CHARGING_ENABLED:
 		val->intval = idtp9223_is_enabled(chip);
-		pr_idt(RETURN, "get POWER_SUPPLY_PROP_CHARGING_ENABLED : %d\n", val->intval);
+		pr_idt(IDT_RETURN, "get POWER_SUPPLY_PROP_CHARGING_ENABLED : %d\n", val->intval);
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_DONE:
 		val->intval = idtp9223_is_full(chip);
-		pr_idt(RETURN, "get POWER_SUPPLY_PROP_CHARGE_DONE : %d\n", val->intval);
+		pr_idt(IDT_RETURN, "get POWER_SUPPLY_PROP_CHARGE_DONE : %d\n", val->intval);
 		break;
 	case POWER_SUPPLY_PROP_POWER_NOW:
 		val->intval = chip->status_fastchg ? WIRELESS_9W: WIRELESS_5W;
-		pr_idt(RETURN, "get POWER_SUPPLY_PROP_POWER_NOW : %d\n", val->intval);
+		pr_idt(IDT_RETURN, "get POWER_SUPPLY_PROP_POWER_NOW : %d\n", val->intval);
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
 		val->intval = chip->status_fastchg;
-		pr_idt(RETURN, "get POWER_SUPPLY_PROP_VOLTAGE_MAX : %d\n", val->intval);
+		pr_idt(IDT_RETURN, "get POWER_SUPPLY_PROP_VOLTAGE_MAX : %d\n", val->intval);
 		break;
 	case POWER_SUPPLY_PROP_CONNECTION_TYPE:
 		val->intval = chip->status_opmode;
@@ -889,7 +920,7 @@ static void idtp9223_monitor(struct work_struct* work) {
 	u8 vout_result = 0;
 
 	if (!chip->dc_psy) {
-		pr_idt(ERROR, "Couldn't get dc psy!\n");
+		pr_idt(IDT_ERROR, "Couldn't get dc psy!\n");
 	} else {
 		chip->dc_psy->desc->get_property(chip->dc_psy, POWER_SUPPLY_PROP_QIPMA_ON, &pval);
 		qipma_on = pval.intval;
@@ -898,7 +929,7 @@ static void idtp9223_monitor(struct work_struct* work) {
 	if (alive)
 		idtp9223_reg_read(chip->wlc_client, chip->REG_ADDR_VOUT, &vout_result);
 
-	pr_idt(MONITOR, "[USB]%d [ALV]%d [OD2]%d [QIPMA]%d [VOUT]%02x\n",
+	pr_idt(IDT_MONITOR, "[USB]%d [ALV]%d [OD2]%d [QIPMA]%d [VOUT]%02x\n",
 			!enabled, alive, od2, qipma_on, vout_result);
 
 	if (false) {
@@ -909,9 +940,17 @@ static void idtp9223_monitor(struct work_struct* work) {
 		(msecs_to_jiffies(1000*30)));
 }
 
+static void idtp9223_timer_maxinput(struct work_struct* work) {
+	struct idtp9223_chip* chip = container_of(work, struct idtp9223_chip,
+			wlc_timer_maxinput.work);
+
+	pr_idt(IDT_UPDATE, "Releasing timer is expired!\n");
+	idtp9223_set_maxinput(chip, false);
+}
+
 static irqreturn_t idtp9223_isr_notify(int irq, void* data) {
 	/* Not define yet */
-	pr_idt(INTERRUPT, "idtp9223_isr_notify is triggered\n");
+	pr_idt(IDT_INTERRUPT, "idtp9223_isr_notify is triggered\n");
 	return IRQ_HANDLED;
 }
 
@@ -968,6 +1007,15 @@ static int idtp9223_notifier_call(struct notifier_block *nb,
 	struct power_supply *psy = v;
 	struct idtp9223_chip *chip = container_of(nb, struct idtp9223_chip, nb);
 
+	if (!chip->dc_psy)
+		chip->dc_psy = power_supply_get_by_name("dc");
+
+	if (!chip->batt_psy)
+		chip->batt_psy = power_supply_get_by_name("battery");
+
+	if (!chip->usb_psy)
+		chip->usb_psy = power_supply_get_by_name("usb");
+
 	if (!strcmp(psy->desc->name, "dc")) {
 		if (!chip->dc_psy)
 			chip->dc_psy = psy;
@@ -998,7 +1046,7 @@ static int idtp9223_register_notifier(struct idtp9223_chip *chip) {
 	chip->nb.notifier_call = idtp9223_notifier_call;
 	rc = power_supply_reg_notifier(&chip->nb);
 	if (rc < 0) {
-		pr_idt(ERROR, "Couldn't register idtp9223 notifier = %d\n", rc);
+		pr_idt(IDT_ERROR, "Couldn't register idtp9223 notifier = %d\n", rc);
 	}
 	return rc;
 }
@@ -1009,38 +1057,38 @@ static int idtp9223_probe_dt(struct device_node *dev_node,
 	int i, buf;
 
 	if (!dev_node) {
-		pr_idt(ERROR, "dev_node is null\n");
+		pr_idt(IDT_ERROR, "dev_node is null\n");
 		goto out;
 	}
 
 	chip->gpio_interrupt = of_get_named_gpio(dev_node,
 			"idt,gpio-interrupt", 0);
 	if (chip->gpio_interrupt < 0) {
-		pr_idt(ERROR, "Fail to get gpio-interrupt\n");
+		pr_idt(IDT_ERROR, "Fail to get gpio-interrupt\n");
 		goto out;
 	} else {
-		pr_idt(RETURN, "Get gpio-interrupt : %d\n", chip->gpio_interrupt);
+		pr_idt(IDT_RETURN, "Get gpio-interrupt : %d\n", chip->gpio_interrupt);
 	}
 
 	chip->gpio_disabling = of_get_named_gpio(dev_node,
 			"idt,gpio-disabling", 0);
 	if (chip->gpio_disabling < 0) {
-		pr_idt(ERROR, "Fail to get gpio-disabling\n");
+		pr_idt(IDT_ERROR, "Fail to get gpio-disabling\n");
 		goto out;
 	} else {
-		pr_idt(RETURN, "Get gpio-disabling : %d\n", chip->gpio_disabling);
+		pr_idt(IDT_RETURN, "Get gpio-disabling : %d\n", chip->gpio_disabling);
 	}
 
 /* Parse misc */
 	if (of_property_read_u32(dev_node, "idt,configure-overheat", &buf) < 0) {
-		pr_idt(ERROR, "Fail to get configure-overheat\n");
+		pr_idt(IDT_ERROR, "Fail to get configure-overheat\n");
 		goto out;
 	} else {
 		chip->configure_overheat = buf;
 	}
 
 	if (of_property_read_u32(dev_node, "idt,configure-sysfs", &buf) < 0) {
-		pr_idt(ERROR, "Fail to get configure-sysfs\n");
+		pr_idt(IDT_ERROR, "Fail to get configure-sysfs\n");
 		goto out;
 	} else {
 		chip->configure_sysfs = !!buf;
@@ -1060,13 +1108,13 @@ static int idtp9223_probe_dt(struct device_node *dev_node,
 
 	for (i = 0; i < chip->fod_num; i++) {
 		if (of_property_read_u32_index(dev_node, "idt,fod-register", i, &buf)) {
-			pr_idt(ERROR, "Fail to get fod-register\n");
+			pr_idt(IDT_ERROR, "Fail to get fod-register\n");
 			goto fod_out;
 		}
 		chip->fod_status[i].fod_register = (u16)buf;
 
 		if (of_property_read_u32_index(dev_node, "idt,fod-value", i, &buf)) {
-			pr_idt(ERROR, "Fail to get fod-value\n");
+			pr_idt(IDT_ERROR, "Fail to get fod-value\n");
 			goto fod_out;
 		}
 		chip->fod_status[i].fod_value = (u8)buf;
@@ -1086,14 +1134,14 @@ static int idtp9223_probe_gpios(struct idtp9223_chip *chip) {
 	ret = gpio_request_one(chip->gpio_interrupt, GPIOF_DIR_IN,
 		"gpio_interrupt");
 	if (ret < 0) {
-		pr_idt(ERROR, "Fail to request gpio_interrupt\n");
+		pr_idt(IDT_ERROR, "Fail to request gpio_interrupt\n");
 		return ret;
 	}
 
 	ret = gpio_request_one(chip->gpio_disabling, GPIOF_DIR_OUT,
 			"gpio_disabling");
 	if (ret < 0) {
-		pr_idt(ERROR, "Fail to request gpio_disabling\n");
+		pr_idt(IDT_ERROR, "Fail to request gpio_disabling\n");
 		return ret;
 	}
 
@@ -1110,7 +1158,7 @@ static int idtp9223_probe_irqs(struct idtp9223_chip* chip) {
 			IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
 			"IDTP9223-notify", chip);
 	if (ret) {
-		pr_idt(ERROR, "Cannot request irq %d (%d)\n",
+		pr_idt(IDT_ERROR, "Cannot request irq %d (%d)\n",
 			gpio_to_irq(chip->gpio_interrupt), ret);
 		goto out;
 	}
@@ -1120,17 +1168,26 @@ out:
 
 static int idtp9223_remove(struct i2c_client* client) {
 	struct idtp9223_chip* chip = i2c_get_clientdata(client);
-	pr_idt(VERBOSE, "idt9223 is about to be removed from system\n");
+	pr_idt(IDT_VERBOSE, "idt9223 is about to be removed from system\n");
 
 	if (chip) {
 		/* Clear descripters */
 		cancel_delayed_work_sync(&chip->wlc_monitor);
 		power_supply_unregister(chip->wlc_psy);
 
+		if (delayed_work_pending(&chip->wlc_timer_maxinput))
+			cancel_delayed_work_sync(&chip->wlc_timer_maxinput);
+
 		if (chip->gpio_interrupt)
 			gpio_free(chip->gpio_interrupt);
 		if (chip->gpio_disabling)
 			gpio_free(chip->gpio_disabling);
+		if (chip->dc_psy)
+			power_supply_put(chip->dc_psy);
+		if (chip->batt_psy)
+			power_supply_put(chip->batt_psy);
+		if (chip->usb_psy)
+			power_supply_put(chip->usb_psy);
 
 		/* Finally, make me free */
 		kfree(chip);
@@ -1146,10 +1203,10 @@ static int idtp9223_probe(struct i2c_client *client,
 	struct power_supply_config wlc_cfg = {};
 	int ret = -EINVAL;
 
-	pr_idt(VERBOSE, "Start\n");
+	pr_idt(IDT_VERBOSE, "Start\n");
 
 	if (!chip) {
-		pr_idt(ERROR, "Failed to alloc memory\n");
+		pr_idt(IDT_ERROR, "Failed to alloc memory\n");
 		goto error;
 	}
 
@@ -1160,19 +1217,19 @@ static int idtp9223_probe(struct i2c_client *client,
 	/* need dts parser */
 	ret = idtp9223_probe_dt(chip->wlc_device->of_node, chip);
 	if (ret < 0) {
-		pr_idt(ERROR, "Fail to read parse_dt\n");
+		pr_idt(IDT_ERROR, "Fail to read parse_dt\n");
 		goto error;
 	}
 
 	ret = idtp9223_probe_gpios(chip);
 	if (ret < 0) {
-		pr_idt(ERROR, "Fail to request gpio at probe\n");
+		pr_idt(IDT_ERROR, "Fail to request gpio at probe\n");
 		goto error;
 	}
 
 	ret = idtp9223_probe_irqs(chip);
 	if (ret < 0) {
-		pr_idt(ERROR, "Fail to request irqs at probe\n");
+		pr_idt(IDT_ERROR, "Fail to request irqs at probe\n");
 		goto error;
 	}
 	
@@ -1205,6 +1262,7 @@ static int idtp9223_probe(struct i2c_client *client,
 	INIT_DELAYED_WORK(&chip->wlc_set_current, idtp9223_set_current);
 	INIT_DELAYED_WORK(&chip->wlc_check_online, idtp9223_check_online);
 	INIT_DELAYED_WORK(&chip->wlc_set_fake_online, idtp9223_set_fake_online);
+	INIT_DELAYED_WORK(&chip->wlc_timer_maxinput, idtp9223_timer_maxinput);
 
 	INIT_WORK(&chip->wlc_dc_update, dc_update_work);
 	INIT_WORK(&chip->wlc_batt_update, battery_update_work);
@@ -1213,19 +1271,19 @@ static int idtp9223_probe(struct i2c_client *client,
 	// Create sysfs if it is configured
 	if (chip->configure_sysfs &&
 		sysfs_create_group(&chip->wlc_device->kobj, &idtp9223_sysfs_files) < 0) {
-		pr_idt(ERROR, "unable to create sysfs\n");
+		pr_idt(IDT_ERROR, "unable to create sysfs\n");
 		goto error;
 	}
 
 	ret = idtp9223_register_notifier(chip);
 	if (ret < 0) {
-		pr_idt(ERROR, "notifier call back fail\n");
+		pr_idt(IDT_ERROR, "notifier call back fail\n");
 		goto error;
 	}
 
 	schedule_delayed_work(&chip->wlc_monitor, 0);
 
-	pr_idt(VERBOSE, "Complete probing IDTP9223\n");
+	pr_idt(IDT_VERBOSE, "Complete probing IDTP9223\n");
 
 	return 0;
 

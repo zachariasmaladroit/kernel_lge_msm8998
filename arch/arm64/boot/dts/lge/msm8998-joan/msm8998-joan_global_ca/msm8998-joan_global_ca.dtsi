@@ -194,3 +194,7 @@
 &wil6210 {
 	status = "disabled";
 };
+
+&qseecom_mem {
+       size = <0 0x1800000>;
+};

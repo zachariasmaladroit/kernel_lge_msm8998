@@ -371,7 +371,7 @@
 
 		idt,gpio-interrupt = <&tlmm 24 0>;
 		idt,gpio-disabling = <&pmi8998_gpios 9 0>;
-		idt,configure-overheat = <600>;
+		idt,configure-overheat = <450>;
 		idt,configure-sysfs = <1>;
 
 		status = "ok";

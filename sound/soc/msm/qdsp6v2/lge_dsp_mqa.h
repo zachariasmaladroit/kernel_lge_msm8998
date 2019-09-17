@@ -21,16 +21,10 @@
 #define AUDPROC_PARAM_ID_LGMQA_PROPERTIES                   0x1000D045
 
 struct asm_lgmqa_param_one {
-    struct apr_hdr  hdr;
-    struct asm_stream_cmd_set_pp_params_v2 param;
-    struct asm_stream_param_data_v2 data;
     int32_t                  msg;
 } __packed;
 
 struct asm_lgmqa_param_all {
-    struct apr_hdr  hdr;
-    struct asm_stream_cmd_set_pp_params_v2 param;
-    struct asm_stream_param_data_v2 data;
     int32_t                  powermode;
     int32_t                  multiplerate;
     int32_t                  outputmode;

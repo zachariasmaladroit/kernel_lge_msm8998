@@ -2356,8 +2356,7 @@ static struct smb_irq_info smb2_irqs[] = {
 #ifdef CONFIG_IDTP9223_CHARGER
     [BATT_QIPMA_ON_IRQ] = {
         .name       = "bat-qi-pma-on",
-        .handler    = smblib_handle_debug,
-//        .handler    = smblib_handle_batt_qipma_on,
+        .handler    = smblib_handle_batt_qipma_on,
     },
 #endif
 /* USB INPUT IRQs */
@@ -2885,6 +2884,9 @@ static int smb2_probe(struct platform_device *pdev)
 		pr_err("Unable to sbu gpio %d.\n", chg->smb_bat_en);
 	}
 	pr_info("Parallel charger batfet gpio %d\n", chg->smb_bat_en);
+
+	smblib_masked_write(chg, DCIN_ICL_START_CFG_REG,
+		DCIN_ICL_START_CFG_BIT, DCIN_ICL_START_CFG_BIT);
 #endif
 	pr_info("QPNP SMB2 probed successfully usb:present=%d type=%d batt:present = %d health = %d charge = %d\n",
 		usb_present, chg->real_charger_type,

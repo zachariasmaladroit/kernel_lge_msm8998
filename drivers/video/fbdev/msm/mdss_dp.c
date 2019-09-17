@@ -2488,6 +2488,11 @@ notify:
 		goto end;
 	}
 #endif
+	if (connect && !dp->cable_connected) {
+		pr_warn("invalid reqeust] connected=%d, %s\n", dp->cable_connected,
+				mdss_dp_notification_status_to_string(status));
+		goto invalid_request;
+	}
 
 #if defined(CONFIG_LGE_DISPLAY_DISPLAYPORT_EXTERNAL_BLOCK)
 	if (connect) {
@@ -3324,18 +3329,22 @@ static ssize_t mdss_dp_wta_external_block(struct device *dev,
 	}
 	block = !!block;
 
+	if (!dp->cable_connected || dp->dp_adaptor != DP_ADAPTOR_PROPRIETARY_STABLE) {
+		dp->blk_state = block;
+		pr_err("invalid request (%d, %d)\n", dp->cable_connected, dp->dp_adaptor);
+		return -EINVAL;
+	}
+
 	if (block && !dp->blk_state) {
 		pr_info("external off, block state : %d\n", dp->blk_state);
 		atomic_set(&dp->notification_pending, 1);
-		mdss_dp_send_disconnect_notification(dp, false);
+		mdss_dp_send_audio_notification(dp, false);
 		dp->blk_state = true;
 	} else if (!block && dp->blk_state) {
 		if (dp->hpd && dp->cable_connected) {
 			pr_info("external on, block state : %d\n", dp->blk_state);
 			atomic_set(&dp->notification_pending, 1);
-			if (!dp->dp_initialized)
-				mdss_dp_host_init(&dp->panel_data);
-			mdss_dp_send_video_notification(dp, true);
+			mdss_dp_send_audio_notification(dp, true);
 		}
 		dp->blk_state = false;
 	}
@@ -3411,16 +3420,9 @@ static void mdss_dp_mainlink_push_idle(struct mdss_panel_data *pdata)
 	mutex_lock(&dp_drv->attention_lock);
 	cable_connected = dp_drv->cable_connected;
 	mutex_unlock(&dp_drv->attention_lock);
-#if defined(CONFIG_LGE_DISPLAY_COMMON)
-	/* commit : e65e28c87 , owner : yoonsin.woo */
-	if (cable_connected) {
-	    if (mdss_dp_aux_send_psm_request(dp_drv, true))
-	    pr_err("Failed to enter low power mode\n");
-#else
 	if (cable_connected && dp_drv->alt_mode.dp_status.hpd_high) {
 		if (mdss_dp_aux_send_psm_request(dp_drv, true))
 			pr_err("Failed to enter low power mode\n");
-#endif
 	}
 	reinit_completion(&dp_drv->idle_comp);
 	mdss_dp_state_ctrl(&dp_drv->ctrl_io, ST_PUSH_IDLE);

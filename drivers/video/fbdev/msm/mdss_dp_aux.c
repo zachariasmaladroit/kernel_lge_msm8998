@@ -433,6 +433,12 @@ retry:
 			goto end;
 		}
 
+		if (!dp->dp_initialized) {
+			pr_err("dp not initialized\n");
+			ret = -ENODEV;
+			goto end;
+		}
+
 		dp->aux_error_num = EDP_AUX_ERR_NONE;
 		pr_debug("Trying %s, iteration count: %d\n",
 			mdss_dp_aux_transaction_to_string(transaction),
