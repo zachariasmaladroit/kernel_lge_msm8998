@@ -106,6 +106,7 @@ enum adreno_context_priv {
 	ADRENO_CONTEXT_SKIP_EOF,
 	ADRENO_CONTEXT_FORCE_PREAMBLE,
 	ADRENO_CONTEXT_SKIP_CMD,
+	ADRENO_CONTEXT_FENCE_LOG,
 };
 
 /* Flags for adreno_drawctxt_switch() */
@@ -132,6 +133,9 @@ int adreno_drawctxt_wait(struct adreno_device *adreno_dev,
 		uint32_t timestamp, unsigned int timeout);
 
 void adreno_drawctxt_invalidate(struct kgsl_device *device,
+		struct kgsl_context *context);
+
+void adreno_drawctxt_dump(struct kgsl_device *device,
 		struct kgsl_context *context);
 
 #endif  /* __ADRENO_DRAWCTXT_H */
