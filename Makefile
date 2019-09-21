@@ -404,8 +404,10 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -pipe \
 		   -fmodulo-sched -fmodulo-sched-allow-regmoves \
 		   -fdiagnostics-color=always \
 		   -fivopts \
-		   -fshrink-wrap \
+		   -fshrink-wrap -fshrink-wrap-separate \
 		   -fsplit-paths \
+		   -fsplit-loops \
+		   -floop-interchange -floop-unroll-and-jam \
 		   -flive-range-shrinkage \
 		   -foptimize-strlen
 
