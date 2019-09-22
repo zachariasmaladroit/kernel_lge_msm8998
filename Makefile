@@ -406,7 +406,6 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -pipe \
 		   -fivopts \
 		   -fshrink-wrap \
 		   -fsplit-paths \
-		   -flive-range-shrinkage \
 		   -foptimize-strlen
 
 
