@@ -174,8 +174,8 @@ static void msm_cci_flush_queue(struct cci_device *cci_dev,
 #ifdef CONFIG_MACH_LGE
 	/* LGE_CHANGE, CST, make sure to check cci_state before HALT_REQ*/
 	if (cci_dev->cci_state != CCI_STATE_ENABLED) {
-		pr_err_ratelimited("%s invalid cci state %d\n",
-			__func__, cci_dev->cci_state);
+//		pr_err_ratelimited("%s invalid cci state %d\n",
+//			__func__, cci_dev->cci_state);
 		return;
 	}
 #endif
@@ -1033,8 +1033,8 @@ static int32_t msm_cci_i2c_read_bytes(struct v4l2_subdev *sd,
 		return -EINVAL;
 	}
 	if (cci_dev->cci_state != CCI_STATE_ENABLED) {
-		pr_err_ratelimited("%s invalid cci state %d\n",
-			__func__, cci_dev->cci_state);
+//		pr_err_ratelimited("%s invalid cci state %d\n",
+//			__func__, cci_dev->cci_state);
 		return -EINVAL;
 	}
 
@@ -1085,8 +1085,8 @@ static int32_t msm_cci_i2c_write(struct v4l2_subdev *sd,
 
 	cci_dev = v4l2_get_subdevdata(sd);
 	if (cci_dev->cci_state != CCI_STATE_ENABLED) {
-		pr_err_ratelimited("%s invalid cci state %d\n",
-			__func__, cci_dev->cci_state);
+//		pr_err_ratelimited("%s invalid cci state %d\n",
+//			__func__, cci_dev->cci_state);
 		return -EINVAL;
 	}
 	master = c_ctrl->cci_info->cci_i2c_master;
@@ -1653,8 +1653,8 @@ static int32_t msm_cci_write(struct v4l2_subdev *sd,
 	}
 
 	if (cci_dev->cci_state != CCI_STATE_ENABLED) {
-		pr_err_ratelimited("%s invalid cci state %d\n",
-			__func__, cci_dev->cci_state);
+//		pr_err_ratelimited("%s invalid cci state %d\n",
+//			__func__, cci_dev->cci_state);
 		return -EINVAL;
 	}
 
