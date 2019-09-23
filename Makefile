@@ -398,11 +398,20 @@ LINUXINCLUDE    := \
 
 KBUILD_CPPFLAGS := -D__KERNEL__
 
-KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
+KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -pipe \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
-		   -std=gnu89 $(call cc-option,-fno-PIE)
+		   -march=armv8-a+crypto+crc \
+		   -mcpu=cortex-a73+crypto+crc \
+		   -std=gnu89 $(call cc-option,-fno-PIE) \
+		   -fmodulo-sched -fmodulo-sched-allow-regmoves \
+		   -fdiagnostics-color=always \
+		   -fivopts \
+		   -fshrink-wrap \
+		   -fsplit-paths \
+		   -flive-range-shrinkage \
+		   -foptimize-strlen
 
 ifeq ($(TARGET_BOARD_TYPE),auto)
 KBUILD_CFLAGS    += -DCONFIG_PLATFORM_AUTO
