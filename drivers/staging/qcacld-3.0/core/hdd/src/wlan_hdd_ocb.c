@@ -1647,6 +1647,12 @@ static int __wlan_hdd_cfg80211_dcc_get_stats(struct wiphy *wiphy,
 	request_array = nla_data(
 		tb[QCA_WLAN_VENDOR_ATTR_DCC_GET_STATS_REQUEST_ARRAY]);
 
+	/* Check channel count. Per 11p spec, max 2 channels allowed */
+	if (!channel_count || channel_count > TGT_NUM_OCB_CHANNELS) {
+		hdd_err("Invalid channel_count %d", channel_count);
+		return -EINVAL;
+	}
+
 	hdd_request = hdd_request_alloc(&params);
 	if (!hdd_request) {
 		hdd_err("Request allocation failure");
@@ -1908,6 +1914,12 @@ static int __wlan_hdd_cfg80211_dcc_update_ndl(struct wiphy *wiphy,
 		tb[QCA_WLAN_VENDOR_ATTR_DCC_UPDATE_NDL_ACTIVE_STATE_ARRAY]);
 	ndl_active_state_array = nla_data(
 		tb[QCA_WLAN_VENDOR_ATTR_DCC_UPDATE_NDL_ACTIVE_STATE_ARRAY]);
+
+	/* Check channel count. Per 11p spec, max 2 channels allowed */
+	if (!channel_count || channel_count > TGT_NUM_OCB_CHANNELS) {
+		hdd_err("Invalid channel_count %d", channel_count);
+		return -EINVAL;
+	}
 
 	hdd_request = hdd_request_alloc(&params);
 	if (!hdd_request) {
