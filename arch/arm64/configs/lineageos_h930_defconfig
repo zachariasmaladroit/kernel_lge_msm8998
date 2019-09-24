@@ -5656,6 +5656,32 @@ CONFIG_MODULE_SIG_HASH="sha512"
 # CONFIG_LGE_PM_TRITON is not set
 # CONFIG_LGE_PM_CANCUN is not set
 
+# LGE_USB_SUPPORT_LIST_NETWORK
+# needed by LGE_USB_SUPPORT_LIST_NETWORK (USB_NET_DRIVERS && USB_NET_CDC_SUBSET) 
+CONFIG_USB_NET_DRIVERS=y
+CONFIG_USB_NET_CDC_SUBSET=y
+# tshoot for bringup, etc.
+CONFIG_USB_F_CDEV=y
+CONFIG_USB_CONFIGFS_F_CDEV=y
+# LGE_USB_SUPPORT_LIST_INPUT
+CONFIG_INPUT_MOUSE=y
+
+# LGE superfluous features for us
+#
+# CONFIG_LGE_DM_VERITY_RECOVERY is not set
+#
+# modem testmode command & other related
+# CONFIG_LGE_DM_APP is not set
+#
+# secure boot enforced CC (common criteria) mode
+# useless with unlocked bootloader and custom ROMs (?!)
+## CONFIG_CRYPTO_CCMODE is not set
+# enabled for now ...
+
+# LGE essentials
+# 
+## LGE_QFPROM_INTERFACE -> rollback fuse (!)
+
 # additional filesystem support:
 
 # exfat
@@ -5738,3 +5764,249 @@ CONFIG_WLAN_FEATURE_SAE=y
 # CONFIG_QCA_CLD_DEBUG is not set
 # CONFIG_GOLDFISH is not set
 # CONFIG_CHROME_PLATFORMS is not set
+
+# qcacld-3.0 debug stuff
+# CONFIG_FEATURE_TSO_DEBUG is not set
+# CONFIG_WLAN_NAPI_DEBUG is not set
+
+# hardware offload, etc.
+# Android "way" = off
+#
+CONFIG_INET_LRO=y
+
+# other net stuff
+#
+CONFIG_INET_DIAG=y
+CONFIG_INET_TCP_DIAG=y
+CONFIG_INET_UDP_DIAG=y
+
+# RCU Subsystem
+#
+CONFIG_PREEMPT_RCU=y
+CONFIG_RCU_EXPERT=y
+CONFIG_SRCU=y
+# CONFIG_TASKS_RCU is not set
+CONFIG_RCU_STALL_COMMON=y
+CONFIG_RCU_FANOUT=64
+CONFIG_RCU_FANOUT_LEAF=16
+CONFIG_RCU_FAST_NO_HZ=y
+# CONFIG_TREE_RCU_TRACE is not set
+CONFIG_RCU_BOOST=y
+CONFIG_RCU_BOOST_DELAY=200
+CONFIG_RCU_KTHREAD_PRIO=2
+CONFIG_RCU_NOCB_CPU=y
+# CONFIG_RCU_NOCB_CPU_NONE is not set
+# CONFIG_RCU_NOCB_CPU_ZERO is not set
+CONFIG_RCU_NOCB_CPU_ALL=y
+CONFIG_RCU_EXPEDITE_BOOT=y
+
+# Timers subsystem
+#
+CONFIG_TICK_ONESHOT=y
+CONFIG_NO_HZ_COMMON=y
+# CONFIG_HZ_PERIODIC is not set
+CONFIG_NO_HZ_IDLE=y
+# CONFIG_NO_HZ_FULL is not set
+#
+CONFIG_NO_HZ=y
+CONFIG_HIGH_RES_TIMERS=y
+
+# CPU/Task time and stats accounting
+#
+# CONFIG_VIRT_CPU_ACCOUNTING is not set
+CONFIG_TICK_CPU_ACCOUNTING=y
+# CONFIG_VIRT_CPU_ACCOUNTING_GEN is not set
+# CONFIG_IRQ_TIME_ACCOUNTING is not set
+
+# PowerEfficient Workqueues
+CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y
+
+# PM_WAKELOCKS
+CONFIG_PM_WAKELOCKS_GC=y
+
+# CPU scheduler
+#
+# CONFIG_SCHED_AUTOGROUP is not set
+
+# security features overhead
+#
+# SEEMP
+# CONFIG_SEEMP_CORE is not set
+#
+# TTBR0 PAN emulation
+# CONFIG_ARM64_SW_TTBR0_PAN is not set
+# CONFIG_PROC_KALLSYMS is not set
+
+# performance & latency cutdown tweaking
+# CONFIG_ZEN_INTERACTIVE is not set
+# CONFIG_SCSI_MQ_DEFAULT is not set # broken on 4.4 Android ?
+# CONFIG_MANDATORY_FILE_LOCKING is not set # needs commit first
+# CONFIG_SLUB_CPU_PARTIAL is not set # more indeterminism in the latency of the free , taking of locks that may cause latency spikes
+# CONFIG_VM_EVENT_COUNTERS is not set
+
+# logspam
+#
+# CONFIG_FB_MSM_MDSS_XLOG_DEBUG is not set
+# CONFIG_LGE_DISPLAY_XLOG_ENABLED is not set
+# CONFIG_LGE_DISPLAY_ERROR_DETECT is not set
+#
+# CONFIG_MSM_SDE_ROTATOR_EVTLOG_DEBUG is not set
+#
+# CONFIG_SCSI_CONSTANTS is not set
+# CONFIG_SCSI_LOGGING is not set
+# CONFIG_SCSI_UFSHCD_CMD_LOGGING is not set
+#
+# CONFIG_MSM_RPM_RBCPR_STATS_V2_LOG is not set
+
+# dmesg/printk: raise size of kernel log
+CONFIG_LOG_BUF_SHIFT=22
+CONFIG_LOG_CPU_MAX_BUF_SHIFT=21
+
+# panic timeout
+CONFIG_PANIC_TIMEOUT=1
+
+# advanced congestion control
+CONFIG_TCP_CONG_ADVANCED=y
+CONFIG_TCP_CONG_BIC=y
+CONFIG_TCP_CONG_CUBIC=y
+CONFIG_TCP_CONG_WESTWOOD=y
+CONFIG_TCP_CONG_HTCP=y
+# CONFIG_TCP_CONG_HSTCP is not set
+CONFIG_TCP_CONG_HYBLA=y
+CONFIG_TCP_CONG_VEGAS=y
+CONFIG_TCP_CONG_SCALABLE=y
+CONFIG_TCP_CONG_LP=y
+CONFIG_TCP_CONG_VENO=y
+# CONFIG_TCP_CONG_YEAH is not set
+# CONFIG_TCP_CONG_ILLINOIS is not set
+# CONFIG_TCP_CONG_DCTCP is not set
+# CONFIG_TCP_CONG_CDG is not set
+CONFIG_TCP_CONG_LIA=y
+CONFIG_TCP_CONG_OLIA=y
+# CONFIG_TCP_CONG_WVEGAS is not set
+CONFIG_TCP_CONG_BALIA=y
+# CONFIG_DEFAULT_BIC is not set # =y
+# CONFIG_DEFAULT_CUBIC is not set
+# CONFIG_DEFAULT_WESTWOOD is not set
+# CONFIG_DEFAULT_LIA is not set
+# CONFIG_DEFAULT_OLIA is not set # MPTCP default
+# CONFIG_DEFAULT_WVEGAS is not set
+# CONFIG_DEFAULT_RENO is not set
+CONFIG_DEFAULT_VENO=y
+CONFIG_DEFAULT_TCP_CONG="veno"
+# CONFIG_TCP_MD5SIG is not set
+
+# Jump labels:
+# the kernel will compile trace point locations with just a nop instruction.
+# When trace points are enabled, the nop will be converted to a jump
+# to the trace function. This technique lowers overhead and stress
+# on the branch prediction of the processor.
+#
+# jump_label assumedly leads to latency spikes, thus discouraged; performance (?)
+# needed for certain configurations (and optimization) though, thus keeping it enabled
+#
+CONFIG_JUMP_LABEL=y
+
+# tracing
+#
+# CONFIG_TRACEPOINTS is not set
+#
+# CONFIG_QCOM_RTB is not set
+# CONFIG_QCOM_RTB_SEPARATE_CPUS is not set
+#
+# CONFIG_TRACING_EVENTS_GPIO is not set
+#
+# FTRACE: needed for success booting (for now)
+# CONFIG_FTRACE is not set
+#
+# CONFIG_STACKTRACE is not set
+
+# iommu debug
+# CONFIG_IOMMU_IO_PGTABLE_FAST_SELFTEST is not set
+# CONFIG_IOMMU_DEBUG is not set
+# CONFIG_IOMMU_DEBUG_TRACKING is not set
+# CONFIG_IOMMU_TESTS is not set
+
+# debug stuff (disabling recommended)
+# CONFIG_PROFILING is not set
+# CONFIG_MMC_PERF_PROFILING is not set
+CONFIG_ARCH_WANT_FRAME_POINTERS=y
+# CONFIG_FRAME_POINTER is not set
+#
+# reduced output recommended if debug needs to be used
+CONFIG_DEBUG_INFO_REDUCED=y
+
+# ION
+CONFIG_ION=y
+
+# CONFIG_ION_TEST is not set
+# CONFIG_ION_DUMMY is not set
+CONFIG_ION_MSM=y
+# CONFIG_ALLOC_BUFFERS_IN_4K_CHUNKS is not set # default =y
+# later added performance enhancements and tweaks behind a config entry
+
+# media tuners (DVB, etc.)
+# CONFIG_MEDIA_DIGITAL_TV_SUPPORT is not set
+# CONFIG_DVB_CORE is not set
+# CONFIG_DVB_NET is not set
+# CONFIG_TTPCI_EEPROM is not set
+CONFIG_DVB_MAX_ADAPTERS=8
+# CONFIG_DVB_DYNAMIC_MINORS is not set
+# CONFIG_LGE_BROADCAST_ISDBT_JAPAN is not set
+CONFIG_MEDIA_SUBDRV_AUTOSELECT=y
+# CONFIG_MEDIA_TUNER is not set
+# CONFIG_MEDIA_TUNER_SIMPLE is not set
+# CONFIG_MEDIA_TUNER_TDA8290 is not set
+# CONFIG_MEDIA_TUNER_TDA827X is not set
+# CONFIG_MEDIA_TUNER_TDA18271 is not set
+# CONFIG_MEDIA_TUNER_TDA9887 is not set
+# CONFIG_MEDIA_TUNER_MT20XX is not set
+# CONFIG_MEDIA_TUNER_XC2028 is not set
+# CONFIG_MEDIA_TUNER_XC5000 is not set
+# CONFIG_MEDIA_TUNER_XC4000 is not set
+# CONFIG_MEDIA_TUNER_MC44S803 is not set
+
+# build drivers INto the kernel
+# CONFIG_USB_GSPCA is not set # most likely NOT needed , disable it
+
+# DVB & TV functionality (ko only)
+# CONFIG_DVB_MPQ is not set
+CONFIG_DVB_MPQ_DEMUX=m
+CONFIG_DVB_MPQ_NUM_DMX_DEVICES=4
+CONFIG_DVB_MPQ_TSPP1=y
+# CONFIG_DVB_MPQ_SW is not set
+# CONFIG_DVB_MPQ_MEDIA_BOX_DEMUX is not set
+# CONFIG_TSPP is not set # dep
+
+# lge-oreo, stock config; and other discoveries
+CONFIG_BT_BDA=y
+# SPI slave protocol handlers
+CONFIG_SPI_SLAVE=y
+
+# developer access & other hardware-access
+#
+# CONFIG_ALLOW_DEV_COREDUMP is not set
+# CONFIG_QCOM_MEMORY_DUMP_V2 is not set
+# CONFIG_QCOM_MEMORY_DUMP is not set
+# CONFIG_QCOM_MINIDUMP is not set
+#
+# CONFIG_MSM_GLADIATOR_ERP_V2 is not set
+# CONFIG_MSM_BOOT_STATS is not set
+# CONFIG_QCOM_CPUSS_DUMP is not set
+# CONFIG_QCOM_REMOTEQDSS is not set
+#
+CONFIG_QCOM_DLOAD_MODE=y
+#
+# CONFIG_USB_F_QDSS is not set
+# CONFIG_USB_CONFIGFS_F_QDSS is not set
+
+# cruft, unnecessary features, relicts / remnants
+# RAID
+# CONFIG_BLK_DEV_MD is not set
+#
+# VGA
+# CONFIG_VGA_ARB is not set
+# CONFIG_FB_VIRTUAL is not set
+#
+# WiFi-related
+# CONFIG_ATH_CARDS is not set
