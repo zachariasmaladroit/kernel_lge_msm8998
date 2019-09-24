@@ -2,8 +2,7 @@
 #
 # Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
 
-KERNELRELEASE ?= $(shell uname -r)
-KERNELDIR ?= /lib/modules/$(KERNELRELEASE)/build
+KERNELDIR ?= /lib/modules/$(shell uname -r)/build
 PREFIX ?= /usr
 DESTDIR ?=
 SRCDIR ?= $(PREFIX)/src
@@ -46,7 +45,7 @@ clean:
 
 module-install:
 	@$(MAKE) -C $(KERNELDIR) M=$(PWD) modules_install
-	$(DEPMOD) -a $(KERNELRELEASE)
+	$(DEPMOD) -a
 
 install: module-install tools-install
 
