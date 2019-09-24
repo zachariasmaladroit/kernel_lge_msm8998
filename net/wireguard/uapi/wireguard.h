@@ -142,8 +142,7 @@ enum wg_cmd {
 #define WG_CMD_MAX (__WG_CMD_MAX - 1)
 
 enum wgdevice_flag {
-	WGDEVICE_F_REPLACE_PEERS = 1U << 0,
-	__WGDEVICE_F_ALL = WGDEVICE_F_REPLACE_PEERS
+	WGDEVICE_F_REPLACE_PEERS = 1U << 0
 };
 enum wgdevice_attribute {
 	WGDEVICE_A_UNSPEC,
@@ -161,8 +160,7 @@ enum wgdevice_attribute {
 
 enum wgpeer_flag {
 	WGPEER_F_REMOVE_ME = 1U << 0,
-	WGPEER_F_REPLACE_ALLOWEDIPS = 1U << 1,
-	__WGPEER_F_ALL = WGPEER_F_REMOVE_ME | WGPEER_F_REPLACE_ALLOWEDIPS
+	WGPEER_F_REPLACE_ALLOWEDIPS = 1U << 1
 };
 enum wgpeer_attribute {
 	WGPEER_A_UNSPEC,
