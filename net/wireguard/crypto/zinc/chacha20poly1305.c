@@ -20,14 +20,18 @@
 
 static const u8 pad0[16] = { 0 };
 
-static struct blkcipher_desc desc = { .tfm = &(struct crypto_blkcipher){
-	.base = { .__crt_alg = &(struct crypto_alg){
-		.cra_blocksize = 1,
-#ifndef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
-		.cra_alignmask = sizeof(u32) - 1
-#endif
-	} }
-} };
+static struct crypto_alg chacha20_alg = {
+	.cra_blocksize = 1,
+	.cra_alignmask = sizeof(u32) - 1
+};
+static struct crypto_blkcipher chacha20_cipher = {
+	.base = {
+		.__crt_alg = &chacha20_alg
+	}
+};
+static struct blkcipher_desc chacha20_desc = {
+	.tfm = &chacha20_cipher
+};
 
 static inline void
 __chacha20poly1305_encrypt(u8 *dst, const u8 *src, const size_t src_len,
@@ -110,7 +114,7 @@ bool chacha20poly1305_encrypt_sg(struct scatterlist *dst,
 
 	if (likely(src_len)) {
 		blkcipher_walk_init(&walk, dst, src, src_len);
-		ret = blkcipher_walk_virt_block(&desc, &walk,
+		ret = blkcipher_walk_virt_block(&chacha20_desc, &walk,
 						CHACHA20_BLOCK_SIZE);
 		while (walk.nbytes >= CHACHA20_BLOCK_SIZE) {
 			size_t chunk_len =
@@ -121,7 +125,7 @@ bool chacha20poly1305_encrypt_sg(struct scatterlist *dst,
 			poly1305_update(&poly1305_state, walk.dst.virt.addr,
 					chunk_len, simd_context);
 			simd_relax(simd_context);
-			ret = blkcipher_walk_done(&desc, &walk,
+			ret = blkcipher_walk_done(&chacha20_desc, &walk,
 					walk.nbytes % CHACHA20_BLOCK_SIZE);
 		}
 		if (walk.nbytes) {
@@ -129,7 +133,7 @@ bool chacha20poly1305_encrypt_sg(struct scatterlist *dst,
 				 walk.src.virt.addr, walk.nbytes, simd_context);
 			poly1305_update(&poly1305_state, walk.dst.virt.addr,
 					walk.nbytes, simd_context);
-			ret = blkcipher_walk_done(&desc, &walk, 0);
+			ret = blkcipher_walk_done(&chacha20_desc, &walk, 0);
 		}
 	}
 	if (unlikely(ret))
@@ -253,7 +257,7 @@ bool chacha20poly1305_decrypt_sg(struct scatterlist *dst,
 	dst_len = src_len - POLY1305_MAC_SIZE;
 	if (likely(dst_len)) {
 		blkcipher_walk_init(&walk, dst, src, dst_len);
-		ret = blkcipher_walk_virt_block(&desc, &walk,
+		ret = blkcipher_walk_virt_block(&chacha20_desc, &walk,
 						CHACHA20_BLOCK_SIZE);
 		while (walk.nbytes >= CHACHA20_BLOCK_SIZE) {
 			size_t chunk_len =
@@ -264,7 +268,7 @@ bool chacha20poly1305_decrypt_sg(struct scatterlist *dst,
 			chacha20(&chacha20_state, walk.dst.virt.addr,
 				 walk.src.virt.addr, chunk_len, simd_context);
 			simd_relax(simd_context);
-			ret = blkcipher_walk_done(&desc, &walk,
+			ret = blkcipher_walk_done(&chacha20_desc, &walk,
 					walk.nbytes % CHACHA20_BLOCK_SIZE);
 		}
 		if (walk.nbytes) {
@@ -272,7 +276,7 @@ bool chacha20poly1305_decrypt_sg(struct scatterlist *dst,
 					walk.nbytes, simd_context);
 			chacha20(&chacha20_state, walk.dst.virt.addr,
 				 walk.src.virt.addr, walk.nbytes, simd_context);
-			ret = blkcipher_walk_done(&desc, &walk, 0);
+			ret = blkcipher_walk_done(&chacha20_desc, &walk, 0);
 		}
 	}
 	if (unlikely(ret))

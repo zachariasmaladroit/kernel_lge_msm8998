@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0 OR MIT
 /*
+ * Copyright (C) 2012 Samuel Neves <sneves@dei.uc.pt>. All Rights Reserved.
  * Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
  *
  * This is an implementation of the BLAKE2s hash and PRF functions.
@@ -18,6 +19,23 @@
 #include <linux/init.h>
 #include <linux/bug.h>
 #include <asm/unaligned.h>
+
+typedef union {
+	struct {
+		u8 digest_length;
+		u8 key_length;
+		u8 fanout;
+		u8 depth;
+		u32 leaf_length;
+		u32 node_offset;
+		u16 xof_length;
+		u8 node_depth;
+		u8 inner_length;
+		u8 salt[8];
+		u8 personal[8];
+	};
+	__le32 words[8];
+} __packed blake2s_param;
 
 static const u32 blake2s_iv[8] = {
 	0x6A09E667UL, 0xBB67AE85UL, 0x3C6EF372UL, 0xA54FF53AUL,
@@ -39,6 +57,8 @@ static const u8 blake2s_sigma[10][16] = {
 
 static inline void blake2s_set_lastblock(struct blake2s_state *state)
 {
+	if (state->last_node)
+		state->f[1] = -1;
 	state->f[0] = -1;
 }
 
@@ -50,33 +70,40 @@ static inline void blake2s_increment_counter(struct blake2s_state *state,
 }
 
 static inline void blake2s_init_param(struct blake2s_state *state,
-				      const u32 param)
+				      const blake2s_param *param)
 {
 	int i;
 
 	memset(state, 0, sizeof(*state));
 	for (i = 0; i < 8; ++i)
-		state->h[i] = blake2s_iv[i];
-	state->h[0] ^= param;
+		state->h[i] = blake2s_iv[i] ^ le32_to_cpu(param->words[i]);
 }
 
 void blake2s_init(struct blake2s_state *state, const size_t outlen)
 {
+	blake2s_param param __aligned(__alignof__(u32)) = {
+		.digest_length = outlen,
+		.fanout = 1,
+		.depth = 1
+	};
+
 	WARN_ON(IS_ENABLED(DEBUG) && (!outlen || outlen > BLAKE2S_HASH_SIZE));
-	blake2s_init_param(state, 0x01010000 | outlen);
-	state->outlen = outlen;
+	blake2s_init_param(state, &param);
 }
 EXPORT_SYMBOL(blake2s_init);
 
 void blake2s_init_key(struct blake2s_state *state, const size_t outlen,
 		      const void *key, const size_t keylen)
 {
+	blake2s_param param = { .digest_length = outlen,
+				.key_length = keylen,
+				.fanout = 1,
+				.depth = 1 };
 	u8 block[BLAKE2S_BLOCK_SIZE] = { 0 };
 
 	WARN_ON(IS_ENABLED(DEBUG) && (!outlen || outlen > BLAKE2S_HASH_SIZE ||
 		!key || !keylen || keylen > BLAKE2S_KEY_SIZE));
-	blake2s_init_param(state, 0x01010000 | keylen << 8 | outlen);
-	state->outlen = outlen;
+	blake2s_init_param(state, &param);
 	memcpy(block, key, keylen);
 	blake2s_update(state, block, BLAKE2S_BLOCK_SIZE);
 	memzero_explicit(block, BLAKE2S_BLOCK_SIZE);
@@ -183,7 +210,8 @@ void blake2s_update(struct blake2s_state *state, const u8 *in, size_t inlen)
 		inlen -= fill;
 	}
 	if (inlen > BLAKE2S_BLOCK_SIZE) {
-		const size_t nblocks = DIV_ROUND_UP(inlen, BLAKE2S_BLOCK_SIZE);
+		const size_t nblocks =
+			(inlen + BLAKE2S_BLOCK_SIZE - 1) / BLAKE2S_BLOCK_SIZE;
 		/* Hash one less (full) block than strictly possible */
 		blake2s_compress(state, in, nblocks - 1, BLAKE2S_BLOCK_SIZE);
 		in += BLAKE2S_BLOCK_SIZE * (nblocks - 1);
@@ -194,15 +222,16 @@ void blake2s_update(struct blake2s_state *state, const u8 *in, size_t inlen)
 }
 EXPORT_SYMBOL(blake2s_update);
 
-void blake2s_final(struct blake2s_state *state, u8 *out)
+void blake2s_final(struct blake2s_state *state, u8 *out, const size_t outlen)
 {
-	WARN_ON(IS_ENABLED(DEBUG) && !out);
+	WARN_ON(IS_ENABLED(DEBUG) &&
+		(!out || !outlen || outlen > BLAKE2S_HASH_SIZE));
 	blake2s_set_lastblock(state);
 	memset(state->buf + state->buflen, 0,
 	       BLAKE2S_BLOCK_SIZE - state->buflen); /* Padding */
 	blake2s_compress(state, state->buf, 1, state->buflen);
 	cpu_to_le32_array(state->h, ARRAY_SIZE(state->h));
-	memcpy(out, state->h, state->outlen);
+	memcpy(out, state->h, outlen);
 	memzero_explicit(state, sizeof(*state));
 }
 EXPORT_SYMBOL(blake2s_final);
@@ -218,7 +247,7 @@ void blake2s_hmac(u8 *out, const u8 *in, const u8 *key, const size_t outlen,
 	if (keylen > BLAKE2S_BLOCK_SIZE) {
 		blake2s_init(&state, BLAKE2S_HASH_SIZE);
 		blake2s_update(&state, key, keylen);
-		blake2s_final(&state, x_key);
+		blake2s_final(&state, x_key, BLAKE2S_HASH_SIZE);
 	} else
 		memcpy(x_key, key, keylen);
 
@@ -228,7 +257,7 @@ void blake2s_hmac(u8 *out, const u8 *in, const u8 *key, const size_t outlen,
 	blake2s_init(&state, BLAKE2S_HASH_SIZE);
 	blake2s_update(&state, x_key, BLAKE2S_BLOCK_SIZE);
 	blake2s_update(&state, in, inlen);
-	blake2s_final(&state, i_hash);
+	blake2s_final(&state, i_hash, BLAKE2S_HASH_SIZE);
 
 	for (i = 0; i < BLAKE2S_BLOCK_SIZE; ++i)
 		x_key[i] ^= 0x5c ^ 0x36;
@@ -236,7 +265,7 @@ void blake2s_hmac(u8 *out, const u8 *in, const u8 *key, const size_t outlen,
 	blake2s_init(&state, BLAKE2S_HASH_SIZE);
 	blake2s_update(&state, x_key, BLAKE2S_BLOCK_SIZE);
 	blake2s_update(&state, i_hash, BLAKE2S_HASH_SIZE);
-	blake2s_final(&state, i_hash);
+	blake2s_final(&state, i_hash, BLAKE2S_HASH_SIZE);
 
 	memcpy(out, i_hash, outlen);
 	memzero_explicit(x_key, BLAKE2S_BLOCK_SIZE);

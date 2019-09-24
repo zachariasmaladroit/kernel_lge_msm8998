@@ -6,13 +6,14 @@
 #define _WG_NOISE_H
 
 #include "messages.h"
-#include "peerlookup.h"
+#include "hashtables.h"
 
 #include <linux/types.h>
 #include <linux/spinlock.h>
 #include <linux/atomic.h>
 #include <linux/rwsem.h>
 #include <linux/mutex.h>
+#include <linux/ktime.h>
 #include <linux/kref.h>
 
 union noise_counter {
