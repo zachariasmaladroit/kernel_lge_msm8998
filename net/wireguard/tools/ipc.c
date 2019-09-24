@@ -95,7 +95,6 @@ static int add_next_to_inflatable_buffer(struct inflatable_buffer *buffer)
 	return 0;
 }
 
-#ifndef WINCOMPAT
 static FILE *userspace_interface_file(const char *interface)
 {
 	struct stat sbuf;
@@ -198,9 +197,6 @@ out:
 	closedir(dir);
 	return ret;
 }
-#else
-#include "wincompat/ipc.c"
-#endif
 
 static int userspace_set_device(struct wgdevice *dev)
 {
