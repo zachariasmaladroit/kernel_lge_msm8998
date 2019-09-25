@@ -5622,6 +5622,7 @@ CONFIG_QMI_ENCDEC=y
 # customized section
 
 # give external modules no chance !
+# CONFIG_MMC_TEST is not set
 # CONFIG_IOSCHED_TEST is not set
 # CONFIG_SCSI_UFS_TEST is not set
 # CONFIG_ATH_CARDS is not set
@@ -5978,6 +5979,7 @@ CONFIG_JUMP_LABEL=y
 # CONFIG_IOMMU_TESTS is not set
 
 # debug stuff (disabling recommended)
+# CONFIG_MSM_SMP2P_TEST is not set
 # CONFIG_PROFILING is not set
 # CONFIG_MMC_PERF_PROFILING is not set
 CONFIG_ARCH_WANT_FRAME_POINTERS=y
