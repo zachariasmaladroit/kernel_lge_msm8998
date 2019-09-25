@@ -6103,3 +6103,17 @@ CONFIG_CPU_IDLE=y
 # hacks
 # 
 CONFIG_FRAME_WARN=0
+
+# LMK: default =y
+# CONFIG_ANDROID_LOW_MEMORY_KILLER is not set
+CONFIG_ANDROID_LOW_MEMORY_KILLER_AUTODETECT_OOM_ADJ_VALUES=y
+CONFIG_ANDROID_LMK_ADJ_RBTREE=y
+#
+# simple_lmk (pick either this or ALMK, mutually exclusive)
+CONFIG_ANDROID_SIMPLE_LMK=y
+
+# LGE: mm: vmscan, page_alloc, ion
+# MIGRATE_HIGHORDER needs to be disabled for enhanced ion, page_alloc, vmscan
+#
+CONFIG_MIGRATE_HIGHORDER=y
+CONFIG_HIGHORDER_PAGES=46080
