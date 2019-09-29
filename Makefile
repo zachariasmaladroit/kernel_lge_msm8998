@@ -411,6 +411,10 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -pipe \
 		   -fshrink-wrap \
 		   -fsplit-paths \
 		   -flive-range-shrinkage \
+		   -fschedule-insns -fschedule-insns2 -fsched-pressure -fsched-spec-load -fsched2-use-superblocks \
+		   -ftree-loop-im -funswitch-loops \
+		   -fpredictive-commoning \
+		   -finline-functions \
 		   -foptimize-strlen
 
 ifeq ($(TARGET_BOARD_TYPE),auto)
