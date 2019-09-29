@@ -183,13 +183,13 @@ struct smb2 {
 // To process QCT case, one touch flag is added of enabling total logs.
 // Be sure that logging conditions should consider to skip the filtering
 // by checking this special value '0xFF'
-static int __debug_mask = 0xFF;
+static int __debug_mask;
 
 #elif CONFIG_LGE_PM_DEBUG
 // PR_INTERRUPT : state change sigs of PMI charger block
 // PR_PARALLEL : to monitor DP/DM cotrol by hvdcp_opti
 // PR_MISC : necessary to check LGE W/As
-static int __debug_mask = PR_INTERRUPT | PR_PARALLEL | PR_MISC | PR_OTG;
+static int __debug_mask;
 
 #else
 static int __debug_mask;
