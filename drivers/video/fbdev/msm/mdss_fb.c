@@ -5365,7 +5365,7 @@ int mdss_fb_do_ioctl(struct fb_info *info, unsigned int cmd,
 #ifdef CONFIG_CPU_INPUT_BOOST
 		if (!is_vidc_open()) {
 #ifdef CONFIG_DEVFREQ_BOOST
-				devfreq_boost_kick(DEVFREQ_MSM_CPUBW);
+//				devfreq_boost_kick(DEVFREQ_MSM_CPUBW);
 #endif
 				cpu_input_boost_kick();
 		}
