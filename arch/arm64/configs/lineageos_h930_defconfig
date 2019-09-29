@@ -5828,6 +5828,9 @@ CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y
 # PM_WAKELOCKS
 CONFIG_PM_WAKELOCKS_GC=y
 
+# wakelocks, etc.
+# CONFIG_FW_CACHE is not set
+
 # CPU scheduler
 #
 # CONFIG_SCHED_AUTOGROUP is not set
