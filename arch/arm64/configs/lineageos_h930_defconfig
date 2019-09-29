@@ -6109,20 +6109,6 @@ CONFIG_CPU_IDLE=y
 # 
 CONFIG_FRAME_WARN=0
 
-# LMK: default =y
-# CONFIG_ANDROID_LOW_MEMORY_KILLER is not set
-CONFIG_ANDROID_LOW_MEMORY_KILLER_AUTODETECT_OOM_ADJ_VALUES=y
-CONFIG_ANDROID_LMK_ADJ_RBTREE=y
-#
-# simple_lmk (pick either this or ALMK, mutually exclusive)
-CONFIG_ANDROID_SIMPLE_LMK=y
-
-# LGE: mm: vmscan, page_alloc, ion
-# MIGRATE_HIGHORDER needs to be disabled for enhanced ion, page_alloc, vmscan
-#
-CONFIG_MIGRATE_HIGHORDER=y
-CONFIG_HIGHORDER_PAGES=46080
-
 # thermal custom stuff (by default stock)
 #
 CONFIG_THERMAL=y
@@ -6156,3 +6142,76 @@ CONFIG_LGE_PM_THERMAL_VTS=y
 CONFIG_LGE_PM_THERMAL_SEPARATE_BOOT_FREQ_MITIGATION=y
 # CONFIG_WATCHDOG is not set
 CONFIG_SSB_POSSIBLE=y
+
+# swap, hswap, zram, cma, etc.
+#
+# CMA section:
+#
+CONFIG_CMA=y
+# CONFIG_CMA_DEBUG is not set
+# CONFIG_CMA_DEBUGFS is not set
+CONFIG_CMA_AREAS=7
+# CONFIG_BOOST_DYING_TASK is not set
+CONFIG_READAHEAD_MMAP_SIZE_ENABLE=y
+CONFIG_READAHEAD_MMAP_PAGE_CNT=8
+CONFIG_CMA_PINPAGE_MIGRATION=y
+CONFIG_MIGRATE_HIGHORDER=y
+CONFIG_HIGHORDER_PAGES=46080
+CONFIG_DMA_CMA=y
+#
+# "Default contiguous memory area size:"
+#
+CONFIG_CMA_SIZE_MBYTES=16
+CONFIG_CMA_SIZE_SEL_MBYTES=y
+# CONFIG_CMA_SIZE_SEL_PERCENTAGE is not set
+# CONFIG_CMA_SIZE_SEL_MIN is not set
+# CONFIG_CMA_SIZE_SEL_MAX is not set
+CONFIG_CMA_ALIGNMENT=8
+#
+# swap section:
+#
+CONFIG_SWAP=y
+CONFIG_KSWAPD_CPU_AFFINITY_MASK="f"
+CONFIG_BALANCE_ANON_FILE_RECLAIM=y # eval
+CONFIG_ZRAM=y
+CONFIG_ZSMALLOC=y
+# CONFIG_PGTABLE_MAPPING is not set
+# CONFIG_ZSMALLOC_STAT is not set
+# CONFIG_ZPOOL is not set
+# CONFIG_ZBUD is not set # needed for zswap if not z3fold
+# CONFIG_Z3FOLD=y
+# CONFIG_ZRAM_DEFAULT_Z3FOLD=y
+# CONFIG_CLEANCACHE is not set
+# CONFIG_FRONTSWAP is not set
+# CONFIG_ZSWAP is not set
+# CONFIG_CMA_DEBUGFS is not set
+# CONFIG_CMA_PINPAGE_MIGRATION is not set
+# CONFIG_GCMA is not set
+# CONFIG_GCMA_DEFAULT=y
+# CONFIG_GCMA_STATS is not set
+#
+# OOM/LMK/hswap, vmscan, page_alloc section:
+#
+# CONFIG_PROCESS_RECLAIM is not set
+# CONFIG_HSWAP is not set # LGs hybrid swap, LMK + zram + swap, prob no sense with simple_lmk
+# CONFIG_BOOST_DYING_TASK is not set
+# CONFIG_MEMCG is not set
+# CONFIG_MEMCG_SWAP is not set
+#
+# LMK: default =y
+# CONFIG_ANDROID_LOW_MEMORY_KILLER is not set
+CONFIG_ANDROID_LOW_MEMORY_KILLER_AUTODETECT_OOM_ADJ_VALUES=y
+CONFIG_ANDROID_LMK_ADJ_RBTREE=y
+#
+# simple_lmk (pick either this or ALMK, mutually exclusive)
+CONFIG_ANDROID_SIMPLE_LMK=y
+
+# LGE: mm: vmscan, page_alloc, ion
+# MIGRATE_HIGHORDER needs to be disabled for enhanced ion, page_alloc, vmscan
+#
+CONFIG_MIGRATE_HIGHORDER=y
+CONFIG_HIGHORDER_PAGES=46080
+
+# LGE adaptive readahead (disable for customization)
+#
+CONFIG_LGE_ADAPTIVE_READAHEAD=y
