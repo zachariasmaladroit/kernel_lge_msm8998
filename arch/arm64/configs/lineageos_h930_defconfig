@@ -5621,6 +5621,9 @@ CONFIG_QMI_ENCDEC=y
 
 # customized section
 
+CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE=y
+# CONFIG_CC_OPTIMIZE_FOR_SIZE is not set
+
 # give external modules no chance !
 # CONFIG_MMC_TEST is not set
 # CONFIG_IOSCHED_TEST is not set
