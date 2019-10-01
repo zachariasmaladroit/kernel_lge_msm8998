@@ -6168,7 +6168,7 @@ CONFIG_ZSMALLOC=y
 #
 # OOM/LMK/hswap, vmscan, page_alloc section:
 #
-# CONFIG_PROCESS_RECLAIM is not set
+CONFIG_PROCESS_RECLAIM=y
 # CONFIG_HSWAP is not set # LGs hybrid swap, LMK + zram + swap, prob no sense with simple_lmk
 # CONFIG_BOOST_DYING_TASK is not set
 # CONFIG_MEMCG is not set
