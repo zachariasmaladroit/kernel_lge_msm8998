@@ -579,7 +579,7 @@ static void package_details_release(struct config_item *item)
 	if (!package_details) // WBT 201796
 		return ;
 #endif
-	pr_info("sdcardfs: removing %s\n", package_details->name.name);
+	pr_debug("sdcardfs: removing %s\n", package_details->name.name);
 	remove_packagelist_entry(&package_details->name);
 	kfree(package_details->name.name);
 	kfree(package_details);
