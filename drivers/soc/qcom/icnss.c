@@ -48,6 +48,8 @@
 #include <soc/qcom/service-notifier.h>
 #include <soc/qcom/socinfo.h>
 #include <soc/qcom/ramdump.h>
+#include <linux/project_info.h>
+static u32 fw_version;
 
 #include "wlan_firmware_service_v01.h"
 
@@ -1212,7 +1214,8 @@ bool icnss_is_fw_down(void)
 		return false;
 
 	return test_bit(ICNSS_FW_DOWN, &penv->state) ||
-		test_bit(ICNSS_PD_RESTART, &penv->state);
+		test_bit(ICNSS_PD_RESTART, &penv->state) ||
+		test_bit(ICNSS_REJUVENATE, &penv->state);
 }
 EXPORT_SYMBOL(icnss_is_fw_down);
 
@@ -1633,7 +1636,6 @@ static int wlfw_wlan_cfg_send_sync_msg(struct wlfw_wlan_cfg_req_msg_v01 *data)
 out:
 	penv->stats.cfg_req_err++;
 	ICNSS_QMI_ASSERT();
-
 	return ret;
 }
 
@@ -2492,8 +2494,7 @@ static int icnss_driver_event_pd_service_down(struct icnss_priv *priv,
 		goto out;
 	}
 
-	if (!test_bit(ICNSS_PD_RESTART, &priv->state))
-		icnss_fw_crashed(priv, event_data);
+	icnss_fw_crashed(priv, event_data);
 
 out:
 	kfree(data);
@@ -3223,6 +3224,8 @@ EXPORT_SYMBOL(icnss_disable_irq);
 
 int icnss_get_soc_info(struct device *dev, struct icnss_soc_info *info)
 {
+	char *fw_build_timestamp = NULL;
+
 	if (!penv || !dev) {
 		icnss_pr_err("Platform driver not initialized\n");
 		return -EINVAL;
@@ -3235,6 +3238,8 @@ int icnss_get_soc_info(struct device *dev, struct icnss_soc_info *info)
 	info->board_id = penv->board_info.board_id;
 	info->soc_id = penv->soc_info.soc_id;
 	info->fw_version = penv->fw_version_info.fw_version;
+	fw_build_timestamp = penv->fw_version_info.fw_build_timestamp;
+	fw_build_timestamp[QMI_WLFW_MAX_TIMESTAMP_LEN_V01] = '\0';
 	strlcpy(info->fw_build_timestamp,
 		penv->fw_version_info.fw_build_timestamp,
 		QMI_WLFW_MAX_TIMESTAMP_LEN_V01 + 1);
@@ -4634,6 +4639,24 @@ static int icnss_get_vbatt_info(struct icnss_priv *priv)
 	return 0;
 }
 
+/* Initial and show wlan firmware build version */
+void cnss_set_fw_version(u32 version) {
+        fw_version = version;
+}
+EXPORT_SYMBOL(cnss_set_fw_version);
+
+static ssize_t cnss_version_information_show(struct device *dev,
+                                struct device_attribute *attr, char *buf)
+{
+        if (!penv)
+                return -ENODEV;
+        return scnprintf(buf, PAGE_SIZE, "%u.%u.%u.%u\n", (fw_version & 0xf0000000) >> 28,
+        (fw_version & 0xf000000) >> 24, (fw_version & 0xf00000) >> 20, fw_version & 0x7fff);
+}
+
+static DEVICE_ATTR(cnss_version_information, 0444,
+                cnss_version_information_show, NULL);
+
 static int icnss_probe(struct platform_device *pdev)
 {
 	int ret = 0;
@@ -4832,6 +4855,10 @@ static int icnss_probe(struct platform_device *pdev)
 
 	init_completion(&priv->unblock_shutdown);
 
+	/* Create device file */
+	device_create_file(&penv->pdev->dev, &dev_attr_cnss_version_information);
+	push_component_info(WCN, "WCN3990", "QualComm");
+
 	icnss_pr_info("Platform driver probed successfully\n");
 
 	return 0;
@@ -4853,6 +4880,8 @@ static int icnss_remove(struct platform_device *pdev)
 	device_init_wakeup(&penv->pdev->dev, false);
 
 	icnss_debugfs_destroy(penv);
+
+	device_remove_file(&penv->pdev->dev, &dev_attr_cnss_version_information);
 
 	complete_all(&penv->unblock_shutdown);
 
