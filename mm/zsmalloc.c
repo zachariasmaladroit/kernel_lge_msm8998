@@ -28,8 +28,6 @@
  *
  */
 
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/sched.h>
@@ -50,7 +48,6 @@
 #include <linux/zsmalloc.h>
 #include <linux/zpool.h>
 #include <linux/mount.h>
-#include <linux/compaction.h>
 #include <linux/migrate.h>
 #include <linux/pagemap.h>
 
@@ -352,11 +349,10 @@ static void destroy_cache(struct zs_pool *pool)
 	kmem_cache_destroy(pool->zspage_cachep);
 }
 
-
 static unsigned long cache_alloc_handle(struct zs_pool *pool, gfp_t gfp)
 {
 	return (unsigned long)kmem_cache_alloc(pool->handle_cachep,
-		gfp & ~(__GFP_HIGHMEM|__GFP_MOVABLE));
+			gfp & ~(__GFP_HIGHMEM|__GFP_MOVABLE));
 }
 
 static void cache_free_handle(struct zs_pool *pool, unsigned long handle)
@@ -587,16 +583,16 @@ static inline unsigned long zs_stat_get(struct size_class *class,
 
 #ifdef CONFIG_ZSMALLOC_STAT
 
-static void __init zs_stat_init(void)
+static int __init zs_stat_init(void)
 {
-	if (!debugfs_initialized()) {
-		pr_warn("debugfs not available, stat dir not created\n");
-		return;
-	}
+	if (!debugfs_initialized())
+		return -ENODEV;
 
 	zs_stat_root = debugfs_create_dir("zsmalloc", NULL);
 	if (!zs_stat_root)
-		pr_warn("debugfs 'zsmalloc' stat dir creation failed\n");
+		return -ENOMEM;
+
+	return 0;
 }
 
 static void __exit zs_stat_exit(void)
@@ -677,19 +673,17 @@ static const struct file_operations zs_stat_size_ops = {
 	.release        = single_release,
 };
 
-static void zs_pool_stat_create(struct zs_pool *pool, const char *name)
+static int zs_pool_stat_create(struct zs_pool *pool, const char *name)
 {
 	struct dentry *entry;
 
-	if (!zs_stat_root) {
-		pr_warn("no root stat dir, not creating <%s> stat dir\n", name);
-		return;
-	}
+	if (!zs_stat_root)
+		return -ENODEV;
 
 	entry = debugfs_create_dir(name, zs_stat_root);
 	if (!entry) {
 		pr_warn("debugfs dir <%s> creation failed\n", name);
-		return;
+		return -ENOMEM;
 	}
 	pool->stat_dentry = entry;
 
@@ -698,9 +692,10 @@ static void zs_pool_stat_create(struct zs_pool *pool, const char *name)
 	if (!entry) {
 		pr_warn("%s: debugfs file entry <%s> creation failed\n",
 				name, "classes");
-		debugfs_remove_recursive(pool->stat_dentry);
-		pool->stat_dentry = NULL;
+		return -ENOMEM;
 	}
+
+	return 0;
 }
 
 static void zs_pool_stat_destroy(struct zs_pool *pool)
@@ -709,16 +704,18 @@ static void zs_pool_stat_destroy(struct zs_pool *pool)
 }
 
 #else /* CONFIG_ZSMALLOC_STAT */
-static void __init zs_stat_init(void)
+static int __init zs_stat_init(void)
 {
+	return 0;
 }
 
 static void __exit zs_stat_exit(void)
 {
 }
 
-static inline void zs_pool_stat_create(struct zs_pool *pool, const char *name)
+static inline int zs_pool_stat_create(struct zs_pool *pool, const char *name)
 {
+	return 0;
 }
 
 static inline void zs_pool_stat_destroy(struct zs_pool *pool)
@@ -770,12 +767,8 @@ static void insert_zspage(struct size_class *class,
 	zs_stat_inc(class, fullness, 1);
 	head = list_first_entry_or_null(&class->fullness_list[fullness],
 					struct zspage, list);
-
-	zs_stat_inc(class, fullness, 1);
-	head = list_first_entry_or_null(&class->fullness_list[fullness],
-					struct zspage, list);
 	/*
-	* We want to see more ZS_FULL pages and less almost empty/full.
+	 * We want to see more ZS_FULL pages and less almost empty/full.
 	 * Put pages with higher ->inuse first.
 	 */
 	if (head) {
@@ -1058,7 +1051,7 @@ static void init_zspage(struct size_class *class, struct zspage *zspage)
 		link = (struct link_free *)vaddr + off / sizeof(*link);
 
 		while ((off += class->size) < PAGE_SIZE) {
-			link->next = freeobj++ << OBJ_TAG_BITS;
+			link->next = freeobj++ << OBJ_ALLOCATED_TAG;
 			link += class->size / sizeof(*link);
 		}
 
@@ -1069,13 +1062,13 @@ static void init_zspage(struct size_class *class, struct zspage *zspage)
 		 */
 		next_page = get_next_page(page);
 		if (next_page) {
-			link->next = freeobj++ << OBJ_TAG_BITS;
+			link->next = freeobj++ << OBJ_ALLOCATED_TAG;
 		} else {
 			/*
-			 * Reset OBJ_TAG_BITS bit to last link to tell
+			 * Reset OBJ_ALLOCATED_TAG bit to last link to tell
 			 * whether it's allocated object or not.
 			 */
-			link->next = -1 << OBJ_TAG_BITS;
+			link->next = -1 << OBJ_ALLOCATED_TAG;
 		}
 		kunmap_atomic(vaddr);
 		page = next_page;
@@ -1520,7 +1513,7 @@ static unsigned long obj_malloc(struct size_class *class,
 
 	vaddr = kmap_atomic(m_page);
 	link = (struct link_free *)vaddr + m_offset / sizeof(*link);
-	set_freeobj(zspage, link->next >> OBJ_TAG_BITS);
+	set_freeobj(zspage, link->next >> OBJ_ALLOCATED_TAG);
 	if (likely(!PageHugeObject(m_page)))
 		/* record handle in the header of allocated chunk */
 		link->handle = handle;
@@ -1622,7 +1615,7 @@ static void obj_free(struct size_class *class, unsigned long obj)
 
 	/* Insert this object in containing zspage's freelist */
 	link = (struct link_free *)(vaddr + f_offset);
-	link->next = get_freeobj(zspage) << OBJ_TAG_BITS;
+	link->next = get_freeobj(zspage) << OBJ_ALLOCATED_TAG;
 	kunmap_atomic(vaddr);
 	set_freeobj(zspage, f_objidx);
 	mod_zspage_inuse(zspage, -1);
@@ -2108,7 +2101,7 @@ int zs_page_migrate(struct address_space *mapping, struct page *newpage,
 	put_page(page);
 	page = newpage;
 
-	ret = 0;
+	ret = MIGRATEPAGE_SUCCESS;
 unpin_objects:
 	for (addr = s_addr + offset; addr < s_addr + pos;
 						addr += class->size) {
@@ -2481,8 +2474,8 @@ struct zs_pool *zs_create_pool(const char *name)
 		prev_class = class;
 	}
 
-	/* debug only, don't abort if it fails */
-	zs_pool_stat_create(pool, name);
+	if (zs_pool_stat_create(pool, name))
+		goto err;
 
 	if (zs_register_migration(pool))
 		goto err;
@@ -2554,10 +2547,17 @@ static int __init zs_init(void)
 	zpool_register_driver(&zs_zpool_driver);
 #endif
 
-	zs_stat_init();
-
+	ret = zs_stat_init();
+	if (ret) {
+		pr_err("zs stat initialization failed\n");
+		goto stat_fail;
+	}
 	return 0;
 
+stat_fail:
+#ifdef CONFIG_ZPOOL
+	zpool_unregister_driver(&zs_zpool_driver);
+#endif
 notifier_fail:
 	zs_unregister_cpu_notifier();
 	zsmalloc_unmount();
