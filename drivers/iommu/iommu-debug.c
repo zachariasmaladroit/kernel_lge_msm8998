@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2019, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2015-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -1359,7 +1359,6 @@ static ssize_t iommu_debug_dma_attach_read(struct file *file, char __user *ubuf,
 	struct iommu_debug_device *ddev = file->private_data;
 	struct device *dev = ddev->dev;
 	char c[2];
-	size_t buflen = sizeof(c);
 
 	if (*offset)
 		return 0;
@@ -1370,14 +1369,13 @@ static ssize_t iommu_debug_dma_attach_read(struct file *file, char __user *ubuf,
 		c[0] = dev->archdata.mapping->domain ? '1' : '0';
 
 	c[1] = '\n';
-	buflen = min(count, buflen);
-	if (copy_to_user(ubuf, &c, buflen)) {
+	if (copy_to_user(ubuf, &c, 2)) {
 		pr_err("copy_to_user failed\n");
 		return -EFAULT;
 	}
 	*offset = 1;		/* non-zero means we're done */
 
-	return buflen;
+	return 2;
 }
 
 static const struct file_operations iommu_debug_dma_attach_fops = {
@@ -1403,7 +1401,7 @@ static ssize_t iommu_debug_virt_addr_read(struct file *file, char __user *ubuf,
 	else
 		snprintf(buf, 100, "0x%pK\n", virt_addr);
 
-	buflen = min(count, strlen(buf)+1);
+	buflen = strlen(buf);
 	if (copy_to_user(ubuf, buf, buflen)) {
 		pr_err("Couldn't copy_to_user\n");
 		retval = -EFAULT;
@@ -1434,21 +1432,19 @@ static ssize_t iommu_debug_attach_read(struct file *file, char __user *ubuf,
 {
 	struct iommu_debug_device *ddev = file->private_data;
 	char c[2];
-	size_t buflen = sizeof(c);
 
 	if (*offset)
 		return 0;
 
 	c[0] = ddev->domain ? '1' : '0';
 	c[1] = '\n';
-	buflen = min(count, buflen);
-	if (copy_to_user(ubuf, &c, buflen)) {
+	if (copy_to_user(ubuf, &c, 2)) {
 		pr_err("copy_to_user failed\n");
 		return -EFAULT;
 	}
 	*offset = 1;		/* non-zero means we're done */
 
-	return buflen;
+	return 2;
 }
 
 static const struct file_operations iommu_debug_attach_fops = {
@@ -1527,7 +1523,7 @@ static ssize_t iommu_debug_pte_read(struct file *file, char __user *ubuf,
 	else
 		snprintf(buf, 100, "pte=%016llx\n", pte);
 
-	buflen = min(count, strlen(buf)+1);
+	buflen = strlen(buf);
 	if (copy_to_user(ubuf, buf, buflen)) {
 		pr_err("Couldn't copy_to_user\n");
 		retval = -EFAULT;
@@ -1596,7 +1592,7 @@ static ssize_t iommu_debug_atos_read(struct file *file, char __user *ubuf,
 		snprintf(buf, 100, "%pa\n", &phys);
 	}
 
-	buflen = min(count, strlen(buf)+1);
+	buflen = strlen(buf);
 	if (copy_to_user(ubuf, buf, buflen)) {
 		pr_err("Couldn't copy_to_user\n");
 		retval = -EFAULT;
@@ -1649,7 +1645,7 @@ static ssize_t iommu_debug_dma_atos_read(struct file *file, char __user *ubuf,
 	else
 		snprintf(buf, 100, "%pa\n", &phys);
 
-	buflen = min(count, strlen(buf)+1);
+	buflen = strlen(buf);
 	if (copy_to_user(ubuf, buf, buflen)) {
 		pr_err("Couldn't copy_to_user\n");
 		retval = -EFAULT;
@@ -1880,7 +1876,7 @@ static ssize_t iommu_debug_dma_map_read(struct file *file, char __user *ubuf,
 	iova = ddev->iova;
 	snprintf(buf, 100, "%pa\n", &iova);
 
-	buflen = min(count, strlen(buf)+1);
+	buflen = strlen(buf);
 	if (copy_to_user(ubuf, buf, buflen)) {
 		pr_err("Couldn't copy_to_user\n");
 		retval = -EFAULT;
