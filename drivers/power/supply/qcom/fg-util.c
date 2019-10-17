@@ -250,7 +250,7 @@ void dump_sram(u8 *buf, int addr, int len)
 	for (i = 0; i < len; i += 4) {
 		str[0] = '\0';
 		fill_string(str, sizeof(str), buf + i, 4);
-		pr_info("%03d %s\n", addr + (i / 4), str);
+		pr_debug("%03d %s\n", addr + (i / 4), str);
 	}
 }
 
@@ -417,9 +417,9 @@ int fg_read(struct fg_chip *chip, int addr, u8 *val, int len)
 	}
 
 	if (*chip->debug_mask & FG_BUS_READ) {
-		pr_info("length %d addr=%04x\n", len, addr);
+		pr_debug("length %d addr=%04x\n", len, addr);
 		for (i = 0; i < len; i++)
-			pr_info("val[%d]: %02x\n", i, val[i]);
+			pr_debug("val[%d]: %02x\n", i, val[i]);
 	}
 
 	return 0;
@@ -456,9 +456,9 @@ int fg_write(struct fg_chip *chip, int addr, u8 *val, int len)
 	}
 
 	if (*chip->debug_mask & FG_BUS_WRITE) {
-		pr_info("length %d addr=%04x\n", len, addr);
+		pr_debug("length %d addr=%04x\n", len, addr);
 		for (i = 0; i < len; i++)
-			pr_info("val[%d]: %02x\n", i, val[i]);
+			pr_debug("val[%d]: %02x\n", i, val[i]);
 	}
 out:
 	mutex_unlock(&chip->bus_lock);
@@ -491,8 +491,8 @@ int fg_masked_write(struct fg_chip *chip, int addr, u8 mask, u8 val)
 		goto out;
 	}
 
-	fg_dbg(chip, FG_BUS_WRITE, "addr=%04x mask: %02x val: %02x\n", addr,
-		mask, val);
+//	fg_dbg(chip, FG_BUS_WRITE, "addr=%04x mask: %02x val: %02x\n", addr,
+//		mask, val);
 out:
 	mutex_unlock(&chip->bus_lock);
 	return rc;
@@ -510,17 +510,17 @@ int fg_dump_regs(struct fg_chip *chip)
 	if (rc < 0)
 		return rc;
 
-	pr_info("batt_soc_base registers:\n");
+	pr_debug("batt_soc_base registers:\n");
 	for (i = 0; i < sizeof(buf); i++)
-		pr_info("%04x:%02x\n", chip->batt_soc_base + i, buf[i]);
+		pr_debug("%04x:%02x\n", chip->batt_soc_base + i, buf[i]);
 
 	rc = fg_read(chip, chip->mem_if_base, buf, sizeof(buf));
 	if (rc < 0)
 		return rc;
 
-	pr_info("mem_if_base registers:\n");
+	pr_debug("mem_if_base registers:\n");
 	for (i = 0; i < sizeof(buf); i++)
-		pr_info("%04x:%02x\n", chip->mem_if_base + i, buf[i]);
+		pr_debug("%04x:%02x\n", chip->mem_if_base + i, buf[i]);
 
 	return 0;
 }
