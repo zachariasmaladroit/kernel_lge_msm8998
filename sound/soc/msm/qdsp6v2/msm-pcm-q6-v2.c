@@ -1116,10 +1116,10 @@ static int msm_pcm_adsp_stream_cmd_put(struct snd_kcontrol *kcontrol,
 
 	if (!pdata) {
 		pr_err("%s pdata is NULL\n", __func__);
-		ret = -ENODEV;
-		goto done;
+		return -ENODEV;
 	}
 
+	mutex_lock(&pdata->lock);
 	substream = pdata->pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream;
 	if (!substream) {
 		pr_err("%s substream not found\n", __func__);
@@ -1314,8 +1314,10 @@ static int msm_pcm_volume_ctl_get(struct snd_kcontrol *kcontrol,
 		      struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_pcm_volume *vol = snd_kcontrol_chip(kcontrol);
+	struct msm_plat_data *pdata = NULL;
 	struct snd_pcm_substream *substream =
 		vol->pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream;
+	struct snd_soc_pcm_runtime *soc_prtd = NULL;
 	struct msm_audio *prtd;
 
 	pr_debug("%s\n", __func__);
@@ -1323,13 +1325,25 @@ static int msm_pcm_volume_ctl_get(struct snd_kcontrol *kcontrol,
 		pr_err("%s substream not found\n", __func__);
 		return -ENODEV;
 	}
-	if (!substream->runtime) {
-		pr_err("%s substream runtime not found\n", __func__);
+	soc_prtd = substream->private_data;
+	if (!substream->runtime || !soc_prtd) {
+		pr_debug("%s substream runtime or private_data not found\n",
+				 __func__);
 		return 0;
 	}
+
+	pdata = (struct msm_plat_data *)
+			dev_get_drvdata(soc_prtd->platform->dev);
+	if (!pdata) {
+		pr_err("%s: pdata not found\n", __func__);
+		return -ENODEV;
+	}
+
+	mutex_lock(&pdata->lock);
 	prtd = substream->runtime->private_data;
 	if (prtd)
 		ucontrol->value.integer.value[0] = prtd->volume;
+	mutex_unlock(&pdata->lock);
 	return 0;
 }
 
@@ -1414,9 +1428,11 @@ static int msm_pcm_compress_ctl_get(struct snd_kcontrol *kcontrol,
 		pr_err("%s substream runtime not found\n", __func__);
 		return 0;
 	}
+	mutex_lock(&pdata->lock);
 	prtd = substream->runtime->private_data;
 	if (prtd)
 		ucontrol->value.integer.value[0] = prtd->compress_enable;
+	mutex_unlock(&pdata->lock);
 	return 0;
 }
 
@@ -1445,12 +1461,14 @@ static int msm_pcm_compress_ctl_put(struct snd_kcontrol *kcontrol,
 		pr_err("%s substream runtime not found\n", __func__);
 		return 0;
 	}
+	mutex_lock(&pdata->lock);
 	prtd = substream->runtime->private_data;
 	if (prtd) {
 		pr_debug("%s: setting compress flag to 0x%x\n",
 		__func__, compress);
 		prtd->compress_enable = compress;
 	}
+	mutex_unlock(&pdata->lock);
 	return rc;
 }
 
