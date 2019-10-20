@@ -265,6 +265,13 @@ static struct ion_buffer *ion_buffer_create(struct ion_heap *heap,
 	ion_buffer_add(dev, buffer);
 	mutex_unlock(&dev->buffer_lock);
 	atomic_long_add(len, &heap->total_allocated);
+#if defined(CONFIG_MACH_LGE)
+	buffer->create_ts = sched_clock();
+	get_task_comm(buffer->create_task_comm, current);
+	buffer->create_task_pid = task_pid_nr(current);
+	buffer->share_ts = buffer->import_ts = 0;
+	buffer->share_task_pid = buffer->import_task_pid = 0;
+#endif
 	return buffer;
 
 err:
@@ -1446,7 +1453,11 @@ struct dma_buf *ion_share_dma_buf(struct ion_client *client,
 		ion_buffer_put(buffer);
 		return dmabuf;
 	}
-
+#if defined(CONFIG_MACH_LGE)
+	buffer->share_ts = sched_clock();
+	get_task_comm(buffer->share_task_comm, current);
+	buffer->share_task_pid = task_pid_nr(current);
+#endif
 	return dmabuf;
 }
 EXPORT_SYMBOL(ion_share_dma_buf);
@@ -1532,6 +1543,11 @@ struct ion_handle *ion_import_dma_buf(struct ion_client *client, int fd)
 	}
 
 end:
+#if defined(CONFIG_MACH_LGE)
+	buffer->import_ts = sched_clock();
+	get_task_comm(buffer->import_task_comm, current);
+	buffer->import_task_pid = task_pid_nr(current);
+#endif
 	dma_buf_put(dmabuf);
 	return handle;
 }
@@ -1916,8 +1932,50 @@ static int ion_debug_heap_show(struct seq_file *s, void *unused)
 				heap->free_list_size);
 	seq_puts(s, "----------------------------------------------------\n");
 
+#if defined(CONFIG_MACH_LGE)
+	seq_puts(s, "aux information for system heap buffers:\n");
+	mutex_lock(&dev->buffer_lock);
+	for (n = rb_first(&dev->buffers); n; n = rb_next(n)) {
+		unsigned long long create_ts, share_ts, import_ts;
+		unsigned long create_ts_rem, share_ts_rem, import_ts_rem;
+		struct ion_buffer *buffer = rb_entry(n, struct ion_buffer,
+						     node);
+		if (buffer->heap->id != heap->id)
+			continue;
+		if (buffer->heap->id != ION_SYSTEM_HEAP_ID)
+			continue;
+
+		create_ts = buffer->create_ts;
+		share_ts = buffer->share_ts;
+		import_ts = buffer->import_ts;
+
+		create_ts_rem = do_div(create_ts, 1000000000);
+		share_ts_rem = do_div(share_ts, 1000000000);
+		import_ts_rem = do_div(import_ts, 1000000000);
+
+		seq_printf(s, "0x%p, %ld (KB), %d, creator : [%d] %s (%lu.%06lu) share : [%d] %s (%lu.%06lu) import : [%d] %s (%lu.%06lu)\n",
+			buffer, (buffer->size) >> PAGE_SHIFT, buffer->handle_count,
+			buffer->create_task_pid, buffer->create_task_comm, (unsigned long)create_ts, create_ts_rem / 1000,
+			buffer->share_task_pid, buffer->share_task_comm, (unsigned long)share_ts, share_ts_rem / 1000,
+			buffer->import_task_pid, buffer->import_task_comm, (unsigned long)import_ts, import_ts_rem / 1000);
+	}
+	mutex_unlock(&dev->buffer_lock);
+	seq_puts(s, "----------------------------------------------------\n");
+#endif
+
 	if (heap->debug_show)
 		heap->debug_show(heap, s, unused);
+
+#if defined(CONFIG_MACH_LGE)
+	/* Error condition
+	1. heap->id = ION_SYSTEM_HEAP_ID &&
+ 	2. total_size >= 1 GB */
+
+	if ((heap->id == ION_SYSTEM_HEAP_ID) && (total_size >= ((1 * 1024 * 1024 * 1024)+(512*1024*1024)) )) {
+		pr_err("[%s] ion_system_heap greater than 1 GB\n", __func__);
+		//BUG();
+	}
+#endif
 
 	ion_heap_print_debug(s, heap);
 	return 0;
