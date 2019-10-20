@@ -6185,7 +6185,7 @@ CONFIG_ANDROID_LMK_ADJ_RBTREE=y
 # MIGRATE_HIGHORDER needs to be disabled for enhanced ion, page_alloc, vmscan
 #
 # ion:
-# CONFIG_MIGRATE_HIGHORDER is not set
+CONFIG_MIGRATE_HIGHORDER=y
 CONFIG_HIGHORDER_PAGES=46080
 
 # LGE adaptive readahead (disable for customization)
