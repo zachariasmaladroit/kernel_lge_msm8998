@@ -153,13 +153,7 @@ EXPORT_SYMBOL(msm_ion_client_create);
 int msm_ion_do_cache_op(struct ion_client *client, struct ion_handle *handle,
 			void *vaddr, unsigned long len, unsigned int cmd)
 {
-	int ret;
-
-	lock_client(client);
-	ret = ion_do_cache_op(client, handle, vaddr, 0, len, cmd);
-	unlock_client(client);
-
-	return ret;
+	return ion_do_cache_op(client, handle, vaddr, 0, len, cmd);
 }
 EXPORT_SYMBOL(msm_ion_do_cache_op);
 
@@ -168,13 +162,7 @@ int msm_ion_do_cache_offset_op(
 		void *vaddr, unsigned int offset, unsigned long len,
 		unsigned int cmd)
 {
-	int ret;
-
-	lock_client(client);
-	ret = ion_do_cache_op(client, handle, vaddr, offset, len, cmd);
-	unlock_client(client);
-
-	return ret;
+	return ion_do_cache_op(client, handle, vaddr, offset, len, cmd);
 }
 EXPORT_SYMBOL(msm_ion_do_cache_offset_op);
 
@@ -191,7 +179,7 @@ static int ion_no_pages_cache_ops(struct ion_client *client,
 	ion_phys_addr_t buff_phys_start = 0;
 	size_t buf_length = 0;
 
-	ret = ion_phys_nolock(client, handle, &buff_phys_start, &buf_length);
+	ret = ion_phys(client, handle, &buff_phys_start, &buf_length);
 	if (ret)
 		return -EINVAL;
 
@@ -305,10 +293,9 @@ static int ion_pages_cache_ops(struct ion_client *client,
 	int i;
 	unsigned int len = 0;
 	void (*op)(const void *, const void *);
-	struct ion_buffer *buffer;
 
-	buffer = get_buffer(handle);
-	table = buffer->sg_table;
+
+	table = ion_sg_table(client, handle);
 	if (IS_ERR_OR_NULL(table))
 		return PTR_ERR(table);
 
@@ -357,18 +344,10 @@ int ion_do_cache_op(struct ion_client *client, struct ion_handle *handle,
 	unsigned long flags;
 	struct sg_table *table;
 	struct page *page;
-	struct ion_buffer *buffer;
 
-	if (!ion_handle_validate(client, handle)) {
-		pr_err("%s: invalid handle passed to %s.\n",
-		       __func__, __func__);
+	ret = ion_handle_get_flags(client, handle, &flags);
+	if (ret)
 		return -EINVAL;
-	}
-
-	buffer = get_buffer(handle);
-	mutex_lock(&buffer->lock);
-	flags = buffer->flags;
-	mutex_unlock(&buffer->lock);
 
 	if (!ION_IS_CACHED(flags))
 		return 0;
@@ -376,7 +355,7 @@ int ion_do_cache_op(struct ion_client *client, struct ion_handle *handle,
 	if (get_secure_vmid(flags) > 0)
 		return 0;
 
-	table = buffer->sg_table;
+	table = ion_sg_table(client, handle);
 
 	if (IS_ERR_OR_NULL(table))
 		return PTR_ERR(table);
@@ -758,23 +737,19 @@ long msm_ion_custom_ioctl(struct ion_client *client,
 		int ret;
 		struct mm_struct *mm = current->active_mm;
 
-		lock_client(client);
 		if (data.flush_data.handle > 0) {
-			handle = ion_handle_get_by_id_nolock(
-					client, (int)data.flush_data.handle);
+			handle = ion_handle_get_by_id(client,
+						(int)data.flush_data.handle);
 			if (IS_ERR(handle)) {
 				pr_info("%s: Could not find handle: %d\n",
 					__func__, (int)data.flush_data.handle);
-				unlock_client(client);
 				return PTR_ERR(handle);
 			}
 		} else {
-			handle = ion_import_dma_buf_nolock(client,
-							   data.flush_data.fd);
+			handle = ion_import_dma_buf(client, data.flush_data.fd);
 			if (IS_ERR(handle)) {
 				pr_info("%s: Could not import handle: %pK\n",
 					__func__, handle);
-				unlock_client(client);
 				return -EINVAL;
 			}
 		}
@@ -797,9 +772,8 @@ long msm_ion_custom_ioctl(struct ion_client *client,
 		}
 		up_read(&mm->mmap_sem);
 
-		ion_free_nolock(client, handle);
+		ion_free(client, handle);
 
-		unlock_client(client);
 		if (ret < 0)
 			return ret;
 		break;

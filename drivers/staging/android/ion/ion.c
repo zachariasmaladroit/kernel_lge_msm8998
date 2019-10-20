@@ -3,7 +3,7 @@
  * drivers/staging/android/ion/ion.c
  *
  * Copyright (C) 2011 Google, Inc.
- * Copyright (c) 2011-2018, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2011-2017, The Linux Foundation. All rights reserved.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -495,8 +495,8 @@ static struct ion_handle *ion_handle_lookup(struct ion_client *client,
 	return ERR_PTR(-EINVAL);
 }
 
-struct ion_handle *ion_handle_get_by_id_nolock(struct ion_client *client,
-					       int id)
+static struct ion_handle *ion_handle_get_by_id_nolock(struct ion_client *client,
+						int id)
 {
 	struct ion_handle *handle;
 
@@ -507,7 +507,20 @@ struct ion_handle *ion_handle_get_by_id_nolock(struct ion_client *client,
 	return ERR_PTR(-EINVAL);
 }
 
-bool ion_handle_validate(struct ion_client *client, struct ion_handle *handle)
+struct ion_handle *ion_handle_get_by_id(struct ion_client *client,
+						int id)
+{
+	struct ion_handle *handle;
+
+	mutex_lock(&client->lock);
+	handle = ion_handle_get_by_id_nolock(client, id);
+	mutex_unlock(&client->lock);
+
+	return handle;
+}
+
+static bool ion_handle_validate(struct ion_client *client,
+				struct ion_handle *handle)
 {
 	WARN_ON(!mutex_is_locked(&client->lock));
 	return idr_find(&client->idr, handle->id) == handle;
@@ -661,7 +674,7 @@ struct ion_handle *ion_alloc(struct ion_client *client, size_t len,
 }
 EXPORT_SYMBOL(ion_alloc);
 
-void ion_free_nolock(struct ion_client *client, struct ion_handle *handle)
+static void ion_free_nolock(struct ion_client *client, struct ion_handle *handle)
 {
 	bool valid_handle;
 
@@ -704,17 +717,15 @@ void ion_free(struct ion_client *client, struct ion_handle *handle)
 }
 EXPORT_SYMBOL(ion_free);
 
-static int __ion_phys(struct ion_client *client, struct ion_handle *handle,
-		      ion_phys_addr_t *addr, size_t *len, bool lock_client)
+int ion_phys(struct ion_client *client, struct ion_handle *handle,
+	     ion_phys_addr_t *addr, size_t *len)
 {
 	struct ion_buffer *buffer;
 	int ret;
 
-	if (lock_client)
-		mutex_lock(&client->lock);
+	mutex_lock(&client->lock);
 	if (!ion_handle_validate(client, handle)) {
-		if (lock_client)
-			mutex_unlock(&client->lock);
+		mutex_unlock(&client->lock);
 		return -EINVAL;
 	}
 
@@ -723,28 +734,14 @@ static int __ion_phys(struct ion_client *client, struct ion_handle *handle,
 	if (!buffer->heap->ops->phys) {
 		pr_err("%s: ion_phys is not implemented by this heap (name=%s, type=%d).\n",
 			__func__, buffer->heap->name, buffer->heap->type);
-		if (lock_client)
-			mutex_unlock(&client->lock);
+		mutex_unlock(&client->lock);
 		return -ENODEV;
 	}
-	if (lock_client)
-		mutex_unlock(&client->lock);
+	mutex_unlock(&client->lock);
 	ret = buffer->heap->ops->phys(buffer->heap, buffer, addr, len);
 	return ret;
 }
-
-int ion_phys(struct ion_client *client, struct ion_handle *handle,
-	     ion_phys_addr_t *addr, size_t *len)
-{
-	return __ion_phys(client, handle, addr, len, true);
-}
 EXPORT_SYMBOL(ion_phys);
-
-int ion_phys_nolock(struct ion_client *client, struct ion_handle *handle,
-		    ion_phys_addr_t *addr, size_t *len)
-{
-	return __ion_phys(client, handle, addr, len, false);
-}
 
 static void *ion_buffer_kmap_get(struct ion_buffer *buffer)
 {
@@ -1514,8 +1511,7 @@ static int ion_share_dma_buf_fd_nolock(struct ion_client *client,
 	return __ion_share_dma_buf_fd(client, handle, false);
 }
 
-static struct ion_handle *__ion_import_dma_buf(struct ion_client *client,
-					       int fd, bool lock_client)
+struct ion_handle *ion_import_dma_buf(struct ion_client *client, int fd)
 {
 	struct dma_buf *dmabuf;
 	struct ion_buffer *buffer;
@@ -1535,32 +1531,25 @@ static struct ion_handle *__ion_import_dma_buf(struct ion_client *client,
 	}
 	buffer = dmabuf->priv;
 
-	if (lock_client)
-		mutex_lock(&client->lock);
+	mutex_lock(&client->lock);
 	/* if a handle exists for this buffer just take a reference to it */
 	handle = ion_handle_lookup(client, buffer);
 	if (!IS_ERR(handle)) {
 		handle = ion_handle_get_check_overflow(handle);
-		if (lock_client)
-			mutex_unlock(&client->lock);
+		mutex_unlock(&client->lock);
 		goto end;
 	}
 
 	handle = ion_handle_create(client, buffer);
 	if (IS_ERR(handle)) {
-		if (lock_client)
-			mutex_unlock(&client->lock);
+		mutex_unlock(&client->lock);
 		goto end;
 	}
 
 	ret = ion_handle_add(client, handle);
-	if (lock_client)
-		mutex_unlock(&client->lock);
+	mutex_unlock(&client->lock);
 	if (ret) {
-		if (lock_client)
-			ion_handle_put(handle);
-		else
-			ion_handle_put_nolock(handle);
+		ion_handle_put(handle);
 		handle = ERR_PTR(ret);
 	}
 
@@ -1568,17 +1557,7 @@ end:
 	dma_buf_put(dmabuf);
 	return handle;
 }
-
-struct ion_handle *ion_import_dma_buf(struct ion_client *client, int fd)
-{
-	return __ion_import_dma_buf(client, fd, true);
-}
 EXPORT_SYMBOL(ion_import_dma_buf);
-
-struct ion_handle *ion_import_dma_buf_nolock(struct ion_client *client, int fd)
-{
-	return __ion_import_dma_buf(client, fd, false);
-}
 
 static int ion_sync_for_device(struct ion_client *client, int fd)
 {
@@ -2221,19 +2200,4 @@ void __init ion_reserve(struct ion_platform_data *data)
 			&data->heaps[i].base,
 			data->heaps[i].size);
 	}
-}
-
-void lock_client(struct ion_client *client)
-{
-	mutex_lock(&client->lock);
-}
-
-void unlock_client(struct ion_client *client)
-{
-	mutex_unlock(&client->lock);
-}
-
-struct ion_buffer *get_buffer(struct ion_handle *handle)
-{
-	return handle->buffer;
 }
