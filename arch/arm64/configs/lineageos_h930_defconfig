@@ -6173,12 +6173,12 @@ CONFIG_ZSMALLOC=y
 # CONFIG_MEMCG_SWAP is not set
 #
 # LMK: default =y
-# CONFIG_ANDROID_LOW_MEMORY_KILLER is not set
+CONFIG_ANDROID_LOW_MEMORY_KILLER=y
 CONFIG_ANDROID_LOW_MEMORY_KILLER_AUTODETECT_OOM_ADJ_VALUES=y
 CONFIG_ANDROID_LMK_ADJ_RBTREE=y
 #
 # simple_lmk (pick either this or ALMK, mutually exclusive)
-CONFIG_ANDROID_SIMPLE_LMK=y
+# CONFIG_ANDROID_SIMPLE_LMK is not set
 
 # LGE: mm: vmscan, page_alloc, ion
 # MIGRATE_HIGHORDER needs to be disabled for enhanced ion, page_alloc, vmscan
