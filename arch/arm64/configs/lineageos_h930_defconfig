@@ -6194,6 +6194,10 @@ CONFIG_ANDROID_LMK_ADJ_RBTREE=y
 #
 CONFIG_SPECULATIVE_PAGE_FAULT=y
 
+# mm: vmstat update interval
+#
+CONFIG_VMSTAT_INTERVAL=30
+
 # LGE adaptive readahead (disable for customization)
 #
 CONFIG_LGE_ADAPTIVE_READAHEAD=y
