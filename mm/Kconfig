@@ -731,7 +731,6 @@ config PROCESS_RECLAIM
 
 	 Any other vaule is ignored.
 
-<<<<<<< HEAD
 config HSWAP
 	bool "Enable Hybrid SWAP"
 	depends on SWAP && ZRAM && PROCESS_RECLAIM
@@ -834,7 +833,3 @@ config SPECULATIVE_PAGE_FAULT
 	  is detected or because underlying PMD or PTE tables are not yet
 	  allocated, the speculative page fault fails and a classic page fault
 	  is then tried.
-
-config VMSTAT_INTERVAL
-	int "Default interval in seconds to update vmstat"
-	default 1
