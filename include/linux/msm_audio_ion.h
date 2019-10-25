@@ -17,12 +17,6 @@
 #include <sound/pcm.h>
 #include <linux/msm_ion.h>
 
-enum {
-       HLOS_TO_ADSP = 1,
-       ADSP_TO_HLOS,
-};
-
-#define VMID_CP_ADSP_SHARED 33
 
 int msm_audio_ion_alloc(const char *name, struct ion_client **client,
 			struct ion_handle **handle, size_t bufsz,
@@ -48,6 +42,4 @@ int msm_audio_ion_import_legacy(const char *name, struct ion_client *client,
 int msm_audio_ion_free_legacy(struct ion_client *client,
 			struct ion_handle *handle);
 u32 msm_audio_populate_upper_32_bits(ion_phys_addr_t pa);
-int msm_audio_ion_phys_assign(const char *name, int fd, ion_phys_addr_t *paddr,
-								size_t *pa_len, u8 assign_type);
 #endif /* _LINUX_MSM_AUDIO_ION_H */
