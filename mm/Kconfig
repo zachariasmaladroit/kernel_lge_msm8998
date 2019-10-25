@@ -837,4 +837,4 @@ config SPECULATIVE_PAGE_FAULT
 
 config VMSTAT_INTERVAL
 	int "Default interval in seconds to update vmstat"
-	default 1
+	default 30
