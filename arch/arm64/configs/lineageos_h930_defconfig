@@ -6190,6 +6190,10 @@ CONFIG_ANDROID_LMK_ADJ_RBTREE=y
 # CONFIG_MIGRATE_HIGHORDER is not set
 # CONFIG_HIGHORDER_PAGES=46080
 
+# mm: speculative pagefault (keep track of that feature)
+#
+CONFIG_SPECULATIVE_PAGE_FAULT=y
+
 # LGE adaptive readahead (disable for customization)
 #
 CONFIG_LGE_ADAPTIVE_READAHEAD=y
