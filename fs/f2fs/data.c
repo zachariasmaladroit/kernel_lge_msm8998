@@ -1451,8 +1451,7 @@ static int f2fs_mpage_readpages(struct address_space *mapping,
 			prefetchw(&page->flags);
 			list_del(&page->lru);
 			if (add_to_page_cache_lru(page, mapping,
-						  page_index(page),
-						  readahead_gfp_mask(mapping)))
+						  page->index, GFP_KERNEL))
 				goto next_page;
 		}
 
