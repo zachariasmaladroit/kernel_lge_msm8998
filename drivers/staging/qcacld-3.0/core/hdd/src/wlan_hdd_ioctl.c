@@ -2323,10 +2323,9 @@ static int hdd_set_dwell_time(hdd_adapter_t *adapter, uint8_t *command)
 	sme_get_config_param(hHal, sme_config);
 
 	if (strncmp(command, "SETDWELLTIME ACTIVE MAX", 23) == 0) {
-		if (drv_cmd_validate(command, 23)) {
-			retval = -EINVAL;
-			goto free;
-		}
+		if (drv_cmd_validate(command, 23))
+			return -EINVAL;
+
 		value = value + 24;
 		temp = kstrtou32(value, 10, &val);
 		if (temp != 0 || val < CFG_ACTIVE_MAX_CHANNEL_TIME_MIN ||
@@ -2339,10 +2338,8 @@ static int hdd_set_dwell_time(hdd_adapter_t *adapter, uint8_t *command)
 		sme_config->csrConfig.nActiveMaxChnTime = val;
 		sme_update_config(hHal, sme_config);
 	} else if (strncmp(command, "SETDWELLTIME ACTIVE MIN", 23) == 0) {
-		if (drv_cmd_validate(command, 23)) {
-			retval = -EINVAL;
-			goto free;
-		}
+		if (drv_cmd_validate(command, 23))
+			return -EINVAL;
 
 		value = value + 24;
 		temp = kstrtou32(value, 10, &val);
@@ -2356,10 +2353,8 @@ static int hdd_set_dwell_time(hdd_adapter_t *adapter, uint8_t *command)
 		sme_config->csrConfig.nActiveMinChnTime = val;
 		sme_update_config(hHal, sme_config);
 	} else if (strncmp(command, "SETDWELLTIME PASSIVE MAX", 24) == 0) {
-		if (drv_cmd_validate(command, 24)) {
-			retval = -EINVAL;
-			goto free;
-		}
+		if (drv_cmd_validate(command, 24))
+			return -EINVAL;
 
 		value = value + 25;
 		temp = kstrtou32(value, 10, &val);
@@ -2373,10 +2368,8 @@ static int hdd_set_dwell_time(hdd_adapter_t *adapter, uint8_t *command)
 		sme_config->csrConfig.nPassiveMaxChnTime = val;
 		sme_update_config(hHal, sme_config);
 	} else if (strncmp(command, "SETDWELLTIME PASSIVE MIN", 24) == 0) {
-		if (drv_cmd_validate(command, 24)) {
-			retval = -EINVAL;
-			goto free;
-		}
+		if (drv_cmd_validate(command, 24))
+			return -EINVAL;
 
 		value = value + 25;
 		temp = kstrtou32(value, 10, &val);
@@ -2390,10 +2383,8 @@ static int hdd_set_dwell_time(hdd_adapter_t *adapter, uint8_t *command)
 		sme_config->csrConfig.nPassiveMinChnTime = val;
 		sme_update_config(hHal, sme_config);
 	} else if (strncmp(command, "SETDWELLTIME", 12) == 0) {
-		if (drv_cmd_validate(command, 12)) {
-			retval = -EINVAL;
-			goto free;
-		}
+		if (drv_cmd_validate(command, 12))
+			return -EINVAL;
 
 		value = value + 13;
 		temp = kstrtou32(value, 10, &val);
