@@ -1480,6 +1480,7 @@ QDF_STATUS hdd_wlan_shutdown(void)
 	cds_clear_concurrent_session_count();
 
 	hdd_debug("Invoking packetdump deregistration API");
+	wlan_deregister_txrx_packetdump();
 
 	/*
 	 * After SSR, FW clear its txrx stats. In host,
