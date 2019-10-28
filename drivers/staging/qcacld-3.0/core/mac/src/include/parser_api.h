@@ -800,7 +800,7 @@ populate_dot11f_ext_supp_rates(tpAniSirGlobal pMac,
  * @pMac: Pointer to the global MAC context
  * @pDot11f: Pointer to the measurement report structure
  * @pBeaconReport: Pointer to the Beacon Report structure
- * @is_last_frame: is the current report last or more reports to follow
+ * @last_beacon_report_params: Last Beacon Report indication params
  *
  * Return: Ret Status
  */
@@ -808,7 +808,8 @@ tSirRetStatus
 populate_dot11f_beacon_report(tpAniSirGlobal pMac,
 			tDot11fIEMeasurementReport *pDot11f,
 			tSirMacBeaconReport *pBeaconReport,
-			bool is_last_frame);
+			struct rrm_beacon_report_last_beacon_params
+			*last_beacon_report_params);
 
 /**
  * \brief Populate a tDot11fIEExtSuppRates

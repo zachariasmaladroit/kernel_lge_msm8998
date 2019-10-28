@@ -25,6 +25,9 @@ ifndef CONFIG_ROME_IF
 endif
 endif
 
+
+# Make WLAN as open-source driver by default
+WLAN_OPEN_SOURCE := 1
 ifeq ($(KERNEL_BUILD),1)
 	# These are provided in external module based builds
 	# Need to explicitly define for Kernel-based builds
@@ -32,14 +35,6 @@ ifeq ($(KERNEL_BUILD),1)
 	WLAN_ROOT := drivers/staging/qcacld-3.0
 	WLAN_COMMON_ROOT := ../qca-wifi-host-cmn
 	WLAN_COMMON_INC := $(WLAN_ROOT)/$(WLAN_COMMON_ROOT)
-endif
-
-# Make WLAN as open-source driver by default
-WLAN_OPEN_SOURCE := 1
-
-ifeq ($(KERNEL_BUILD), 0)
-	# These are configurable via Kconfig for kernel-based builds
-	# Need to explicitly configure for Android-based builds
 
 	ifneq ($(DEVELOPER_DISABLE_BUILD_TIMESTAMP),y)
 	ifneq ($(WLAN_DISABLE_BUILD_TAG),y)
@@ -73,10 +68,6 @@ ifeq ($(KERNEL_BUILD), 0)
 
 	ifeq ($(CONFIG_ARCH_SDXPOORWILLS), y)
 	CONFIG_WLAN_DISABLE_EXPORT_SYMBOL := y
-	endif
-
-	ifeq ($(CONFIG_ARCH_SDXPOORWILLS), y)
-	CONFIG_FEATURE_SG := y
 	endif
 
 	ifeq ($(CONFIG_ARCH_MSM8917), y)
@@ -135,7 +126,8 @@ ifeq ($(KERNEL_BUILD), 0)
 
 	ifneq ($(CONFIG_ARCH_SDX20), y)
 	#Flag to enable FILS Feature (11ai)
-	CONFIG_WLAN_FEATURE_FILS := y
+#	don't use it in lge devices. it is not verified yet
+#	CONFIG_WLAN_FEATURE_FILS := y
 	endif
 
 	ifneq ($(CONFIG_QCA_CLD_WLAN),)
@@ -183,9 +175,6 @@ ifeq ($(KERNEL_BUILD), 0)
 
 	#Flag to enable offload packets feature
 	CONFIG_WLAN_OFFLOAD_PACKETS := y
-
-	#Flag to enable packet capture mode
-	CONFIG_WLAN_FEATURE_PKT_CAPTURE := y
 
 	#enable TSF get feature
 	CONFIG_WLAN_SYNC_TSF := y
@@ -271,7 +260,9 @@ CONFIG_WLAN_SPECTRAL_SCAN := y
 CONFIG_WLAN_FEATURE_APF := y
 
 #Enable WLAN/Power debugfs feature only if debug_fs is enabled
-ifeq ($(CONFIG_ANDROID), y)
+ifeq ($(CONFIG_DEBUG_FS), y)
+       # Flag to enable debugfs. Depends on CONFIG_DEBUG_FS in kernel
+       # configuration.
        CONFIG_WLAN_DEBUGFS := y
 
        CONFIG_WLAN_POWER_DEBUGFS := y
@@ -281,19 +272,9 @@ endif
 WLAN_COMMON_ROOT ?= ../qca-wifi-host-cmn
 WLAN_COMMON_INC ?= $(WLAN_ROOT)/$(WLAN_COMMON_ROOT)
 
-ifeq ($(KERNEL_BUILD), 0)
-ifneq ($(ANDROID_BUILD_TOP),)
-	override WLAN_ROOT := $(ANDROID_BUILD_TOP)/$(WLAN_ROOT)
-	override WLAN_COMMON_INC := $(ANDROID_BUILD_TOP)/$(WLAN_COMMON_INC)
-endif
-endif
-
 ifneq ($(CONFIG_MOBILE_ROUTER), y)
 CONFIG_QCOM_ESE := y
 endif
-
-#Enable beacon reporting feature
-CONFIG_WLAN_BEACON_REPORTING := y
 
 # Feature flags which are not (currently) configurable via Kconfig
 
@@ -825,39 +806,31 @@ SYS_OBJS :=	$(SYS_COMMON_SRC_DIR)/wlan_qct_sys.o \
 ############ Qca-wifi-host-cmn ############
 QDF_OS_DIR :=	qdf
 QDF_OS_INC_DIR := $(QDF_OS_DIR)/inc
-QDF_OS_SRC_DIR := $(QDF_OS_DIR)/src
-QDF_OS_LINUX_SRC_DIR := $(QDF_OS_DIR)/linux/src
+QDF_OS_SRC_DIR := $(QDF_OS_DIR)/linux/src
 QDF_OBJ_DIR := $(WLAN_COMMON_ROOT)/$(QDF_OS_SRC_DIR)
-QDF_LINUX_OBJ_DIR := $(WLAN_COMMON_ROOT)/$(QDF_OS_LINUX_SRC_DIR)
 
 QDF_INC :=	-I$(WLAN_COMMON_INC)/$(QDF_OS_INC_DIR) \
-		-I$(WLAN_COMMON_INC)/$(QDF_OS_LINUX_SRC_DIR)
+		-I$(WLAN_COMMON_INC)/$(QDF_OS_SRC_DIR)
 
-QDF_OBJS := 	$(QDF_LINUX_OBJ_DIR)/qdf_defer.o \
-		$(QDF_LINUX_OBJ_DIR)/qdf_event.o \
-		$(QDF_LINUX_OBJ_DIR)/qdf_list.o \
-		$(QDF_LINUX_OBJ_DIR)/qdf_lock.o \
-		$(QDF_LINUX_OBJ_DIR)/qdf_mc_timer.o \
-		$(QDF_LINUX_OBJ_DIR)/qdf_mem.o \
-		$(QDF_LINUX_OBJ_DIR)/qdf_nbuf.o \
-		$(QDF_LINUX_OBJ_DIR)/qdf_threads.o \
-		$(QDF_LINUX_OBJ_DIR)/qdf_crypto.o \
-		$(QDF_LINUX_OBJ_DIR)/qdf_trace.o \
-		$(QDF_LINUX_OBJ_DIR)/qdf_idr.o
+QDF_OBJS := 	$(QDF_OBJ_DIR)/qdf_defer.o \
+		$(QDF_OBJ_DIR)/qdf_event.o \
+		$(QDF_OBJ_DIR)/qdf_list.o \
+		$(QDF_OBJ_DIR)/qdf_lock.o \
+		$(QDF_OBJ_DIR)/qdf_mc_timer.o \
+		$(QDF_OBJ_DIR)/qdf_mem.o \
+		$(QDF_OBJ_DIR)/qdf_nbuf.o \
+		$(QDF_OBJ_DIR)/qdf_threads.o \
+		$(QDF_OBJ_DIR)/qdf_crypto.o \
+		$(QDF_OBJ_DIR)/qdf_trace.o \
+		$(QDF_OBJ_DIR)/qdf_idr.o
 
 ifeq ($(CONFIG_WLAN_DEBUGFS), y)
-QDF_OBJS += $(QDF_LINUX_OBJ_DIR)/qdf_debugfs.o
+QDF_OBJS += $(QDF_OBJ_DIR)/qdf_debugfs.o
 endif
 
 QDF_CLEAN_FILES := $(QDF_OBJ_DIR)/*.o \
 		   $(QDF_OBJ_DIR)/*.o.* \
 		   $(QDF_OBJ_DIR)/.*.o.*
-
-# enable CPU hotplug support if SMP is enabled
-ifeq ($(CONFIG_SMP),y)
-	QDF_OBJS += $(QDF_OBJ_DIR)/qdf_cpuhp.o
-	QDF_OBJS += $(QDF_LINUX_OBJ_DIR)/qdf_cpuhp.o
-endif
 
 ############ CDS (Connectivity driver services) ############
 CDS_DIR :=	core/cds
@@ -1278,6 +1251,7 @@ CDEFINES :=	-DANI_LITTLE_BYTE_ENDIAN \
 		-DANI_OS_TYPE_ANDROID=6 \
 		-DPTT_SOCK_SVC_ENABLE \
 		-Wall\
+		-Werror\
 		-D__linux__ \
 		-DHAL_SELF_STA_PER_BSS=1 \
 		-DFEATURE_WLAN_WAPI \
@@ -1314,10 +1288,6 @@ endif
 
 ifeq ($(CONFIG_WLAN_FEATURE_FILS),y)
 CDEFINES += -DWLAN_FEATURE_FILS_SK
-endif
-
-ifeq ($(CONFIG_WLAN_FEATURE_PKT_CAPTURE),y)
-CDEFINES += -DWLAN_FEATURE_PKT_CAPTURE
 endif
 
 ifeq ($(CONFIG_CNSS), y)
@@ -1460,10 +1430,6 @@ endif
 
 ifeq ($(CONFIG_WLAN_FEATURE_SAE),y)
 CDEFINES += -DWLAN_FEATURE_SAE
-endif
-
-ifeq ($(CONFIG_WLAN_BEACON_REPORTING),y)
-CDEFINES += -DNTH_BEACON_OFFLOAD
 endif
 
 ifeq ($(BUILD_DIAG_VERSION),1)
@@ -1866,10 +1832,6 @@ ifeq ($(CONFIG_WLAN_DISABLE_EXPORT_SYMBOL), y)
 CDEFINES += -DWLAN_DISABLE_EXPORT_SYMBOL
 endif
 
-ifeq ($(CONFIG_FEATURE_SG), y)
-CDEFINES += -DFEATURE_SG
-endif
-
 ifeq ($(CONFIG_MPC_UT_FRAMEWORK), y)
 CDEFINES += -DMPC_UT_FRAMEWORK
 endif
@@ -1936,6 +1898,9 @@ endif
 ifeq ($(CONFIG_DYNAMIC_DEBUG),y)
 CDEFINES += -DFEATURE_MULTICAST_HOST_FW_MSGS
 endif
+
+# support LGE feature
+CDEFINES += -DFEATURE_SUPPORT_LGE
 
 KBUILD_CPPFLAGS += $(CDEFINES)
 

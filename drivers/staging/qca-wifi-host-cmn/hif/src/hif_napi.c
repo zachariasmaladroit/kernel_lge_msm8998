@@ -45,7 +45,6 @@
 #include <hif_io32.h>
 #include <ce_api.h>
 #include <ce_internal.h>
-#include "qdf_cpuhp.h"
 
 enum napi_decision_vector {
 	HIF_NAPI_NOEVENT = 0,
@@ -1156,91 +1155,103 @@ static int hnc_link_clusters(struct qca_napi_data *napid)
  */
 
 /**
- * hnc_cpu_online_cb() - handles CPU hotplug "up" events
- * @context: the associated HIF context
- * @cpu: the CPU Id of the CPU the event happened on
+ * hnc_cpu_notify_cb() - handles CPU hotplug events
  *
- * Return: None
+ * On transitions to online, we onlu handle the ONLINE event,
+ * and ignore the PREP events, because we dont want to act too
+ * early.
+ * On transtion to offline, we act on PREP events, because
+ * we may need to move the irqs/NAPIs to another CPU before
+ * it is actually off-lined.
+ *
+ * Return: NOTIFY_OK (dont block action)
  */
-static void hnc_cpu_online_cb(void *context, uint32_t cpu)
+static int hnc_cpu_notify_cb(struct notifier_block *nb,
+			     unsigned long          action,
+			     void                  *hcpu)
 {
-	struct hif_softc *hif = context;
-	struct qca_napi_data *napid = &hif->napi_data;
+	int rc = NOTIFY_OK;
+	unsigned long cpu = (unsigned long)hcpu;
+	struct hif_opaque_softc *hif;
+	struct qca_napi_data *napid = NULL;
 
-	if (cpu >= NR_CPUS)
-		return;
+	NAPI_DEBUG("-->%s(act=%ld, cpu=%ld)", __func__, action, cpu);
 
-	NAPI_DEBUG("-->%s(act=online, cpu=%u)", __func__, cpu);
+	napid = qdf_container_of(nb, struct qca_napi_data, hnc_cpu_notifier);
+	hif = &qdf_container_of(napid, struct hif_softc, napi_data)->osc;
 
-	napid->napi_cpu[cpu].state = QCA_NAPI_CPU_UP;
-	NAPI_DEBUG("%s: CPU %u marked %d",
-		   __func__, cpu, napid->napi_cpu[cpu].state);
+	switch (action) {
+	case CPU_ONLINE:
+	case CPU_ONLINE_FROZEN:
+		napid->napi_cpu[cpu].state = QCA_NAPI_CPU_UP;
+		NAPI_DEBUG("%s: CPU %ld marked %d",
+			   __func__, cpu, napid->napi_cpu[cpu].state);
+		break;
+	case CPU_DEAD: /* already dead; we have marked it before, but ... */
+	case CPU_DEAD_FROZEN:
+		napid->napi_cpu[cpu].state = QCA_NAPI_CPU_DOWN;
+		NAPI_DEBUG("%s: CPU %ld marked %d",
+			   __func__, cpu, napid->napi_cpu[cpu].state);
+		break;
+	case CPU_DOWN_PREPARE:
+	case CPU_DOWN_PREPARE_FROZEN:
+		napid->napi_cpu[cpu].state = QCA_NAPI_CPU_DOWN;
 
-	NAPI_DEBUG("<--%s", __func__);
+		NAPI_DEBUG("%s: CPU %ld marked %d; updating affinity",
+			   __func__, cpu, napid->napi_cpu[cpu].state);
+
+		/**
+		 * we need to move any NAPIs on this CPU out.
+		 * if we are in LO throughput mode, then this is valid
+		 * if the CPU is the the low designated CPU.
+		 */
+		hif_napi_event(hif,
+			       NAPI_EVT_CPU_STATE,
+			       (void *)
+			       ((cpu << 16) | napid->napi_cpu[cpu].state));
+		break;
+	default:
+		NAPI_DEBUG("%s: ignored. action: %ld", __func__, action);
+		break;
+	} /* switch */
+	NAPI_DEBUG("<--%s [%d]", __func__, rc);
+	return rc;
 }
 
 /**
- * hnc_cpu_before_offline_cb() - handles CPU hotplug "prepare down" events
- * @context: the associated HIF context
- * @cpu: the CPU Id of the CPU the event happened on
+ * hnc_hotplug_hook() - installs a hotplug notifier
+ * @hif_sc: hif_sc context
+ * @register: !0 => register , =0 => deregister
  *
- * On transtion to offline, we act on PREP events, because we may need to move
- * the irqs/NAPIs to another CPU before it is actually off-lined.
+ * Because the callback relies on the data layout of
+ * struct hif_softc & its napi_data member, this callback
+ * registration requires that the hif_softc is passed in.
  *
- * Return: None
+ * Note that this is different from the cpu notifier used by
+ * rx_thread (cds_schedule.c).
+ * We may consider combining these modifiers in the future.
+ *
+ * Return: 0: success
+ *        <0: error
  */
-static void hnc_cpu_before_offline_cb(void *context, uint32_t cpu)
+static int hnc_hotplug_hook(struct hif_softc *hif_sc, int install)
 {
-	struct hif_softc *hif = context;
-	struct qca_napi_data *napid = &hif->napi_data;
+	int rc = 0;
 
-	if (cpu >= NR_CPUS)
-		return;
+	NAPI_DEBUG("-->%s(%d)", __func__, install);
 
-	NAPI_DEBUG("-->%s(act=before_offline, cpu=%u)", __func__, cpu);
+	if (install) {
+		hif_sc->napi_data.hnc_cpu_notifier.notifier_call
+			= hnc_cpu_notify_cb;
+		rc = register_hotcpu_notifier(
+			&hif_sc->napi_data.hnc_cpu_notifier);
+	} else {
+		unregister_hotcpu_notifier(
+			&hif_sc->napi_data.hnc_cpu_notifier);
+	}
 
-	napid->napi_cpu[cpu].state = QCA_NAPI_CPU_DOWN;
-
-	NAPI_DEBUG("%s: CPU %u marked %d; updating affinity",
-		   __func__, cpu, napid->napi_cpu[cpu].state);
-
-	/**
-	 * we need to move any NAPIs on this CPU out.
-	 * if we are in LO throughput mode, then this is valid
-	 * if the CPU is the the low designated CPU.
-	 */
-	hif_napi_event(GET_HIF_OPAQUE_HDL(hif),
-		       NAPI_EVT_CPU_STATE,
-		       (void *)
-		       ((size_t)cpu << 16 | napid->napi_cpu[cpu].state));
-
-	NAPI_DEBUG("<--%s", __func__);
-}
-
-static int hnc_hotplug_register(struct hif_softc *hif_sc)
-{
-	QDF_STATUS status;
-
-	NAPI_DEBUG("-->%s", __func__);
-
-	status = qdf_cpuhp_register(&hif_sc->napi_data.cpuhp_handler,
-				    hif_sc,
-				    hnc_cpu_online_cb,
-				    hnc_cpu_before_offline_cb);
-
-	NAPI_DEBUG("<--%s [%d]", __func__, status);
-
-	return qdf_status_to_os_return(status);
-}
-
-static void hnc_hotplug_unregister(struct hif_softc *hif_sc)
-{
-	NAPI_DEBUG("-->%s", __func__);
-
-	if (hif_sc->napi_data.cpuhp_handler)
-		qdf_cpuhp_unregister(&hif_sc->napi_data.cpuhp_handler);
-
-	NAPI_DEBUG("<--%s", __func__);
+	NAPI_DEBUG("<--%s()[%d]", __func__, rc);
+	return rc;
 }
 
 /**
@@ -1321,7 +1332,7 @@ int hif_napi_cpu_init(struct hif_opaque_softc *hif)
 		goto lab_err_topology;
 
 	/* install hotplug notifier */
-	rc = hnc_hotplug_register(HIF_GET_SOFTC(hif));
+	rc = hnc_hotplug_hook(HIF_GET_SOFTC(hif), 1);
 	if (0 != rc)
 		goto lab_err_hotplug;
 
@@ -1332,7 +1343,7 @@ int hif_napi_cpu_init(struct hif_opaque_softc *hif)
 
 lab_err_hotplug:
 	hnc_tput_hook(0);
-	hnc_hotplug_unregister(HIF_GET_SOFTC(hif));
+	hnc_hotplug_hook(HIF_GET_SOFTC(hif), 0);
 lab_err_topology:
 	memset(napid->napi_cpu, 0, sizeof(struct qca_napi_cpu) * NR_CPUS);
 lab_rss_init:
@@ -1359,7 +1370,7 @@ int hif_napi_cpu_deinit(struct hif_opaque_softc *hif)
 	rc = hnc_tput_hook(0);
 
 	/* uninstall hotplug notifier */
-	hnc_hotplug_unregister(HIF_GET_SOFTC(hif));
+	rc = hnc_hotplug_hook(HIF_GET_SOFTC(hif), 0);
 
 	/* clear the topology table */
 	memset(napid->napi_cpu, 0, sizeof(struct qca_napi_cpu) * NR_CPUS);
