@@ -62,10 +62,10 @@
 #ifndef __CDS_REGDOMAIN_H
 #define __CDS_REGDOMAIN_H
 
-#include <reg_services_public_struct.h>
-
+#define MAX_CHANNELS_PER_OPERATING_CLASS  25
+#define CDS_MAX_SUPP_OPER_CLASSES 32
 #define MIN_TX_PWR_CAP    8
-#define MAX_TX_PWR_CAP    30
+#define MAX_TX_PWR_CAP    22
 
 #define CTRY_DEFAULT          0
 #define CTRY_FLAG             0x8000
@@ -253,6 +253,7 @@ enum country_code {
 	CTRY_YEMEN = 887,
 	CTRY_ZIMBABWE = 716,
 	CTRY_JAPAN9 = 4009,
+	CTRY_JAPAN14 = 4014,
 	CTRY_JAPAN15 = 4015,
 	CTRY_JAPAN48 = 4048,
 	CTRY_JAPAN55 = 4055,
@@ -301,6 +302,8 @@ enum reg_domain {
 	ETSI9_WORLD = 0x3E,
 	ETSI10_WORLD = 0x24,
 	ETSI11_WORLD = 0x26,
+	ETSI13_WORLD = 0x28,
+	ETSI15_WORLD = 0x31,
 
 	APL4_WORLD = 0x42,
 	APL3_FCCA = 0x50,
@@ -403,6 +406,8 @@ enum reg_domain {
 	ETSI9 = 0x0930,
 	ETSI10 = 0x0D30,
 	ETSI11 = 0x0E30,
+	ETSI13 = 0x0E39,
+	ETSI15 = 0x0E41,
 
 	APL1 = 0x0150,
 	APL2 = 0x0250,
@@ -436,11 +441,11 @@ enum reg_domain {
 	MKKA = 0x0A40,
 	MKKC = 0x0A50,
 	ETSIC = 0x0C30,
-
+	ETSID = 0x0F30,
 };
 
 /**
- * enum ctl_val: CTL value
+ * enum ctl_val - CTL value
  * @FCC: FCC
  * @MKK: MKK
  * @ETSI: ETSI
@@ -451,6 +456,22 @@ enum ctl_val {
 	MKK = 0x40,
 	ETSI = 0x30,
 	NO_CTL = 0xff
+};
+
+/**
+ * enum offset_t: channel offset
+ * @BW20: 20 mhz channel
+ * @BW40_LOW_PRIMARY: lower channel in 40 mhz
+ * @BW40_HIGH_PRIMARY: higher channel in 40 mhz
+ * @BW80: 80 mhz channel
+ * @BWALL: unknown bandwidth
+ */
+enum offset_t {
+	BW20 = 0,
+	BW40_LOW_PRIMARY = 1,
+	BW40_HIGH_PRIMARY = 3,
+	BW80,
+	BWALL
 };
 
 /**
@@ -492,6 +513,30 @@ struct reg_dmn {
 };
 
 /**
+ * struct reg_dmn_op_class_map_t: operating class
+ * @op_class: operating class number
+ * @ch_spacing: channel spacing
+ * @offset: offset
+ * @channels: channel set
+ */
+struct reg_dmn_op_class_map_t {
+	uint8_t op_class;
+	uint8_t ch_spacing;
+	enum offset_t offset;
+	uint8_t channels[MAX_CHANNELS_PER_OPERATING_CLASS];
+};
+
+/**
+ * struct reg_dmn_supp_op_classes: operating classes
+ * @num_classes: number of classes
+ * @classes: classes
+ */
+struct reg_dmn_supp_op_classes {
+	uint8_t num_classes;
+	uint8_t classes[CDS_MAX_SUPP_OPER_CLASSES];
+};
+
+/**
  * struct reg_dmn_tables: reg domain table
  * @reg_dmn_pairs: list of reg domain pairs
  * @all_countries: list of countries
@@ -512,6 +557,15 @@ struct reg_dmn_tables {
 int32_t cds_fill_some_regulatory_info(struct regulatory *reg);
 int32_t cds_get_country_from_alpha2(uint8_t *alpha2);
 void cds_fill_and_send_ctl_to_fw(struct regulatory *reg);
+void cds_set_wma_dfs_region(uint8_t dfs_region);
+uint16_t cds_reg_dmn_get_opclass_from_channel(uint8_t *country,
+					      uint8_t channel,
+					      uint8_t offset);
+uint16_t cds_reg_dmn_get_chanwidth_from_opclass(uint8_t *country,
+						uint8_t channel,
+						uint8_t opclass);
+uint16_t cds_reg_dmn_set_curr_opclasses(uint8_t num_classes, uint8_t *class);
+uint16_t cds_reg_dmn_get_curr_opclasses(uint8_t *num_classes, uint8_t *class);
 /**
  * cds_is_etsi_europe_country - check ETSI Europe country or not
  * @country: country string with two Characters
