@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2013-2019 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -348,8 +348,8 @@ enum ds_mode {
 #define WMA_RSSI_THOLD_DEFAULT   -300
 
 #ifdef FEATURE_WLAN_SCAN_PNO
-#define WMA_PNO_MATCH_WAKE_LOCK_TIMEOUT         WAKELOCK_DURATION_RECOMMENDED
-#define WMA_PNO_SCAN_COMPLETE_WAKE_LOCK_TIMEOUT WAKELOCK_DURATION_RECOMMENDED
+#define WMA_PNO_MATCH_WAKE_LOCK_TIMEOUT         2000
+#define WMA_PNO_SCAN_COMPLETE_WAKE_LOCK_TIMEOUT 2000
 #endif /* FEATURE_WLAN_SCAN_PNO */
 
 #define WMA_AUTH_REQ_RECV_WAKE_LOCK_TIMEOUT     WAKELOCK_DURATION_RECOMMENDED
@@ -1762,6 +1762,7 @@ typedef struct {
 #ifdef FEATURE_WLAN_D0WOW
 	atomic_t in_d0wow;
 #endif
+	bool is_pktcapture_enabled;
 } t_wma_handle, *tp_wma_handle;
 
 /**
@@ -2383,7 +2384,7 @@ QDF_STATUS wma_set_rssi_monitoring(tp_wma_handle wma,
 					struct rssi_monitor_req *req);
 
 QDF_STATUS wma_send_pdev_set_pcl_cmd(tp_wma_handle wma_handle,
-		struct wmi_pcl_chan_weights *msg);
+		struct set_pcl_req *msg);
 
 QDF_STATUS wma_send_pdev_set_hw_mode_cmd(tp_wma_handle wma_handle,
 		struct sir_hw_mode *msg);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2019 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -42,13 +42,6 @@
 
 #if defined(LINUX_QCMBR)
 #define SIOCIOCTLTX99 (SIOCDEVPRIVATE+13)
-#endif
-
-#ifdef FEATURE_SUPPORT_LGE
-/*LGE_CHNAGE_S, DRIVER scan_suppress command, 2017-06-12, moon-wifi@lge.com*/
-#include <asm/types.h>
-#include <cds_mq.h>
-/*LGE_CHNAGE_E, DRIVER scan_suppress command, 2017-06-12, moon-wifi@lge.com*/
 #endif
 
 /*
@@ -860,9 +853,20 @@ int hdd_reassoc(hdd_adapter_t *adapter, const uint8_t *bssid,
 
 	pHddStaCtx = WLAN_HDD_GET_STATION_CTX_PTR(adapter);
 
-	/* if not associated, no need to proceed with reassoc */
-	if (eConnectionState_Associated != pHddStaCtx->conn_info.connState) {
+	/*
+	 * pHddStaCtx->conn_info.connState is set to disconnected only
+	 * after the disconnect done indication from SME. If the SME is
+	 * in the process of disconnecting, the SME Connection state is
+	 * set to disconnected and the pHddStaCtx->conn_info.connState
+	 * will still be associated till the disconnect is done.
+	 * So check both the HDD state and SME state here.
+	 * If not associated, no need to proceed with reassoc
+	 */
+	if ((eConnectionState_Associated != pHddStaCtx->conn_info.connState) ||
+	    (!sme_is_conn_state_connected(WLAN_HDD_GET_HAL_CTX(adapter),
+	    adapter->sessionId))) {
 		hdd_warn("Not associated");
+		hdd_debug("HDD Con state %d", pHddStaCtx->conn_info.connState);
 		ret = -EINVAL;
 		goto exit;
 	}
@@ -3146,9 +3150,7 @@ static int drv_cmd_country(hdd_adapter_t *adapter,
 	int ret = 0;
 	QDF_STATUS status;
 	char *country_code;
-#ifndef FEATURE_SUPPORT_LGE
 	int32_t cc_from_db;
-#endif
 
 	country_code = strnchr(command, strlen(command), ' ');
 	/* no argument after the command*/
@@ -3170,7 +3172,6 @@ static int drv_cmd_country(hdd_adapter_t *adapter,
 	if (*country_code == '\0' || *(country_code + 1) == '\0')
 		return -EINVAL;
 
-#ifndef FEATURE_SUPPORT_LGE
 	if (!((country_code[0] == 'X' && country_code[1] == 'X') ||
 	    (country_code[0] == '0' && country_code[1] == '0'))) {
 		cc_from_db = cds_get_country_from_alpha2(country_code);
@@ -3180,7 +3181,6 @@ static int drv_cmd_country(hdd_adapter_t *adapter,
 			return -EINVAL;
 		}
 	}
-#endif
 
 	qdf_event_reset(&adapter->change_country_code);
 
@@ -5415,9 +5415,10 @@ static int drv_cmd_get_ibss_peer_info(hdd_adapter_t *adapter,
 				(int)txRate,
 				(int)pHddStaCtx->ibss_peer_info.
 				peerInfoParams[0].rssi);
+		length = QDF_MIN(priv_data->total_len, length + 1);
 
 		/* Copy the data back into buffer */
-		if (copy_to_user(priv_data->buf, &extra, length + 1)) {
+		if (copy_to_user(priv_data->buf, &extra, length)) {
 			hdd_err("copy data to user buffer failed GETIBSSPEERINFO command");
 			ret = -EFAULT;
 			goto exit;
@@ -6890,78 +6891,6 @@ static int drv_cmd_dummy(hdd_adapter_t *adapter,
 	return 0;
 }
 
-#ifdef FEATURE_SUPPORT_LGE
-extern void wlan_hdd_set_scan_suppress(unsigned long on_off);
-/*LGE_CHNAGE_S, DRIVER scan_suppress command, 2017-06-12, moon-wifi@lge.com*/
-static int drv_cmd_set_scansuppress(hdd_adapter_t *adapter,
-			 hdd_context_t *hdd_ctx,
-			 uint8_t *command,
-			 uint8_t command_len,
-			 hdd_priv_data_t *priv_data)
-{
-	int ret;
-	unsigned long on_off = 0;
-	size_t len = 0;
-	hdd_err("[LGE_COMMAND]:%s: \"%s\"", adapter->dev->name, command);
-
-	len = strlen(command);
-	if (len != 18) {
-		hdd_err("Incorrect Strvalue");
-		return -EINVAL;
-	}
-
-	ret = kstrtoul(command + 17, 10, &on_off);
-	if (ret != 0) {
-		hdd_err("Error in conversion from int to str: %d", ret);
-		return -EINVAL;
-	}
-
-	if (on_off < 0 || on_off > 1) {
-		hdd_err("Incorrect Testvalue!!(%ld)", on_off);
-		return -EINVAL;
-	}
-
-	wlan_hdd_set_scan_suppress(on_off);
-	return 0;
-}
-static int drv_cmd_get_dbsmode(hdd_adapter_t *adapter,
-			 hdd_context_t *hdd_ctx,
-			 uint8_t *command,
-			 uint8_t command_len,
-			 hdd_priv_data_t *priv_data)
-{
-	char extra[32] = {'\0',};
-	int ret = -1;
-	uint8_t len = 0;
-	int ant_no = 0;
-	int rsdb_mode = 0;
-	hdd_adapter_t *pAdapter = adapter;
-	tSmeConfigParams smeConfig ;
-	tHalHandle hHal;
-	hHal= WLAN_HDD_GET_HAL_CTX(pAdapter);
-	hdd_ctx = WLAN_HDD_GET_CTX(pAdapter);
-	ret = wlan_hdd_validate_context(hdd_ctx);
-
-	if (0 != ret) {
-	    hdd_err("[LGE_COMMAND]%s>Error in getting context", __func__);
-		return -EINVAL;
-	}
-	sme_get_config_param(hHal, &smeConfig);
-	ant_no = (smeConfig.csrConfig.enable2x2 == 0) ? 1 : 2;
-	if ((ant_no == 2) && wma_is_current_hwmode_dbs()) {
-	    hdd_err("[LGE_COMMAND]wma_is_current_hwmode_dbs is true");
-		rsdb_mode = 1;
-	}
-	len = scnprintf(extra, sizeof(extra), "%s %d", command, rsdb_mode);
-	if (copy_to_user(priv_data->buf, &extra, len)) {
-		hdd_err("Failed to copy data to user buffer");
-		return -EFAULT;
-	}
-    return 0;
-}
-/*LGE_CHNAGE_E, DRIVER scan_suppress command, 2017-06-12, moon-wifi@lge.com*/
-#endif
-
 /*
  * handler for any unsupported wlan hdd driver command
  */
@@ -7249,7 +7178,7 @@ static void disconnect_sta_and_stop_sap(hdd_context_t *hdd_ctx)
 	if (!hdd_ctx)
 		return;
 
-	wlan_hdd_disable_channels(hdd_ctx);
+	hdd_check_and_disconnect_sta_on_invalid_channel(hdd_ctx);
 
 	status = hdd_get_front_adapter(hdd_ctx, &adapter_node);
 	while (adapter_node && (status == QDF_STATUS_SUCCESS)) {
@@ -7436,11 +7365,16 @@ static int hdd_parse_disable_chan_cmd(hdd_adapter_t *adapter, uint8_t *ptr)
 		ret = 0;
 	}
 
-	if (!is_command_repeated && hdd_ctx->config->disable_channel)
-		disconnect_sta_and_stop_sap(hdd_ctx);
 mem_alloc_failed:
 
 	qdf_mutex_release(&hdd_ctx->cache_channel_lock);
+	if (!is_command_repeated && hdd_ctx->original_channels) {
+		ret = wlan_hdd_disable_channels(hdd_ctx);
+		if (ret)
+			return ret;
+		disconnect_sta_and_stop_sap(hdd_ctx);
+	}
+
 	EXIT();
 
 	return ret;
@@ -7643,12 +7577,6 @@ static const struct hdd_drv_cmd hdd_drv_cmds[] = {
 	{"RXFILTER-STOP",             drv_cmd_dummy, false},
 	{"BTCOEXSCAN-START",          drv_cmd_dummy, false},
 	{"BTCOEXSCAN-STOP",           drv_cmd_dummy, false},
-#ifdef FEATURE_SUPPORT_LGE
-/*LGE_CHNAGE_S, DRIVER scan_suppress command,DRIVER GET_RSDBMODE 2019-01-17, protocol-wifi@lge.com*/
-	{"SET_SCANSUPPRESS",          drv_cmd_set_scansuppress, true}, //true or false??
-	{"GET_RSDBMODE",              drv_cmd_get_dbsmode, false}, //fasle
-/*LGE_CHNAGE_E, DRIVER scan_suppress command,DRIVER GET_RSDBMODE 2019-01-17, protocol-wifi@lge.com*/
-#endif
 };
 
 /**
