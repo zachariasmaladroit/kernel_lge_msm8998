@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2019 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -2453,15 +2453,14 @@ static void cds_restore_deleted_conn_info(
 		return;
 	}
 
-	qdf_mutex_acquire(&cds_ctx->qdf_conc_list_lock);
 	conn_index = cds_get_connection_count();
 	if (MAX_NUMBER_OF_CONC_CONNECTIONS <= conn_index) {
-		qdf_mutex_release(&cds_ctx->qdf_conc_list_lock);
 		cds_err("Failed to restore the deleted information %d/%d",
 			conn_index, MAX_NUMBER_OF_CONC_CONNECTIONS);
 		return;
 	}
 
+	qdf_mutex_acquire(&cds_ctx->qdf_conc_list_lock);
 	qdf_mem_copy(&conc_connection_list[conn_index], info,
 			num_cxn_del * sizeof(*info));
 	qdf_mutex_release(&cds_ctx->qdf_conc_list_lock);
@@ -2683,19 +2682,19 @@ static void cds_pdev_set_hw_mode_cb(uint32_t status,
 	cds_ctx = cds_get_context(QDF_MODULE_ID_QDF);
 	if (!cds_ctx) {
 		cds_err("Invalid CDS Context");
-		goto set_done_event;
+		return;
 	}
 
 	cds_set_hw_mode_change_in_progress(CDS_HW_MODE_NOT_IN_PROGRESS);
 
 	if (status != SET_HW_MODE_STATUS_OK) {
 		cds_err("Set HW mode failed with status %d", status);
-		goto set_done_event;
+		return;
 	}
 
 	if (!vdev_mac_map) {
 		cds_err("vdev_mac_map is NULL");
-		goto set_done_event;
+		return;
 	}
 
 	cds_debug("cfgd_hw_mode_index=%d", cfgd_hw_mode_index);
@@ -2708,7 +2707,7 @@ static void cds_pdev_set_hw_mode_cb(uint32_t status,
 	ret = wma_get_hw_mode_from_idx(cfgd_hw_mode_index, &hw_mode);
 	if (ret != QDF_STATUS_SUCCESS) {
 		cds_err("Get HW mode failed: %d", ret);
-		goto set_done_event;
+		return;
 	}
 
 	cds_debug("MAC0: TxSS:%d, RxSS:%d, Bw:%d",
@@ -2736,10 +2735,7 @@ static void cds_pdev_set_hw_mode_cb(uint32_t status,
 	if (cds_ctx->mode_change_cb)
 		cds_ctx->mode_change_cb();
 
-set_done_event:
-	ret = cds_set_opportunistic_update();
-	if (!QDF_IS_STATUS_SUCCESS(ret))
-		cds_err("ERROR: set opportunistic_update event failed");
+	return;
 }
 
 /**
@@ -2898,33 +2894,6 @@ QDF_STATUS cds_pdev_set_hw_mode(uint32_t session_id,
 	return QDF_STATUS_SUCCESS;
 }
 
-bool cds_is_dbs_req_for_channel(uint8_t channel_id)
-{
-	cds_context_type *cds_ctx;
-	uint32_t conn_index;
-	bool dbs_req = 0;
-	cds_ctx = cds_get_context(QDF_MODULE_ID_QDF);
-	if (!cds_ctx) {
-		cds_err("Invalid CDS Context");
-		return 0;
-	}
-	if (wma_is_hw_dbs_capable() == false) {
-		cds_debug("driver isnt DBS capable");
-		return 0;
-	}
-	qdf_mutex_acquire(&cds_ctx->qdf_conc_list_lock);
-	for (conn_index = 0; conn_index < MAX_NUMBER_OF_CONC_CONNECTIONS;
-	     conn_index++) {
-		if (!CDS_IS_SAME_BAND_CHANNELS(channel_id,
-			conc_connection_list[conn_index].chan)) {
-			dbs_req = true;
-			break;
-		}
-	}
-	qdf_mutex_release(&cds_ctx->qdf_conc_list_lock);
-	return dbs_req;
-
-}
 /**
  * cds_is_connection_in_progress() - check if connection is in progress
  * @session_id: session id
@@ -3830,14 +3799,30 @@ void cds_clear_concurrency_mode(enum tQDF_ADAPTER_MODE mode)
 		hdd_green_ap_start_bss(hdd_ctx);
 }
 
+/**
+ * cds_pdev_set_pcl() - Sets PCL to FW
+ * @mode: adapter mode
+ *
+ * Fetches the PCL and sends the PCL to SME
+ * module which in turn will send the WMI
+ * command WMI_PDEV_SET_PCL_CMDID to the fw
+ *
+ * Return: None
+ */
 #if defined(QCA_WIFI_3_0)
-QDF_STATUS cds_pdev_get_pcl(enum tQDF_ADAPTER_MODE mode,
-			    struct sir_pcl_list *pcl)
+static void cds_pdev_set_pcl(enum tQDF_ADAPTER_MODE mode)
 {
 	QDF_STATUS status;
 	enum cds_con_mode con_mode;
+	struct sir_pcl_list pcl;
+	hdd_context_t *hdd_ctx;
 
-	pcl->pcl_len = 0;
+	hdd_ctx = cds_get_context(QDF_MODULE_ID_HDD);
+	if (!hdd_ctx) {
+		cds_err("HDD context is NULL");
+		return;
+	}
+	pcl.pcl_len = 0;
 
 	switch (mode) {
 	case QDF_STA_MODE:
@@ -3857,25 +3842,28 @@ QDF_STATUS cds_pdev_get_pcl(enum tQDF_ADAPTER_MODE mode,
 		break;
 	default:
 		cds_err("Unable to set PCL to FW: %d", mode);
-		return QDF_STATUS_E_FAILURE;
+		return;
 	}
 
 	cds_debug("get pcl to set it to the FW");
 
 	status = cds_get_pcl(con_mode,
-			pcl->pcl_list, &pcl->pcl_len,
-			pcl->weight_list, QDF_ARRAY_SIZE(pcl->weight_list));
-	if (status != QDF_STATUS_SUCCESS)
+			pcl.pcl_list, &pcl.pcl_len,
+			pcl.weight_list, QDF_ARRAY_SIZE(pcl.weight_list));
+	if (status != QDF_STATUS_SUCCESS) {
 		cds_err("Unable to set PCL to FW, Get PCL failed");
+		return;
+	}
 
-	return status;
-
+	status = sme_pdev_set_pcl(hdd_ctx->hHal, pcl);
+	if (status != QDF_STATUS_SUCCESS)
+		cds_err("Send soc set PCL to SME failed");
+	else
+		cds_debug("Set PCL to FW for mode:%d", mode);
 }
 #else
-QDF_STATUS cds_pdev_get_pcl(enum tQDF_ADAPTER_MODE mode,
-			    struct sir_pcl_list *pcl)
+static void cds_pdev_set_pcl(enum tQDF_ADAPTER_MODE mode)
 {
-	return QDF_STATUS_SUCCESS;
 }
 #endif
 
@@ -3918,50 +3906,43 @@ static enum tQDF_ADAPTER_MODE cds_get_qdf_mode_from_cds(
 	return mode;
 }
 
-void cds_set_pcl_for_existing_combo(enum cds_con_mode mode)
+/**
+ * cds_set_pcl_for_existing_combo() - Set PCL for existing connection
+ * @mode: Connection mode of type 'cds_con_mode'
+ *
+ * Set the PCL for an existing connection
+ *
+ * Return: None
+ */
+static void cds_set_pcl_for_existing_combo(enum cds_con_mode mode)
 {
-	QDF_STATUS status;
 	struct cds_conc_connection_info
 				info[MAX_NUMBER_OF_CONC_CONNECTIONS] = { {0} };
 	uint8_t num_cxn_del = 0;
 	enum tQDF_ADAPTER_MODE pcl_mode;
 	cds_context_type *cds_ctx;
-	struct sir_pcl_list pcl;
-	hdd_context_t *hdd_ctx;
 
 	cds_ctx = cds_get_context(QDF_MODULE_ID_QDF);
 	if (!cds_ctx) {
 		cds_err("Invalid CDS Context");
 		return;
 	}
-
-	hdd_ctx = cds_get_context(QDF_MODULE_ID_HDD);
-	if (!hdd_ctx) {
-		cds_err("HDD context is NULL");
-		return;
-	}
-
 	pcl_mode = cds_get_qdf_mode_from_cds(mode);
 	if (pcl_mode == QDF_MAX_NO_OF_MODE)
 		return;
 	qdf_mutex_acquire(&cds_ctx->qdf_conc_list_lock);
 	if (cds_mode_specific_connection_count(mode, NULL) > 0) {
-		qdf_mutex_release(&cds_ctx->qdf_conc_list_lock);
 		/* Check, store and temp delete the mode's parameter */
 		cds_store_and_del_conn_info(mode, false, info, &num_cxn_del);
+		qdf_mutex_release(&cds_ctx->qdf_conc_list_lock);
 		/* Set the PCL to the FW since connection got updated */
-		status = cds_pdev_get_pcl(pcl_mode, &pcl);
+		cds_pdev_set_pcl(pcl_mode);
+		qdf_mutex_acquire(&cds_ctx->qdf_conc_list_lock);
 		cds_debug("Set PCL to FW for mode:%d", mode);
 		/* Restore the connection info */
 		cds_restore_deleted_conn_info(info, num_cxn_del);
-		if (QDF_IS_STATUS_SUCCESS(status)) {
-			status = sme_pdev_set_pcl(hdd_ctx->hHal, pcl);
-			if (!QDF_IS_STATUS_SUCCESS(status))
-				cds_err("Send soc set PCL to SME failed");
-		}
-	} else {
-		qdf_mutex_release(&cds_ctx->qdf_conc_list_lock);
 	}
+	qdf_mutex_release(&cds_ctx->qdf_conc_list_lock);
 }
 
 /**
@@ -4015,7 +3996,18 @@ void cds_incr_active_session(enum tQDF_ADAPTER_MODE mode,
 
 	cds_debug("No.# of active sessions for mode %d = %d",
 		mode, hdd_ctx->no_of_active_sessions[mode]);
-
+	/*
+	 * Get PCL logic makes use of the connection info structure.
+	 * Let us set the PCL to the FW before updating the connection
+	 * info structure about the new connection.
+	 */
+	if (mode == QDF_STA_MODE) {
+		qdf_mutex_release(&cds_ctx->qdf_conc_list_lock);
+		/* Set PCL of STA to the FW */
+		cds_pdev_set_pcl(mode);
+		qdf_mutex_acquire(&cds_ctx->qdf_conc_list_lock);
+		cds_debug("Set PCL of STA to FW");
+	}
 	cds_incr_connection_count(session_id);
 	if ((cds_mode_specific_connection_count(CDS_STA_MODE, NULL) > 0) &&
 		(mode != QDF_STA_MODE)) {
@@ -4406,14 +4398,6 @@ QDF_STATUS cds_deinit_policy_mgr(void)
 		return QDF_STATUS_E_FAILURE;
 	}
 
-	/* Destroy opportunistic_update_done_evt */
-	status = qdf_event_destroy(&cds_ctx->opportunistic_update_done_evt);
-	if (!QDF_IS_STATUS_SUCCESS(status)) {
-		cds_err("Failed to destroy opportunistic_update_done_evt");
-		status = QDF_STATUS_E_FAILURE;
-		QDF_ASSERT(0);
-	}
-
 	if (!QDF_IS_STATUS_SUCCESS(qdf_event_destroy
 				  (&cds_ctx->connection_update_done_evt))) {
 		cds_err("Failed to destroy connection_update_done_evt");
@@ -4516,12 +4500,6 @@ QDF_STATUS cds_init_policy_mgr(struct cds_sme_cbacks *sme_cbacks)
 	if (!QDF_IS_STATUS_SUCCESS(status)) {
 		cds_err("channel switch complete init event failed");
 		return QDF_STATUS_E_FAILURE;
-	}
-
-	status = qdf_event_create(&cds_ctx->opportunistic_update_done_evt);
-	if (!QDF_IS_STATUS_SUCCESS(status)) {
-		cds_err("opportunistic_update_done_evt init failed");
-		return status;
 	}
 
 	return QDF_STATUS_SUCCESS;
@@ -5252,9 +5230,6 @@ static QDF_STATUS cds_get_channel_list(enum cds_pcl_type pcl,
 		skip_dfs_channel = true;
 	}
 
-	if (!cds_cfg->dfs_master_enable)
-		skip_dfs_channel = true;
-
 	if ((mode == CDS_SAP_MODE) || (mode == CDS_P2P_GO_MODE)) {
 		skip_srd_chan = !cds_cfg->etsi_srd_chan_in_master_mode &&
 			cds_is_5g_regdmn_etsi13();
@@ -5710,302 +5685,6 @@ static bool cds_is_dbs_allowed_for_concurrency(
 }
 
 /**
- * cds_skip_dfs_ch() - skip dfs channel or not
- * @skip_dfs_channel: return check result
- *
- * Return: QDF_STATUS
- */
-static QDF_STATUS cds_skip_dfs_ch(bool *skip_dfs_channel)
-{
-	bool sta_sap_scc_on_dfs_chan;
-	struct cds_config_info *cds_cfg;
-
-	cds_cfg = cds_get_ini_config();
-	if (!cds_cfg) {
-		cds_err("cds config is NULL");
-		return QDF_STATUS_E_FAILURE;
-	}
-
-	*skip_dfs_channel = false;
-	if (!cds_cfg->dfs_master_enable) {
-		cds_debug("skip DFS ch for SAP/Go dfs master cap %d",
-			  cds_cfg->dfs_master_enable);
-		*skip_dfs_channel = true;
-	}
-
-	if (!*skip_dfs_channel) {
-		sta_sap_scc_on_dfs_chan =
-			cds_is_sta_sap_scc_allowed_on_dfs_channel();
-		if (cds_mode_specific_connection_count(CDS_STA_MODE, NULL)
-		    > 0 && !sta_sap_scc_on_dfs_chan) {
-			cds_debug("SAP/Go skips DFS ch if sta connects");
-			*skip_dfs_channel = true;
-		}
-	}
-
-	return QDF_STATUS_SUCCESS;
-}
-
-/**
- * cds_modify_sap_pcl_based_on_dfs() - filter out DFS channel if needed
- * @pcl_list_org: channel list to filter out
- * @weight_list_org: weight of channel list
- * @pcl_len_org: length of channel list
- *
- * Return: QDF_STATUS
- */
-static QDF_STATUS cds_modify_sap_pcl_based_on_dfs(uint8_t *pcl_list_org,
-						  uint8_t *weight_list_org,
-						  uint32_t *pcl_len_org)
-{
-	size_t i, pcl_len = 0;
-	bool skip_dfs_channel = false;
-	QDF_STATUS status;
-
-	if (*pcl_len_org > QDF_MAX_NUM_CHAN) {
-		cds_err("Invalid PCL List Length %d", *pcl_len_org);
-		return QDF_STATUS_E_FAILURE;
-	}
-
-	status = cds_skip_dfs_ch(&skip_dfs_channel);
-	if (QDF_IS_STATUS_ERROR(status)) {
-		cds_err("failed to get skip dfs ch info");
-		return status;
-	}
-
-	if (!skip_dfs_channel) {
-		cds_debug("No more operation on DFS channel");
-		return QDF_STATUS_SUCCESS;
-	}
-
-	for (i = 0; i < *pcl_len_org; i++) {
-		if (!CDS_IS_DFS_CH(pcl_list_org[i])) {
-			pcl_list_org[pcl_len] = pcl_list_org[i];
-			weight_list_org[pcl_len++] = weight_list_org[i];
-		}
-	}
-
-	*pcl_len_org = pcl_len;
-
-	return QDF_STATUS_SUCCESS;
-}
-
-/**
- * cds_modify_sap_pcl_based_on_nol() - filter out nol channel
- * @pcl_list_org: channel list to filter out
- * @weight_list_org: weight of channel list
- * @pcl_len_org: length of channel list
- *
- * Return: QDF_STATUS
- */
-static QDF_STATUS cds_modify_sap_pcl_based_on_nol(
-		uint8_t *pcl_list_org,
-		uint8_t *weight_list_org,
-		uint32_t *pcl_len_org)
-{
-	size_t i, pcl_len = 0;
-
-	if (*pcl_len_org > QDF_MAX_NUM_CHAN) {
-		cds_err("Invalid PCL List Length %d", *pcl_len_org);
-		return QDF_STATUS_E_FAILURE;
-	}
-
-	for (i = 0; i < *pcl_len_org; i++) {
-		if (!CDS_IS_DISABLE_CH(pcl_list_org[i])) {
-			pcl_list_org[pcl_len] = pcl_list_org[i];
-			weight_list_org[pcl_len++] = weight_list_org[i];
-		}
-	}
-
-	*pcl_len_org = pcl_len;
-
-	return QDF_STATUS_SUCCESS;
-}
-
-/**
- * cds_modify_sap_pcl_based_on_srd() - filter out srd channel if needed
- * @pcl_list_org: pointer to channel list
- * @weight_list_org: pointer to weight of channel list
- * @pcl_len_org: pointer to length of channel list
- *
- * Return: QDF_STATUS
- */
-static QDF_STATUS cds_modify_sap_pcl_based_on_srd(
-				       uint8_t *pcl_list_org,
-				       uint8_t *weight_list_org,
-				       uint32_t *pcl_len_org)
-{
-	size_t i, pcl_len = 0;
-	bool skip_srd_chan;
-	struct cds_config_info *cds_cfg;
-
-	cds_cfg = cds_get_ini_config();
-	if (!cds_cfg) {
-		cds_err("cds config is NULL");
-		return QDF_STATUS_E_FAILURE;
-	}
-
-	skip_srd_chan = !cds_cfg->etsi_srd_chan_in_master_mode &&
-			cds_is_5g_regdmn_etsi13();
-
-	if (!skip_srd_chan)
-		return QDF_STATUS_SUCCESS;
-
-	if (*pcl_len_org > QDF_MAX_NUM_CHAN) {
-		cds_err("Invalid PCL List Length %d", *pcl_len_org);
-		return QDF_STATUS_E_FAILURE;
-	}
-	for (i = 0; i < *pcl_len_org; i++) {
-		if (cds_is_etsi13_regdmn_srd_chan(cds_chan_to_freq(
-							pcl_list_org[i])))
-			continue;
-		pcl_list_org[pcl_len] = pcl_list_org[i];
-		weight_list_org[pcl_len++] = weight_list_org[i];
-	}
-
-	*pcl_len_org = pcl_len;
-
-	return QDF_STATUS_SUCCESS;
-}
-
-/**
- * cds_pcl_modification_for_sap() - filter out channels for sap
- * @pcl_channels: pointer to channel list
- * @pcl_weight: pointer to weight of channel list
- * @len: pointer to length of channel list
- *
- * Return: QDF_STATUS
- */
-static QDF_STATUS cds_pcl_modification_for_sap(
-			uint8_t *pcl_channels, uint8_t *pcl_weight,
-			uint32_t *len)
-{
-	QDF_STATUS status;
-	size_t i;
-
-	if (cds_is_sap_mandatory_channel_set()) {
-		status = cds_modify_sap_pcl_based_on_mandatory_channel(
-				pcl_channels, pcl_weight, len);
-		if (QDF_IS_STATUS_ERROR(status)) {
-			cds_err("failed to get mandatory modified pcl for SAP");
-			return status;
-		}
-		cds_debug("mandatory modified pcl len:%d", *len);
-		for (i = 0; i < *len; i++)
-			cds_debug("chan:%d weight:%d",
-				  pcl_channels[i], pcl_weight[i]);
-	}
-
-	status = cds_modify_sap_pcl_based_on_nol(
-			pcl_channels, pcl_weight, len);
-	if (QDF_IS_STATUS_ERROR(status)) {
-		cds_err("failed to get nol modified pcl for SAP");
-		return status;
-	}
-	cds_debug("nol modified pcl len:%d", *len);
-	for (i = 0; i < *len; i++)
-		cds_debug("chan:%d weight:%d",
-			  pcl_channels[i], pcl_weight[i]);
-
-	status = cds_modify_sap_pcl_based_on_dfs(
-			pcl_channels, pcl_weight, len);
-	if (QDF_IS_STATUS_ERROR(status)) {
-		cds_err("failed to get dfs modified pcl for SAP");
-		return status;
-	}
-	cds_debug("dfs modified pcl len:%d", *len);
-	for (i = 0; i < *len; i++)
-		cds_debug("chan:%d weight:%d",
-			  pcl_channels[i], pcl_weight[i]);
-
-	status = cds_modify_sap_pcl_based_on_srd(
-			pcl_channels, pcl_weight, len);
-	if (QDF_IS_STATUS_ERROR(status)) {
-		cds_err("failed to get srd modified pcl for SAP");
-		return status;
-	}
-	cds_debug("modified final pcl len:%d", *len);
-	for (i = 0; i < *len; i++)
-		cds_debug("chan:%d weight:%d",
-			  pcl_channels[i], pcl_weight[i]);
-
-	return QDF_STATUS_SUCCESS;
-}
-
-/**
- * cds_pcl_modification_for_p2p_go() - filter out channels for go
- * @pcl_channels: pointer to channel list
- * @pcl_weight: pointer to weight of channel list
- * @len: pointer to length of channel list
- *
- * Return: QDF_STATUS
- */
-static QDF_STATUS cds_pcl_modification_for_p2p_go(
-			uint8_t *pcl_channels, uint8_t *pcl_weight,
-			uint32_t *len)
-{
-	QDF_STATUS status;
-	size_t i;
-
-	status = cds_modify_pcl_based_on_enabled_channels(
-			pcl_channels, pcl_weight, len);
-	if (QDF_IS_STATUS_ERROR(status)) {
-		cds_err("failed to get enabled channel modified pcl for GO");
-		return status;
-	}
-	status = cds_modify_sap_pcl_based_on_srd(
-			pcl_channels, pcl_weight, len);
-	if (QDF_IS_STATUS_ERROR(status)) {
-		cds_err("failed to get srd modified pcl for SAP");
-		return status;
-	}
-
-	cds_debug("enabled channel modified pcl len:%d", *len);
-	for (i = 0; i < *len; i++)
-		cds_debug("chan:%d weight:%d",
-			  pcl_channels[i], pcl_weight[i]);
-
-	return QDF_STATUS_SUCCESS;
-}
-
-/**
- * cds_mode_specific_modification_on_pcl() - filter out channel based on mode
- * @pcl_channels: pointer to channel list
- * @pcl_weight: pointer to weight of channel list
- * @len: pointer to length of channel list
- * @mode: device mode
- *
- * Return: QDF_STATUS
- */
-static QDF_STATUS cds_mode_specific_modification_on_pcl(
-			uint8_t *pcl_channels, uint8_t *pcl_weight,
-			uint32_t *len, enum cds_con_mode mode)
-{
-	QDF_STATUS status = QDF_STATUS_E_FAILURE;
-
-	switch (mode) {
-	case CDS_SAP_MODE:
-		status = cds_pcl_modification_for_sap(
-				pcl_channels, pcl_weight, len);
-		break;
-	case CDS_P2P_GO_MODE:
-		status = cds_pcl_modification_for_p2p_go(
-				pcl_channels, pcl_weight, len);
-		break;
-	case CDS_STA_MODE:
-	case CDS_P2P_CLIENT_MODE:
-	case CDS_IBSS_MODE:
-		status = QDF_STATUS_SUCCESS;
-		break;
-	default:
-		cds_err("unexpected mode %d", mode);
-		break;
-	}
-
-	return status;
-}
-
-/**
  * cds_get_pcl() - provides the preferred channel list for
  * new connection
  * @mode:	Device mode
@@ -6162,14 +5841,6 @@ QDF_STATUS cds_get_pcl(enum cds_con_mode mode,
 		for (i = 0; i < *len; i++)
 			cds_debug("chan:%d weight:%d",
 			pcl_channels[i], pcl_weight[i]);
-	}
-
-	status = cds_mode_specific_modification_on_pcl(pcl_channels, pcl_weight,
-						       len, mode);
-
-	if (QDF_IS_STATUS_ERROR(status)) {
-		cds_err("failed to get modified pcl for mode %d", mode);
-		return status;
 	}
 
 	return QDF_STATUS_SUCCESS;
@@ -9309,11 +8980,6 @@ QDF_STATUS cds_decr_connection_count_utfw(uint32_t del_all,
 	sme_cbacks.sme_get_valid_channels = sme_cfg_get_str;
 	sme_cbacks.sme_get_nss_for_vdev = sme_get_vdev_type_nss;
 	if (del_all) {
-		status = cds_deinit_policy_mgr();
-		if (!QDF_IS_STATUS_SUCCESS(status)) {
-			cds_err("Policy manager initialization failed");
-			return QDF_STATUS_E_FAILURE;
-		}
 		status = cds_init_policy_mgr(&sme_cbacks);
 		if (!QDF_IS_STATUS_SUCCESS(status)) {
 			cds_err("Policy manager initialization failed");
@@ -10633,44 +10299,6 @@ bool cds_is_force_scc(void)
 			(hdd_ctx->config->WlanMccToSccSwitchMode ==
 		QDF_MCC_TO_SCC_WITH_PREFERRED_BAND));
 }
-
-QDF_STATUS cds_get_valid_chans_from_range(
-			uint8_t *ch_list,
-			uint32_t *ch_cnt,
-			enum cds_con_mode mode)
-{
-	uint8_t ch_weight_list[QDF_MAX_NUM_CHAN];
-	uint32_t ch_weight_len;
-	QDF_STATUS status;
-	size_t chan_index = 0;
-
-	if (!ch_list || !ch_cnt) {
-		cds_err("Null parameters");
-		return QDF_STATUS_E_FAILURE;
-	}
-
-	for (chan_index = 0; chan_index < *ch_cnt; chan_index++)
-		ch_weight_list[chan_index] = WEIGHT_OF_GROUP1_PCL_CHANNELS;
-
-	ch_weight_len = *ch_cnt;
-
-	/* check the channel avoidance list for beaconing entities */
-	if (mode == CDS_SAP_MODE || mode == CDS_P2P_GO_MODE)
-		cds_update_with_safe_channel_list(ch_list, ch_cnt,
-						  ch_weight_list,
-						  ch_weight_len);
-
-	status = cds_mode_specific_modification_on_pcl(
-				ch_list, ch_weight_list, ch_cnt, mode);
-
-	if (QDF_IS_STATUS_ERROR(status)) {
-		cds_err("failed to get modified pcl for mode %d", mode);
-		return status;
-	}
-
-	return status;
-}
-
 /**
  * cds_get_valid_chan_weights() - Get the weightage for all
  * requested valid channels
@@ -10852,6 +10480,19 @@ void cds_dump_connection_status_info(void)
 				conc_connection_list[i].chain_mask,
 				conc_connection_list[i].original_nss,
 				conc_connection_list[i].bw);
+#ifdef FEATURE_SUPPORT_LGE
+// LGE_CHANGE_S,, 2017.03-07, neo-wifi@lge.com, Add DBS assign log
+        printk("[LGE-WIFI] %d-th, use:%d vdev:%d mode:%d mac:%d chan:%d orig chainmask:%d orig nss:%d bw:%d\n",
+            i, conc_connection_list[i].in_use,
+            conc_connection_list[i].vdev_id,
+            conc_connection_list[i].mode,
+            conc_connection_list[i].mac,
+            conc_connection_list[i].chan,
+            conc_connection_list[i].chain_mask,
+            conc_connection_list[i].original_nss,
+            conc_connection_list[i].bw);
+// LGE_CHANGE_E, 2017.03-07, neo-wifi@lge.com, Add DBS assign log
+#endif
 	}
 	qdf_mutex_release(&cds_ctx->qdf_conc_list_lock);
 }
@@ -11111,67 +10752,6 @@ void cds_checkn_update_hw_mode_single_mac_mode(uint8_t channel)
 	}
 	qdf_mutex_release(&cds_ctx->qdf_conc_list_lock);
 	cds_dbs_opportunistic_timer_handler((void *)cds_ctx);
-}
-
-QDF_STATUS cds_set_opportunistic_update(void)
-{
-	QDF_STATUS status;
-	cds_context_type *cds_ctx;
-
-	cds_ctx = cds_get_context(QDF_MODULE_ID_QDF);
-	if (!cds_ctx) {
-		cds_err("Invalid CDS Context");
-		return QDF_STATUS_E_FAILURE;
-	}
-
-	status = qdf_event_set(&cds_ctx->opportunistic_update_done_evt);
-	if (!QDF_IS_STATUS_SUCCESS(status)) {
-		cds_err("set event failed");
-		return QDF_STATUS_E_FAILURE;
-	}
-
-	return QDF_STATUS_SUCCESS;
-}
-
-void cds_check_and_stop_opportunistic_timer(void)
-{
-	cds_context_type *cds_ctx;
-	enum cds_conc_next_action action = CDS_NOP;
-	QDF_STATUS status = QDF_STATUS_E_FAILURE;
-
-	cds_ctx = cds_get_context(QDF_MODULE_ID_QDF);
-	if (!cds_ctx) {
-		cds_err("Invalid CDS Context");
-		return;
-	}
-
-	if (cds_ctx->dbs_opportunistic_timer.state != QDF_TIMER_STATE_RUNNING)
-		return;
-
-	qdf_mc_timer_stop(&cds_ctx->dbs_opportunistic_timer);
-
-	action = cds_need_opportunistic_upgrade();
-	if (!action)
-		return;
-
-	qdf_event_reset(&cds_ctx->opportunistic_update_done_evt);
-
-	/*
-	 * lets call for action, session id is being used only
-	 * in hidden ssid case for now. So, session id 0 is ok here.
-	 */
-	status = cds_next_actions(0, action, SIR_UPDATE_REASON_OPPORTUNISTIC);
-	if (!QDF_IS_STATUS_SUCCESS(status)) {
-		cds_err("Failed in cds_next_actions");
-		return;
-	}
-
-	status = qdf_wait_single_event(&cds_ctx->opportunistic_update_done_evt,
-				       CONNECTION_UPDATE_TIMEOUT);
-	if (!QDF_IS_STATUS_SUCCESS(status)) {
-		cds_err("wait on opportunistic_update_done_evt is failed");
-		return;
-	}
 }
 
 /**
