@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2019 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -78,12 +78,6 @@ struct hdd_scan_info {
 	char *start;
 	char *end;
 };
-
-#ifdef FEATURE_SUPPORT_LGE
-/*LGE_CHNAGE_S, DRIVER scan_suppress command, 2017-07-12, moon-wifi@lge.com*/
-unsigned long static g_scansuppress_mode = 0;
-/*LGE_CHNAGE_E, DRIVER scan_suppress command, 2017-07-12, moon-wifi@lge.com*/
-#endif
 
 static const
 struct nla_policy scan_policy[QCA_WLAN_VENDOR_ATTR_SCAN_MAX + 1] = {
@@ -434,6 +428,32 @@ static int hdd_add_scan_event_from_ies(struct hdd_scan_info *scanInfo,
 	return 0;
 }
 
+void hdd_init_scan_reject_params(hdd_context_t *hdd_ctx)
+{
+	if (hdd_ctx) {
+		hdd_ctx->last_scan_reject_timestamp = 0;
+		hdd_ctx->last_scan_reject_session_id = 0xFF;
+		hdd_ctx->last_scan_reject_reason = 0;
+		hdd_ctx->scan_reject_cnt = 0;
+	}
+
+	return;
+}
+
+void hdd_reset_scan_reject_params(hdd_context_t *hdd_ctx,
+				 eRoamCmdStatus roam_status,
+				 eCsrRoamResult roam_result)
+{
+
+	if ((roam_status == eCSR_ROAM_ASSOCIATION_FAILURE) ||
+	    (roam_status == eCSR_ROAM_CANCELLED) ||
+	    (roam_result == eCSR_ROAM_RESULT_ASSOCIATED)) {
+		hdd_debug("Reset scan reject params");
+		hdd_init_scan_reject_params(hdd_ctx);
+	}
+
+	return;
+}
 
 /**
  * hdd_indicate_scan_result() - indicate scan results
@@ -637,16 +657,18 @@ static void hdd_update_dbs_scan_ctrl_ext_flag(hdd_context_t *hdd_ctx,
 		goto end;
 	}
 
-	if (scan_req->scan_flags & SME_SCAN_FLAG_HIGH_ACCURACY) {
-		hdd_debug("DBS disabled due to high accuracy scan request");
-		goto end;
-	}
-	if (scan_req->scan_flags & SME_SCAN_FLAG_LOW_POWER ||
-	    scan_req->scan_flags & SME_SCAN_FLAG_LOW_SPAN) {
-		hdd_debug("DBS enable due to Low span/power request 0x%x",
-							scan_req->scan_flags);
-		scan_dbs_policy = SME_SCAN_DBS_POLICY_IGNORE_DUTY;
-		goto end;
+	if (hdd_ctx->config->honour_nl_scan_policy_flags) {
+		if (scan_req->scan_flags & SME_SCAN_FLAG_HIGH_ACCURACY) {
+			hdd_debug("DBS disabled for high accuracy request");
+			goto end;
+		}
+		if (scan_req->scan_flags & SME_SCAN_FLAG_LOW_POWER ||
+		    scan_req->scan_flags & SME_SCAN_FLAG_LOW_SPAN) {
+			hdd_debug("DBS enable for Low span/power request 0x%x",
+				  scan_req->scan_flags);
+			scan_dbs_policy = SME_SCAN_DBS_POLICY_IGNORE_DUTY;
+			goto end;
+		}
 	}
 	if (!(hdd_ctx->is_dbs_scan_duty_cycle_enabled)) {
 		scan_dbs_policy = SME_SCAN_DBS_POLICY_IGNORE_DUTY;
@@ -767,17 +789,8 @@ static void hdd_scan_inactivity_timer_handler(unsigned long scan_req)
 	if (cds_is_load_or_unload_in_progress())
 		hdd_err("%s: Module (un)loading; Ignore hdd scan req timeout",
 			 __func__);
-	else if (cds_is_driver_recovering())
-		hdd_err("%s: Module recovering; Ignore hdd scan req timeout",
-			 __func__);
-	else if (cds_is_driver_in_bad_state())
-		hdd_err("%s: Module in bad state; Ignore hdd scan req timeout",
-			 __func__);
-	else if (cds_is_self_recovery_enabled())
-		cds_trigger_recovery(CDS_SCAN_REQ_EXPIRED);
 	else
-		QDF_BUG(0);
-
+		cds_trigger_recovery(CDS_SCAN_REQ_EXPIRED);
 }
 
 /**
@@ -2043,15 +2056,6 @@ static int __wlan_hdd_cfg80211_scan(struct wiphy *wiphy,
 		return -EINVAL;
 	}
 
-#ifdef FEATURE_SUPPORT_LGE
-/*LGE_CHNAGE_S, DRIVER scan_suppress command, 2017-07-12, moon-wifi@lge.com*/
-	if ((g_scansuppress_mode == 1) && (request->wdev->iftype != NL80211_IFTYPE_AP)) {
-		hdd_err("lge priv-command scansuppress is enabled, scan is not allowed");
-		return -EPERM;
-	}
-/*LGE_CHNAGE_E, DRIVER scan_suppress command, 2017-07-12, moon-wifi@lge.com*/
-#endif
-
 	if ((eConnectionState_Associated ==
 			WLAN_HDD_GET_STATION_CTX_PTR(pAdapter)->
 						conn_info.connState) &&
@@ -2222,10 +2226,9 @@ static int __wlan_hdd_cfg80211_scan(struct wiphy *wiphy,
 		}
 		return -EBUSY;
 	}
-	pHddCtx->last_scan_reject_timestamp = 0;
-	pHddCtx->last_scan_reject_session_id = 0xFF;
-	pHddCtx->last_scan_reject_reason = 0;
-	pHddCtx->scan_reject_cnt = 0;
+
+	/* reinit the scan reject params */
+	hdd_init_scan_reject_params(pHddCtx);
 
 	/* Check whether SAP scan can be skipped or not */
 	if (pAdapter->device_mode == QDF_SAP_MODE &&
@@ -3234,7 +3237,7 @@ hdd_sched_scan_callback(void *callbackContext,
 	hdd_prevent_suspend_timeout(HDD_WAKELOCK_TIMEOUT_CONNECT,
 				    WIFI_POWER_EVENT_WAKELOCK_SCAN);
 
-	cfg80211_sched_scan_results(pHddCtx->wiphy);
+	hdd_sched_scan_results(pHddCtx->wiphy, 0);
 	hdd_debug("cfg80211 scan result database updated");
 }
 
@@ -4069,17 +4072,3 @@ void wlan_hdd_fill_whitelist_ie_attrs(bool *ie_whitelist,
 	for (i = 0; i < hdd_ctx->no_of_probe_req_ouis; i++)
 		voui[i] = hdd_ctx->probe_req_voui[i];
 }
-
-#ifdef FEATURE_SUPPORT_LGE
-/*LGE_CHNAGE_S, DRIVER scan_suppress command, 2017-07-12, moon-wifi@lge.com*/
-void wlan_hdd_set_scan_suppress(unsigned long on_off);
-void wlan_hdd_set_scan_suppress(unsigned long on_off) {
-	if (on_off == 1) {
-		g_scansuppress_mode = 1;
-	}
-	else {
-		g_scansuppress_mode = 0;
-	}
-}
-/*LGE_CHNAGE_E, DRIVER scan_suppress command, 2017-07-12, moon-wifi@lge.com*/
-#endif
