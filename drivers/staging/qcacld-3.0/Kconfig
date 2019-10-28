@@ -142,6 +142,7 @@ config WLAN_FEATURE_SARV1_TO_SARV2
 
 config WLAN_FEATURE_FILS
 	bool "Enable FILS Feature (11ai)"
+	default y
 
 config WLAN_FEATURE_PKT_CAPTURE
 	bool "Enable packet capture feature"
