@@ -1,7 +1,7 @@
 VERSION = 4
 PATCHLEVEL = 4
 SUBLEVEL = 153
-EXTRAVERSION = _haumea_I.base_1.9_2
+EXTRAVERSION = _haumea_I.base_1.9_3
 NAME = Blurry Fish Butt
 
 # *DOCUMENTATION*
