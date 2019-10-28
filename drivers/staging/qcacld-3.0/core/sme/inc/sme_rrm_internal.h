@@ -84,7 +84,6 @@ typedef struct sRrmSMEContext {
 	bool eseBcnReqInProgress;
 #endif /* FEATURE_WLAN_ESE */
 	tRrmMsgReqSource msgSource;
-	qdf_wake_lock_t scan_wake_lock;
 } tRrmSMEContext, *tpRrmSMEContext;
 
 typedef struct sRrmNeighborReq {
