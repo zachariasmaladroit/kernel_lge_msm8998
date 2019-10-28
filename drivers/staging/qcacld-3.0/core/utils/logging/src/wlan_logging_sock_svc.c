@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2019 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2014-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -749,7 +749,10 @@ static void send_flush_completion_to_user(uint8_t ring_id)
 	if (!recovery_needed)
 		return;
 
-	cds_trigger_recovery(CDS_REASON_UNSPECIFIED);
+	if (cds_is_self_recovery_enabled())
+		cds_trigger_recovery(CDS_REASON_UNSPECIFIED);
+	else
+		QDF_BUG(0);
 }
 
 /**
@@ -1149,7 +1152,7 @@ void wlan_pkt_stats_to_logger_thread(void *pl_hdr, void *pkt_dump, void *data)
 
 	spin_lock_irqsave(&gwlan_logging.pkt_stats_lock, flags);
 
-	if (!gwlan_logging.pkt_stats_pcur_node) {
+	if (!gwlan_logging.pkt_stats_pcur_node || (NULL == pkt_stats_dump)) {
 		spin_unlock_irqrestore(&gwlan_logging.pkt_stats_lock, flags);
 		return;
 	}
@@ -1182,7 +1185,7 @@ void wlan_pkt_stats_to_logger_thread(void *pl_hdr, void *pkt_dump, void *data)
 				pktlog_hdr->size),
 				data, pktlog_hdr->size);
 
-	if (pkt_stats_dump && pkt_stats_dump->type == STOP_MONITOR) {
+	if (pkt_stats_dump->type == STOP_MONITOR) {
 		wake_up_thread = true;
 		wlan_get_pkt_stats_free_node();
 	}
