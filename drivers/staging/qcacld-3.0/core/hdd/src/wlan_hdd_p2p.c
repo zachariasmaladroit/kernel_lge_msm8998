@@ -804,7 +804,7 @@ QDF_STATUS wlan_hdd_remain_on_channel_callback(tHalHandle hHal, void *pCtx,
 	 */
 	/* If ssr is inprogress, do not schedule next roc req */
 	if (!hdd_ctx->is_ssr_in_progress)
-		queue_delayed_work(system_freezable_wq, &hdd_ctx->roc_req_work, 0);
+		schedule_delayed_work(&hdd_ctx->roc_req_work, 0);
 
 	return QDF_STATUS_SUCCESS;
 }
