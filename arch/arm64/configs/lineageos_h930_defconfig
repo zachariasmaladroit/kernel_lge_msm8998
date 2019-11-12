@@ -6176,6 +6176,8 @@ CONFIG_ANDROID_LMK_ADJ_RBTREE=y
 #
 # simple_lmk (pick either this or ALMK, mutually exclusive)
 # CONFIG_ANDROID_SIMPLE_LMK is not set
+# CONFIG_ANDROID_SIMPLE_LMK_AGGRESSION=2
+# CONFIG_ANDROID_SIMPLE_LMK_MINFREE=50
 
 # LGE: mm: vmscan, page_alloc, ion
 # MIGRATE_HIGHORDER needs to be disabled for enhanced ion, page_alloc, vmscan
