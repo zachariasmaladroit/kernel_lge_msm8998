@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2018, The Linux Foundation. All rights reserved.
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License version 2 and
@@ -138,7 +138,6 @@ static int msm_loopback_session_mute_put(struct snd_kcontrol *kcontrol,
 		goto done;
 	}
 
-	mutex_lock(&loopback_session_lock);
 	pr_debug("%s: mute=%d\n", __func__, mute);
 	hfp_tx_mute = mute;
 	for (n = 0; n < LOOPBACK_SESSION_MAX; n++) {
@@ -151,7 +150,6 @@ static int msm_loopback_session_mute_put(struct snd_kcontrol *kcontrol,
 			pr_err("%s: Send mute command failed rc=%d\n",
 				__func__, ret);
 	}
-	 mutex_unlock(&loopback_session_lock);
 done:
 	return ret;
 }
@@ -342,8 +340,6 @@ static void stop_pcm(struct msm_pcm_loopback *pcm)
 
 	if (pcm->audio_client == NULL)
 		return;
-
-	mutex_lock(&loopback_session_lock);
 	q6asm_cmd(pcm->audio_client, CMD_CLOSE);
 
 	if (pcm->playback_substream != NULL) {
@@ -358,7 +354,6 @@ static void stop_pcm(struct msm_pcm_loopback *pcm)
 	}
 	q6asm_audio_client_free(pcm->audio_client);
 	pcm->audio_client = NULL;
-	mutex_unlock(&loopback_session_lock);
 }
 
 static int msm_pcm_close(struct snd_pcm_substream *substream)
@@ -508,7 +503,6 @@ static int msm_pcm_volume_ctl_put(struct snd_kcontrol *kcontrol,
 	int volume = ucontrol->value.integer.value[0];
 
 	pr_debug("%s: volume : 0x%x\n", __func__, volume);
-	mutex_lock(&loopback_session_lock);
 	if ((!substream) || (!substream->runtime)) {
 		pr_err("%s substream or runtime not found\n", __func__);
 		rc = -ENODEV;
@@ -517,11 +511,9 @@ static int msm_pcm_volume_ctl_put(struct snd_kcontrol *kcontrol,
 	prtd = substream->runtime->private_data;
 	if (!prtd) {
 		rc = -ENODEV;
-		mutex_unlock(&loopback_session_lock);
 		goto exit;
 	}
 	rc = pcm_loopback_set_volume(prtd, volume);
-	mutex_unlock(&loopback_session_lock);
 
 exit:
 	return rc;
@@ -542,15 +534,12 @@ static int msm_pcm_volume_ctl_get(struct snd_kcontrol *kcontrol,
 		rc = -ENODEV;
 		goto exit;
 	}
-	mutex_lock(&loopback_session_lock);
 	prtd = substream->runtime->private_data;
 	if (!prtd) {
 		rc = -ENODEV;
-		mutex_unlock(&loopback_session_lock);
 		goto exit;
 	}
 	ucontrol->value.integer.value[0] = prtd->volume;
-	mutex_unlock(&loopback_session_lock);
 
 exit:
 	return rc;
