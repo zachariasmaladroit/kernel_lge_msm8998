@@ -32,7 +32,7 @@ static void *lzorle_alloc_ctx(struct crypto_scomp *tfm)
 {
 	void *ctx;
 
-	ctx = kvmalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
+	ctx = vmalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
 	if (!ctx)
 		return ERR_PTR(-ENOMEM);
 
