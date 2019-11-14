@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2019 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -564,6 +564,11 @@ static bool hdd_tx_rx_is_dns_domain_name_match(struct sk_buff *skb,
 	if (adapter->track_dns_domain_len == 0)
 		return false;
 
+	/* check OOB , is strncmp accessing data more than skb->len */
+	if ((adapter->track_dns_domain_len +
+	    QDF_NBUF_PKT_DNS_NAME_OVER_UDP_OFFSET) > qdf_nbuf_len(skb))
+		return false;
+
 	domain_name = qdf_nbuf_get_dns_domain_name(skb,
 						adapter->track_dns_domain_len);
 	if (strncmp(domain_name, adapter->dns_payload,
@@ -902,9 +907,10 @@ static netdev_tx_t __hdd_hard_start_xmit(struct sk_buff *skb,
 		hdd_tx_rx_collect_connectivity_stats_info(skb, pAdapter,
 						PKT_TYPE_REQ, &pkt_type);
 
-	if (cds_is_driver_recovering() || cds_is_driver_in_bad_state()) {
+	if (cds_is_driver_recovering() || cds_is_driver_in_bad_state() ||
+	    cds_is_load_or_unload_in_progress()) {
 		QDF_TRACE(QDF_MODULE_ID_HDD_DATA, QDF_TRACE_LEVEL_INFO_HIGH,
-			"Recovery in progress, dropping the packet");
+			  "Recovery/(Un)load in progress, dropping the packet");
 		goto drop_pkt;
 	}
 
@@ -1087,17 +1093,15 @@ drop_pkt_and_release_skb:
 	qdf_net_buf_debug_release_skb(skb);
 drop_pkt:
 
-	if (skb) {
-		/* track connectivity stats */
-		if (pAdapter->pkt_type_bitmap)
-			hdd_tx_rx_collect_connectivity_stats_info(skb, pAdapter,
-						PKT_TYPE_TX_DROPPED, &pkt_type);
+	/* track connectivity stats */
+	if (pAdapter->pkt_type_bitmap)
+		hdd_tx_rx_collect_connectivity_stats_info(skb, pAdapter,
+							  PKT_TYPE_TX_DROPPED,
+							  &pkt_type);
 
-		qdf_dp_trace_data_pkt(skb, QDF_DP_TRACE_DROP_PACKET_RECORD, 0,
-				      QDF_TX);
-		kfree_skb(skb);
-		skb = NULL;
-	}
+	qdf_dp_trace_data_pkt(skb, QDF_DP_TRACE_DROP_PACKET_RECORD, 0,
+			      QDF_TX);
+	kfree_skb(skb);
 
 drop_pkt_accounting:
 
@@ -1176,6 +1180,13 @@ static void __hdd_tx_timeout(struct net_device *dev)
 	u64 diff_jiffies;
 	int i = 0;
 
+	hdd_ctx = WLAN_HDD_GET_CTX(adapter);
+
+	if (hdd_ctx->hdd_wlan_suspended) {
+		hdd_debug("Device is suspended, ignore WD timeout");
+		return;
+	}
+
 	TX_TIMEOUT_TRACE(dev, QDF_MODULE_ID_HDD_DATA);
 	DPTRACE(qdf_dp_trace(NULL, QDF_DP_TRACE_HDD_TX_TIMEOUT,
 				NULL, 0, QDF_TX));
@@ -1196,7 +1207,6 @@ static void __hdd_tx_timeout(struct net_device *dev)
 
 	QDF_TRACE(QDF_MODULE_ID_HDD_DATA, QDF_TRACE_LEVEL_DEBUG,
 		  "carrier state: %d", netif_carrier_ok(dev));
-	hdd_ctx = WLAN_HDD_GET_CTX(adapter);
 	wlan_hdd_display_netif_queue_history(hdd_ctx, QDF_STATS_VERB_LVL_HIGH);
 	ol_tx_dump_flow_pool_info();
 
@@ -1476,66 +1486,6 @@ static bool hdd_is_duplicate_ip_arp(struct sk_buff *skb)
 	return false;
 }
 
-/**
- * hdd_is_arp_local() - check if local or non local arp
- * @skb: pointer to sk_buff
- *
- * Return: true if local arp or false otherwise.
- */
-static bool hdd_is_arp_local(struct sk_buff *skb)
-{
-	struct arphdr *arp;
-	struct in_ifaddr **ifap = NULL;
-	struct in_ifaddr *ifa = NULL;
-	struct in_device *in_dev;
-	unsigned char *arp_ptr;
-	__be32 tip;
-
-	arp = (struct arphdr *)skb->data;
-	if (arp->ar_op == htons(ARPOP_REQUEST)) {
-		in_dev = __in_dev_get_rtnl(skb->dev);
-		if (in_dev) {
-			for (ifap = &in_dev->ifa_list; (ifa = *ifap) != NULL;
-				ifap = &ifa->ifa_next) {
-				if (!strcmp(skb->dev->name, ifa->ifa_label))
-					break;
-			}
-		}
-
-		if (ifa && ifa->ifa_local) {
-			arp_ptr = (unsigned char *)(arp + 1);
-			arp_ptr += (skb->dev->addr_len + 4 +
-					skb->dev->addr_len);
-			memcpy(&tip, arp_ptr, 4);
-			hdd_debug("ARP packet: local IP: %x dest IP: %x",
-				ifa->ifa_local, tip);
-			if (ifa->ifa_local == tip)
-				return true;
-		}
-	}
-
-	return false;
-}
-
-/**
- * hdd_is_rx_wake_lock_needed() - check if wake lock is needed
- * @skb: pointer to sk_buff
- *
- * RX wake lock is needed for:
- * 1) Unicast data packet OR
- * 2) Local ARP data packet
- *
- * Return: true if wake lock is needed or false otherwise.
- */
-static bool hdd_is_rx_wake_lock_needed(struct sk_buff *skb)
-{
-	if ((skb->pkt_type != PACKET_BROADCAST &&
-	     skb->pkt_type != PACKET_MULTICAST) || hdd_is_arp_local(skb))
-		return true;
-
-	return false;
-}
-
 #ifdef WLAN_FEATURE_TSF_PLUS
 static inline void hdd_tsf_timestamp_rx(hdd_context_t *hdd_ctx,
 					qdf_nbuf_t netbuf,
@@ -1577,7 +1527,7 @@ static inline void hdd_resolve_rx_ol_mode(hdd_context_t *hdd_ctx)
 	}
 }
 
-#ifdef HELIUMPLUS
+#if defined(MSM_PLATFORM) && defined(HELIUMPLUS)
 /**
  * hdd_gro_rx() - Handle Rx procesing via GRO
  * @pAdapter: pointer to adapter context
@@ -1692,7 +1642,7 @@ static inline void hdd_register_rx_ol(void)
 		if (hdd_ctx->enableRxThread)
 			hdd_create_napi_for_rxthread();
 		hdd_debug("GRO is enabled");
-	} else if (hdd_ctx->config->enable_tcp_delack) {
+	} else if (HDD_MSM_CFG(hdd_ctx->config->enable_tcp_delack)) {
 		hdd_ctx->tcp_delack_on = 1;
 	}
 }
@@ -1730,7 +1680,23 @@ void hdd_gro_destroy(void)
 		ol_deregister_offld_flush_cb(hdd_deinit_gro_mgr);
 }
 #else /* HELIUMPLUS */
-static inline void hdd_register_rx_ol(void) { }
+static inline void hdd_register_rx_ol(void)
+{
+	hdd_context_t *hdd_ctx = cds_get_context(QDF_MODULE_ID_HDD);
+
+	if  (!hdd_ctx) {
+		hdd_err("HDD context is NULL");
+		return;
+	}
+
+	if (HDD_MSM_CFG(hdd_ctx->config->enable_tcp_delack))
+		hdd_ctx->tcp_delack_on = 1;
+	else
+		hdd_ctx->tcp_delack_on = 0;
+
+	hdd_debug("TCP delack ack is %s",
+		hdd_ctx->tcp_delack_on ? "enabled" : "disabled");
+}
 
 void hdd_gro_destroy(void)
 {
@@ -1782,6 +1748,7 @@ int hdd_rx_ol_init(hdd_context_t *hdd_ctx)
 	return 0;
 }
 
+#ifdef MSM_PLATFORM
 /**
  * hdd_enable_rx_ol_in_concurrency() - Enable Rx offload
  * @hdd_ctx: hdd context
@@ -1820,6 +1787,7 @@ void hdd_disable_rx_ol_in_concurrency(hdd_context_t *hdd_ctx)
 	}
 	qdf_atomic_set(&hdd_ctx->disable_lro_in_concurrency, 1);
 }
+#endif
 
 /**
  * hdd_disable_rx_ol_for_low_tput() - Disable Rx offload in low TPUT scenario
@@ -1878,7 +1846,6 @@ QDF_STATUS hdd_rx_packet_cbk(void *context, qdf_nbuf_t rxBuf)
 	struct sk_buff *skb = NULL;
 	hdd_station_ctx_t *pHddStaCtx = NULL;
 	unsigned int cpu_index;
-	bool wake_lock = false;
 	bool is_arp = false;
 	bool track_arp = false;
 	uint8_t pkt_type = 0;
@@ -1975,20 +1942,6 @@ QDF_STATUS hdd_rx_packet_cbk(void *context, qdf_nbuf_t rxBuf)
 		return QDF_STATUS_SUCCESS;
 	}
 
-	/* hold configurable wakelock for unicast traffic */
-	if (pHddCtx->config->rx_wakelock_timeout &&
-	    pHddStaCtx->conn_info.uIsAuthenticated)
-		wake_lock = hdd_is_rx_wake_lock_needed(skb);
-
-	if (wake_lock) {
-		cds_host_diag_log_work(&pHddCtx->rx_wake_lock,
-				       pHddCtx->config->rx_wakelock_timeout,
-				       WIFI_POWER_EVENT_WAKELOCK_HOLD_RX);
-		qdf_wake_lock_timeout_acquire(&pHddCtx->rx_wake_lock,
-					      pHddCtx->config->
-						      rx_wakelock_timeout);
-	}
-
 	/* Remove SKB from internal tracking table before submitting
 	 * it to stack
 	 */
@@ -2054,6 +2007,7 @@ const char *hdd_reason_type_to_string(enum netif_reason_type reason)
 	CASE_RETURN_STRING(WLAN_VDEV_STOP);
 	CASE_RETURN_STRING(WLAN_PEER_UNAUTHORISED);
 	CASE_RETURN_STRING(WLAN_THERMAL_MITIGATION);
+	CASE_RETURN_STRING(WLAN_DATA_FLOW_CONTROL_PRIORITY);
 	default:
 		return "Invalid";
 	}
@@ -2079,6 +2033,8 @@ const char *hdd_action_type_to_string(enum netif_action_type action)
 	CASE_RETURN_STRING(WLAN_START_ALL_NETIF_QUEUE_N_CARRIER);
 	CASE_RETURN_STRING(WLAN_NETIF_CARRIER_ON);
 	CASE_RETURN_STRING(WLAN_NETIF_CARRIER_OFF);
+	CASE_RETURN_STRING(WLAN_NETIF_PRIORITY_QUEUE_ON);
+	CASE_RETURN_STRING(WLAN_NETIF_PRIORITY_QUEUE_OFF);
 	default:
 		return "Invalid";
 	}
@@ -2096,11 +2052,13 @@ static void wlan_hdd_update_queue_oper_stats(hdd_adapter_t *adapter,
 	switch (action) {
 	case WLAN_STOP_ALL_NETIF_QUEUE:
 	case WLAN_STOP_ALL_NETIF_QUEUE_N_CARRIER:
+	case WLAN_NETIF_PRIORITY_QUEUE_OFF:
 		adapter->queue_oper_stats[reason].pause_count++;
 		break;
 	case WLAN_START_ALL_NETIF_QUEUE:
 	case WLAN_WAKE_ALL_NETIF_QUEUE:
 	case WLAN_START_ALL_NETIF_QUEUE_N_CARRIER:
+	case WLAN_NETIF_PRIORITY_QUEUE_ON:
 		adapter->queue_oper_stats[reason].unpause_count++;
 		break;
 	default:
@@ -2216,6 +2174,7 @@ void wlan_hdd_netif_queue_control(hdd_adapter_t *adapter,
 	enum netif_action_type action, enum netif_reason_type reason)
 {
 	uint32_t temp_map;
+	uint8_t index;
 
 	if ((!adapter) || (WLAN_HDD_ADAPTER_MAGIC != adapter->magic) ||
 		 (!adapter->dev)) {
@@ -2315,21 +2274,49 @@ void wlan_hdd_netif_queue_control(hdd_adapter_t *adapter,
 	spin_lock_bh(&adapter->pause_map_lock);
 	if (adapter->pause_map & (1 << WLAN_PEER_UNAUTHORISED))
 		wlan_hdd_process_peer_unauthorised_pause(adapter);
+
+	index = adapter->history_index++;
+	if (adapter->history_index == WLAN_HDD_MAX_HISTORY_ENTRY)
+		adapter->history_index = 0;
 	spin_unlock_bh(&adapter->pause_map_lock);
 
 	wlan_hdd_update_queue_oper_stats(adapter, action, reason);
 
-	adapter->queue_oper_history[adapter->history_index].time =
-							qdf_system_ticks();
-	adapter->queue_oper_history[adapter->history_index].netif_action =
-									action;
-	adapter->queue_oper_history[adapter->history_index].netif_reason =
-									reason;
-	adapter->queue_oper_history[adapter->history_index].pause_map =
-							adapter->pause_map;
-	if (++adapter->history_index == WLAN_HDD_MAX_HISTORY_ENTRY)
-		adapter->history_index = 0;
+	adapter->queue_oper_history[index].time = qdf_system_ticks();
+	adapter->queue_oper_history[index].netif_action = action;
+	adapter->queue_oper_history[index].netif_reason = reason;
+	adapter->queue_oper_history[index].pause_map = adapter->pause_map;
 }
+
+#ifdef WLAN_FEATURE_PKT_CAPTURE
+/**
+ * hdd_set_mon_mode_cb() - Set pkt capture mode callback
+ * @dev:        Pointer to net_device structure
+ *
+ * Return: 0 on success; non-zero for failure
+ */
+int hdd_set_mon_mode_cb(struct net_device *dev)
+{
+	ol_txrx_mon_callback_fp mon_cb;
+	hdd_adapter_t *adapter = WLAN_HDD_GET_PRIV_PTR(dev);
+
+	mon_cb = hdd_mon_rx_packet_cbk;
+	ol_txrx_mon_cb_register(adapter, mon_cb);
+
+	return 0;
+}
+
+/**
+ * hdd_reset_mon_mode_cb() - Reset pkt capture mode callback
+ * @void
+ *
+ * Return: None
+ */
+void hdd_reset_mon_mode_cb(void)
+{
+	ol_txrx_mon_cb_deregister();
+}
+#endif /* WLAN_FEATURE_PKT_CAPTURE */
 
 /**
  * hdd_set_mon_rx_cb() - Set Monitor mode Rx callback
