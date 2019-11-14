@@ -342,8 +342,10 @@ bool hdd_dhcp_indication(hdd_adapter_t *adapter,
 {
 	enum qdf_proto_subtype subtype = QDF_PROTO_INVALID;
 	hdd_station_info_t *hdd_sta_info;
+
 	bool notify_tx_comp = false;
 
+	hdd_debug("adapter=%p, sta_id=%d, dir=%d", adapter, sta_id, dir);
 
 	if (((adapter->device_mode == QDF_SAP_MODE) ||
 	     (adapter->device_mode == QDF_P2P_GO_MODE)) &&
@@ -433,11 +435,9 @@ static netdev_tx_t __hdd_softap_hard_start_xmit(struct sk_buff *skb,
 	 * context may not be reinitialized at this time which may
 	 * lead to a crash.
 	 */
-	if (cds_is_driver_recovering() || cds_is_driver_in_bad_state() ||
-	    cds_is_load_or_unload_in_progress()) {
+	if (cds_is_driver_recovering() || cds_is_driver_in_bad_state()) {
 		QDF_TRACE(QDF_MODULE_ID_HDD_SAP_DATA, QDF_TRACE_LEVEL_INFO_HIGH,
-			  "%s: Recovery/(Un)load in Progress. Ignore!!!",
-			  __func__);
+			  "%s: Recovery in Progress. Ignore!!!", __func__);
 		goto drop_pkt;
 	}
 
