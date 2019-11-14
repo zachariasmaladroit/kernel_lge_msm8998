@@ -120,6 +120,10 @@ config QCACLD_WLAN_LFR2
 	bool "Enable the WLAN Legacy Fast Roaming feature Version 2"
 	default n
 
+config QCA_LL_TX_FLOW_CONTROL_V2
+	bool "Enable the LL_TX FLOW_CONTROL_V2"
+	default y
+
 config WLAN_FEATURE_DISA
 	bool "Enable DISA certification feature"
 	default n
