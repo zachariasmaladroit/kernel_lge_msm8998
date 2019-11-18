@@ -505,7 +505,7 @@ CONFIG_LGE_BDI_STRICTLIMIT_DIRTY=y
 CONFIG_SECCOMP=y
 # CONFIG_XEN is not set
 CONFIG_FORCE_MAX_ZONEORDER=11
-CONFIG_UNMAP_KERNEL_AT_EL0=y
+# CONFIG_UNMAP_KERNEL_AT_EL0 is not set
 CONFIG_HARDEN_BRANCH_PREDICTOR=y
 CONFIG_ARMV8_DEPRECATED=y
 CONFIG_SWP_EMULATION=y
@@ -5887,6 +5887,7 @@ CONFIG_SCHED_STACK_END_CHECK=y
 # CONFIG_MANDATORY_FILE_LOCKING is not set # needs commit first
 # CONFIG_SLUB_CPU_PARTIAL is not set # more indeterminism in the latency of the free , taking of locks that may cause latency spikes
 # CONFIG_VM_EVENT_COUNTERS is not set
+# CONFIG_UNMAP_KERNEL_AT_EL0 is not set # causes a perf regresion on the *_syscall bionic benchmarks
 
 # logspam
 #
