@@ -6276,3 +6276,12 @@ CONFIG_BUG_ON_DATA_CORRUPTION=y
 # CONFIG_DEBUG_NOTIFIERS is not set # modules, This is a relatively cheap check
 # CONFIG_DEBUG_LIST=y
 # CONFIG_DEBUG_SG=y # This can help find problems with drivers that do not properly initialize their sg tables.
+
+# "Simple user configurable GPU controlling algorithm"
+CONFIG_SIMPLE_GPU_ALGORITHM=y # not used right now, NA source
+
+# AdrenoIdler for msm_adreno_tz, needs STATE_NOTIFIER (in some implementations)
+CONFIG_ADRENO_IDLER=y
+
+# state notifier, needed for cpufreq governors, adreno-idler, etc.
+CONFIG_STATE_NOTIFIER=y
