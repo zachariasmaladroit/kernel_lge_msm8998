@@ -6246,3 +6246,7 @@ CONFIG_DEFAULT_FQ_CODEL=y
 # favor performance over spectre mitigation ?
 #
 # CONFIG_HARDEN_BRANCH_PREDICTOR is not set
+
+# crypto hardware acceleration
+#
+CONFIG_KERNEL_MODE_NEON=y
