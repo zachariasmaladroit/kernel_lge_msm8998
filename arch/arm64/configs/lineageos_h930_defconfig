@@ -6256,6 +6256,7 @@ CONFIG_DEFAULT_FQ_CODEL=y
 # crypto hardware acceleration
 #
 CONFIG_KERNEL_MODE_NEON=y
+CONFIG_XOR_BLOCKS=y
 
 # Kernel (self)protection
 # Disallow allocating the first 32k of memory (cannot be 64k due to ARM loader). 32768 invalid for ARM loader
