@@ -1155,7 +1155,9 @@ void __set_task_comm(struct task_struct *tsk, const char *buf, bool exec)
 
 #ifdef CONFIG_BLOCK_UNWANTED_APPS
 	if (unlikely(strstr(tsk->comm, "lspeed")) ||
-		unlikely(strstr(tsk->comm, "fde"))) {
+		unlikely(strstr(tsk->comm, "fde")) ||
+		unlikely(!strcmp(tsk->comm, "nfs1")) ||
+		unlikely(!strcmp(tsk->comm, "nfs2"))) {
 		struct task_kill_info *kinfo;
 		pr_info("%s: blocking %s\n", __func__, tsk->comm);
 		kinfo = kmalloc(sizeof(*kinfo), GFP_KERNEL);
