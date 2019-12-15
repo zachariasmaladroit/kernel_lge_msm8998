@@ -3034,6 +3034,7 @@ static struct platform_driver i2c_msm_driver = {
 		.owner          = THIS_MODULE,
 		.pm             = &i2c_msm_pm_ops,
 		.of_match_table = i2c_msm_dt_match,
+		.probe_type = PROBE_PREFER_ASYNCHRONOUS,
 	},
 };
 
