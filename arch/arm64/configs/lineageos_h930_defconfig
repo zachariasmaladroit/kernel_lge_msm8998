@@ -5872,6 +5872,7 @@ CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE=0
 # CONFIG_IMA is not set
 # CONFIG_EVM is not set
 # CONFIG_SECURITY_YAMA is not set
+# CONFIG_SECURITY_SMACK is not set
 
 # enhanced security
 #
