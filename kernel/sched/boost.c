@@ -22,7 +22,7 @@
  * boost is responsible for disabling it as well.
  */
 
-unsigned int sysctl_sched_boost;
+unsigned int sysctl_sched_boost = 1;
 static enum sched_boost_policy boost_policy;
 static enum sched_boost_policy boost_policy_dt = SCHED_BOOST_NONE;
 static DEFINE_MUTEX(boost_mutex);
