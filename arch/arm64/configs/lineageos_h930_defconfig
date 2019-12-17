@@ -5888,6 +5888,10 @@ CONFIG_SCHED_STACK_END_CHECK=y
 # CONFIG_SLUB_DEBUG is not set # set ?
 # CONFIG_COMPAT_BRK is not set
 # CONFIG_SLAB_MERGE_DEFAULT is not set
+#
+# slub security
+CONFIG_SLAB_FREELIST_RANDOM=y
+
 
 # performance & latency cutdown tweaking
 #
