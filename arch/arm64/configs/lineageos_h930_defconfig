@@ -212,6 +212,7 @@ CONFIG_PERF_EVENTS=y
 CONFIG_VM_EVENT_COUNTERS=y
 # CONFIG_SLUB_DEBUG is not set
 # CONFIG_COMPAT_BRK is not set
+# CONFIG_SLAB_MERGE_DEFAULT is not set
 # CONFIG_SLAB is not set
 CONFIG_SLUB=y
 # CONFIG_SLOB is not set
@@ -5882,6 +5883,11 @@ CONFIG_DEBUG_ALIGN_RODATA=y
 # CONFIG_PANIC_ON_DATA_CORRUPTION=y # deprecated
 CONFIG_BUG_ON_DATA_CORRUPTION=y
 CONFIG_SCHED_STACK_END_CHECK=y
+#
+# slub related integrity
+# CONFIG_SLUB_DEBUG is not set # set ?
+# CONFIG_COMPAT_BRK is not set
+# CONFIG_SLAB_MERGE_DEFAULT is not set
 
 # performance & latency cutdown tweaking
 #
