@@ -6128,6 +6128,15 @@ CONFIG_CPU_IDLE_MULTIPLE_DRIVERS=y
 # CONFIG_CPU_IDLE_GOV_LADDER is not set
 # CONFIG_CPU_IDLE_GOV_MENU is not set
 
+# tickrate
+#
+# CONFIG_HZ_100 is not set
+# CONFIG_HZ_250 is not set
+# CONFIG_HZ_300 is not set
+CONFIG_HZ_500=y
+# CONFIG_HZ_1000 is not set
+CONFIG_HZ=500
+
 # hacks
 # 
 CONFIG_FRAME_WARN=0
