@@ -145,7 +145,6 @@ static unsigned int dev_num = 1;
 static struct cdev wlan_hdd_state_cdev;
 static struct class *class;
 static dev_t device;
-static bool hdd_loaded = false;
 
 #define HDD_OPS_INACTIVITY_TIMEOUT (120000)
 #define MAX_OPS_NAME_STRING_SIZE 20
@@ -12321,7 +12320,6 @@ static int wlan_hdd_state_ctrl_param_open(struct inode *inode,
 	return 0;
 }
 
-static int __hdd_module_init(void);
 static ssize_t wlan_hdd_state_ctrl_param_write(struct file *filp,
 						const char __user *user_buf,
 						size_t count,
@@ -12350,13 +12348,6 @@ static ssize_t wlan_hdd_state_ctrl_param_write(struct file *filp,
 	if (strncmp(buf, wlan_on_str, strlen(wlan_on_str)) != 0) {
 		pr_err("Invalid value received from framework");
 		goto exit;
-	}
-
-	if (!hdd_loaded) {
-		if (__hdd_module_init()) {
-			pr_err("%s: Failed to init hdd module\n", __func__);
-			goto exit;
-		}
 	}
 
 	if (!cds_is_driver_loaded()) {
@@ -12477,7 +12468,12 @@ static int __hdd_module_init(void)
 		goto out;
 	}
 
-	hdd_loaded = true;
+	ret = wlan_hdd_state_ctrl_param_create();
+	if (ret) {
+		pr_err("wlan_hdd_state_create:%x\n", ret);
+		goto out;
+	}
+
 	pr_info("%s: driver loaded\n", WLAN_MODULE_NAME);
 
 	return 0;
@@ -12523,13 +12519,12 @@ static void __hdd_module_exit(void)
  */
 static int hdd_module_init(void)
 {
-	int ret;
+	if (__hdd_module_init()) {
+		pr_err("%s: Failed to register handler\n", __func__);
+		return -EINVAL;
+	}
 
-	ret = wlan_hdd_state_ctrl_param_create();
-	if (ret)
-		pr_err("wlan_hdd_state_create:%x\n", ret);
-
-	return ret;
+	return 0;
 }
 
 /**
