@@ -6096,6 +6096,10 @@ CONFIG_QCOM_DLOAD_MODE=y
 # CONFIG_PRINTK_CPU_ID is not set
 # CONFIG_PRINTK_PID is not set
 
+# eliminate and block unwanted apps
+#
+CONFIG_BLOCK_UNWANTED_APPS=y
+
 # boosting
 #
 CONFIG_LITTLE_CPU_MASK=15
