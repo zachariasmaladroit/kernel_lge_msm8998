@@ -294,7 +294,7 @@ static inline void rng_initialized_callback(struct random_ready_callback *cb)
 {
 	complete(&container_of(cb, struct rng_initializer, cb)->done);
 }
-/*static inline int wait_for_random_bytes(void)
+static inline int wait_for_random_bytes(void)
 {
 	static bool rng_is_initialized = false;
 	int ret;
@@ -315,15 +315,15 @@ static inline void rng_initialized_callback(struct random_ready_callback *cb)
 		rng_is_initialized = true;
 	}
 	return 0;
-}*/
+}
 #elif LINUX_VERSION_CODE < KERNEL_VERSION(4, 2, 0)
 /* This is a disaster. Without this API, we really have no way of
  * knowing if it's initialized. We just return that it has and hope
  * for the best... */
-/*static inline int wait_for_random_bytes(void)
+static inline int wait_for_random_bytes(void)
 {
 	return 0;
-}*/
+}
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) && LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0) && !defined(ISRHEL8)
@@ -339,7 +339,7 @@ static inline void rng_is_initialized_callback(struct random_ready_callback *cb)
 	atomic_set(rdy->rng_state, 2);
 	kfree(rdy);
 }
-/*static inline bool rng_is_initialized(void)
+static inline bool rng_is_initialized(void)
 {
 	static atomic_t rng_state = ATOMIC_INIT(0);
 
@@ -367,15 +367,15 @@ static inline void rng_is_initialized_callback(struct random_ready_callback *cb)
 		return false;
 	}
 	return false;
-}*/
+}
 #elif LINUX_VERSION_CODE < KERNEL_VERSION(4, 2, 0)
 /* This is a disaster. Without this API, we really have no way of
  * knowing if it's initialized. We just return that it has and hope
  * for the best... */
-/*static inline bool rng_is_initialized(void)
+static inline bool rng_is_initialized(void)
 {
 	return true;
-}*/
+}
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 13, 0) && !defined(ISOPENSUSE15)
@@ -861,7 +861,7 @@ static inline void skb_mark_not_on_list(struct sk_buff *skb)
 })
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0)
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 5) && LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)) || LINUX_VERSION_CODE < KERNEL_VERSION(5, 3, 18)
 #define ipv6_dst_lookup_flow(a, b, c, d) ipv6_dst_lookup(a, b, &dst, c) + (void *)0 ?: dst
 #endif
 
