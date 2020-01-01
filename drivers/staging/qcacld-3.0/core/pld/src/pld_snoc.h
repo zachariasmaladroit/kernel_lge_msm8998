@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2016-2019 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -95,10 +95,20 @@ static inline int pld_snoc_athdiag_write(struct device *dev, uint32_t offset,
 {
 	return 0;
 }
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0))
+static inline void *pld_snoc_smmu_get_domain(struct device *dev)
+{
+	return NULL;
+}
+
+#else
 static inline void *pld_snoc_smmu_get_mapping(struct device *dev)
 {
 	return NULL;
 }
+#endif
+
 static inline int pld_snoc_smmu_map(struct device *dev, phys_addr_t paddr,
 				    uint32_t *iova_addr, size_t size)
 {
@@ -113,7 +123,12 @@ static inline int pld_snoc_is_qmi_disable(struct device *dev)
 {
 	return 0;
 }
-static inline int pld_snoc_is_fw_down(void)
+
+static inline int pld_snoc_is_fw_down(struct device *dev)
+{
+	return 0;
+}
+static inline int pld_snoc_set_fw_log_mode(struct device *dev, u8 fw_log_mode)
 {
 	return 0;
 }
@@ -121,7 +136,8 @@ static inline int pld_snoc_force_assert_target(struct device *dev)
 {
 	return 0;
 }
-static inline int pld_snoc_set_fw_log_mode(struct device *dev, u8 fw_log_mode)
+
+static inline int pld_snoc_is_pdr(void)
 {
 	return 0;
 }
@@ -208,10 +224,20 @@ static inline int pld_snoc_athdiag_write(struct device *dev, uint32_t offset,
 {
 	return icnss_athdiag_write(dev, offset, memtype, datalen, input);
 }
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0))
+static inline void *pld_snoc_smmu_get_domain(struct device *dev)
+{
+	return icnss_smmu_get_domain(dev);
+}
+
+#else
 static inline void *pld_snoc_smmu_get_mapping(struct device *dev)
 {
 	return icnss_smmu_get_mapping(dev);
 }
+#endif
+
 static inline int pld_snoc_smmu_map(struct device *dev, phys_addr_t paddr,
 				    uint32_t *iova_addr, size_t size)
 {
@@ -223,7 +249,7 @@ unsigned int pld_snoc_socinfo_get_serial_number(struct device *dev)
 	return icnss_socinfo_get_serial_number(dev);
 }
 
-static inline int pld_snoc_is_fw_down(void)
+static inline int pld_snoc_is_fw_down(struct device *dev)
 {
 	return icnss_is_fw_down();
 }
@@ -249,9 +275,23 @@ static inline int pld_snoc_force_assert_target(struct device *dev)
 	return icnss_trigger_recovery(dev);
 }
 
+static inline int pld_snoc_is_pdr(void)
+{
+	return icnss_is_pdr();
+}
+
 static inline int pld_snoc_is_fw_rejuvenate(void)
 {
 	return icnss_is_rejuvenate();
+}
+static inline int pld_snoc_idle_restart(struct device *dev)
+{
+	return icnss_idle_restart(dev);
+}
+
+static inline int pld_snoc_idle_shutdown(struct device *dev)
+{
+	return icnss_idle_shutdown(dev);
 }
 #endif
 #endif
