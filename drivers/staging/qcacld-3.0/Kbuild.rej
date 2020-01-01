@@ -1,0 +1,57 @@
+--- drivers/staging/qcacld-3.0/Kbuild
++++ drivers/staging/qcacld-3.0/Kbuild
+@@ -2140,31 +2350,47 @@ endif
+ # characters (including NULL) of MULTI_IF_NAME to construct
+ # WLAN_HDD_ADAPTER_MAGIC.
+ ifdef WLAN_HDD_ADAPTER_MAGIC
+-CDEFINES += -DWLAN_HDD_ADAPTER_MAGIC=$(WLAN_HDD_ADAPTER_MAGIC)
++ccflags-y += -DWLAN_HDD_ADAPTER_MAGIC=$(WLAN_HDD_ADAPTER_MAGIC)
++endif
++
++# Determine if we are building against an arm architecture host
++ifeq ($(findstring arm, $(ARCH)),)
++	ccflags-y += -DWLAN_HOST_ARCH_ARM=0
++else
++	ccflags-y += -DWLAN_HOST_ARCH_ARM=1
+ endif
+ 
+ # inject some build related information
+ ifeq ($(CONFIG_BUILD_TAG), y)
+ CLD_CHECKOUT = $(shell cd "$(WLAN_ROOT)" && \
+-	git reflog | grep -vm1 cherry-pick | grep -oE ^[0-f]+)
++	git reflog | grep -vm1 "}: cherry-pick: " | grep -oE ^[0-f]+)
+ CLD_IDS = $(shell cd "$(WLAN_ROOT)" && \
+-	git log $(CLD_CHECKOUT)~..HEAD | \
++	git log -50 $(CLD_CHECKOUT)~..HEAD | \
+ 		sed -nE 's/^\s*Change-Id: (I[0-f]{10})[0-f]{30}\s*$$/\1/p' | \
+ 		paste -sd "," -)
+ 
+ CMN_CHECKOUT = $(shell cd "$(WLAN_COMMON_INC)" && \
+-	git reflog | grep -vm1 cherry-pick | grep -oE ^[0-f]+)
++	git reflog | grep -vm1 "}: cherry-pick: " | grep -oE ^[0-f]+)
+ CMN_IDS = $(shell cd "$(WLAN_COMMON_INC)" && \
+-	git log $(CMN_CHECKOUT)~..HEAD | \
++	git log -50 $(CMN_CHECKOUT)~..HEAD | \
+ 		sed -nE 's/^\s*Change-Id: (I[0-f]{10})[0-f]{30}\s*$$/\1/p' | \
+ 		paste -sd "," -)
+ 
+ TIMESTAMP = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
+ BUILD_TAG = "$(TIMESTAMP); cld:$(CLD_IDS); cmn:$(CMN_IDS);"
+-CDEFINES += -DBUILD_TAG=\"$(BUILD_TAG)\"
++# It's assumed that BUILD_TAG is used only in wlan_hdd_main.c
++CFLAGS_wlan_hdd_main.o += -DBUILD_TAG=\"$(BUILD_TAG)\"
+ endif
+ 
+ # Module information used by KBuild framework
+ obj-$(CONFIG_QCA_CLD_WLAN) += $(MODNAME).o
+ $(MODNAME)-y := $(OBJS)
+-clean-files := $(CLEAN_FILES)
++OBJS_DIRS := $(dir $(OBJS)) \
++	     $(WLAN_COMMON_ROOT)/$(HIF_CE_DIR)/ \
++	     $(QDF_OBJ_DIR)/ \
++	     $(WLAN_COMMON_ROOT)/$(HIF_PCIE_DIR)/ \
++	     $(WLAN_COMMON_ROOT)/$(HIF_SNOC_DIR)/ \
++	     $(WLAN_COMMON_ROOT)/$(HIF_SDIO_DIR)/
++CLEAN_DIRS := $(addsuffix *.o,$(sort $(OBJS_DIRS))) \
++	      $(addsuffix .*.o.cmd,$(sort $(OBJS_DIRS)))
++clean-files := $(CLEAN_DIRS)
