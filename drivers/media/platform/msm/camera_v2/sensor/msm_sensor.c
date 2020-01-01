@@ -141,7 +141,7 @@ int msm_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 		msm_camera_tz_i2c_power_down(sensor_i2c_client);
 
 #ifdef CONFIG_MACH_LGE
-	pr_info("%s(%d) %s\n", __func__, __LINE__,
+	pr_debug("%s(%d) %s\n", __func__, __LINE__,
 		s_ctrl->sensordata->sensor_name);
 #endif
 
@@ -220,7 +220,7 @@ int msm_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 	}
 
 #ifdef CONFIG_MACH_LGE
-	pr_info("%s(%d) %s\n", __func__, __LINE__, sensor_name);
+	pr_debug("%s(%d) %s\n", __func__, __LINE__, sensor_name);
 #endif
 
 	return rc;
