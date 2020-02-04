@@ -11,7 +11,7 @@
  */
 
 &mdss_mdp {
-	dsi_sw43402_dsc_cmd_config1: config1 {
+	/*dsi_sw43402_dsc_cmd_config1: config1 {
 		qcom,lm-split = <540 540>;
 		qcom,mdss-dsc-encoders = <2>;
 		qcom,mdss-dsc-slice-height = <16>;
@@ -32,7 +32,7 @@
 		qcom,mdss-dsc-bit-per-component = <8>;
 		qcom,mdss-dsc-bit-per-pixel = <8>;
 		qcom,mdss-dsc-block-prediction-enable;
-	};
+	};*/
 
 	dsi_sw43402_dsc_cmd_config3: config3 {
 		qcom,lm-split = <720 720>;

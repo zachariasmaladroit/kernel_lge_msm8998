@@ -10,7 +10,7 @@
  * GNU General Public License for more details.
  */
 
-#include "dsi-panel-sw43402-dynamic-resolution-switching-dv2_1.dtsi"
+//#include "dsi-panel-sw43402-dynamic-resolution-switching-dv2_1.dtsi"
 #include "dsi-panel-sw43402-dynamic-resolution-switching-config.dtsi"
 
 &mdss_mdp {
