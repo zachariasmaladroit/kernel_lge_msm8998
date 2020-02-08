@@ -16,6 +16,11 @@
 #define ISRHEL7
 #elif RHEL_MAJOR == 8
 #define ISRHEL8
+#ifdef RHEL_MINOR
+#if RHEL_MINOR == 2
+#define ISRHEL82
+#endif
+#endif
 #endif
 #endif
 #ifdef UTS_UBUNTU_RELEASE_ABI
@@ -36,6 +41,10 @@
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
 #error "WireGuard requires Linux >= 3.10"
+#endif
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
+#error "WireGuard has been merged into Linux >= 5.6 and therefore this compatibility module is no longer required."
 #endif
 
 #if defined(ISRHEL7)
@@ -90,7 +99,7 @@
     (LINUX_VERSION_CODE < KERNEL_VERSION(3, 18, 27) && LINUX_VERSION_CODE >= KERNEL_VERSION(3, 17, 0)) || \
     (LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 8) && LINUX_VERSION_CODE >= KERNEL_VERSION(3, 15, 0)) || \
     (LINUX_VERSION_CODE < KERNEL_VERSION(3, 14, 40) && LINUX_VERSION_CODE >= KERNEL_VERSION(3, 13, 0)) || \
-    (LINUX_VERSION_CODE < KERNEL_VERSION(3, 12, 54))) && !defined(ISUBUNTU1404) && (!defined(ISRHEL7) || RHEL_MINOR < 7) /* TODO: remove < 7 workaround once CentOS 7.7 comes out. */
+    (LINUX_VERSION_CODE < KERNEL_VERSION(3, 12, 54))) && !defined(ISUBUNTU1404) && !defined(ISRHEL7)
 #include <linux/if.h>
 #include <net/ip_tunnels.h>
 #define IP6_ECN_set_ce(a, b) IP6_ECN_set_ce(b)
@@ -294,7 +303,7 @@ static inline void rng_initialized_callback(struct random_ready_callback *cb)
 {
 	complete(&container_of(cb, struct rng_initializer, cb)->done);
 }
-/*static inline int wait_for_random_bytes(void)
+static inline int wait_for_random_bytes(void)
 {
 	static bool rng_is_initialized = false;
 	int ret;
@@ -315,15 +324,15 @@ static inline void rng_initialized_callback(struct random_ready_callback *cb)
 		rng_is_initialized = true;
 	}
 	return 0;
-}*/
+}
 #elif LINUX_VERSION_CODE < KERNEL_VERSION(4, 2, 0)
 /* This is a disaster. Without this API, we really have no way of
  * knowing if it's initialized. We just return that it has and hope
  * for the best... */
-/*static inline int wait_for_random_bytes(void)
+static inline int wait_for_random_bytes(void)
 {
 	return 0;
-}*/
+}
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) && LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0) && !defined(ISRHEL8)
@@ -339,7 +348,7 @@ static inline void rng_is_initialized_callback(struct random_ready_callback *cb)
 	atomic_set(rdy->rng_state, 2);
 	kfree(rdy);
 }
-/*static inline bool rng_is_initialized(void)
+static inline bool rng_is_initialized(void)
 {
 	static atomic_t rng_state = ATOMIC_INIT(0);
 
@@ -367,15 +376,15 @@ static inline void rng_is_initialized_callback(struct random_ready_callback *cb)
 		return false;
 	}
 	return false;
-}*/
+}
 #elif LINUX_VERSION_CODE < KERNEL_VERSION(4, 2, 0)
 /* This is a disaster. Without this API, we really have no way of
  * knowing if it's initialized. We just return that it has and hope
  * for the best... */
-/*static inline bool rng_is_initialized(void)
+static inline bool rng_is_initialized(void)
 {
 	return true;
-}*/
+}
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 13, 0) && !defined(ISOPENSUSE15)
@@ -783,7 +792,7 @@ struct __kernel_timespec {
 #endif
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 1, 0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 1, 0) && !defined(ISRHEL82)
 #include <linux/skbuff.h>
 #define skb_probe_transport_header(a) skb_probe_transport_header(a, 0)
 #endif
@@ -792,7 +801,7 @@ struct __kernel_timespec {
 #define ignore_df local_df
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 1, 0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 1, 0) && !defined(ISRHEL82)
 /* Note that all intentional uses of the non-_bh variety need to explicitly
  * undef these, conditionalized on COMPAT_CANNOT_DEPRECIATE_BH_RCU.
  */
@@ -834,7 +843,7 @@ static inline void skb_mark_not_on_list(struct sk_buff *skb)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 20, 0) && !defined(ISRHEL8)
 #define NLA_EXACT_LEN NLA_UNSPEC
 #endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 2, 0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 2, 0) && !defined(ISRHEL82)
 #define NLA_MIN_LEN NLA_UNSPEC
 #define COMPAT_CANNOT_INDIVIDUAL_NETLINK_OPS_POLICY
 #endif
@@ -863,6 +872,64 @@ static inline void skb_mark_not_on_list(struct sk_buff *skb)
 
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 5) && LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)) || LINUX_VERSION_CODE < KERNEL_VERSION(5, 3, 18)
 #define ipv6_dst_lookup_flow(a, b, c, d) ipv6_dst_lookup(a, b, &dst, c) + (void *)0 ?: dst
+#endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 6, 0)
+#include <linux/skbuff.h>
+#ifndef skb_list_walk_safe
+#define skb_list_walk_safe(first, skb, next)                                   \
+	for ((skb) = (first), (next) = (skb) ? (skb)->next : NULL; (skb);      \
+	     (skb) = (next), (next) = (skb) ? (skb)->next : NULL)
+#endif
+#endif
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
+#define blake2s_init zinc_blake2s_init
+#define blake2s_init_key zinc_blake2s_init_key
+#define blake2s_update zinc_blake2s_update
+#define blake2s_final zinc_blake2s_final
+#define blake2s_hmac zinc_blake2s_hmac
+#define chacha20 zinc_chacha20
+#define hchacha20 zinc_hchacha20
+#define chacha20poly1305_encrypt zinc_chacha20poly1305_encrypt
+#define chacha20poly1305_encrypt_sg_inplace zinc_chacha20poly1305_encrypt_sg_inplace
+#define chacha20poly1305_decrypt zinc_chacha20poly1305_decrypt
+#define chacha20poly1305_decrypt_sg_inplace zinc_chacha20poly1305_decrypt_sg_inplace
+#define xchacha20poly1305_encrypt zinc_xchacha20poly1305_encrypt
+#define xchacha20poly1305_decrypt zinc_xchacha20poly1305_decrypt
+#define curve25519 zinc_curve25519
+#define curve25519_generate_secret zinc_curve25519_generate_secret
+#define curve25519_generate_public zinc_curve25519_generate_public
+#define poly1305_init zinc_poly1305_init
+#define poly1305_update zinc_poly1305_update
+#define poly1305_final zinc_poly1305_final
+#define blake2s_compress_ssse3 zinc_blake2s_compress_ssse3
+#define blake2s_compress_avx512 zinc_blake2s_compress_avx512
+#define poly1305_init_arm zinc_poly1305_init_arm
+#define poly1305_blocks_arm zinc_poly1305_blocks_arm
+#define poly1305_emit_arm zinc_poly1305_emit_arm
+#define poly1305_blocks_neon zinc_poly1305_blocks_neon
+#define poly1305_emit_neon zinc_poly1305_emit_neon
+#define poly1305_init_mips zinc_poly1305_init_mips
+#define poly1305_blocks_mips zinc_poly1305_blocks_mips
+#define poly1305_emit_mips zinc_poly1305_emit_mips
+#define poly1305_init_x86_64 zinc_poly1305_init_x86_64
+#define poly1305_blocks_x86_64 zinc_poly1305_blocks_x86_64
+#define poly1305_emit_x86_64 zinc_poly1305_emit_x86_64
+#define poly1305_emit_avx zinc_poly1305_emit_avx
+#define poly1305_blocks_avx zinc_poly1305_blocks_avx
+#define poly1305_blocks_avx2 zinc_poly1305_blocks_avx2
+#define poly1305_blocks_avx512 zinc_poly1305_blocks_avx512
+#define curve25519_neon zinc_curve25519_neon
+#define hchacha20_ssse3 zinc_hchacha20_ssse3
+#define chacha20_ssse3 zinc_chacha20_ssse3
+#define chacha20_avx2 zinc_chacha20_avx2
+#define chacha20_avx512 zinc_chacha20_avx512
+#define chacha20_avx512vl zinc_chacha20_avx512vl
+#define chacha20_mips zinc_chacha20_mips
+#define chacha20_arm zinc_chacha20_arm
+#define hchacha20_arm zinc_hchacha20_arm
+#define chacha20_neon zinc_chacha20_neon
 #endif
 
 #if defined(ISUBUNTU1604)
