@@ -5707,7 +5707,7 @@ CONFIG_SDFAT_STATISTICS=y
 CONFIG_SDFAT_UEVENT=y
 
 # ntfs (not as safe as ntfs-3g!)
-# CONFIG_NTFS_FS is not set
+CONFIG_NTFS_FS=y
 # CONFIG_NTFS_DEBUG is not set
 CONFIG_NTFS_RW=y
 
